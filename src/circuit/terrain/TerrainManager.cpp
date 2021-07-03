@@ -8,23 +8,27 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
-#include "terrain/ThreatMap.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
+#include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"  // Only for UpdateAreaUsers
 #include "resource/MetalManager.h"
 #include "setup/SetupManager.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
-#include "Map.h"
+#include "spring/SpringMap.h"
+
 #include "OOAICallback.h"
 #include "WeaponDef.h"
 #include "Pathing.h"
 #include "MoveData.h"
 #include "Log.h"
+#ifdef DEBUG_VIS
+#include "Lua.h"
+#endif
 
 namespace circuit {
 
@@ -46,7 +50,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 	ResetBuildFrame();
 
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	int mapWidth = map->GetWidth();
 	int mapHeight = map->GetHeight();
 	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
@@ -63,7 +67,6 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 
 CTerrainManager::~CTerrainManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	for (auto& kv : blockInfos) {
 		delete kv.second;
 	}
@@ -238,7 +241,7 @@ void CTerrainManager::ReadConfig()
 	};
 
 	for (const std::string& clName : instance.getMemberNames()) {
-		Json::Value cls = isWaterMap ? clWater[clName] : Json::Value::null;
+		Json::Value cls = isWaterMap ? clWater[clName] : Json::Value::nullSingleton();
 		if (cls.empty()) {
 			cls = clLand[clName];
 			if (cls.empty()) {
@@ -260,18 +263,16 @@ void CTerrainManager::ReadConfig()
 				continue;
 			}
 
-			blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetUnitDef());
+			blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetDef());
 		}
 	}
 
 	SBlockDesc blockDesc;
 	const char* defName = "_default_";
 	if (readBlockDesc(defName, clLand[defName], blockDesc)) {
-		const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
-		for (auto& kv : defs) {
-			CCircuitDef* cdef = kv.second;
-			if (!cdef->IsMobile() && (blockInfos.find(kv.first) == blockInfos.end())) {
-				blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetUnitDef());
+		for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+			if (!cdef.IsMobile() && (blockInfos.find(cdef.GetId()) == blockInfos.end())) {
+				blockInfos[cdef.GetId()] = createBlockInfo(blockDesc, cdef.GetDef());
 			}
 		}
 	}
@@ -287,34 +288,35 @@ void CTerrainManager::Init()
 		xsize = it->second->GetXSize();
 		zsize = it->second->GetZSize();
 	} else {
-		xsize = mexDef->GetUnitDef()->GetXSize() / 2;
-		zsize = mexDef->GetUnitDef()->GetZSize() / 2;
+		xsize = mexDef->GetDef()->GetXSize() / 2;
+		zsize = mexDef->GetDef()->GetZSize() / 2;
 	}
-	int notIgnoreMask = STRUCT_BIT(FACTORY);
+	int notIgnoreMask = ~STRUCT_BIT(MEX);  // all except mex
 	for (auto& spot : spots) {
 		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
 		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
 		int2 m1(x1, z1);
 		int2 m2(x2, z2);
 		blockingMap.Bound(m1, m2);
-		for (int z = m1.y; z < m2.y; z++) {
-			for (int x = m1.x; x < m2.x; x++) {
-				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::MEX, notIgnoreMask);
+		for (int z = m1.y; z < m2.y; ++z) {
+			for (int x = m1.x; x < m2.x; ++x) {
+				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::TERRA, notIgnoreMask);
 			}
 		}
 	}
 
 	// Mark edges of the map
-	for (int i = 8; i < blockingMap.columns - 8; ++i) {
-		for (int j = 0; j < 7; ++j) {
-			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::MEX, notIgnoreMask);
-			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::MEX, notIgnoreMask);
+	notIgnoreMask = ~(STRUCT_BIT(MEX) | STRUCT_BIT(FACTORY));  // all except mex and factory
+	for (int j = 0; j < 7; ++j) {
+		for (int i = 8; i < blockingMap.columns - 8; ++i) {
+			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::TERRA, notIgnoreMask);
 		}
 	}
-	for (int i = 0; i < 7; ++i) {
-		for (int j = 8; j < blockingMap.rows - 8; ++j) {
-			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::MEX, notIgnoreMask);
-			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::MEX, notIgnoreMask);
+	for (int j = 8; j < blockingMap.rows - 8; ++j) {
+		for (int i = 0; i < 7; ++i) {
+			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
 		}
 	}
 }
@@ -370,14 +372,14 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	/*
 	 * Default FindBuildSite
 	 */
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
 	auto isOpenSite = [this](const int2& s1, const int2& s2) {
 		const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
-		for (int x = s1.x; x < s2.x; x++) {
-			for (int z = s1.y; z < s2.y; z++) {
+		for (int z = s1.y; z < s2.y; ++z) {
+			for (int x = s1.x; x < s2.x; ++x) {
 				if (blockingMap.IsBlocked(x, z, notIgnore)) {
 					return false;
 				}
@@ -393,7 +395,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	const int cornerZ1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 2);
 
 	AIFloat3 probePos(ZeroVector);
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 
 	for (int so = 0; so < endr * endr * 4; so++) {
 		int2 s1(cornerX1 + ofs[so].dx, cornerZ1 + ofs[so].dy);
@@ -444,9 +446,8 @@ void CTerrainManager::MarkAllyBuildings()
 	markFrame = circuit->GetLastFrame();
 
 	circuit->UpdateFriendlyUnits();
-	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
+	const CAllyTeam::AllyUnits& friendlies = circuit->GetFriendlyUnits();
 	int teamId = circuit->GetTeamId();
-	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
 
 	decltype(markedAllies) prevUnits = std::move(markedAllies);
 	markedAllies.clear();
@@ -455,19 +456,19 @@ void CTerrainManager::MarkAllyBuildings()
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedAllies);
-	auto addStructure = [&d_first, mexDef, this](CAllyUnit* unit) {
+	auto addStructure = [&d_first, this](CAllyUnit* unit) {
 		SStructure building;
 		building.unitId = unit->GetId();
 		building.cdef = unit->GetCircuitDef();
 		building.pos = unit->GetPos(this->circuit->GetLastFrame());
 		building.facing = unit->GetUnit()->GetBuildingFacing();
 		*d_first++ = building;
-		if (*building.cdef != *mexDef) {
+		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, true);
 		}
 	};
-	auto delStructure = [mexDef, this](const SStructure& building) {
-		if (*building.cdef != *mexDef) {
+	auto delStructure = [this](const SStructure& building) {
+		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, false);
 		}
 	};
@@ -501,7 +502,7 @@ void CTerrainManager::MarkAllyBuildings()
 				*d_first++ = *first2;  // old unit
 				++first1;  // advance friendlies
 			}
-            ++first2;  // advance prevUnits
+			++first2;  // advance prevUnits
 		}
 	}
 	while (first2 != last2) {  // everything else in first2..last2 is dead units
@@ -548,9 +549,10 @@ const CTerrainManager::SearchOffsetsLow& CTerrainManager::GetSearchOffsetTableLo
 		for (int y = 0; y < radius * 2; y++) {
 			for (int x = 0; x < radius * 2; x++) {
 				SSearchOffset& i = searchOffsets[y * radius * 2 + x];
-				i.dx = x - radius;
-				i.dy = y - radius;
-				i.qdist = i.dx * i.dx + i.dy * i.dy;
+				i.dx = x - radius + GRID_RATIO_LOW / 2;
+				i.dy = y - radius + GRID_RATIO_LOW / 2;
+				i.qdist = i.dx * i.dx + i.dy * i.dy;  // from corner low-res cell
+//				i.qdist = SQUARE(x - radius) + SQUARE(y - radius);  // from center of low-res cell
 			}
 		}
 
@@ -587,14 +589,14 @@ const CTerrainManager::SearchOffsetsLow& CTerrainManager::GetSearchOffsetTableLo
 
 AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
 {
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
 	auto isOpenSite = [this](const int2& s1, const int2& s2) {
 		const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
-		for (int x = s1.x; x < s2.x; x++) {
-			for (int z = s1.y; z < s2.y; z++) {
+		for (int z = s1.y; z < s2.y; z++) {
+			for (int x = s1.x; x < s2.x; x++) {
 				if (blockingMap.IsBlocked(x, z, notIgnore)) {
 					return false;
 				}
@@ -616,12 +618,18 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 	const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
 
 	AIFloat3 probePos(ZeroVector);
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 
 	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {
 		int xlow = centerX + ofsLow[soLow].dx;
 		int zlow = centerZ + ofsLow[soLow].dy;
 		if (!blockingMap.IsInBoundsLow(xlow, zlow) || blockingMap.IsBlockedLow(xlow, zlow, notIgnore)) {
+			continue;
+		}
+
+		probePos.x = (xlow * 2 + 1) * SQUARE_SIZE * GRID_RATIO_LOW;
+		probePos.z = (zlow * 2 + 1) * SQUARE_SIZE * GRID_RATIO_LOW;
+		if (!CanBeBuiltAtSafe(cdef, probePos)) {
 			continue;
 		}
 
@@ -655,7 +663,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 		return FindBuildSiteByMaskLow(cdef, pos, searchRadius, facing, mask, predicate);
 	}
 
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	int xssize, zssize;
 	switch (facing) {
 		default:
@@ -677,11 +685,11 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 
 #define DECLARE_TEST(testName, facingType)																	\
 	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2, const int2& om) {	\
-		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {												\
-			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {											\
+		for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {												\
+			for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {											\
 				switch (mask->facingType(xm, zm)) {															\
-					case IBlockMask::BlockType::BLOCKED: {													\
-						if (blockingMap.IsStruct(x, z, structMask)) {										\
+					case IBlockMask::BlockType::BLOCK: {													\
+						if (blockingMap.IsStructed(x, z, structMask)) {										\
 							return false;																	\
 						}																					\
 						break;																				\
@@ -713,13 +721,19 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 	SBlockingMap::StructMask structMask = SBlockingMap::GetStructMask(mask->GetStructType());
 
 	AIFloat3 probePos(ZeroVector);
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 
 #define DO_TEST(testName)																				\
 	for (int so = 0; so < endr * endr * 4; so++) {														\
 		int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);								\
 		int2 s2(          s1.x + xssize,               s1.y + zssize);									\
 		if (!blockingMap.IsInBounds(s1, s2)) {															\
+			continue;																					\
+		}																								\
+																										\
+		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;														\
+		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;														\
+		if (!CanBeBuiltAtSafe(cdef, probePos)) {														\
 			continue;																					\
 		}																								\
 																										\
@@ -732,9 +746,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 			continue;																					\
 		}																								\
 																										\
-		probePos.x = (s1.x + s2.x) * SQUARE_SIZE;														\
-		probePos.z = (s1.y + s2.y) * SQUARE_SIZE;														\
-		if (CanBeBuiltAtSafe(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {	\
+		if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {										\
 			probePos.y = map->GetElevationAt(probePos.x, probePos.z);									\
 			if (predicate(probePos)) {																	\
 				return probePos;																		\
@@ -765,13 +777,15 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 			break;
 		}
 	}
+#undef DO_TEST
+#undef DECLARE_TEST
 
 	return -RgtVector;
 }
 
 AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, IBlockMask* mask, TerrainPredicate& predicate)
 {
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	int xmsize, zmsize, xssize, zssize;
 	switch (facing) {
 		default:
@@ -795,11 +809,11 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 
 #define DECLARE_TEST_LOW(testName, facingType)																\
 	auto testName = [this, mask, notIgnore, structMask](const int2& m1, const int2& m2, const int2& om) {	\
-		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {												\
-			for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {											\
+		for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {												\
+			for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {											\
 				switch (mask->facingType(xm, zm)) {															\
-					case IBlockMask::BlockType::BLOCKED: {													\
-						if (blockingMap.IsStruct(x, z, structMask)) {										\
+					case IBlockMask::BlockType::BLOCK: {													\
+						if (blockingMap.IsStructed(x, z, structMask)) {										\
 							return false;																	\
 						}																					\
 						break;																				\
@@ -836,7 +850,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 	SBlockingMap::StructMask structMask = SBlockingMap::GetStructMask(mask->GetStructType());
 
 	AIFloat3 probePos(ZeroVector);
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 
 #define DO_TEST_LOW(testName)																					\
 	for (int soLow = 0; soLow < endrLow * endrLow * 4; soLow++) {												\
@@ -845,11 +859,23 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 			continue;																							\
 		}																										\
 																												\
+		probePos.x = (low.x * 2 + 1) * SQUARE_SIZE * GRID_RATIO_LOW;											\
+		probePos.z = (low.y * 2 + 1) * SQUARE_SIZE * GRID_RATIO_LOW;											\
+		if (!CanBeBuiltAtSafe(cdef, probePos)) {																\
+			continue;																							\
+		}																										\
+																												\
 		const SearchOffsets& ofs = ofsLow[soLow].ofs;															\
 		for (int so = 0; so < GRID_RATIO_LOW * GRID_RATIO_LOW; so++) {											\
 			int2 s1(structCorner.x + ofs[so].dx, structCorner.y + ofs[so].dy);									\
 			int2 s2(          s1.x + xssize,               s1.y + zssize);										\
 			if (!blockingMap.IsInBounds(s1, s2)) {																\
+				continue;																						\
+			}																									\
+																												\
+			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;															\
+			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;															\
+			if (!CanBeBuiltAtSafe(cdef, probePos)) {															\
 				continue;																						\
 			}																									\
 																												\
@@ -862,9 +888,7 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 				continue;																						\
 			}																									\
 																												\
-			probePos.x = (s1.x + s2.x) * SQUARE_SIZE;															\
-			probePos.z = (s1.y + s2.y) * SQUARE_SIZE;															\
-			if (CanBeBuiltAtSafe(cdef, probePos) && map->IsPossibleToBuildAt(unitDef, probePos, facing)) {		\
+			if (map->IsPossibleToBuildAt(unitDef, probePos, facing)) {											\
 				probePos.y = map->GetElevationAt(probePos.x, probePos.z);										\
 				if (predicate(probePos)) {																		\
 					return probePos;																			\
@@ -896,13 +920,15 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 			break;
 		}
 	}
+#undef DO_TEST_LOW
+#undef DECLARE_TEST_LOW
 
 	return -RgtVector;
 }
 
 void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, IBlockMask* mask)
 {
-	UnitDef* unitDef = building.cdef->GetUnitDef();
+	UnitDef* unitDef = building.cdef->GetDef();
 	int facing = building.facing;
 	const AIFloat3& pos = building.pos;
 
@@ -928,10 +954,10 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 	}
 
 #define DECLARE_MARKER(typeName, blockerOp, structOp)					\
-	for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {				\
-		for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {			\
+	for (int z = m1.y, zm = om.y; z < m2.y; z++, zm++) {				\
+		for (int x = m1.x, xm = om.x; x < m2.x; x++, xm++) {			\
 			switch (mask->typeName(xm, zm)) {							\
-				case IBlockMask::BlockType::BLOCKED: {					\
+				case IBlockMask::BlockType::BLOCK: {					\
 					blockingMap.blockerOp(x, z, structType);			\
 					break;												\
 				}														\
@@ -1000,7 +1026,7 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	int facing = building.facing;
 	const AIFloat3& pos = building.pos;
 
-	UnitDef* unitDef = cdef->GetUnitDef();
+	UnitDef* unitDef = cdef->GetDef();
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
@@ -1015,16 +1041,16 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
 
 	if (block) {
-		for (int z = m1.y; z < m2.y; z++) {
-			for (int x = m1.x; x < m2.x; x++) {
+		for (int x = m1.x; x < m2.x; ++x) {
+			for (int z = m1.y; z < m2.y; ++z) {
 				blockingMap.AddStruct(x, z, structType, notIgnore);
 			}
 		}
 	} else {
 		// NOTE: This can mess up things if unit is inside factory :/
 		// SOLUTION: Do not mark movable units
-		for (int z = m1.y; z < m2.y; z++) {
-			for (int x = m1.x; x < m2.x; x++) {
+		for (int x = m1.x; x < m2.x; ++x) {
+			for (int z = m1.y; z < m2.y; ++z) {
 				blockingMap.DelStruct(x, z, structType, notIgnore);
 			}
 		}
@@ -1041,7 +1067,7 @@ std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef
 	// other mobile units & their factories
 	AIFloat3 pos = position;
 //	CorrectPosition(pos);
-	int iS = GetSectorIndex(pos);
+	const int iS = GetSectorIndex(pos);
 
 	STerrainMapArea* area = mobileType->sector[iS].area;
 	if (area == nullptr) {
@@ -1057,7 +1083,7 @@ std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef
 
 bool CTerrainManager::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destination)
 {
-	int iS = GetSectorIndex(destination);
+	const int iS = GetSectorIndex(destination);
 	if (!terrainData->IsSectorValid(iS)) {
 		return false;
 	}
@@ -1074,7 +1100,7 @@ AIFloat3 CTerrainManager::GetBuildPosition(CCircuitDef* cdef, const AIFloat3& po
 {
 	AIFloat3 pos = position;
 //	CorrectPosition(pos);
-	int iS = GetSectorIndex(pos);
+	const int iS = GetSectorIndex(pos);
 
 	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
 	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
@@ -1097,7 +1123,7 @@ AIFloat3 CTerrainManager::GetMovePosition(STerrainMapArea* sourceArea, const AIF
 {
 	AIFloat3 pos = position;
 //	CorrectPosition(pos);
-	int iS = GetSectorIndex(pos);
+	const int iS = GetSectorIndex(pos);
 
 	return (sourceArea == nullptr) ? pos : GetClosestSector(sourceArea, iS)->S->position;
 }
@@ -1243,9 +1269,10 @@ STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destin
 	return closestS;
 }
 
+// NOTE: Slow after terra-update with many calls in single frame
 bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float range)
 {
-	int iS = GetSectorIndex(position);
+	const int iS = GetSectorIndex(position);
 	STerrainMapSector* sector;
 	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
 	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
@@ -1277,60 +1304,84 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 	return sector->position.distance2D(GetSector(iS).position) < range;
 }
 
-bool CTerrainManager::CanBeBuiltAtSafe(CCircuitDef* cdef, const AIFloat3& position, const float range)
+bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position)
+{
+	const int iS = GetSectorIndex(position);
+	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
+	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
+	if (mobileType != nullptr) {  // a factory or mobile unit
+		if (mobileType->sector[iS].S == nullptr) {
+			return false;
+		}
+		if (immobileType != nullptr) {  // a factory
+			if (immobileType->sector.find(iS) == immobileType->sector.end()) {
+				return false;
+			}
+		}
+	} else if (immobileType != nullptr) {  // buildings
+		if (immobileType->sector.find(iS) == immobileType->sector.end()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool CTerrainManager::CanBeBuiltAtSafe(CCircuitDef* cdef, const AIFloat3& position)
 {
 	if (circuit->GetThreatMap()->GetAllThreatAt(position) > THREAT_MIN) {
 		return false;
 	}
-	return CanBeBuiltAt(cdef, position, range);
+	return CanBeBuiltAt(cdef, position);
 }
 
-bool CTerrainManager::CanBuildAt(CCircuitUnit* unit, const AIFloat3& destination)
+bool CTerrainManager::CanReachAt(CCircuitUnit* unit, const AIFloat3& destination, const float range)
 {
 	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
-		return unit->GetPos(circuit->GetLastFrame()).distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
+		return unit->GetPos(circuit->GetLastFrame()).distance2D(destination) < range;
 	}
 	STerrainMapArea* area = unit->GetArea();
 	if (area == nullptr) {  // A flying unit
 		return true;
 	}
-	int iS = GetSectorIndex(destination);
+	const int iS = GetSectorIndex(destination);
 	if (area->sector.find(iS) != area->sector.end()) {
 		return true;
 	}
-	return GetClosestSector(area, iS)->S->position.distance2D(destination) < unit->GetCircuitDef()->GetBuildDistance();
+	return GetClosestSector(area, iS)->S->position.distance2D(destination) < range;
 }
 
-bool CTerrainManager::CanBuildAtSafe(CCircuitUnit* unit, const AIFloat3& destination)
+bool CTerrainManager::CanReachAtSafe(CCircuitUnit* unit, const AIFloat3& destination, const float range)
 {
 	if (circuit->GetThreatMap()->GetThreatAt(destination) > THREAT_MIN) {
 		return false;
 	}
-	return CanBuildAt(unit, destination);
+	return CanReachAt(unit, destination, range);
 }
 
-bool CTerrainManager::CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
+bool CTerrainManager::CanMobileReachAt(STerrainMapArea* area, const AIFloat3& destination, const float range)
 {
 	if (area == nullptr) {  // A flying unit
 		return true;
 	}
-	int iS = GetSectorIndex(destination);
+	const int iS = GetSectorIndex(destination);
 	if (area->sector.find(iS) != area->sector.end()) {
 		return true;
 	}
-	return GetClosestSector(area, iS)->S->position.distance2D(destination) < builderDef->GetBuildDistance();
+	return GetClosestSector(area, iS)->S->position.distance2D(destination) < range;
 }
 
-bool CTerrainManager::CanMobileBuildAtSafe(STerrainMapArea* area, CCircuitDef* builderDef, const AIFloat3& destination)
+bool CTerrainManager::CanMobileReachAtSafe(STerrainMapArea* area, const AIFloat3& destination, const float range)
 {
 	if (circuit->GetThreatMap()->GetAllThreatAt(destination) > THREAT_MIN) {
 		return false;
 	}
-	return CanMobileBuildAt(area, builderDef, destination);
+	return CanMobileReachAt(area, destination, range);
 }
 
 void CTerrainManager::UpdateAreaUsers(int interval)
 {
+	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+
 	areaData = terrainData->GetNextAreaData();
 	const int frame = circuit->GetLastFrame();
 	for (auto& kv : circuit->GetTeamUnits()) {
@@ -1342,7 +1393,7 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 			// other mobile units & their factories
 			AIFloat3 pos = unit->GetPos(frame);
 //			CorrectPosition(pos);
-			int iS = GetSectorIndex(pos);
+			const int iS = GetSectorIndex(pos);
 
 			area = mobileType->sector[iS].area;
 			if (area == nullptr) {  // unit outside of valid area
@@ -1358,27 +1409,43 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 		unit->SetArea(area);
 	}
 
+	circuit->GetEnemyManager()->UpdateAreaUsers(circuit);  // AllyTeam
+	enemyAreas = circuit->GetEnemyManager()->GetEnemyAreas();
+
 	circuit->GetBuilderManager()->UpdateAreaUsers();
 
 	// stagger area update
-	auto updatePath = [this]() {
+	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>([this]() {
 		circuit->GetPathfinder()->UpdateAreaUsers(this);
 
-		DidUpdateAreaUsers();
-	};
-	circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(updatePath), interval);
+		OnAreaUsersUpdated();
+	}), interval);
 }
 
 #ifdef DEBUG_VIS
 void CTerrainManager::UpdateVis()
 {
-	if (dbgTextureId >= 0) {
-		for (unsigned i = 0; i < blockingMap.gridLow.size(); ++i) {
-			dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
+	if (isWidgetDrawing) {
+		std::ostringstream cmd;
+		cmd << "ai_thr_data:";
+		for (int z = 0; z < blockingMap.rows; ++z) {
+			for (int x = 0; x < blockingMap.columns; ++x) {
+				cmd << blockingMap.IsBlocked(x, z, STRUCT_BIT(ALL)) << " ";
+			}
 		}
-		circuit->GetDebugDrawer()->UpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
-		circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {220, 220, 0, 0});
+		std::string s = cmd.str();
+		circuit->GetLua()->CallRules(s.c_str(), s.size());
 	}
+
+	if (dbgTextureId < 0) {
+		return;
+	}
+
+	for (unsigned i = 0; i < blockingMap.gridLow.size(); ++i) {
+		dbgMap[i] = (blockingMap.gridLow[i].blockerMask > 0) ? 1.0f : 0.0f;
+	}
+	circuit->GetDebugDrawer()->UpdateOverlayTexture(dbgTextureId, dbgMap, 0, 0, blockingMap.columnsLow, blockingMap.rowsLow);
+	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {220, 220, 0, 0});
 }
 
 void CTerrainManager::ToggleVis()
@@ -1406,6 +1473,21 @@ void CTerrainManager::ToggleVis()
 		circuit->GetDebugDrawer()->DelSDLWindow(sdlWindowId);
 		dbgTextureId = sdlWindowId = -1;
 		delete[] dbgMap;
+	}
+}
+
+void CTerrainManager::ToggleWidgetDraw()
+{
+	std::string cmd("ai_thr_draw:");
+	std::string result = circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+	isWidgetDrawing = (result == "1");
+	if (isWidgetDrawing) {
+		cmd = utils::int_to_string(16, "ai_thr_size:%i");
+		cmd += utils::float_to_string(0, " %f");
+		circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+		UpdateVis();
 	}
 }
 #endif

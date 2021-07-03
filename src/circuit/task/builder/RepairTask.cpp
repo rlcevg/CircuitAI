@@ -10,8 +10,9 @@
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -24,14 +25,13 @@ CBRepairTask::CBRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* targ
 
 CBRepairTask::~CBRepairTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CBRepairTask::Update()
+void CBRepairTask::Start(CCircuitUnit* unit)
 {
-	// FIXME: Replace const 1000.0f with build time?
-	if ((cost > 1000.0f) && (manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6f)) {
-		manager->AbortTask(this);
+	IRepairTask::Start(unit);
+	if (targetId != -1) {
+		Update(unit);
 	}
 }
 
@@ -47,7 +47,7 @@ void CBRepairTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
@@ -59,6 +59,25 @@ void CBRepairTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 	CRetreatTask* task = manager->GetCircuit()->GetBuilderManager()->EnqueueRetreat();
 	manager->AssignTask(unit, task);
+}
+
+bool CBRepairTask::Reevaluate(CCircuitUnit* unit)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	// FIXME: Replace const 1000.0f with build time?
+	if ((cost > 1000.0f) && (circuit->GetEconomyManager()->GetAvgMetalIncome() < savedIncome * 0.6f)) {
+		manager->AbortTask(this);
+		return false;
+	}
+
+	CAllyUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
+	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
+		buildPos = repTarget->GetPos(circuit->GetLastFrame());
+	} else {
+		manager->AbortTask(this);
+		return false;
+	}
+	return true;
 }
 
 } // namespace circuit

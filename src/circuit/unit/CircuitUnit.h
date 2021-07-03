@@ -8,8 +8,9 @@
 #ifndef SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_
 #define SRC_CIRCUIT_UNIT_CIRCUITUNIT_H_
 
-#include "unit/AllyUnit.h"
+#include "unit/ally/AllyUnit.h"
 #include "util/ActionList.h"
+#include "util/Defines.h"
 
 namespace springai {
 	class Weapon;
@@ -23,7 +24,6 @@ namespace circuit {
 
 #define CMD_ATTACK_GROUND			20
 #define CMD_RETREAT_ZONE			10001
-#define CMD_SETHAVEN				CMD_RETREAT_ZONE
 #define CMD_ORBIT					13923
 #define CMD_ORBIT_DRAW				13924
 #define CMD_CLOAK_SHIELD			31101
@@ -47,8 +47,10 @@ namespace circuit {
 #define CMD_TERRAFORM_INTERNAL		39801
 
 class CCircuitDef;
-class CEnemyUnit;
+class CEnemyInfo;
 class IUnitManager;
+class CDGunAction;
+class ITravelAction;
 struct STerrainMapArea;
 
 class CCircuitUnit: public CAllyUnit, public CActionList {
@@ -68,10 +70,16 @@ public:
 	void SetArea(STerrainMapArea* area) { this->area = area; }
 	STerrainMapArea* GetArea() const { return area; }
 
+	void ClearAct();
+	void PushDGunAct(CDGunAction* action);
+	CDGunAction* GetDGunAct() const { return dgunAct; }
+	void PushTravelAct(ITravelAction* action);
+	ITravelAction* GetTravelAct() const { return travelAct; }
+
 	bool IsMoveFailed(int frame);
 
-	void ForceExecute() { isForceExecute = true; }
-	bool IsForceExecute();
+	void ForceUpdate(int frame) { execFrame = frame; }
+	bool IsForceUpdate(int frame);
 
 	void Dead() { isDead = true; }
 	bool IsDead() const { return isDead; }
@@ -82,10 +90,10 @@ public:
 	bool HasDGun() const { return dgun != nullptr; }
 	bool HasWeapon() const { return weapon != nullptr; }
 	bool HasShield() const { return shield != nullptr; }
-	void ManualFire(CEnemyUnit* target, int timeOut);
+	void ManualFire(CEnemyInfo* target, int timeout);
 	bool IsDisarmed(int frame);
 	bool IsWeaponReady(int frame);
-	bool IsDGunReady(int frame);
+	bool IsDGunReady(int frame, float energy);
 	bool IsShieldCharged(float percent);
 	bool IsJumpReady();
 	bool IsJumping();
@@ -95,9 +103,25 @@ public:
 	float GetDGunRange();
 	float GetHealthPercent();
 
-	void Attack(CEnemyUnit* target, int timeout);
+	void CmdRemove(std::vector<float>&& params, short options = 0);
+	void CmdMoveTo(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
+	void CmdJumpTo(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
+	void CmdAttackGround(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
+	void CmdWantedSpeed(float speed = NO_SPEED_LIMIT);
+	void CmdSetTarget(CEnemyInfo* enemy);
+	void CmdCloak(bool state);
+	void CmdFireAtRadar(bool state);
+	void CmdFindPad(int timeout = INT_MAX);
+	void CmdManualFire(short options = 0, int timeout = INT_MAX);
+	void CmdPriority(float value);
+	void CmdMiscPriority(float value);
+	void CmdAirStrafe(float value);
+	void CmdTerraform(std::vector<float>&& params);
+
+	void Attack(CEnemyInfo* enemy, int timeout);
 	void Attack(const springai::AIFloat3& position, int timeout);
-	void Attack(const springai::AIFloat3& position, CEnemyUnit* target, int timeout);
+	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, int timeout);
+	void Attack(const springai::AIFloat3& position, CEnemyInfo* enemy, int tile, int timeout);
 	void Guard(CCircuitUnit* target, int timeout);
 	void Gather(const springai::AIFloat3& groupPos, int timeout);
 
@@ -108,6 +132,10 @@ public:
 	void StopUpgrade();
 	bool IsMorphing() const { return isMorphing; }
 
+	void ClearTarget() { target = nullptr; }
+	CEnemyInfo* GetTarget() const { return target; }
+	int GetTargetTile() const { return targetTile; }
+
 private:
 	// NOTE: taskFrame assigned on task change and OnUnitIdle to workaround idle spam.
 	//       Proper fix: do not issue any commands OnUnitIdle, delay them until next frame?
@@ -115,10 +143,13 @@ private:
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies
 
+	CDGunAction* dgunAct;
+	ITravelAction* travelAct;
+
 //	int damagedFrame;
 	int moveFails;
 	int failFrame;
-	bool isForceExecute;  // TODO: Replace by CExecuteAction?
+	bool execFrame;  // TODO: Replace by CExecuteAction?
 	bool isDead;
 
 	springai::Weapon* dgun;
@@ -132,6 +163,14 @@ private:
 	int ammoFrame;
 
 	bool isMorphing;
+
+	CEnemyInfo* target;
+	int targetTile;
+
+#ifdef DEBUG_VIS
+public:
+	void Log();
+#endif
 };
 
 } // namespace circuit

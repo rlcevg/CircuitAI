@@ -21,9 +21,10 @@ public:
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
 protected:
 	virtual void Cancel() override;
+
+	virtual void Execute(CCircuitUnit* unit) override;
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;

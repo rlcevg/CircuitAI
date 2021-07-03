@@ -12,10 +12,11 @@
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
+
+#include "spring/SpringMap.h"
 
 #include "AISCommands.h"
-#include "Map.h"
 
 namespace circuit {
 
@@ -39,7 +40,15 @@ CBFactoryTask::CBFactoryTask(ITaskManager* mgr, Priority priority,
 
 CBFactoryTask::~CBFactoryTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+void CBFactoryTask::Start(CCircuitUnit* unit)
+{
+	if (isPlop) {
+		Execute(unit);
+	} else {
+		IBuilderTask::Start(unit);
+	}
 }
 
 void CBFactoryTask::Update()
@@ -61,29 +70,29 @@ void CBFactoryTask::Cancel()
 void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 
 //	facing = UNIT_COMMAND_BUILD_NO_FACING;
-	float terWidth = terrainManager->GetTerrainWidth();
-	float terHeight = terrainManager->GetTerrainHeight();
+	float terWidth = terrainMgr->GetTerrainWidth();
+	float terHeight = terrainMgr->GetTerrainHeight();
 	if (math::fabs(terWidth - 2 * pos.x) > math::fabs(terHeight - 2 * pos.z)) {
 		facing = (2 * pos.x > terWidth) ? UNIT_FACING_WEST : UNIT_FACING_EAST;
 	} else {
 		facing = (2 * pos.z > terHeight) ? UNIT_FACING_NORTH : UNIT_FACING_SOUTH;
 	}
 
-	CTerrainManager::TerrainPredicate predicate = [terrainManager, builder](const AIFloat3& p) {
-		return terrainManager->CanBuildAtSafe(builder, p);
+	CTerrainManager::TerrainPredicate predicate = [terrainMgr, builder](const AIFloat3& p) {
+		return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
 	};
-	Map* map = circuit->GetMap();
-	auto checkFacing = [this, map, terrainManager, &predicate, &pos, searchRadius]() {
-		buildPos = terrainManager->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
-		if (!utils::is_valid(buildPos)) {
+	CMap* map = circuit->GetMap();
+	auto checkFacing = [this, map, terrainMgr, &predicate, &pos, searchRadius]() {
+		AIFloat3 bp = terrainMgr->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);
+		if (!utils::is_valid(bp)) {
 			return false;
 		}
 
 		// decides if a factory should face the opposite direction due to bad terrain
-		AIFloat3 posOffset = buildPos;
+		AIFloat3 posOffset = bp;
 		const float size = DEFAULT_SLACK;
 		switch (facing) {
 			default:
@@ -100,7 +109,11 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 				posOffset.x -= size;
 			} break;
 		}
-		return map->IsPossibleToBuildAt(buildDef->GetUnitDef(), posOffset, facing);
+		if (map->IsPossibleToBuildAt(buildDef->GetDef(), posOffset, facing)) {
+			SetBuildPos(bp);
+			return true;
+		}
+		return false;
 	};
 
 	if (checkFacing()) {

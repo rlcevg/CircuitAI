@@ -6,7 +6,7 @@
  */
 
 #include "unit/action/IdleAction.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -17,7 +17,6 @@ CIdleAction::CIdleAction(CCircuitUnit* owner)
 
 CIdleAction::~CIdleAction()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CIdleAction::Update(CCircuitAI* circuit)

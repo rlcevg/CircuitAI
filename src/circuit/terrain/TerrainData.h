@@ -19,12 +19,16 @@
 #ifndef SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 #define SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 
+#include "util/Defines.h"
+
 #include "AIFloat3.h"
 
 #include <map>
 #include <vector>
 #include <atomic>
 #include <memory>
+
+struct SSkirmishAICallback;
 
 namespace springai {
 	class MoveData;
@@ -36,6 +40,7 @@ namespace circuit {
 class CCircuitAI;
 class CScheduler;
 class CGameAttribute;
+class CMap;
 #ifdef DEBUG_VIS
 class CDebugDrawer;
 #endif
@@ -150,6 +155,7 @@ struct STerrainMapImmobileType {
 struct SAreaData {
 	SAreaData() :
 		minElevation(.0f),
+		maxElevation(.0f),
 		percentLand(.0f)
 	{};
 
@@ -158,8 +164,11 @@ struct SAreaData {
 	std::vector<STerrainMapAreaSector> sectorAirType;   // used for flying units, GetSectorIndex gives an index
 	std::vector<STerrainMapSector> sector;  // global sector data, GetSectorIndex gives an index
 
-	float minElevation;   // 0 or less (used by cRAIUnitDefHandler, builder start selecter)
-	float percentLand;    // 0 to 100 (used by cRAIUnitDefHandler)
+	float minElevation;  // minimum elevation
+	float maxElevation;  // maximum elevation
+	float percentLand;  // 0 to 100
+
+	FloatVec heightMap;
 };
 
 #define BOUND_EXT	3e3f
@@ -170,10 +179,9 @@ public:
 	virtual ~CTerrainData();
 	void Init(CCircuitAI* circuit);
 
-	static springai::Map* GetMap() { return map; }
+	static CMap* GetMap() { return map; }
 	static void CorrectPosition(springai::AIFloat3& position);
-	static int terrainWidth;
-	static int terrainHeight;
+	static springai::AIFloat3 CorrectPosition(const springai::AIFloat3& pos, const springai::AIFloat3& dir, float& len);
 
 	static inline bool IsNotInBounds(const springai::AIFloat3& pos) {
 		return (pos.x < -BOUND_EXT) || (pos.z < -BOUND_EXT) || (pos.x > boundX) || (pos.z > boundZ) || (pos == ZeroVector);
@@ -209,23 +217,20 @@ private:
 
 // ---- Threaded areas updater ---- BEGIN
 private:
-	void CheckHeightMap();
+	void EnqueueUpdate();
 	void UpdateAreas();
 	void ScheduleUsersUpdate();
 public:
-	void DidUpdateAreaUsers();
+	void OnAreaUsersUpdated();
 	SAreaData* GetNextAreaData() {
 		return (pAreaData.load() == &areaData0) ? &areaData1 : &areaData0;
 	}
 
 private:
-	static springai::Map* map;
+	static CMap* map;
 	std::shared_ptr<CScheduler> scheduler;
 	CGameAttribute* gameAttribute;
-	std::vector<float> heightMap0;
-	std::vector<float> heightMap1;
-	std::atomic<std::vector<float>*> pHeightMap;
-	std::vector<float> slopeMap;
+	FloatVec slopeMap;
 	bool isUpdating;
 	int aiToUpdate;
 // ---- Threaded areas updater ---- END

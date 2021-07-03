@@ -3,11 +3,10 @@
  *
  *  Created on: Apr 29, 2015
  *      Author: rlcevg
- *      Original implementation by Anarchid: https://github.com/Anarchid/zkgbai/blob/master/src/zkgbai/graph/Link.java
  */
 
 #include "resource/EnergyLink.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include <queue>
 
@@ -16,22 +15,21 @@ namespace circuit {
 using namespace springai;
 
 CEnergyLink::CEnergyLink(int idx0, const AIFloat3& P0, int idx1, const AIFloat3& P1)
-		: v0(new SVertex(idx0, P0))
-		, v1(new SVertex(idx1, P1))
-		, isBeingBuilt(false)
-		, isFinished(false)
-		, isValid(true)
+		: IGridLink()
+		, source(new SVertex(idx0, P0))
+		, target(new SVertex(idx1, P1))
+		, invDistance(1.f / P0.distance2D(P1))
+		, costMod(1.f)
 {
 }
 
 CEnergyLink::~CEnergyLink()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	for (auto& kv : pylons) {
 		delete kv.second;
 	}
-	delete v0;
-	delete v1;
+	delete source;
+	delete target;
 }
 
 void CEnergyLink::AddPylon(ICoreUnit::Id unitId, const AIFloat3& pos, float range)
@@ -45,7 +43,7 @@ void CEnergyLink::AddPylon(ICoreUnit::Id unitId, const AIFloat3& pos, float rang
 	for (auto& kv : pylons) {
 		SPylon* pylon1 = kv.second;
 		float dist = range + pylon1->range;
-		if (pos.SqDistance2D(pylon1->pos) < dist * dist) {
+		if (pos.SqDistance2D(pylon1->pos) < SQUARE(dist)) {
 			pylon0->neighbors.insert(pylon1);
 			pylon1->neighbors.insert(pylon0);
 		}
@@ -53,12 +51,13 @@ void CEnergyLink::AddPylon(ICoreUnit::Id unitId, const AIFloat3& pos, float rang
 
 	pylons[unitId] = pylon0;
 
-	float sqRange = range * range;
-	if (v0->pos.SqDistance2D(pos) < sqRange) {
-		v0->pylons.insert(pylon0);
+	if (source->pylon.pos.SqDistance2D(pos) < SQUARE(range)) {
+		source->pylon.neighbors.insert(pylon0);
+		pylon0->neighbors.insert(&source->pylon);
 	}
-	if (v1->pos.SqDistance2D(pos) < sqRange) {
-		v1->pylons.insert(pylon0);
+	if (target->pylon.pos.SqDistance2D(pos) < SQUARE(range)) {
+		target->pylon.neighbors.insert(pylon0);
+		pylon0->neighbors.insert(&target->pylon);
 	}
 }
 
@@ -73,8 +72,8 @@ bool CEnergyLink::RemovePylon(ICoreUnit::Id unitId)
 	for (SPylon* pylon1 : pylon0->neighbors) {
 		pylon1->neighbors.erase(pylon0);
 	}
-	v0->pylons.erase(pylon0);
-	v1->pylons.erase(pylon0);
+	source->pylon.neighbors.erase(pylon0);
+	target->pylon.neighbors.erase(pylon0);
 	delete pylon0;
 
 	return it != pylons.erase(it);
@@ -82,26 +81,32 @@ bool CEnergyLink::RemovePylon(ICoreUnit::Id unitId)
 
 void CEnergyLink::CheckConnection()
 {
-	int i = 0;
+	SPylon* sourceHead = nullptr;
+	SPylon* targetHead = nullptr;
+	float minDist = std::numeric_limits<float>::max();
+
 	std::set<SPylon*> visited;
 	std::queue<SPylon*> queue;
 
-	for (SPylon* p : v0->pylons) {
+	for (SPylon* p : source->pylon.neighbors) {
 		queue.push(p);
 	}
+	AIFloat3 P1 = target->pylon.pos;
 
+	// depth-first search
 	while (!queue.empty()) {
 		SPylon* q = queue.front();
 		queue.pop();
-		float dist = q->range;
-		if (v1->pos.SqDistance2D(q->pos) < dist * dist) {
+		if (q == &target->pylon) {
 			isFinished = true;
+			costMod = MIN_COSTMOD;
 			return;
 		}
 
-		if (i++ > 1000) {
-			isValid = false;
-			break;
+		float dist = P1.distance2D(q->pos) - q->range;
+		if (dist < minDist) {
+			minDist = dist;
+			sourceHead = q;
 		}
 
 		visited.insert(q);
@@ -112,28 +117,18 @@ void CEnergyLink::CheckConnection()
 		}
 	}
 
-	isFinished = false;
-}
-
-void CEnergyLink::SetStartVertex(int index)
-{
-	if (index != v0->index) {
-		std::swap(v0, v1);
+	if (sourceHead == nullptr) {
+		sourceHead = &source->pylon;
 	}
-}
+	source->head = sourceHead;
 
-CEnergyLink::SPylon* CEnergyLink::GetConnectionHead(SVertex* v0, const AIFloat3& P1)
-{
-	SPylon* winner = nullptr;
-	float minDist = std::numeric_limits<float>::max();
+	minDist = std::numeric_limits<float>::max();
+	visited.clear();
 
-	int i = 0;
-	std::set<SPylon*> visited;
-	std::queue<SPylon*> queue;
-
-	for (SPylon* p : v0->pylons) {
+	for (SPylon* p : target->pylon.neighbors) {
 		queue.push(p);
 	}
+	P1 = sourceHead->pos;
 
 	while (!queue.empty()) {
 		SPylon* q = queue.front();
@@ -141,12 +136,7 @@ CEnergyLink::SPylon* CEnergyLink::GetConnectionHead(SVertex* v0, const AIFloat3&
 		float dist = P1.distance2D(q->pos) - q->range;
 		if (dist < minDist) {
 			minDist = dist;
-			winner = q;
-		}
-
-		if (i++ > 1000) {
-			isValid = false;
-			return winner;
+			targetHead = q;
 		}
 
 		visited.insert(q);
@@ -157,7 +147,21 @@ CEnergyLink::SPylon* CEnergyLink::GetConnectionHead(SVertex* v0, const AIFloat3&
 		}
 	}
 
-	return winner;
+	if (targetHead == nullptr) {
+		targetHead = &target->pylon;
+	}
+	target->head = targetHead;
+
+	const float dist = sourceHead->pos.distance2D(targetHead->pos) - sourceHead->range - targetHead->range;
+	costMod = std::max(dist * invDistance, MIN_COSTMOD);
+	isFinished = false;
+}
+
+void CEnergyLink::SetSource(int index)
+{
+	if (index != source->index) {
+		std::swap(source, target);
+	}
 }
 
 } // namespace circuit

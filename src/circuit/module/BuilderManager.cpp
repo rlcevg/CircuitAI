@@ -9,11 +9,14 @@
 #include "module/EconomyManager.h"
 #include "module/MilitaryManager.h"
 #include "module/FactoryManager.h"
+#include "map/InfluenceMap.h"
+#include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
+#include "script/BuilderScript.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryCostMap.h"
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
@@ -34,10 +37,11 @@
 #include "task/builder/ReclaimTask.h"
 #include "task/builder/PatrolTask.h"
 #include "task/builder/GuardTask.h"
+#include "task/builder/CombatTask.h"
 #include "task/builder/BuildChain.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
 #include "Command.h"
@@ -48,7 +52,7 @@ namespace circuit {
 using namespace springai;
 
 CBuilderManager::CBuilderManager(CCircuitAI* circuit)
-		: IUnitModule(circuit)
+		: IUnitModule(circuit, new CBuilderScript(circuit->GetScriptManager(), this))
 		, buildTasksCount(0)
 		, buildPower(.0f)
 		, buildIterator(0)
@@ -78,6 +82,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		workers.insert(unit);
 
 		AddBuildList(unit);
+
+		if (workers.size() < 3 && !unit->GetCircuitDef()->IsAttacker()) {
+			this->circuit->GetMilitaryManager()->AddGuardTask(unit);
+		}
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
 		// FIXME: Avoid instant task reassignment, its only valid on build order fail.
@@ -87,10 +95,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			unit->GetTask()->OnUnitIdle(unit);
 		}
 	};
-	auto workerDamagedHandler = [](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto workerDamagedHandler = [](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
-	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto workerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
@@ -102,17 +110,20 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		DelBuildPower(unit);
 		workers.erase(unit);
+		costQueries.erase(unit);
 
 		RemoveBuildList(unit);
+
+		this->circuit->GetMilitaryManager()->DelGuardTask(unit);
 	};
 
 	/*
 	 * building handlers
 	 */
-	auto buildingDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto buildingDamagedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
 	};
-	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
 		int facing = unit->GetUnit()->GetBuildingFacing();
 		this->circuit->GetTerrainManager()->DelBlocker(unit->GetCircuitDef(), unit->GetPos(frame), facing);
@@ -122,41 +133,39 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	 * heavy handlers
 	 */
 //	auto heavyCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
-//		CEconomyManager* economyManager = this->circuit->GetEconomyManager();
-//		if (economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() > 32.0f) {
+//		CEconomyManager* economyMgr = this->circuit->GetEconomyManager();
+//		if (economyMgr->GetAvgMetalIncome() * economyMgr->GetEcoFactor() > 32.0f) {
 //			TRY_UNIT(this->circuit, unit,
-//				unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {2.0f});
-////				EnqueueRepair(IBuilderTask::Priority::LOW, unit);
+//				unit->CmdPriority(2);
 //			)
+////			EnqueueRepair(IBuilderTask::Priority::LOW, unit);
 //		}
 //	};
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const float builderRet = root["retreat"].get("builder", 0.8f).asFloat();
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
-	for (auto& kv : allDefs) {
-		CCircuitDef::Id unitDefId = kv.first;
-		CCircuitDef* cdef = kv.second;
-		if (cdef->IsMobile()) {
-			if (cdef->GetUnitDef()->IsBuilder() && !cdef->GetBuildOptions().empty()) {
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		CCircuitDef::Id unitDefId = cdef.GetId();
+		if (cdef.IsMobile()) {
+			if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty()) {
 				createdHandler[unitDefId]   = workerCreatedHandler;
 				finishedHandler[unitDefId]  = workerFinishedHandler;
 				idleHandler[unitDefId]      = workerIdleHandler;
 				damagedHandler[unitDefId]   = workerDamagedHandler;
 				destroyedHandler[unitDefId] = workerDestroyedHandler;
 
-				int mtId = terrainManager->GetMobileTypeId(unitDefId);
+				int mtId = terrainMgr->GetMobileTypeId(unitDefId);
 				if (mtId >= 0) {  // not air
 					workerMobileTypes.insert(mtId);
 				}
-				workerDefs.insert(cdef);
+				workerDefs.insert(&cdef);
 
-				if (cdef->GetRetreat() < 0.f) {
-					cdef->SetRetreat(builderRet);
+				if (cdef.GetRetreat() < 0.f) {
+					cdef.SetRetreat(builderRet);
 				}
-//			} else if (cdef->GetCost() > 999.0f) {
+//			} else if (cdef->GetCostM() > 999.0f) {
 //				createdHandler[unitDefId] = heavyCreatedHandler;
 			}
 		} else {
@@ -166,12 +175,14 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	}
 
 	/*
-	 * cormex handlers; forbid from removing blocker
+	 * staticmex handlers;
 	 */
 	CCircuitDef::Id unitDefId = circuit->GetEconomyManager()->GetMexDef()->GetId();
-	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	destroyedHandler[unitDefId] = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
 		CCircuitDef* mexDef = unit->GetCircuitDef();
+		const int facing = unit->GetUnit()->GetBuildingFacing();
+		this->circuit->GetTerrainManager()->DelBlocker(mexDef, pos, facing);
 		int index = this->circuit->GetMetalManager()->FindNearestSpot(pos);
 		if (index < 0) {
 			return;
@@ -198,7 +209,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	buildTasks.resize(static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::_SIZE_));
 
 	for (auto mtId : workerMobileTypes) {
-		for (auto& area : terrainManager->GetMobileTypeById(mtId)->area) {
+		for (auto& area : terrainMgr->GetMobileTypeById(mtId)->area) {
 			buildAreas[&area] = std::map<CCircuitDef*, int>();
 		}
 	}
@@ -207,8 +218,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 CBuilderManager::~CBuilderManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	utils::free_clear(buildUpdates);
+	for (IUnitTask* task : buildUpdates) {
+		task->ClearRelease();
+	}
 	for (auto& kv1 : buildChains) {
 		for (auto& kv2 : kv1.second) {
 			delete kv2.second;
@@ -226,7 +238,7 @@ void CBuilderManager::ReadConfig()
 		terraDef = circuit->GetEconomyManager()->GetDefaultDef();
 	}
 
-	const Json::Value& cond = root["porcupine"]["condition"];
+	const Json::Value& cond = root["porcupine"]["superweapon"]["condition"];
 	super.minIncome = cond.get((unsigned)0, 50.f).asFloat();
 	super.maxTime = cond.get((unsigned)1, 300.f).asFloat();
 
@@ -281,7 +293,7 @@ void CBuilderManager::ReadConfig()
 					}
 					bi.buildType = it->second;
 
-					UnitDef* unitDef = cdef->GetUnitDef();
+					UnitDef* unitDef = cdef->GetDef();
 					bi.offset = ZeroVector;
 					bi.direction = SBuildInfo::Direction::NONE;
 					const Json::Value& off = part["offset"];
@@ -350,7 +362,7 @@ void CBuilderManager::Init()
 		const int interval = 8;
 		const int offset = circuit->GetSkirmishAIId() % interval;
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), interval, offset + 1);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::UpdateBuild, this), 1/*interval*/, offset + 1);
 
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CBuilderManager::Watchdog, this),
 								FRAMES_PER_SEC * 60,
@@ -368,6 +380,9 @@ void CBuilderManager::Release()
 		AbortTask(task);
 		// NOTE: Do not delete task as other AbortTask may ask for it
 	}
+	for (IUnitTask* task : buildUpdates) {
+		task->ClearRelease();
+	}
 	buildUpdates.clear();
 }
 
@@ -379,11 +394,11 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 	}
 
 	if (builder == nullptr) {
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		if (!unit->GetCircuitDef()->IsMobile() && !terrainManager->ResignAllyBuilding(unit)) {
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+		if (!unit->GetCircuitDef()->IsMobile() && !terrainMgr->ResignAllyBuilding(unit)) {
 			// enemy unit captured
 			const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-			terrainManager->AddBlocker(unit->GetCircuitDef(), pos, unit->GetUnit()->GetBuildingFacing());
+			terrainMgr->AddBlocker(unit->GetCircuitDef(), pos, unit->GetUnit()->GetBuildingFacing());
 		}
 		return 0; //signaling: OK
 	}
@@ -399,12 +414,22 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 		//       Real example: unit starts building, but hlt kills structure right away. UnitDestroyed invoked and new task assigned to unit.
 		//       But for some engine-bugged reason unit is not idle and retries same building. UnitCreated invoked for new task with wrong target.
 		//       Next workaround unfortunately doesn't mark bugged building on blocking map.
-		// TODO: Create additional task to build/reclaim lost unit
 		if ((taskB->GetTarget() == nullptr) && (taskB->GetBuildDef() != nullptr) &&
 			(*taskB->GetBuildDef() == *unit->GetCircuitDef()) && taskB->IsEqualBuildPos(unit))
 		{
+			// FIXME: DEBUG
+//			AIFloat3 bp = taskB->GetBuildPos();
+//			circuit->GetDrawer()->AddPoint(bp, "bp");
+//			circuit->LOG("bp = %f, %f", bp.x, bp.z);
+//			AIFloat3 up = unit->GetPos(circuit->GetLastFrame());
+//			circuit->GetDrawer()->AddPoint(up, "up");
+//			circuit->LOG("up = %f, %f", up.x, up.z);
+			// FIXME: DEBUG
 			taskB->UpdateTarget(unit);
 			unfinishedUnits[unit] = taskB;
+		} else {
+			// reclaim lost unit
+			AssignTask(builder, EnqueueReclaim(IBuilderTask::Priority::HIGH, unit));
 		}
 	} else {
 		DoneTask(taskB);
@@ -446,7 +471,7 @@ int CBuilderManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != damagedHandler.end()) {
@@ -456,7 +481,7 @@ int CBuilderManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0; //signaling: OK
 }
 
-int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CBuilderManager::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto iter = unfinishedUnits.find(unit);
 	if (iter != unfinishedUnits.end()) {
@@ -527,7 +552,7 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 										   bool isActive,
 										   int timeout)
 {
-	float cost = buildDef->GetCost();
+	float cost = buildDef->GetCostM();
 	return AddTask(priority, buildDef, position, type, cost, shake, isActive, timeout);
 }
 
@@ -539,7 +564,7 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 											  bool isActive,
 											  int timeout)
 {
-	const float cost = isPlop ? 1.f : buildDef->GetCost();
+	const float cost = isPlop ? 1.f : buildDef->GetCostM();
 	IBuilderTask* task = new CBFactoryTask(this, priority, buildDef, position, cost, shake, isPlop, timeout);
 	if (isActive) {
 		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::FACTORY)].insert(task);
@@ -554,7 +579,7 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 											CCircuitDef* buildDef,
 											const AIFloat3& position,
-											CEnergyLink* link,
+											IGridLink* link,
 											float cost,
 											bool isActive,
 											int timeout)
@@ -672,6 +697,13 @@ CRetreatTask* CBuilderManager::EnqueueRetreat()
 	return task;
 }
 
+CCombatTask* CBuilderManager::EnqueueCombat(float powerMod)
+{
+	CCombatTask* task = new CCombatTask(this, powerMod);
+	buildUpdates.push_back(task);
+	return task;
+}
+
 IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 									   CCircuitDef* buildDef,
 									   const AIFloat3& position,
@@ -732,41 +764,49 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	return task;
 }
 
-void CBuilderManager::DequeueTask(IBuilderTask* task, bool done)
+void CBuilderManager::DequeueTask(IUnitTask* task, bool done)
 {
-	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::_SIZE_)) {
-		std::set<IBuilderTask*>& tasks = buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())];
-		auto it = tasks.find(task);
-		if (it != tasks.end()) {
-			switch (task->GetBuildType()) {
+	switch (task->GetType()) {
+		case IUnitTask::Type::BUILDER: {
+			IBuilderTask* taskB = static_cast<IBuilderTask*>(task);
+			if (taskB->GetBuildType() >= IBuilderTask::BuildType::_SIZE_) {
+				break;
+			}
+			std::set<IBuilderTask*>& tasks = buildTasks[static_cast<IBuilderTask::BT>(taskB->GetBuildType())];
+			auto it = tasks.find(taskB);
+			if (it == tasks.end()) {
+				break;
+			}
+			switch (taskB->GetBuildType()) {
 				case IBuilderTask::BuildType::REPAIR: {
-					repairedUnits.erase(static_cast<CBRepairTask*>(task)->GetTargetId());
+					repairedUnits.erase(static_cast<CBRepairTask*>(taskB)->GetTargetId());
 				} break;
 				case IBuilderTask::BuildType::RECLAIM: {
-					reclaimedUnits.erase(task->GetTarget());
+					reclaimedUnits.erase(taskB->GetTarget());
 				} break;
 				default: {
-					unfinishedUnits.erase(task->GetTarget());
+					unfinishedUnits.erase(taskB->GetTarget());
 				} break;
 			}
 			tasks.erase(it);
 			buildTasksCount--;
-		}
+		} break;
+		default: break;
 	}
 	task->Dead();
-	task->Close(done);
+	task->Stop(done);
 }
 
-bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position)
+bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position) const
 {
 	if (!utils::is_valid(position)) {  // any-area task
 		return true;
 	}
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	for (auto& kv : buildAreas) {
 		for (auto& kvw : kv.second) {
 			if ((kvw.second > 0) && kvw.first->CanBuild(buildDef) &&
-				terrainManager->CanMobileBuildAt(kv.first, kvw.first, position))
+				terrainMgr->CanMobileReachAt(kv.first, position, kvw.first->GetBuildDistance()))
 			{
 				return true;
 			}
@@ -777,45 +817,29 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
-	const CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsRoleComm()) {  // hide commander?
-		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
-		if (hide != nullptr) {
-			if ((circuit->GetLastFrame() < hide->frame) || (GetWorkerCount() <= 2)) {
-				return MakeBuilderTask(unit);
-			}
-			CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
-			if (militaryManager->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
-				return MakeCommTask(unit);
-			}
-			const bool isHide = (hide->isAir) && (militaryManager->GetEnemyCost(CCircuitDef::RoleType::AIR) > 1.f);
-			return isHide ? MakeCommTask(unit) : MakeBuilderTask(unit);
-		}
-	}
-
-	return MakeBuilderTask(unit);
+	return static_cast<CBuilderScript*>(script)->MakeTask(unit);  // DefaultMakeTask
 }
 
 void CBuilderManager::AbortTask(IUnitTask* task)
 {
 	// NOTE: Don't send Stop command, save some traffic.
-	DequeueTask(static_cast<IBuilderTask*>(task), false);
+	DequeueTask(task, false);
 }
 
 void CBuilderManager::DoneTask(IUnitTask* task)
 {
-	DequeueTask(static_cast<IBuilderTask*>(task), true);
+	DequeueTask(task, true);
 }
 
 void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 {
-	DequeueTask(static_cast<IBuilderTask*>(unit->GetTask()));
+	DequeueTask(unit->GetTask());
 
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
 	task->AssignTo(unit);
-	task->Execute(unit);
+	task->Start(unit);
 }
 
 SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef)
@@ -831,30 +855,83 @@ SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, C
 	return it2->second;
 }
 
-IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
+IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 {
-	circuit->GetThreatMap()->SetThreatType(unit);
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& pos = unit->GetPos(frame);
+
+	const CCircuitDef* cdef = unit->GetCircuitDef();
+	if ((cdef->GetPower() > THREAT_MIN)
+		&& (pos.SqDistance2D(circuit->GetSetupManager()->GetBasePos()) < SQUARE(circuit->GetMilitaryManager()->GetBaseDefRange()))
+		&& circuit->GetEnemyManager()->IsEnemyNear(pos, threatMap->GetUnitThreat(unit) * 1.5f))
+	{
+		return EnqueueCombat(1.5f);
+	}
+
+	const auto it = costQueries.find(unit);
+	std::shared_ptr<IPathQuery> query = (it == costQueries.end()) ? nullptr : it->second;
+	if ((query != nullptr) && (query->GetState() != IPathQuery::State::READY)) {  // not ready
+		return nullptr;
+	}
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, threatMap, frame, pos);
+	costQueries[unit] = q;
+	pathfinder->RunQuery(q);
+
+	if (query == nullptr) {
+		return EnqueueWait(FRAMES_PER_SEC);  // 1st run
+	}
+
+	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
+
+	if (cdef->IsRoleComm()) {  // hide commander?
+		CEnemyManager* enemyMgr = circuit->GetEnemyManager();
+		const CSetupManager::SCommInfo::SHide* hide = circuit->GetSetupManager()->GetHide(cdef);
+		if (hide != nullptr) {
+			if ((frame < hide->frame) || (GetWorkerCount() <= 2)) {
+				return MakeBuilderTask(unit, pQuery.get());
+			}
+			if (enemyMgr->GetMobileThreat() / circuit->GetAllyTeam()->GetAliveSize() >= hide->threat) {
+				return MakeCommTask(unit, pQuery.get(), hide->sqTaskRad);
+			}
+			const bool isHide = (hide->isAir) && (enemyMgr->GetEnemyCost(ROLE_TYPE(AIR)) > 1.f);
+			return isHide ? MakeCommTask(unit, pQuery.get(), hide->sqTaskRad) : MakeBuilderTask(unit, pQuery.get());
+		}
+	}
+
+	return MakeBuilderTask(unit, pQuery.get());
+}
+
+IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange)
+{
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
 	const int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
 
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	economyManager->MakeEconomyTasks(pos, unit);
-	const bool isNotReady = !economyManager->IsExcessed();
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	economyMgr->MakeEconomyTasks(pos, unit);
+	const bool isNotReady = !economyMgr->IsExcessed();
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	CTerrainManager::CorrectPosition(pos);
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
+
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit) ||
-				(isNotReady && (candidate->GetBuildDef() != nullptr) && (candidate->GetPriority() != IBuilderTask::Priority::NOW)))
+			if (!candidate->CanAssignTo(unit)
+				|| (isNotReady
+					&& (candidate->GetBuildDef() != nullptr)
+					&& (candidate->GetPriority() != IBuilderTask::Priority::NOW)))
 			{
 				continue;
 			}
@@ -863,30 +940,34 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 			const AIFloat3& bp = candidate->GetPosition();
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
 
-			float distCost;
 			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
 				// Disregard safety
-				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
+				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())) {  // ensure that path always exists
 					continue;
 				}
-
-				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
 
 			} else {
 
-				if ((basePos.SqDistance2D(buildPos) > SQUARE(2000.f)) ||  // FIXME: Make max distance configurable
-					!terrainManager->CanBuildAtSafe(unit, buildPos))  // ensure that path always exists
+				if ((basePos.SqDistance2D(buildPos) > sqMaxBaseRange)
+					|| !terrainMgr->CanReachAtSafe(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
+					|| (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS))  // safety check
 				{
-					continue;
-				}
-
-				distCost = pathfinder->PathCostDirect(pos, buildPos, buildDistance);
-				if (distCost < 0.0f) {
 					continue;
 				}
 			}
 
-			distCost = std::max(distCost, THREAT_BASE);
+			float distCost;
+			const float rawDist = pos.SqDistance2D(buildPos);
+			if (rawDist < buildDistance) {
+				distCost = rawDist / pathfinder->GetSquareSize() * COST_BASE;
+			} else {
+				distCost = query->GetCostAt(buildPos, buildDistance);
+				if (distCost < 0.f) {  // path blocked by buildings
+					continue;
+				}
+			}
+
+			distCost = std::max(distCost, COST_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / SQUARE(weight);
@@ -917,17 +998,14 @@ IBuilderTask* CBuilderManager::MakeCommTask(CCircuitUnit* unit)
 		if (vip != nullptr) {
 			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 60);
 		} else {
-			CCircuitDef* buildDef = circuit->GetMilitaryManager()->GetDefaultPorc();
-			if ((buildDef != nullptr) && buildDef->IsAvailable(frame)) {
-				task = EnqueueTask(IBuilderTask::Priority::HIGH, buildDef, pos, IBuilderTask::BuildType::DEFENCE);
-			}
+			task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
 		}
 	}
 
 	return const_cast<IBuilderTask*>(task);
 }
 
-IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
+IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryCostMap* query)
 {
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
@@ -935,31 +1013,33 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	AIFloat3 pos = unit->GetPos(frame);
 
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	task = economyManager->MakeEconomyTasks(pos, unit);
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	task = economyMgr->MakeEconomyTasks(pos, unit);
 //	if (task != nullptr) {
 //		return task;
 //	}
-	const bool isStalling = economyManager->IsMetalEmpty() &&
-							(economyManager->GetAvgMetalIncome() * 1.2f < economyManager->GetMetalPull()) &&
-							(metalPull > economyManager->GetPullMtoS() * circuit->GetFactoryManager()->GetMetalPull());
-	const bool isNotReady = !economyManager->IsExcessed() || isStalling;
+	const bool isStalling = economyMgr->IsMetalEmpty() &&
+							(economyMgr->GetAvgMetalIncome() * 1.2f < economyMgr->GetMetalPull()) &&
+							(metalPull > economyMgr->GetPullMtoS() * circuit->GetFactoryManager()->GetMetalPull());
+	const bool isNotReady = !economyMgr->IsExcessed() || isStalling;
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	CTerrainManager::CorrectPosition(pos);
-	pathfinder->SetMapData(unit, threatMap, frame);
+
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * THREAT_BASE;
+	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const float maxThreat = threatMap->GetUnitThreat(unit);
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
-			if (!candidate->CanAssignTo(unit) || (isNotReady &&
-												  (candidate->GetPriority() != IBuilderTask::Priority::NOW) &&
-												  (candidate->GetBuildDef() != nullptr) &&
-												  !economyManager->IsIgnoreStallingPull(candidate)))
+			if (!candidate->CanAssignTo(unit)
+				|| (isNotReady
+					&& (candidate->GetPriority() != IBuilderTask::Priority::NOW)
+					&& (candidate->GetBuildDef() != nullptr)
+					&& !economyMgr->IsIgnoreStallingPull(candidate)))
 			{
 				continue;
 			}
@@ -968,33 +1048,36 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 			const AIFloat3& bp = candidate->GetPosition();
 			AIFloat3 buildPos = utils::is_valid(bp) ? bp : pos;
 
-			float distCost;
-			if (candidate->GetPriority() >= IBuilderTask::Priority::HIGH) {
+			if (candidate->GetPriority() == IBuilderTask::Priority::NOW) {
 				// Disregard safety
-				if (!terrainManager->CanBuildAt(unit, buildPos)) {  // ensure that path always exists
+				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())) {  // ensure that path always exists
 					continue;
 				}
-
-				distCost = pathfinder->PathCost(pos, buildPos, buildDistance);
 
 			} else {
 
 				CCircuitDef* buildDef = candidate->GetBuildDef();
 				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
-				if ((threatMap->GetThreatAt(buildPos) > maxThreat + buildThreat) ||
-					!terrainManager->CanBuildAt(unit, buildPos))  // ensure that path always exists
+				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
+					|| (((buildThreat < THREAT_MIN) && (threatMap->GetThreatAt(buildPos) > maxThreat))
+						&& (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS)))  // safety check
 				{
-					continue;
-				}
-
-				// FIXME: Lags on large maps
-				distCost = pathfinder->PathCostDirect(pos, buildPos, buildDistance);
-				if (distCost < 0.0f) {
 					continue;
 				}
 			}
 
-			distCost = std::max(distCost, THREAT_BASE);
+			float distCost;
+			const float rawDist = pos.SqDistance2D(buildPos);
+			if (rawDist < buildDistance) {
+				distCost = rawDist / pathfinder->GetSquareSize() * COST_BASE;
+			} else {
+				distCost = query->GetCostAt(buildPos, buildDistance);
+				if (distCost < 0.f) {  // path blocked by buildings
+					continue;
+				}
+			}
+
+			distCost = std::max(distCost, COST_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / SQUARE(weight);
@@ -1033,36 +1116,36 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCircuitUnit* unit)
 {
-	CEconomyManager* em = circuit->GetEconomyManager();
-	IBuilderTask* task = em->UpdateEnergyTasks(position, unit);
+	CEconomyManager* ecoMgr = circuit->GetEconomyManager();
+	IBuilderTask* task = ecoMgr->UpdateEnergyTasks(position, unit);
 	if (task != nullptr) {
 		return task;
 	}
-	task = em->UpdateReclaimTasks(position, unit, false);
+	task = ecoMgr->UpdateReclaimTasks(position, unit, false);
 //	if (task != nullptr) {
 //		return task;
 //	}
 
 	// FIXME: Eco rules. It should never get here
 	CCircuitDef* buildDef/* = nullptr*/;
-	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
+	const float metalIncome = std::min(ecoMgr->GetAvgMetalIncome(), ecoMgr->GetAvgEnergyIncome()) * ecoMgr->GetEcoFactor();
 	if (metalIncome < super.minIncome) {
 		float energyMake;
-		buildDef = em->GetLowEnergy(position, energyMake);
+		buildDef = ecoMgr->GetLowEnergy(position, energyMake);
 		if (buildDef == nullptr) {  // position can be in danger
-			buildDef = em->GetDefaultDef();
+			buildDef = ecoMgr->GetDefaultDef();
 		}
-		if ((buildDef->GetCount() < 10) && buildDef->IsAvailable(circuit->GetLastFrame())) {
+		if ((buildDef != nullptr) && (buildDef->GetCount() < 10) && buildDef->IsAvailable(circuit->GetLastFrame())) {
 			return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, position, IBuilderTask::BuildType::ENERGY);
 		}
 	} else {
-		CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
-		buildDef = militaryManager->GetBigGunDef();
-		if ((buildDef != nullptr) && (buildDef->GetCost() < super.maxTime * metalIncome)) {
+		CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
+		buildDef = militaryMgr->GetBigGunDef();
+		if ((buildDef != nullptr) && (buildDef->GetCostM() < super.maxTime * metalIncome)) {
 			const std::set<IBuilderTask*>& tasks = GetTasks(IBuilderTask::BuildType::BIG_GUN);
 			if (tasks.empty()) {
-				if (buildDef->IsAvailable(circuit->GetLastFrame()) && militaryManager->IsNeedBigGun(buildDef)) {
-					AIFloat3 pos = militaryManager->GetBigGunPos(buildDef);
+				if (buildDef->IsAvailable(circuit->GetLastFrame()) && militaryMgr->IsNeedBigGun(buildDef)) {
+					AIFloat3 pos = militaryMgr->GetBigGunPos(buildDef);
 					return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, pos,
 									   IBuilderTask::BuildType::BIG_GUN);
 				}
@@ -1125,17 +1208,16 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit)
 
 void CBuilderManager::Watchdog()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
-	CEconomyManager* economyManager = circuit->GetEconomyManager();
-	Resource* metalRes = economyManager->GetMetalRes();
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	Resource* metalRes = economyMgr->GetMetalRes();
 	// somehow workers get stuck
 	for (CCircuitUnit* worker : workers) {
 		if (worker->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			continue;
 		}
 		Unit* u = worker->GetUnit();
-		auto commands = std::move(u->GetCurrentCommands());
+		auto commands = u->GetCurrentCommands();
 		// TODO: Ignore workers with idle and wait task? (.. && worker->GetTask()->IsBusy())
 		if (commands.empty() && (u->GetResourceUse(metalRes) == .0f) && (u->GetVel() == ZeroVector)) {
 			worker->GetTask()->OnUnitMoveFailed(worker);
@@ -1144,7 +1226,7 @@ void CBuilderManager::Watchdog()
 	}
 
 	// find unfinished abandoned buildings
-	float maxCost = MAX_BUILD_SEC * std::min(economyManager->GetAvgMetalIncome(), buildPower) * economyManager->GetEcoFactor();
+	float maxCost = MAX_BUILD_SEC * std::min(economyMgr->GetAvgMetalIncome(), buildPower) * economyMgr->GetEcoFactor();
 	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
@@ -1192,7 +1274,7 @@ void CBuilderManager::UpdateBuild()
 		if (task->IsDead()) {
 			buildUpdates[buildIterator] = buildUpdates.back();
 			buildUpdates.pop_back();
-			delete task;
+			task->ClearRelease();  // delete task;
 		} else {
 			int frame = task->GetLastTouched();
 			int timeout = task->GetTimeout();
@@ -1209,10 +1291,10 @@ void CBuilderManager::UpdateBuild()
 
 void CBuilderManager::UpdateAreaUsers()
 {
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	buildAreas.clear();
 	for (auto mtId : workerMobileTypes) {
-		for (auto& area : terrainManager->GetMobileTypeById(mtId)->area) {
+		for (auto& area : terrainMgr->GetMobileTypeById(mtId)->area) {
 			buildAreas[&area] = std::map<CCircuitDef*, int>();
 		}
 	}

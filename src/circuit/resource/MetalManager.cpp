@@ -6,18 +6,19 @@
  */
 
 #include "resource/MetalManager.h"
+#include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
+
+#include "spring/SpringMap.h"
 
 #include "Game.h"
 #include "MoveData.h"
 #include "Pathing.h"
-#include "Map.h"
 
 namespace circuit {
 
@@ -30,7 +31,7 @@ public:
 		, clusters(cs)
 	{}
 	Value operator[](Key k) const {
-		return (*this)[CMetalData::Graph::id(k)];
+		return (*this)[CMetalData::ClusterGraph::id(k)];
 	}
 	Value operator[](int u) const {
 		return threatMap->GetThreatAt(clusters[u].position) <= THREAT_MIN;
@@ -47,8 +48,8 @@ public:
 		, predicate(pred)
 		, indices(outIdxs)
 	{}
-	bool operator[](Key k) const {
-		const int u = CMetalData::Graph::id(k);
+	Value operator[](Key k) const {
+		const int u = CMetalData::ClusterGraph::id(k);
 		if (manager->IsClusterQueued(u) || manager->IsClusterFinished(u)) {
 			return false;
 		}
@@ -84,8 +85,6 @@ CMetalManager::CMetalManager(CCircuitAI* circuit, CMetalData* metalData)
 
 CMetalManager::~CMetalManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-
 	delete threatFilter;
 	delete filteredGraph;
 	delete shortPath;
@@ -101,8 +100,8 @@ void CMetalManager::Init()
 	}
 
 	threatFilter = new SafeCluster(circuit->GetThreatMap(), GetClusters());
-	filteredGraph = new ClusterGraph(GetGraph(), *threatFilter);
-	shortPath = new ShortPath(*filteredGraph, GetWeights());
+	filteredGraph = new ClusterGraph(GetClusterGraph(), *threatFilter);
+	shortPath = new ShortPath(*filteredGraph, GetClusterEdgeCosts());
 }
 
 void CMetalManager::ParseMetalSpots()
@@ -113,9 +112,10 @@ void CMetalManager::ParseMetalSpots()
 	int mexCount = game->GetRulesParamFloat("mex_count", -1);
 	if (mexCount <= 0) {
 		// FIXME: Replace metal-map workaround by own grid-spot generator
-		Map* map = circuit->GetMap();
+		CMap* map = circuit->GetMap();
 		Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
-		auto spotsPos = std::move(map->GetResourceMapSpotsPositions(metalRes));
+		std::vector<AIFloat3> spotsPos;
+		map->GetResourceMapSpotsPositions(metalRes, spotsPos);
 		const unsigned width = map->GetWidth();
 		const unsigned height = map->GetHeight();
 		const float mapSize = (width / 64) * (height / 64);
@@ -132,15 +132,15 @@ void CMetalManager::ParseMetalSpots()
 			spots.reserve(spotsPos.size());
 		}
 		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		const int xsize = mexDef->GetUnitDef()->GetXSize();
-		const int zsize = mexDef->GetUnitDef()->GetZSize();
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+		const int xsize = mexDef->GetDef()->GetXSize();
+		const int zsize = mexDef->GetDef()->GetZSize();
 		for (unsigned i = 0; i < spotsPos.size(); i += inc) {
 			const AIFloat3& pos = spotsPos[i];
 			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
 			const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;
 			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height) &&
-				terrainManager->CanBeBuiltAt(mexDef, pos))
+				terrainMgr->CanBeBuiltAt(mexDef, pos))
 			{
 				const float y = map->GetElevationAt(pos.x, pos.z);
 				spots.push_back({pos.y, AIFloat3(pos.x, y, pos.z)});
@@ -169,17 +169,15 @@ void CMetalManager::ParseMetalSpots()
 
 void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	metalData->SetClusterizing(true);
 
-	const float maxDistance = circuit->GetEconomyManager()->GetPylonRange() * 2;
+	const float maxDistance = circuit->GetEconomyManager()->GetPylonRange() * 1.9f;
 	const CMetalData::Metals& spots = metalData->GetSpots();
 	int nrows = spots.size();
 
-	std::shared_ptr<CRagMatrix> pdistmatrix = std::make_shared<CRagMatrix>(nrows);
-	CRagMatrix& distmatrix = *pdistmatrix;
+	CRagMatrix distmatrix(nrows);
 	if (nrows <= 300) {
-		MoveData* moveData = commDef->GetUnitDef()->GetMoveData();
+		MoveData* moveData = commDef->GetDef()->GetMoveData();
 		int pathType = moveData->GetPathType();
 		delete moveData;
 		Pathing* pathing = circuit->GetPathing();
@@ -202,9 +200,7 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 		}
 	}
 
-	// NOTE: Parallel clusterization was here,
-	//       but bugs appeared: no communication with spring/lua
-	metalData->Clusterize(maxDistance, pdistmatrix);
+	metalData->Clusterize(maxDistance, distmatrix);
 }
 
 void CMetalManager::SetOpenSpot(int index, bool value)
@@ -239,13 +235,12 @@ void CMetalManager::MarkAllyMexes()
 	}
 
 	circuit->UpdateFriendlyUnits();
-	CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
-	const CAllyTeam::Units& friendlies = circuit->GetFriendlyUnits();
+	const CAllyTeam::AllyUnits& friendlies = circuit->GetFriendlyUnits();
 	static std::vector<CAllyUnit*> tmpMexes;  // NOTE: micro-opt
 //	tmpMexes.reserve(friendlies.size());
 	for (auto& kv : friendlies) {
 		CAllyUnit* unit = kv.second;
-		if (*unit->GetCircuitDef() == *mexDef) {
+		if (unit->GetCircuitDef()->IsMex()) {
 			tmpMexes.push_back(unit);
 		}
 	}
@@ -331,7 +326,7 @@ int CMetalManager::GetMexToBuild(const AIFloat3& pos, CMetalData::PointPredicate
 	DetectCluster goal(this, predicate, indices);
 	shortPath->init();
 	shortPath->addSource(filteredGraph->nodeFromId(index));
-	CMetalData::Graph::Node target = shortPath->start(goal);
+	CMetalData::ClusterGraph::Node target = shortPath->start(goal);
 
 	if (target != lemon::INVALID) {
 		float sqMinDist = std::numeric_limits<float>::max();

@@ -6,32 +6,38 @@
  */
 
 #include "CircuitAI.h"
+#include "script/ScriptManager.h"
+#include "script/InitScript.h"
 #include "setup/SetupManager.h"
+#include "map/MapManager.h"
+#include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "module/EconomyManager.h"
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
 #include "task/PlayerTask.h"
 #include "unit/CircuitUnit.h"
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "util/GameAttribute.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #ifdef DEBUG_VIS
+#include "map/InfluenceMap.h"
+#include "map/ThreatMap.h"
 #include "resource/EnergyGrid.h"
-#endif
+#endif  // DEBUG_VIS
+
+#include "spring/SpringCallback.h"
+#include "spring/SpringEngine.h"
+#include "spring/SpringMap.h"
 
 #include "AISEvents.h"
 #include "AISCommands.h"
-#include "SSkirmishAICallback.h"	// "direct" C API
-#include "OOAICallback.h"			// C++ wrapper
 #include "Log.h"
 #include "Game.h"
-#include "Map.h"
 #include "Lua.h"
 #include "Pathing.h"
 #include "Drawer.h"
@@ -53,28 +59,35 @@ namespace circuit {
 
 using namespace springai;
 
-#define ACTION_UPDATE_RATE	128
-#define RELEASE_CONFIG		100
-#define RELEASE_COMMANDER	101
-#define RELEASE_CORRUPTED	102
-#define RELEASE_RESIGN		103
+#define ACTION_UPDATE_RATE	64
+#define RELEASE_RESIGN		100
+#define RELEASE_SIDE		200
+#define RELEASE_CONFIG		201
+#define RELEASE_COMMANDER	202
+#define RELEASE_CORRUPTED	203
 #ifdef DEBUG
 	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
 #else
 	#define PRINT_TOPIC(txt, topic)
 #endif
 
+/*
+ * Эти парни не созданы чувствовать!
+ * Ледяная душа не боится жути!
+ * Только под ногами их крутятся:
+ * По оси земля, по полу полу-люди!
+ */
+constexpr char version[]{"1.2.1"};
+
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
 
-CCircuitAI::CCircuitAI(OOAICallback* callback)
+CCircuitAI::CCircuitAI(OOAICallback* clb)
 		: eventHandler(&CCircuitAI::HandleGameEvent)
 		, economy(nullptr)
 		, metalRes(nullptr)
 		, energyRes(nullptr)
 		, allyTeam(nullptr)
-		, uEnemyMark(0)
-		, kEnemyMark(0)
 		, actionIterator(0)
 		, isCheating(false)
 		, isAllyAware(true)
@@ -85,16 +98,19 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 		// NOTE: assert(lastFrame != -1): CCircuitUnit initialized with -1
 		//       and lastFrame check will misbehave until first update event.
 		, lastFrame(-2)
-		, skirmishAIId(callback != NULL ? callback->GetSkirmishAIId() : -1)
-		, sAICallback(nullptr)
-		, callback(callback)
-		, log(std::unique_ptr<Log>(callback->GetLog()))
-		, game(std::unique_ptr<Game>(callback->GetGame()))
-		, map(std::unique_ptr<Map>(callback->GetMap()))
-		, lua(std::unique_ptr<Lua>(callback->GetLua()))
-		, pathing(std::unique_ptr<Pathing>(callback->GetPathing()))
-		, drawer(std::unique_ptr<Drawer>(map->GetDrawer()))
-		, skirmishAI(std::unique_ptr<SkirmishAI>(callback->GetSkirmishAI()))
+		, skirmishAIId(clb != nullptr ? clb->GetSkirmishAIId() : -1)
+		, sideId(0)
+		, callback(std::unique_ptr<COOAICallback>(new COOAICallback(clb)))
+		, engine(nullptr)
+		, cheats(std::unique_ptr<Cheats>(clb->GetCheats()))
+		, log(std::unique_ptr<Log>(clb->GetLog()))
+		, game(std::unique_ptr<Game>(clb->GetGame()))
+		, map(nullptr)
+		, lua(std::unique_ptr<Lua>(clb->GetLua()))
+		, pathing(std::unique_ptr<Pathing>(clb->GetPathing()))
+		, drawer(nullptr)
+		, skirmishAI(std::unique_ptr<SkirmishAI>(clb->GetSkirmishAI()))
+		, script(nullptr)
 		, airCategory(0)
 		, landCategory(0)
 		, waterCategory(0)
@@ -111,7 +127,6 @@ CCircuitAI::CCircuitAI(OOAICallback* callback)
 
 CCircuitAI::~CCircuitAI()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	if (isInitialized) {
 		Release(0);
 	}
@@ -130,13 +145,24 @@ void CCircuitAI::NotifyGameEnd()
 void CCircuitAI::NotifyResign()
 {
 	economy = callback->GetEconomy();
-	metalRes = callback->GetResourceByName("Metal");
-	energyRes = callback->GetResourceByName("Energy");
+	metalRes = callback->GetResourceByName(RES_NAME_METAL);
+	energyRes = callback->GetResourceByName(RES_NAME_ENERGY);
 	eventHandler = &CCircuitAI::HandleResignEvent;
 }
 
-void CCircuitAI::Resign(int newTeamId)
+void CCircuitAI::Resign(int newTeamId, Economy* economy)
 {
+	std::vector<Unit*> migrants;
+	auto allTeamUnits = callback->GetTeamUnits();
+	for (Unit* u : allTeamUnits) {
+		if (u != nullptr) {
+			migrants.push_back(u);
+		}
+	}
+	economy->SendUnits(migrants, newTeamId);
+	utils::free_clear(allTeamUnits);
+	allyTeam->ForceUpdateFriendlyUnits();
+
 	ownerTeamId = newTeamId;
 	isResigned = true;
 }
@@ -223,16 +249,18 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_UNIT_DAMAGED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_DAMAGED");
 			struct SUnitDamagedEvent* evt = (struct SUnitDamagedEvent*)data;
-			CEnemyUnit* attacker = GetEnemyUnit(evt->attacker);
+			CEnemyInfo* attacker = GetEnemyInfo(evt->attacker);
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
-			ret = (unit != nullptr) ? this->UnitDamaged(unit, attacker/*, evt->weaponDefId*/) : ERROR_UNIT_DAMAGED;
+			ret = (unit != nullptr)
+					? this->UnitDamaged(unit, attacker, evt->weaponDefId, AIFloat3(evt->dir_posF3))
+					: ERROR_UNIT_DAMAGED;
 			break;
 		}
 		case EVENT_UNIT_DESTROYED: {
 			PRINT_TOPIC("EVENT_UNIT_DESTROYED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_DESTROYED");
 			struct SUnitDestroyedEvent* evt = (struct SUnitDestroyedEvent*)data;
-			CEnemyUnit* attacker = GetEnemyUnit(evt->attacker);
+			CEnemyInfo* attacker = GetEnemyInfo(evt->attacker);
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			if (unit != nullptr) {
 				ret = this->UnitDestroyed(unit, attacker);
@@ -260,9 +288,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_LOS", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_LOS");
 			struct SEnemyEnterLOSEvent* evt = (struct SEnemyEnterLOSEvent*)data;
-			CEnemyUnit* unit;
+			CEnemyInfo* unit;
 			bool isReal;
-			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, true);
+			std::tie(unit, isReal) = RegisterEnemyInfo(evt->enemy, true);
 			ret = isReal
 					? (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS
 					: 0;
@@ -275,7 +303,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 				ret = 0;
 			} else {
 				struct SEnemyLeaveLOSEvent* evt = (struct SEnemyLeaveLOSEvent*)data;
-				CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+				CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 				ret = (enemy != nullptr) ? this->EnemyLeaveLOS(enemy) : ERROR_ENEMY_LEAVE_LOS;
 			}
 			break;
@@ -284,9 +312,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_RADAR", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_RADAR");
 			struct SEnemyEnterRadarEvent* evt = (struct SEnemyEnterRadarEvent*)data;
-			CEnemyUnit* unit;
+			CEnemyInfo* unit;
 			bool isReal;
-			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, false);
+			std::tie(unit, isReal) = RegisterEnemyInfo(evt->enemy, false);
 			ret = isReal
 					? (unit != nullptr) ? this->EnemyEnterRadar(unit) : ERROR_ENEMY_ENTER_RADAR
 					: 0;
@@ -299,7 +327,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 				ret = 0;
 			} else {
 				struct SEnemyLeaveRadarEvent* evt = (struct SEnemyLeaveRadarEvent*)data;
-				CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+				CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 				ret = (enemy != nullptr) ? this->EnemyLeaveRadar(enemy) : ERROR_ENEMY_LEAVE_RADAR;
 			}
 			break;
@@ -308,7 +336,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_DAMAGED", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_DAMAGED");
 			struct SEnemyDamagedEvent* evt = (struct SEnemyDamagedEvent*)data;
-			CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+			CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 			ret = (enemy != nullptr) ? this->EnemyDamaged(enemy) : ERROR_ENEMY_DAMAGED;
 			break;
 		}
@@ -316,10 +344,10 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_DESTROYED", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_DESTROYED");
 			struct SEnemyDestroyedEvent* evt = (struct SEnemyDestroyedEvent*)data;
-			CEnemyUnit* enemy = GetEnemyUnit(evt->enemy);
+			CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 			if (enemy != nullptr) {
 				ret = this->EnemyDestroyed(enemy);
-				UnregisterEnemyUnit(enemy);
+				UnregisterEnemyInfo(enemy);
 			} else {
 				ret = ERROR_ENEMY_DESTROYED;
 			}
@@ -381,9 +409,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			// FIXME: Can't query enemy data with globalLOS
 			SCOPED_TIME(this, "EVENT_ENEMY_CREATED");
 			struct SEnemyCreatedEvent* evt = (struct SEnemyCreatedEvent*)data;
-			CEnemyUnit* unit;
+			CEnemyInfo* unit;
 			bool isReal;
-			std::tie(unit, isReal) = RegisterEnemyUnit(evt->enemy, true);
+			std::tie(unit, isReal) = RegisterEnemyInfo(evt->enemy, true);
 			ret = isReal
 					? (unit != nullptr) ? this->EnemyEnterLOS(unit) : EVENT_ENEMY_CREATED
 					: 0;
@@ -439,7 +467,7 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 			if (evt->frame % (TEAM_SLOWUPDATE_RATE * INCOME_SAMPLES) == 0) {
 				const int mId = metalRes->GetResourceId();
 				const int eId = energyRes->GetResourceId();
-				float m =  game->GetTeamResourceStorage(ownerTeamId, mId) - HIDDEN_STORAGE - game->GetTeamResourceCurrent(ownerTeamId, mId);
+				float m = game->GetTeamResourceStorage(ownerTeamId, mId) - HIDDEN_STORAGE - game->GetTeamResourceCurrent(ownerTeamId, mId);
 				float e = game->GetTeamResourceStorage(ownerTeamId, eId) - HIDDEN_STORAGE - game->GetTeamResourceCurrent(ownerTeamId, eId);
 				m = std::min(economy->GetCurrent(metalRes), std::max(0.f, 0.8f * m));
 				e = std::min(economy->GetCurrent(energyRes), std::max(0.f, 0.2f * e));
@@ -455,7 +483,7 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 //bool CCircuitAI::IsModValid()
 //{
 //	const int minEngineVer = 104;
-//	const char* engineVersion = sAICallback->Engine_Version_getMajor(skirmishAIId);
+//	const char* engineVersion = engine->GetVersionMajor();
 //	int ver = atoi(engineVersion);
 //	if (ver < minEngineVer) {
 //		LOG("Engine must be %i or higher! (Current: %s)", minEngineVer, engineVersion);
@@ -502,16 +530,14 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 
 void CCircuitAI::CheatPreload()
 {
-	auto enemies = std::move(callback->GetEnemyUnits());
+	auto enemies = callback->GetEnemyUnits();
 	for (Unit* e : enemies) {
 		if (e == nullptr) {
 			continue;
 		}
-		CEnemyUnit* enemy = RegisterEnemyUnit(e);
+		CEnemyInfo* enemy = RegisterEnemyInfo(e);
 		if (enemy != nullptr) {
 			this->EnemyEnterLOS(enemy);
-		} else {
-			delete e;
 		}
 	}
 }
@@ -520,8 +546,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 {
 	LOG(version);
 	this->skirmishAIId = skirmishAIId;
-	// NOTE: Due to chewed API only SSkirmishAICallback have access to Engine
-	this->sAICallback = sAICallback;
+	callback->Init(sAICallback);
+	engine = std::unique_ptr<CEngine>(new CEngine(sAICallback, skirmishAIId));
+	map = std::unique_ptr<CMap>(new CMap(sAICallback, callback->GetMap()));
+	drawer = std::unique_ptr<Drawer>(map->GetDrawer());
 //	if (!IsModValid()) {
 //		return ERROR_INIT;
 //	}
@@ -533,15 +561,27 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	}
 #endif
 
+	CreateGameAttribute();
 	scheduler = std::make_shared<CScheduler>();
 	scheduler->Init(scheduler);
 
-	std::string cfgOption = InitOptions();  // Inits GameAttribute
+	scriptManager = std::make_shared<CScriptManager>(this);
+	script = new CInitScript(GetScriptManager(), this);
+	std::map<std::string, std::vector<std::string>> profiles;
+	script->InitConfig(profiles);
+
+	if (!InitSide()) {
+		Release(RELEASE_SIDE);
+		return ERROR_INIT;
+	}
+
+	std::string profile = InitOptions();  // Inits GameAttribute
+	InitWeaponDefs();
 	float decloakRadius;
 	InitUnitDefs(decloakRadius);  // Inits TerrainData
 
 	setupManager = std::make_shared<CSetupManager>(this, &gameAttribute->GetSetupData());
-	if (!setupManager->OpenConfig(cfgOption)) {
+	if (!setupManager->OpenConfig(profile, profiles[profile])) {
 		Release(RELEASE_CONFIG);
 		return ERROR_INIT;
 	}
@@ -555,9 +595,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 	terrainManager = std::make_shared<CTerrainManager>(this, &gameAttribute->GetTerrainData());
 	economyManager = std::make_shared<CEconomyManager>(this);
-	threatMap = std::make_shared<CThreatMap>(this, decloakRadius);
 
-	allyTeam->Init(this);
+	allyTeam->Init(this, decloakRadius);
+	mapManager = allyTeam->GetMapManager();
+	enemyManager = allyTeam->GetEnemyManager();
 	metalManager = allyTeam->GetMetalManager();
 	pathfinder = allyTeam->GetPathfinder();
 
@@ -574,22 +615,21 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	builderManager = std::make_shared<CBuilderManager>(this);
 	militaryManager = std::make_shared<CMilitaryManager>(this);
 
-//	InitKnownDefs(setupManager->GetCommChoice());
-
 	// TODO: Remove EconomyManager from module (move abilities to BuilderManager).
 	modules.push_back(militaryManager);
 	modules.push_back(builderManager);
 	modules.push_back(factoryManager);
 	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 
-	uEnemyMark = skirmishAIId % FRAMES_PER_SEC;
-	kEnemyMark = (skirmishAIId + FRAMES_PER_SEC / 2) % FRAMES_PER_SEC;
+	script->RegisterMgr();
+	script->Init();
+	for (auto& module : modules) {
+		module->InitScript();
+	}
 
 	if (isCheating) {
-		Cheats* cheats = callback->GetCheats();
 		cheats->SetEnabled(true);
 		cheats->SetEventsEnabled(true);
-		delete cheats;
 		scheduler->RunTaskAt(std::make_shared<CGameTask>(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
 	}
 
@@ -604,7 +644,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 
 int CCircuitAI::Release(int reason)
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete economy, delete metalRes, delete energyRes;
 	economy = nullptr;
 	metalRes = energyRes = nullptr;
@@ -619,18 +658,24 @@ int CCircuitAI::Release(int reason)
 		militaryManager->Release();
 	}
 
+	delete script;
+	script = nullptr;
+	weaponDefs.clear();
+	defsById.clear();
+	defsByName.clear();
+
 	if (reason == 1) {  // @see SReleaseEvent
 		gameAttribute->SetGameEnd(true);
 	}
 	if (terrainManager != nullptr) {
-		terrainManager->DidUpdateAreaUsers();
+		terrainManager->OnAreaUsersUpdated();
 	}
 
 	scheduler->ProcessRelease();
 	scheduler = nullptr;
 
-	threatMap = nullptr;
 	modules.clear();
+	scriptManager = nullptr;
 	militaryManager = nullptr;
 	economyManager = nullptr;
 	factoryManager = nullptr;
@@ -639,9 +684,11 @@ int CCircuitAI::Release(int reason)
 	metalManager = nullptr;
 	pathfinder = nullptr;
 	setupManager = nullptr;
+	enemyManager = nullptr;
+	mapManager = nullptr;
 
 	for (CCircuitUnit* unit : actionUnits) {
-		if (teamUnits.find(unit->GetId()) == teamUnits.end()) {
+		if (unit->IsDead()) {  // instance is not in teamUnits
 			delete unit;
 		}
 	}
@@ -651,18 +698,13 @@ int CCircuitAI::Release(int reason)
 	}
 	teamUnits.clear();
 	garbage.clear();
-	for (auto& kv : enemyUnits) {
+	for (auto& kv : enemyInfos) {
 		delete kv.second;
 	}
-	enemyUnits.clear();
+	enemyInfos.clear();
 	if (allyTeam != nullptr) {
 		allyTeam->Release();
 	}
-	for (auto& kv : defsById) {
-		delete kv.second;
-	}
-	defsById.clear();
-	defsByName.clear();
 
 	DestroyGameAttribute();
 
@@ -691,17 +733,18 @@ int CCircuitAI::Update(int frame)
 		garbage.erase(unit);  // NOTE: UnregisterTeamUnit may erase unit
 	}
 
-	if (!enemyUnits.empty()) {
-		int mark = frame % FRAMES_PER_SEC;
-		if (mark ==  uEnemyMark) {
-			UpdateEnemyUnits();
-		} else if (mark == kEnemyMark) {
-			militaryManager->UpdateEnemyGroups();
+	for (const ICoreUnit::Id eId : allyTeam->GetEnemyGarbage()) {
+		CEnemyInfo* enemy = GetEnemyInfo(eId);
+		if (enemy != nullptr) {  // EnemyDestroyed right after UpdateEnemyDatas but before this Update
+			EnemyDestroyed(enemy);
+			UnregisterEnemyInfo(enemy);
 		}
 	}
 
+	allyTeam->Update(this);
+
 	scheduler->ProcessTasks(frame);
-	ActionUpdate();
+	UpdateActions();
 
 #ifdef DEBUG_VIS
 	if (frame % FRAMES_PER_SEC == 0) {
@@ -716,26 +759,42 @@ int CCircuitAI::Update(int frame)
 int CCircuitAI::Message(int playerId, const char* message)
 {
 #ifdef DEBUG_VIS
-	const char cmdPos[]    = "~стройсь\0";
-	const char cmdSelfD[]  = "~Згинь, нечистая сила!\0";
+	const char cmdBreak[]   = "~break";
 
-	const char cmdBlock[]  = "~block\0";
-	const char cmdThreat[] = "~threat\0";
-	const char cmdArea[]   = "~area\0";
-	const char cmdGrid[]   = "~grid\0";
-	const char cmdPath[]   = "~path\0";
+	const char cmdPos[]     = "~стройсь\0";
+	const char cmdSelfD[]   = "~Згинь, нечистая сила!\0";
 
-	const char cmdName[]   = "~name";
-	const char cmdEnd[]    = "~end";
-	const char cmdKnn[]    = "~knn";
-//#endif
+	const char cmdBlock[]   = "~block";
+	const char cmdWBlock[]  = "~wbdraw";  // widget block draw
+
+	const char cmdArea[]    = "~area";
+	const char cmdPath[]    = "~path";
+	const char cmdKnn[]     = "~knn";
+	const char cmdLog[]     = "~log";
+
+	const char cmdThreat[]  = "~threat";
+	const char cmdWTDraw[]  = "~wtdraw";  // widget threat draw
+	const char cmdWTDiv[]   = "~wtdiv";
+	const char cmdWTPrint[] = "~wtprint";
+
+	const char cmdInfl[]    = "~infl";
+	const char cmdWIDraw[]  = "~widraw";  // widget influence draw
+	const char cmdWIDiv[]   = "~widiv";
+	const char cmdWIPrint[] = "~wiprint";
+
+	const char cmdGrid[]    = "~grid";
+	const char cmdNode[]    = "~node";
+	const char cmdLink[]    = "~link";
+
+	const char cmdName[]    = "~name";
+	const char cmdEnd[]     = "~end";
 
 	if (message[0] != '~') {
 		return 0;
 	}
 
 	auto selfD = [this]() {
-		auto units = std::move(callback->GetTeamUnits());
+		auto units = callback->GetTeamUnits();
 		for (Unit* u : units) {
 			if (u != nullptr) {
 				u->SelfDestruct();
@@ -746,25 +805,84 @@ int CCircuitAI::Message(int playerId, const char* message)
 
 	size_t msgLength = strlen(message);
 
-//#ifdef DEBUG_VIS
-	if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
+	if (strncmp(message, cmdBreak, 6) == 0) {
+		__asm__("int3");
+	}
+
+	else if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
 		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
 	}
 	else if ((msgLength == strlen(cmdSelfD)) && (strcmp(message, cmdSelfD) == 0)) {
 		selfD();
 	}
 
-	else if ((msgLength == strlen(cmdBlock)) && (strcmp(message, cmdBlock) == 0)) {
+	else if (strncmp(message, cmdBlock, 6) == 0) {
 		terrainManager->ToggleVis();
 	}
-	else if ((msgLength == strlen(cmdThreat)) && (strcmp(message, cmdThreat) == 0)) {
-		threatMap->ToggleVis();
+	else if (strncmp(message, cmdWBlock, 7) == 0) {
+		if (teamId == atoi((const char*)&message[8])) {
+			terrainManager->ToggleWidgetDraw();
+		}
 	}
-	else if ((msgLength == strlen(cmdArea)) && (strcmp(message, cmdArea) == 0)) {
+
+	else if (strncmp(message, cmdArea, 5) == 0) {
 		gameAttribute->GetTerrainData().ToggleVis(lastFrame);
 	}
-	else if ((msgLength == strlen(cmdGrid)) && (strcmp(message, cmdGrid) == 0)) {
-		auto selection = std::move(callback->GetSelectedUnits());
+	else if (strncmp(message, cmdPath, 5) == 0) {
+		pathfinder->ToggleVis(this);
+	}
+	else if (strncmp(message, cmdKnn, 4) == 0) {
+		const AIFloat3 dbgPos = map->GetMousePos();
+		int index = metalManager->FindNearestCluster(dbgPos);
+		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
+	}
+	else if (strncmp(message, cmdLog, 4) == 0) {
+		auto selection = callback->GetSelectedUnits();
+		for (Unit* u : selection) {
+			CCircuitUnit* unit = GetTeamUnit(u->GetUnitId());
+			if (unit != nullptr) {
+				unit->Log();
+			}
+		}
+		utils::free_clear(selection);
+	}
+
+	else if (strncmp(message, cmdThreat, 7) == 0) {
+		mapManager->GetThreatMap()->ToggleSDLVis();
+	}
+	else if (strncmp(message, cmdWTDraw, 7) == 0) {
+		if (teamId == atoi((const char*)&message[8])) {
+			mapManager->GetThreatMap()->ToggleWidgetDraw();
+		}
+	}
+	else if (strncmp(message, cmdWTDiv, 6) == 0) {
+		mapManager->GetThreatMap()->SetMaxThreat(atof((const char*)&message[7]));
+	}
+	else if (strncmp(message, cmdWTPrint, 8) == 0) {
+		if (teamId == atoi((const char*)&message[9])) {
+			mapManager->GetThreatMap()->ToggleWidgetPrint();
+		}
+	}
+
+	else if (strncmp(message, cmdInfl, 5) == 0) {
+		mapManager->GetInflMap()->ToggleSDLVis();
+	}
+	else if (strncmp(message, cmdWIDraw, 7) == 0) {
+		if (teamId == atoi((const char*)&message[8])) {
+			mapManager->GetInflMap()->ToggleWidgetDraw();
+		}
+	}
+	else if (strncmp(message, cmdWIDiv, 6) == 0) {
+		mapManager->GetInflMap()->SetMaxThreat(atof((const char*)&message[7]));
+	}
+	else if (strncmp(message, cmdWIPrint, 8) == 0) {
+		if (teamId == atoi((const char*)&message[9])) {
+			mapManager->GetInflMap()->ToggleWidgetPrint();
+		}
+	}
+
+	else if (strncmp(message, cmdGrid, 5) == 0) {
+		auto selection = callback->GetSelectedUnits();
 		if (!selection.empty()) {
 			if (selection[0]->GetAllyTeam() == allyTeamId) {
 				allyTeam->GetEnergyGrid()->ToggleVis();
@@ -774,31 +892,31 @@ int CCircuitAI::Message(int playerId, const char* message)
 			allyTeam->GetEnergyGrid()->ToggleVis();
 		}
 	}
-	else if ((msgLength == strlen(cmdPath)) && (strcmp(message, cmdPath) == 0)) {
-		pathfinder->ToggleVis(this);
+	else if (strncmp(message, cmdNode, 5) == 0) {
+		const AIFloat3 dbgPos = map->GetMousePos();
+		economyManager->GetEnergyGrid()->DrawNodePylons(dbgPos);
+	}
+	else if (strncmp(message, cmdLink, 5) == 0) {
+		const AIFloat3 dbgPos = map->GetMousePos();
+		economyManager->GetEnergyGrid()->DrawLinkPylons(dbgPos);
 	}
 
-	else if ((strncmp(message, cmdName, 5) == 0)) {
+	else if (strncmp(message, cmdName, 5) == 0) {
 		pathfinder->SetDbgDef(GetCircuitDef(message[6]));
 		pathfinder->SetDbgPos(map->GetMousePos());
 		const AIFloat3& dbgPos = pathfinder->GetDbgPos();
 		LOG("%f, %f, %f, %i", dbgPos.x, dbgPos.y, dbgPos.z, pathfinder->GetDbgDef());
 	}
-	else if ((strncmp(message, cmdEnd, 4) == 0)) {
-		F3Vec path;
+	else if (strncmp(message, cmdEnd, 4) == 0) {
 		pathfinder->SetDbgType(atoi((const char*)&message[5]));
-		AIFloat3 startPos = pathfinder->GetDbgPos();
 		AIFloat3 endPos = map->GetMousePos();
-		pathfinder->SetMapData(GetThreatMap());
-		pathfinder->MakePath(path, startPos, endPos, pathfinder->GetSquareSize());
+		std::shared_ptr<IPathQuery> query = pathfinder->CreateDbgPathQuery(GetThreatMap(),
+				endPos, pathfinder->GetSquareSize());
+		if (query != nullptr) {
+			pathfinder->SetDbgQuery(query);
+			pathfinder->RunQuery(query);
+		}
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
-	}
-
-	else if ((strncmp(message, cmdKnn, 4) == 0)) {
-		const AIFloat3& dbgPos = map->GetMousePos();
-		int index = metalManager->FindNearestCluster(dbgPos);
-		drawer->AddPoint(metalManager->GetClusters()[index].position, "knn");
-		LOG("%f, %f, %f", dbgPos.x, dbgPos.y, dbgPos.z);
 	}
 #endif
 
@@ -820,11 +938,9 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		return 0;  // created by gadget
 	}
 	TRY_UNIT(this, unit,
-		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
-//		if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToCloak()) {
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
-//			unit->GetUnit()->Cloak(true);
+		unit->CmdFireAtRadar(true);
+//		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
+//			unit->CmdCloak(true);
 //		}
 	)
 	for (auto& module : modules) {
@@ -850,8 +966,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 			unit->GetUnit()->Stop();
 			unit->GetUnit()->SetMoveState(2);
 		)
-		UnitDestroyed(unit, nullptr);
-		UnregisterTeamUnit(unit);
+		Garbage(unit, "stuck");
 	} else if (unit->GetTask() != nullptr) {
 		unit->GetTask()->OnUnitMoveFailed(unit);
 	}
@@ -859,13 +974,17 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker/*, int weaponId*/)
+int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker, int weaponId, AIFloat3 dir)
 {
 	// FIXME: Doesn't work well with multi-shots (duck)
 //	if (lastFrame <= unit->GetDamagedFrame() + FRAMES_PER_SEC / 5) {
 //		return 0;
 //	}
 //	unit->SetDamagedFrame(lastFrame);
+
+	if ((attacker == nullptr) && (dir != ZeroVector) && IsValidWeaponDefId(weaponId)) {
+		CreateFakeEnemy(weaponId, unit->GetPos(lastFrame), dir);  // currently only for threatmap
+	}
 
 	for (auto& module : modules) {
 		module->UnitDamaged(unit, attacker);
@@ -874,7 +993,7 @@ int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker/*, int weap
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	for (auto& module : modules) {
 		module->UnitDestroyed(unit, attacker);
@@ -885,10 +1004,10 @@ int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
 
 int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 {
-	CEnemyUnit* enemy = GetEnemyUnit(unitId);
+	CEnemyInfo* enemy = GetEnemyInfo(unitId);
 	if (enemy != nullptr) {
 		EnemyDestroyed(enemy);
-		UnregisterEnemyUnit(enemy);
+		UnregisterEnemyInfo(enemy);
 	}
 
 	// it might not have been given to us! Could have been given to another team
@@ -903,11 +1022,9 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 
 	TRY_UNIT(this, unit,
 		unit->GetUnit()->Stop();
-		unit->GetUnit()->ExecuteCustomCommand(CMD_DONT_FIRE_AT_RADAR, {0.0f});
-//		if (unit->GetCircuitDef()->GetUnitDef()->IsAbleToCloak()) {
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_WANT_CLOAK, {1.0f});  // personal
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_CLOAK_SHIELD, {1.0f});  // area
-//			unit->GetUnit()->Cloak(true);
+		unit->CmdFireAtRadar(true);
+//		if (unit->GetCircuitDef()->GetDef()->IsAbleToCloak()) {
+//			unit->CmdCloak(true);
 //		}
 	)
 	for (auto& module : modules) {
@@ -938,84 +1055,79 @@ int CCircuitAI::UnitCaptured(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyEnterLOS(CEnemyUnit* enemy)
+int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 {
-	bool isKnownBefore = enemy->IsKnown() && (enemy->IsInRadar() || !enemy->GetCircuitDef()->IsMobile());
+	bool isSuddenThreat = mapManager->IsSuddenThreat(enemy->GetData());
 
-	if (threatMap->EnemyEnterLOS(enemy)) {
-		militaryManager->AddEnemyCost(enemy);
-	}
+	allyTeam->EnemyEnterLOS(enemy->GetData(), this);
 
-	if (isKnownBefore) {
+	if (!isSuddenThreat) {
 		return 0;  // signaling: OK
 	}
 	// Force unit's reaction
-	auto friendlies = std::move(callback->GetFriendlyUnitsIn(enemy->GetPos(), 500.0f));
+	auto friendlies = callback->GetFriendlyUnitIdsIn(enemy->GetPos(), 500.0f);
 	if (friendlies.empty()) {
 		return 0;  // signaling: OK
 	}
-	for (Unit* f : friendlies) {
-		if (f == nullptr) {
+	for (int fId : friendlies) {
+		if (fId == -1) {
 			continue;
 		}
-		CCircuitUnit* unit = GetTeamUnit(f->GetUnitId());
+		CCircuitUnit* unit = GetTeamUnit(fId);
 		if ((unit != nullptr) && (unit->GetTask() != nullptr)) {
-			unit->ForceExecute();
+			unit->ForceUpdate(lastFrame + THREAT_UPDATE_RATE);
 		}
-		delete f;
 	}
 
+	militaryManager->MarkPointOfInterest(enemy);
+
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyLeaveLOS(CEnemyUnit* enemy)
+int CCircuitAI::EnemyLeaveLOS(CEnemyInfo* enemy)
 {
-	threatMap->EnemyLeaveLOS(enemy);
+	allyTeam->EnemyLeaveLOS(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyEnterRadar(CEnemyUnit* enemy)
+int CCircuitAI::EnemyEnterRadar(CEnemyInfo* enemy)
 {
-	threatMap->EnemyEnterRadar(enemy);
-	enemy->SetLastSeen(-1);
+	allyTeam->EnemyEnterRadar(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyLeaveRadar(CEnemyUnit* enemy)
+int CCircuitAI::EnemyLeaveRadar(CEnemyInfo* enemy)
 {
-	threatMap->EnemyLeaveRadar(enemy);
-	enemy->SetLastSeen(lastFrame);
+	allyTeam->EnemyLeaveRadar(enemy->GetData(), this);
 
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyDamaged(CEnemyUnit* enemy)
+int CCircuitAI::EnemyDamaged(CEnemyInfo* enemy)
 {
-	threatMap->EnemyDamaged(enemy);
-
+	// NOTE: Whole threat map updates in a fraction of a second, through polling
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::EnemyDestroyed(CEnemyUnit* enemy)
+int CCircuitAI::EnemyDestroyed(CEnemyInfo* enemy)
 {
-	if (threatMap->EnemyDestroyed(enemy)) {
-		militaryManager->DelEnemyCost(enemy);
-	}
+	allyTeam->EnemyDestroyed(enemy->GetData(), this);
+
+	militaryManager->UnmarkPointOfInterest(enemy);
 
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::PlayerCommand(std::vector<CCircuitUnit*>& units)
+int CCircuitAI::PlayerCommand(const std::vector<CCircuitUnit*>& units)
 {
 	for (CCircuitUnit* unit : units) {
 		if ((unit != nullptr) && (unit->GetTask() != nullptr) &&
 			(unit->GetTask()->GetType() != IUnitTask::Type::NIL) &&  // ignore orders to nanoframes
 			(unit->GetTask()->GetType() != IUnitTask::Type::PLAYER))
 		{
-			ITaskManager* mgr = unit->GetTask()->GetManager();
-			mgr->AssignTask(unit, new CPlayerTask(mgr));
+			unit->GetTask()->GetManager()->AssignPlayerTask(unit);
 		}
 	}
 
@@ -1035,7 +1147,7 @@ int CCircuitAI::Load(std::istream& is)
 {
 	isLoadSave = true;
 
-	auto units = std::move(callback->GetTeamUnits());
+	auto units = callback->GetTeamUnits();
 	for (Unit* u : units) {
 		if (u == nullptr) {
 			continue;
@@ -1083,6 +1195,19 @@ int CCircuitAI::LuaMessage(const char* inData)
 	return 0;  // signaling: OK
 }
 
+bool CCircuitAI::InitSide()
+{
+	sideName = game->GetTeamSide(teamId);
+	if (sideName.empty()) {
+		sideName = gameAttribute->GetSideMasker().GetName(0);
+		if (sideName.empty()) {
+			return false;
+		}
+	}
+	sideId = gameAttribute->GetSideMasker().GetType(sideName);
+	return true;
+}
+
 CCircuitUnit* CCircuitAI::GetOrRegTeamUnit(ICoreUnit::Id unitId)
 {
 	CCircuitUnit* unit = GetTeamUnit(unitId);
@@ -1105,10 +1230,8 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId)
 
 CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 {
-	UnitDef* unitDef = u->GetDef();
-	CCircuitDef* cdef = GetCircuitDef(unitDef->GetUnitDefId());
+	CCircuitDef* cdef = GetCircuitDef(GetCallback()->Unit_GetDefId(unitId));
 	CCircuitUnit* unit = new CCircuitUnit(unitId, u, cdef);
-	delete unitDef;
 
 	STerrainMapArea* area;
 	bool isValid;
@@ -1127,7 +1250,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 void CCircuitAI::UnregisterTeamUnit(CCircuitUnit* unit)
 {
 	teamUnits.erase(unit->GetId());
-	defsById[unit->GetCircuitDef()->GetId()]->Dec();
+	unit->GetCircuitDef()->Dec();
 
 	(unit->GetTask() == nullptr) ? DeleteTeamUnit(unit) : unit->Dead();
 }
@@ -1169,117 +1292,83 @@ CAllyUnit* CCircuitAI::GetFriendlyUnit(Unit* u) const
 	return nullptr;
 }
 
-std::pair<CEnemyUnit*, bool> CCircuitAI::RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS)
+std::pair<CEnemyInfo*, bool> CCircuitAI::RegisterEnemyInfo(ICoreUnit::Id unitId, bool isInLOS)
 {
-	CEnemyUnit* unit = GetEnemyUnit(unitId);
+	CEnemyInfo* unit = GetEnemyInfo(unitId);
 	if (unit != nullptr) {
-		if (isInLOS/* && (unit->GetCircuitDef() == nullptr)*/) {
-			UnitDef* unitDef = unit->GetUnit()->GetDef();
-			if (unitDef == nullptr) {  // doesn't work with globalLOS
-				return std::make_pair(nullptr, false);
-			}
-			CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
-			delete unitDef;
-			if ((unit->GetCircuitDef() == nullptr) || unit->GetCircuitDef()->GetId() != unitDefId) {
-				unit->SetCircuitDef(defsById[unitDefId]);
-				unit->SetCost(unit->GetUnit()->GetRulesParamFloat("comm_cost", unit->GetCost()));
-			}
+		if (isInLOS && !allyTeam->EnemyInLOS(unit->GetData(), this)) {
+			return std::make_pair(nullptr, false);
 		}
 		return std::make_pair(unit, true);
 	}
 
-	Unit* u = WrappUnit::GetInstance(skirmishAIId, unitId);
-	if (u == nullptr) {
-		return std::make_pair(nullptr, true);
+	CEnemyUnit* data;
+	bool isReal;
+	std::tie(data, isReal) = allyTeam->RegisterEnemyUnit(unitId, isInLOS, this);
+	if (data == nullptr) {
+		return std::make_pair(nullptr, isReal);
 	}
-	if (/*u->IsNeutral() || */u->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
-		delete u;
-		return std::make_pair(nullptr, false);
-	}
-	CCircuitDef* cdef = nullptr;
-	if (isInLOS) {
-		UnitDef* unitDef = u->GetDef();
-		if (unitDef == nullptr) {  // doesn't work with globalLOS
-			delete u;
-			return std::make_pair(nullptr, false);
-		}
-		cdef = defsById[unitDef->GetUnitDefId()];
-		delete unitDef;
-	}
-	unit = new CEnemyUnit(unitId, u, cdef);
 
-	enemyUnits[unit->GetId()] = unit;
+	unit = new CEnemyInfo(data);
+	enemyInfos[unitId] = unit;
 
 	return std::make_pair(unit, true);
 }
 
-CEnemyUnit* CCircuitAI::RegisterEnemyUnit(Unit* e)
+CEnemyInfo* CCircuitAI::RegisterEnemyInfo(Unit* e)
 {
-	if (/*e->IsNeutral() || */e->GetRulesParamFloat("ignoredByAI", 0.f) > 0.f) {
+	CEnemyUnit* data = allyTeam->RegisterEnemyUnit(e, this);
+	if (data == nullptr) {
 		return nullptr;
 	}
 
-	const ICoreUnit::Id unitId = e->GetUnitId();
-	CEnemyUnit* unit = GetEnemyUnit(unitId);
-	UnitDef* unitDef = e->GetDef();
-	CCircuitDef::Id unitDefId = unitDef->GetUnitDefId();
-	delete unitDef;
+	CEnemyInfo* unit = new CEnemyInfo(data);
+	enemyInfos[unit->GetId()] = unit;
 
-	if (unit != nullptr) {
-		if ((unit->GetCircuitDef() == nullptr) || unit->GetCircuitDef()->GetId() != unitDefId) {
-			unit->SetCircuitDef(defsById[unitDefId]);
-			unit->SetCost(unit->GetUnit()->GetRulesParamFloat("comm_cost", unit->GetCost()));
-		}
-		return nullptr;
-	}
-
-	CCircuitDef* cdef = defsById[unitDefId];
-	unit = new CEnemyUnit(unitId, e, cdef);
-	enemyUnits[unit->GetId()] = unit;
 	return unit;
 }
 
-void CCircuitAI::UnregisterEnemyUnit(CEnemyUnit* unit)
+void CCircuitAI::UnregisterEnemyInfo(CEnemyInfo* enemy)
 {
-	enemyUnits.erase(unit->GetId());
-	delete unit;
+	allyTeam->UnregisterEnemyUnit(enemy->GetData(), this);
+	enemyInfos.erase(enemy->GetId());
+	delete enemy;
 }
 
-void CCircuitAI::UpdateEnemyUnits()
+void CCircuitAI::CreateFakeEnemy(int weaponId, const AIFloat3& startPos, const AIFloat3& dir)
 {
-	auto it = enemyUnits.begin();
-	while (it != enemyUnits.end()) {
-		CEnemyUnit* enemy = it->second;
-
-		int frame = enemy->GetLastSeen();
-		if ((frame != -1) && (lastFrame - frame >= FRAMES_PER_SEC * 600)) {
-			EnemyDestroyed(enemy);
-			it = enemyUnits.erase(it);  // UnregisterEnemyUnit(enemy)
-			delete enemy;
-			continue;
-		}
-
-		if (enemy->IsInRadarOrLOS()) {
-			const AIFloat3& pos = enemy->GetUnit()->GetPos();
-			if (CTerrainData::IsNotInBounds(pos)) {  // FIXME: Unit id validation. No EnemyDestroyed sometimes apparently
-				EnemyDestroyed(enemy);
-				it = enemyUnits.erase(it);  // UnregisterEnemyUnit(enemy)
-				delete enemy;
-				continue;
-			}
-			enemy->SetNewPos(pos);
-		}
-
-		++it;
+	const SWeaponToUnitDef& wuDef = weaponToUnitDefs[weaponId];
+	if (wuDef.ids.empty()) {
+		return;
 	}
-
-	threatMap->Update();
+	float range = weaponDefs[weaponId].GetRange();
+	const AIFloat3 enemyPos = CTerrainManager::CorrectPosition(startPos, dir, range);  // range adjusted
+	if (!allyTeam->IsEnemyOrFakeIn(startPos, dir, range, enemyPos, range * 0.2f, wuDef.ids)) {
+		int timeout = lastFrame;
+		CCircuitDef::Id defId;
+		if (wuDef.mobileIds.empty()) {  // static
+			timeout += FRAMES_PER_SEC * 60 * 20;
+			defId = *wuDef.staticIds.begin();
+		} else {
+			timeout += FRAMES_PER_SEC * 60 * 1;
+			defId = *wuDef.mobileIds.begin();
+		}
+		allyTeam->RegisterEnemyFake(GetCircuitDef(defId), enemyPos, timeout);
+	}
 }
 
-CEnemyUnit* CCircuitAI::GetEnemyUnit(ICoreUnit::Id unitId) const
+CEnemyInfo* CCircuitAI::GetEnemyInfo(Unit* u) const
 {
-	auto it = enemyUnits.find(unitId);
-	return (it != enemyUnits.end()) ? it->second : nullptr;
+	if (u == nullptr) {
+		return nullptr;
+	}
+	return GetEnemyInfo(u->GetUnitId());
+}
+
+CEnemyInfo* CCircuitAI::GetEnemyInfo(ICoreUnit::Id unitId) const
+{
+	auto it = enemyInfos.find(unitId);
+	return (it != enemyInfos.end()) ? it->second : nullptr;
 }
 
 void CCircuitAI::DisableControl(CCircuitUnit* unit)
@@ -1320,7 +1409,7 @@ void CCircuitAI::EnableControl(const std::string data)
 	}
 }
 
-void CCircuitAI::ActionUpdate()
+void CCircuitAI::UpdateActions()
 {
 	if (actionIterator >= actionUnits.size()) {
 		actionIterator = 0;
@@ -1338,9 +1427,9 @@ void CCircuitAI::ActionUpdate()
 		} else {
 			if (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER) {
 				unit->Update(this);
+				--n;
 			}
 			++actionIterator;
-			n--;
 		}
 	}
 }
@@ -1365,15 +1454,17 @@ std::string CCircuitAI::InitOptions()
 		isCommMerge = StringToBool(value);
 	}
 
-	value = options->GetValueByKey("config_file");
-	std::string cfgOption = ((value != nullptr) && strlen(value) > 0) ? value : "";
+	if (!gameAttribute->IsInitialized()) {
+		value = options->GetValueByKey("random_seed");
+		unsigned int seed = (value != nullptr) ? StringToInt(value) : time(nullptr);
+		gameAttribute->Init(seed);
+	}
 
-	value = options->GetValueByKey("random_seed");
-	unsigned int seed = (value != nullptr) ? StringToInt(value) : time(nullptr);
-	CreateGameAttribute(seed);
+	value = options->GetValueByKey("profile");
+	std::string profile = ((value != nullptr) && strlen(value) > 0) ? value : "";
 
 	delete options;
-	return cfgOption;
+	return profile;
 }
 
 CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
@@ -1383,86 +1474,94 @@ CCircuitDef* CCircuitAI::GetCircuitDef(const char* name)
 	return (it != defsByName.end()) ? it->second : nullptr;
 }
 
-CCircuitDef* CCircuitAI::GetCircuitDef(CCircuitDef::Id unitDefId)
-{
-	auto it = defsById.find(unitDefId);
-	return (it != defsById.end()) ? it->second : nullptr;
-}
-
 void CCircuitAI::InitUnitDefs(float& outDcr)
 {
-	airCategory   = game->GetCategoriesFlag("FIXEDWING GUNSHIP");
-	landCategory  = game->GetCategoriesFlag("LAND SINK TURRET SHIP SWIM FLOAT HOVER");
-	waterCategory = game->GetCategoriesFlag("SUB");
-	badCategory   = game->GetCategoriesFlag("TERRAFORM STUPIDTARGET MINE");
-	goodCategory  = game->GetCategoriesFlag("TURRET FLOAT");
+	for (const auto& kv : CCircuitDef::GetRoleNames()) {
+		BindRole(kv.second.type, kv.second.type);
+	}
 
 	if (!gameAttribute->GetTerrainData().IsInitialized()) {
 		gameAttribute->GetTerrainData().Init(this);
 	}
-	Resource* res = callback->GetResourceByName("Metal");
+
+	Resource* resM = callback->GetResourceByName(RES_NAME_METAL);
+	Resource* resE = callback->GetResourceByName(RES_NAME_ENERGY);
 	outDcr = 0.f;
-	const std::vector<UnitDef*>& unitDefs = callback->GetUnitDefs();
+
+	auto unitDefs = callback->GetUnitDefs();
+	defsById.reserve(unitDefs.size());
+
 	for (UnitDef* ud : unitDefs) {
-		auto options = std::move(ud->GetBuildOptions());
+		auto options = ud->GetBuildOptions();
 		std::unordered_set<CCircuitDef::Id> opts;
 		for (UnitDef* buildDef : options) {
 			opts.insert(buildDef->GetUnitDefId());
 			delete buildDef;
 		}
-		CCircuitDef* cdef = new CCircuitDef(this, ud, opts, res);
+		// new CCircuitDef(this, ud, opts, resM, resE);
+		defsById.emplace_back(this, ud, opts, resM, resE);
 
-		defsByName[ud->GetName()] = cdef;
-		defsById[cdef->GetId()] = cdef;
+		defsByName[ud->GetName()] = &defsById.back();
 
 		const float dcr = ud->GetDecloakDistance();
 		if (outDcr < dcr) {
 			outDcr = dcr;
 		}
 	}
-	delete res;
 
-	for (auto& kv : GetCircuitDefs()) {
-		kv.second->Init(this);
+	delete resM;
+	delete resE;
+
+	for (CCircuitDef& cdef : GetCircuitDefs()) {
+		cdef.Init(this);
 	}
 }
 
-//void CCircuitAI::InitKnownDefs(const CCircuitDef* commDef)
-//{
-//	std::set<CCircuitDef::Id> visited;
-//	std::queue<CCircuitDef::Id> queue;
-//
-//	queue.push(commDef->GetId());
-//
-//	while (!queue.empty()) {
-//		CCircuitDef* cdef = GetCircuitDef(queue.front());
-//		queue.pop();
-//
-//		visited.insert(cdef->GetId());
-//		for (CCircuitDef::Id child : cdef->GetBuildOptions()) {
-//			if (visited.find(child) == visited.end()) {
-//				queue.push(child);
-//			}
-//		}
-//	}
-//
-//	knownDefs.reserve(visited.size());
-//	for (CCircuitDef::Id id : visited) {
-//		knownDefs.push_back(GetCircuitDef(id));
-//	}
-//}
+void CCircuitAI::BindUnitToWeaponDefs(CCircuitDef::Id unitDefId, const std::set<CWeaponDef::Id>& weaponDefs, bool isMobile)
+{
+	if (isMobile) {
+		for (CWeaponDef::Id weaponDefId : weaponDefs) {
+			SWeaponToUnitDef& wuDef = weaponToUnitDefs[weaponDefId];
+			wuDef.mobileIds.insert(unitDefId);
+			wuDef.ids.insert(unitDefId);
+		}
+	} else {
+		for (CWeaponDef::Id weaponDefId : weaponDefs) {
+			SWeaponToUnitDef& wuDef = weaponToUnitDefs[weaponDefId];
+			wuDef.staticIds.insert(unitDefId);
+			wuDef.ids.insert(unitDefId);
+		}
+	}
+}
 
-//// debug
-//void CCircuitAI::DrawClusters()
-//{
-//	gameAttribute->GetMetalData().DrawConvexHulls(GetDrawer());
-//	gameAttribute->GetMetalManager().DrawCentroids(GetDrawer());
-//}
+void CCircuitAI::InitWeaponDefs()
+{
+	Resource* resE = callback->GetResourceByName(RES_NAME_ENERGY);
+	auto weapDefs = callback->GetWeaponDefs();
+	weaponDefs.reserve(weapDefs.size());
+	for (WeaponDef* wd : weapDefs) {
+		// new CWeaponDef(wd, resE);
+		weaponDefs.emplace_back(wd, resE);
+	}
+	delete resE;
+	weaponToUnitDefs.resize(weapDefs.size());
+}
 
-void CCircuitAI::CreateGameAttribute(unsigned int seed)
+CThreatMap* CCircuitAI::GetThreatMap() const
+{
+	return mapManager->GetThreatMap();
+}
+
+CInfluenceMap* CCircuitAI::GetInflMap() const
+{
+	return mapManager->GetInflMap();
+}
+
+void CCircuitAI::CreateGameAttribute()
 {
 	if (gameAttribute == nullptr) {
-		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute(seed));
+		gameAttribute = std::unique_ptr<CGameAttribute>(new CGameAttribute());
+		CCircuitDef::InitStatic(this, &gameAttribute->GetRoleMasker());
 	}
 	gaCounter++;
 	gameAttribute->RegisterAI(this);
@@ -1479,6 +1578,12 @@ void CCircuitAI::DestroyGameAttribute()
 	} else {
 		gaCounter--;
 	}
+}
+
+void CCircuitAI::PrepareAreaUpdate()
+{
+	GetPathfinder()->SetAreaUpdated(false);  // one pathfinder for few allies
+	GetEnemyManager()->SetAreaUpdated(false);  // one enemy manager for few allies
 }
 
 } // namespace circuit

@@ -7,12 +7,15 @@
 
 #include "task/fighter/SquadTask.h"
 #include "task/TaskManager.h"
+#include "map/InfluenceMap.h"
+#include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryLineMap.h"
 #include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -27,7 +30,7 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		, leader(nullptr)
 		, groupPos(-RgtVector)
 		, prevGroupPos(-RgtVector)
-		, pPath(std::make_shared<F3Vec>())
+		, pPath(std::make_shared<PathInfo>())
 		, groupFrame(0)
 {
 }
@@ -79,15 +82,15 @@ void ISquadTask::RemoveAssignee(CCircuitUnit* unit)
 void ISquadTask::Merge(ISquadTask* task)
 {
 	const std::set<CCircuitUnit*>& rookies = task->GetAssignees();
-	bool isActive = static_cast<ITravelAction*>(leader->End())->IsActive();
+	IAction::State state = leader->GetTravelAct()->GetState();
+	const std::shared_ptr<PathInfo>& lPath = leader->GetTravelAct()->GetPath();
 	for (CCircuitUnit* unit : rookies) {
 		unit->SetTask(this);
 		if (unit->GetCircuitDef()->IsRoleSupport()) {
 			continue;
 		}
-		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-		travelAction->SetPath(pPath);
-		travelAction->SetActive(isActive);
+		unit->GetTravelAct()->SetPath(lPath);
+		unit->GetTravelAct()->SetState(state);
 	}
 	units.insert(rookies.begin(), rookies.end());
 	attackPower += task->GetAttackPower();
@@ -136,22 +139,28 @@ void ISquadTask::FindLeader(decltype(units)::iterator itBegin, decltype(units)::
 	}
 }
 
-ISquadTask* ISquadTask::GetMergeTask() const
+bool ISquadTask::IsMergeSafe() const
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
+	return (circuit->GetInflMap()->GetInfluenceAt(pos) > -INFL_EPS);
+}
+
+ISquadTask* ISquadTask::CheckMergeTask()
 {
 	const ISquadTask* task = nullptr;
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-
-	AIFloat3 pos = leader->GetPos(frame);
+	const AIFloat3& pos = leader->GetPos(frame);
 	STerrainMapArea* area = leader->GetArea();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-//	CTerrainManager::CorrectPosition(pos);
-	pathfinder->SetMapData(leader, circuit->GetThreatMap(), frame);
-	const float maxSpeed = lowestSpeed / pathfinder->GetSquareSize() * THREAT_BASE;
-	const float maxDistCost = MAX_TRAVEL_SEC * maxSpeed;
-	const int distance = pathfinder->GetSquareSize();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	const float sqMaxDistCost = SQUARE(MAX_TRAVEL_SEC * lowestSpeed);
 	float metric = std::numeric_limits<float>::max();
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	std::shared_ptr<CQueryLineMap> query = std::static_pointer_cast<CQueryLineMap>(
+			pathfinder->CreateLineMapQuery(leader, circuit->GetThreatMap(), frame));
 
 	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(fightType);
 	for (const IFighterTask* candidate : tasks) {
@@ -163,25 +172,34 @@ ISquadTask* ISquadTask::GetMergeTask() const
 		}
 		const ISquadTask* candy = static_cast<const ISquadTask*>(candidate);
 
-		// Check time-distance to target
-		float distCost;
-
 		const AIFloat3& tp = candy->GetLeaderPos(frame);
-		AIFloat3 taskPos = utils::is_valid(tp) ? tp : pos;
+		const AIFloat3& taskPos = utils::is_valid(tp) ? tp : pos;
 
-		if (!terrainManager->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
+		if (!terrainMgr->CanMoveToPos(area, taskPos)) {  // ensure that path always exists
 			continue;
 		}
 
-		distCost = std::max(pathfinder->PathCost(pos, taskPos, distance), THREAT_BASE);
+		if (!query->IsSafeLine(pos, taskPos)) {  // ensure safe passage
+			continue;
+		}
 
-		if ((distCost < metric) && (distCost < maxDistCost)) {
+		// Check time-distance to target
+		float sqDistCost = pos.SqDistance2D(taskPos);
+		if ((sqDistCost < metric) && (sqDistCost < sqMaxDistCost)) {
 			task = candy;
-			metric = distCost;
+			metric = sqDistCost;
 		}
 	}
 
 	return const_cast<ISquadTask*>(task);
+}
+
+ISquadTask* ISquadTask::GetMergeTask()
+{
+	if (updCount % 32 == 1) {
+		return IsMergeSafe() ? CheckMergeTask() : nullptr;
+	}
+	return nullptr;
 }
 
 bool ISquadTask::IsMustRegroup()
@@ -192,12 +210,17 @@ bool ISquadTask::IsMustRegroup()
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
+	if (circuit->GetInflMap()->GetInfluenceAt(leader->GetPos(frame)) < -INFL_EPS) {
+		state = State::ROAM;
+		return false;
+	}
+
 	static std::vector<CCircuitUnit*> validUnits;  // NOTE: micro-opt
 //	validUnits.reserve(units.size());
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();;
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();;
 	for (CCircuitUnit* unit : units) {
 		if (!unit->GetCircuitDef()->IsPlane() &&
-			terrainManager->CanMoveToPos(unit->GetArea(), unit->GetPos(frame)))
+			terrainMgr->CanMoveToPos(unit->GetArea(), unit->GetPos(frame)))
 		{
 			validUnits.push_back(unit);
 		}
@@ -220,13 +243,14 @@ bool ISquadTask::IsMustRegroup()
 			const AIFloat3& pos = unit->GetPos(frame);
 			const float sqDist = groupPos.SqDistance2D(pos);
 			if ((sqDist > sqMaxDist) &&
-				((unit->GetTaskFrame() < groupFrame) || !terrainManager->CanMoveToPos(unit->GetArea(), pos)))
+				((unit->GetTaskFrame() < groupFrame) || !terrainMgr->CanMoveToPos(unit->GetArea(), pos)))
 			{
 				TRY_UNIT(circuit, unit,
 					unit->GetUnit()->Stop();
 					unit->GetUnit()->SetMoveState(2);
 				)
 				circuit->Garbage(unit, "stuck");
+//				circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, unit);
 			}
 		}
 
@@ -253,6 +277,7 @@ bool ISquadTask::IsMustRegroup()
 				leader->GetUnit()->SetMoveState(2);
 			)
 			circuit->Garbage(leader, "stuck");
+//			circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, leader);
 		}
 		prevGroupPos = groupPos;
 	}
@@ -264,10 +289,53 @@ bool ISquadTask::IsMustRegroup()
 void ISquadTask::ActivePath(float speed)
 {
 	for (CCircuitUnit* unit : units) {
-		ITravelAction* travelAction = static_cast<ITravelAction*>(unit->End());
-		travelAction->SetPath(pPath, speed);
-		travelAction->SetActive(true);
+		unit->GetTravelAct()->SetPath(pPath, speed);
+		unit->GetTravelAct()->StateActivate();
 	}
 }
+
+NSMicroPather::TestFunc ISquadTask::GetHitTest() const
+{
+	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
+	const std::vector<STerrainMapSector>& sectors = terrainMgr->GetAreaData()->sector;
+	const int sectorXSize = terrainMgr->GetSectorXSize();
+	const float aimLift = leader->GetCircuitDef()->GetHeight() / 2;  // TODO: Use aim-pos of attacker and enemy
+	return [&sectors, sectorXSize, aimLift](int2 start, int2 end) {  // losTest
+		float startHeight = sectors[start.y * sectorXSize + start.x].maxElevation + aimLift;
+		float diffHeight = sectors[end.y * sectorXSize + end.x].maxElevation + SQUARE_SIZE - startHeight;
+		// All octant line draw
+		const int dx =  abs(end.x - start.x), sx = start.x < end.x ? 1 : -1;
+		const int dy = -abs(end.y - start.y), sy = start.y < end.y ? 1 : -1;
+		int err = dx + dy;  // error value e_xy
+		for (int x = start.x, y = start.y;;) {
+			const int e2 = 2 * err;
+			if (e2 >= dy) {  // e_xy + e_x > 0
+				if (x == end.x) break;
+				err += dy; x += sx;
+			}
+			if (e2 <= dx) {  // e_xy + e_y < 0
+				if (y == end.y) break;
+				err += dx; y += sy;
+			}
+
+			const float t = fabs((dx > -dy) ? float(x - start.x) / dx : float(y - start.y) / dy);
+			if (sectors[y * sectorXSize + x].maxElevation > diffHeight * t + startHeight) {
+				return false;
+			}
+		}
+		return true;
+	};
+}
+
+#ifdef DEBUG_VIS
+void ISquadTask::Log()
+{
+	IFighterTask::Log();
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->LOG("pPath: %i | size: %i | TravelAct: %i", pPath.get(), pPath ? pPath->posPath.size() : 0,
+			leader->GetTravelAct()->GetState());
+}
+#endif
 
 } // namespace circuit

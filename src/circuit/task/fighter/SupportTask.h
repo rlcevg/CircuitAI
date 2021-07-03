@@ -19,11 +19,11 @@ public:
 
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 
 private:
-	unsigned int updCount;
+	void ApplyPath(const CQueryPathMulti* query);
 };
 
 } // namespace circuit

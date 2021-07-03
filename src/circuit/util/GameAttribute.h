@@ -11,6 +11,7 @@
 #include "setup/SetupData.h"
 #include "resource/MetalData.h"
 #include "terrain/TerrainData.h"
+#include "util/MaskHandler.h"
 
 #include <unordered_set>
 
@@ -22,8 +23,11 @@ class CGameAttribute {
 public:
 	using Circuits = std::unordered_set<CCircuitAI*>;
 
-	CGameAttribute(unsigned int seed);
+	CGameAttribute();
 	virtual ~CGameAttribute();
+
+	void Init(unsigned int seed);
+	bool IsInitialized() const { return isInitialized; }
 
 	void SetGameEnd(bool value);
 	bool IsGameEnd() const { return isGameEnd; }
@@ -34,13 +38,18 @@ public:
 	CSetupData& GetSetupData() { return setupData; }
 	CMetalData& GetMetalData() { return metalData; }
 	CTerrainData& GetTerrainData() { return terrainData; }
+	CMaskHandler& GetSideMasker() { return sideMasker; }
+	CMaskHandler& GetRoleMasker() { return roleMasker; }
 
 private:
+	bool isInitialized;
 	bool isGameEnd;
 	Circuits circuits;
 	CSetupData setupData;
 	CMetalData metalData;
 	CTerrainData terrainData;
+	CMaskHandler sideMasker;
+	CMaskHandler roleMasker;
 };
 
 } // namespace circuit

@@ -8,7 +8,8 @@
 #include "unit/action/TravelAction.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
-#include "util/utils.h"
+#include "task/UnitTask.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -19,10 +20,11 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 		, speed(speed)
 		, pathIterator(0)
 		, isForce(true)
+		, lastFrame(-1)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	int size = std::max(cdef->GetUnitDef()->GetXSize(), cdef->GetUnitDef()->GetZSize());
+	int size = std::max(cdef->GetDef()->GetXSize(), cdef->GetDef()->GetZSize());
 	int incMod = std::max(size / 4, 1);
 	if (cdef->IsPlane()) {
 		incMod *= 8;
@@ -32,11 +34,12 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 		incMod *= 2;
 	}
 	increment = incMod * DEFAULT_SLACK / squareSize + 1;
-	minSqDist = squareSize * increment / 2;
+	minSqDist = squareSize * increment;  // / 2;
 	minSqDist *= minSqDist;
 }
 
-ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, const std::shared_ptr<F3Vec>& pPath, int squareSize, float speed)
+ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, const std::shared_ptr<PathInfo>& pPath,
+		int squareSize, float speed)
 		: ITravelAction(owner, type, squareSize, speed)
 {
 	this->pPath = pPath;
@@ -46,7 +49,14 @@ ITravelAction::~ITravelAction()
 {
 }
 
-void ITravelAction::SetPath(const std::shared_ptr<F3Vec>& pPath, float speed)
+void ITravelAction::OnEnd()
+{
+	IAction::OnEnd();
+	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
+	unit->GetTask()->OnTravelEnd(unit);  // WARNING: do not clear/delete unit actions
+}
+
+void ITravelAction::SetPath(const std::shared_ptr<PathInfo>& pPath, float speed)
 {
 	pathIterator = 0;
 	this->pPath = pPath;
@@ -54,21 +64,21 @@ void ITravelAction::SetPath(const std::shared_ptr<F3Vec>& pPath, float speed)
 	isForce = true;
 }
 
-int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
+int ITravelAction::CalcSpeedStep(float& stepSpeed)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
-	const AIFloat3& pos = unit->GetPos(frame);
-	int pathMaxIndex = pPath->size() - 1;
+	const AIFloat3& pos = unit->GetPos(lastFrame);
+	int pathMaxIndex = pPath->posPath.size() - 1;
 
 	int lastStep = pathIterator;
-	float sqDistToStep = pos.SqDistance2D((*pPath)[pathIterator]);
+	float sqDistToStep = pos.SqDistance2D(pPath->posPath[pathIterator]);
 	int step = std::min(pathIterator + increment, pathMaxIndex);
-	float sqNextDistToStep = pos.SqDistance2D((*pPath)[step]);
-	while ((sqNextDistToStep < sqDistToStep) && (pathIterator <  pathMaxIndex)) {
+	float sqNextDistToStep = pos.SqDistance2D(pPath->posPath[step]);
+	while ((sqNextDistToStep < sqDistToStep) && (pathIterator < pathMaxIndex)) {
 		pathIterator = step;
 		sqDistToStep = sqNextDistToStep;
 		step = std::min(pathIterator + increment, pathMaxIndex);
-		sqNextDistToStep = pos.SqDistance2D((*pPath)[step]);
+		sqNextDistToStep = pos.SqDistance2D(pPath->posPath[step]);
 	}
 
 	if (!isForce && (pathIterator == lastStep) && ((int)sqDistToStep > minSqDist)) {
@@ -76,7 +86,11 @@ int ITravelAction::CalcSpeedStep(int frame, float& stepSpeed)
 	} else {
 		stepSpeed = speed;
 	}
-	pathIterator = step;
+
+	if ((int)sqDistToStep <= minSqDist) {
+		pathIterator = step;
+		state = (pathIterator == pathMaxIndex) ? State::FINISH : state;
+	}
 
 	isForce = false;
 	return pathMaxIndex;

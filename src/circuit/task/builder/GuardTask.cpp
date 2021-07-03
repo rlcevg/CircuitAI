@@ -9,7 +9,7 @@
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -22,7 +22,6 @@ CBGuardTask::CBGuardTask(ITaskManager* mgr, Priority priority, CCircuitUnit* vip
 
 CBGuardTask::~CBGuardTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CBGuardTask::CanAssignTo(CCircuitUnit* unit) const
@@ -47,13 +46,22 @@ void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
 	static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
 }
 
+void CBGuardTask::Stop(bool done)
+{
+	for (CCircuitUnit* unit : units) {
+		static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
+	}
+
+	IBuilderTask::Stop(done);
+}
+
 void CBGuardTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
 	if (vip != nullptr) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+			unit->CmdPriority(ClampPriority());
 			unit->GetUnit()->Guard(vip->GetUnit());
 		)
 	} else {

@@ -6,7 +6,7 @@
  */
 
 #include "unit/action/WaitAction.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -17,22 +17,18 @@ CWaitAction::CWaitAction(CCircuitUnit* owner)
 
 CWaitAction::~CWaitAction()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CWaitAction::Update(CCircuitAI* circuit)
 {
-
 }
 
 void CWaitAction::OnStart()
 {
-
 }
 
 void CWaitAction::OnEnd()
 {
-
 }
 
 } // namespace circuit

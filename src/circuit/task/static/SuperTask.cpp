@@ -8,10 +8,12 @@
 #include "task/static/SuperTask.h"
 #include "task/fighter/SquadTask.h"
 #include "task/TaskManager.h"
+#include "map/InfluenceMap.h"
 #include "module/MilitaryManager.h"
-#include "unit/EnemyUnit.h"
+#include "unit/enemy/EnemyUnit.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "AISCommands.h"
 #include "Lua.h"
@@ -31,7 +33,6 @@ CSuperTask::CSuperTask(ITaskManager* mgr)
 
 CSuperTask::~CSuperTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CSuperTask::CanAssignTo(CCircuitUnit* unit) const
@@ -47,7 +48,7 @@ void CSuperTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CSuperTask::Execute(CCircuitUnit* unit)
+void CSuperTask::Start(CCircuitUnit* unit)
 {
 	const int frame = manager->GetCircuit()->GetLastFrame();
 	targetFrame = frame - TARGET_DELAY;
@@ -74,17 +75,18 @@ void CSuperTask::Update()
 		return;
 	}
 
-	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	CInfluenceMap* inflMap = circuit->GetInflMap();
+	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	const float maxSqRange = SQUARE(cdef->GetMaxRange());
 	const float sqAoe = SQUARE(cdef->GetAoe() * 1.25f);
 	float cost = 0.f;
 	int groupIdx = -1;
 	const std::array<const std::set<IFighterTask*>*, 3> avoidTasks = {  // NOTE: ISquadTask only
-		&militaryManager->GetTasks(IFighterTask::FightType::ATTACK),
-		&militaryManager->GetTasks(IFighterTask::FightType::AH),
-		&militaryManager->GetTasks(IFighterTask::FightType::AA),
+		&militaryMgr->GetTasks(IFighterTask::FightType::ATTACK),
+		&militaryMgr->GetTasks(IFighterTask::FightType::AH),
+		&militaryMgr->GetTasks(IFighterTask::FightType::AA),
 	};
-	auto isAvoid = [&avoidTasks, frame, sqAoe](const AIFloat3& pos) {
+	auto isAllySafe = [&avoidTasks, frame, sqAoe, inflMap](const AIFloat3& pos) {
 		for (const std::set<IFighterTask*>* tasks : avoidTasks) {
 			for (const IFighterTask* task : *tasks) {
 				const AIFloat3& leaderPos = static_cast<const ISquadTask*>(task)->GetLeaderPos(frame);
@@ -93,16 +95,16 @@ void CSuperTask::Update()
 				}
 			}
 		}
-		return true;
+		return inflMap->GetInfluenceAt(pos) < -INFL_EPS;
 	};
-	const std::vector<CMilitaryManager::SEnemyGroup>& groups = militaryManager->GetEnemyGroups();
+	const std::vector<CEnemyManager::SEnemyGroup>& groups = circuit->GetEnemyManager()->GetEnemyGroups();
 	if (cdef->IsHoldFire() || (State::ROAM == state)) {
 		for (unsigned i = 0; i < groups.size(); ++i) {
-			const CMilitaryManager::SEnemyGroup& group = groups[i];
+			const CEnemyManager::SEnemyGroup& group = groups[i];
 			if ((cost >= group.cost) || (position.SqDistance2D(group.pos) >= maxSqRange)) {
 				continue;
 			}
-			if (isAvoid(group.pos)) {
+			if (isAllySafe(group.pos)) {
 				cost = group.cost;
 				groupIdx = i;
 			}
@@ -111,7 +113,7 @@ void CSuperTask::Update()
 		// TODO: Use WeaponDef::GetTurnRate() for turn-delay weight
 		const AIFloat3& targetVec = (targetPos - position).Normalize2D();
 		for (unsigned i = 0; i < groups.size(); ++i) {
-			const CMilitaryManager::SEnemyGroup& group = groups[i];
+			const CEnemyManager::SEnemyGroup& group = groups[i];
 			if (position.SqDistance2D(group.pos) >= maxSqRange) {
 				continue;
 			}
@@ -120,13 +122,13 @@ void CSuperTask::Update()
 			if (cost >= group.cost * angleMod) {
 				continue;
 			}
-			if (isAvoid(group.pos)) {
+			if (isAllySafe(group.pos)) {
 				cost = group.cost;
 				groupIdx = i;
 			}
 		}
 	}
-	const float maxCost = cdef->IsAttrStock() ? cdef->GetStockCost() : cdef->GetCost() * 0.01f;
+	const float maxCost = cdef->IsAttrStock() ? cdef->GetStockCost() : cdef->GetCostM() * 0.01f;
 	if ((groupIdx < 0) || (cost < maxCost)) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Stop();
@@ -137,11 +139,11 @@ void CSuperTask::Update()
 	}
 
 	const AIFloat3& grPos = groups[groupIdx].pos;
-	CEnemyUnit* bestTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
 	if (cdef->IsAttrStock()) {
 		float minSqDist = std::numeric_limits<float>::max();
 		for (const ICoreUnit::Id eId : groups[groupIdx].units) {
-			CEnemyUnit* enemy = circuit->GetEnemyUnit(eId);
+			CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
 			if (enemy == nullptr) {
 				continue;
 			}
@@ -154,7 +156,7 @@ void CSuperTask::Update()
 	} else {
 		float maxCost = 0.f;
 		for (const ICoreUnit::Id eId : groups[groupIdx].units) {
-			CEnemyUnit* enemy = circuit->GetEnemyUnit(eId);
+			CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
 			if (enemy == nullptr) {
 				continue;
 			}
@@ -176,8 +178,7 @@ void CSuperTask::Update()
 			if (target->IsInRadarOrLOS() && !circuit->IsCheating()) {
 				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			} else {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_ATTACK_GROUND, {targetPos.x, targetPos.y, targetPos.z},
-													  UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+				unit->CmdAttackGround(targetPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			}
 		)
 		targetFrame = frame;

@@ -18,22 +18,23 @@ public:
 	IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyUnit* target, int timeout = 0);
 	virtual ~IRepairTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
-	virtual void Update() override = 0;
+	virtual void Start(CCircuitUnit* unit) override;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override final;
 
+	virtual void Execute(CCircuitUnit* unit) override;
+
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override = 0;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override = 0;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override = 0;
 
 	virtual void SetTarget(CAllyUnit* unit);
 	ICoreUnit::Id GetTargetId() const { return targetId; }
 
-protected:
 	CAllyUnit* FindUnitToAssist(CCircuitUnit* unit);
 	ICoreUnit::Id targetId;  // Ignore "target" variable because ally units are vivid
 };

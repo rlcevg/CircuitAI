@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_TASK_FIGHTER_SQUADTASK_H_
 
 #include "task/fighter/FighterTask.h"
+#include "terrain/path/MicroPather.h"
 
 #include <memory>
 
@@ -31,10 +32,14 @@ public:
 private:
 	void FindLeader(decltype(units)::iterator itBegin, decltype(units)::iterator itEnd);
 
+	bool IsMergeSafe() const;
+	ISquadTask* CheckMergeTask();
+
 protected:
-	ISquadTask* GetMergeTask() const;
+	ISquadTask* GetMergeTask();
 	bool IsMustRegroup();
 	void ActivePath(float speed = NO_SPEED_LIMIT);
+	NSMicroPather::TestFunc GetHitTest() const;
 
 	float lowestRange;
 	float highestRange;
@@ -44,9 +49,14 @@ protected:
 	CCircuitUnit* leader;  // slowest, weakest unit, true leader
 	springai::AIFloat3 groupPos;
 	springai::AIFloat3 prevGroupPos;
-	std::shared_ptr<F3Vec> pPath;
+	std::shared_ptr<PathInfo> pPath;
 
 	int groupFrame;
+
+#ifdef DEBUG_VIS
+public:
+	virtual void Log() override;
+#endif
 };
 
 } // namespace circuit

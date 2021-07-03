@@ -59,7 +59,7 @@
 #include <vector>
 
 /** Library version: 0xMmP (M=Major,m=minor,P=patch) */
-#define NANOFLANN_VERSION 0x131
+#define NANOFLANN_VERSION 0x132
 
 // Avoid conflicting declaration of min/max macros in windows headers
 #if !defined(NOMINMAX) &&                                                      \
@@ -289,6 +289,8 @@ public:
                                  IndexDist_Sorter());
     return *it;
   }
+
+  inline bool condition(const IndexType index) const { return true; }
 };
 
 /** @} */
@@ -690,7 +692,7 @@ public:
       void *m = ::malloc(blocksize);
       if (!m) {
         fprintf(stderr, "Failed to allocate memory.\n");
-        return NULL;
+        throw std::bad_alloc();
       }
 
       /* Fill first word of new block with pointer to previous block. */
@@ -1271,13 +1273,17 @@ public:
    * only if the number of elements in the tree is less than `num_closest`.
    */
   size_t knnSearch(const ElementType *query_point, const size_t num_closest,
-                   IndexType *out_indices, DistanceType *out_distances_sq) const {
+                   IndexType *out_indices, DistanceType *out_distances_sq,
+                   const int /* nChecks_IGNORED */ = 10) const {
     nanoflann::KNNResultSet<DistanceType, IndexType> resultSet(num_closest);
     resultSet.init(out_indices, out_distances_sq);
     this->findNeighbors(resultSet, query_point, nanoflann::SearchParams());
     return resultSet.size();
   }
 
+  /*
+   * Hand-made addition
+   */
   template <class Condition>
   size_t knnSearch(const ElementType *query_point, const size_t num_closest,
                    IndexType *out_indices, DistanceType *out_distances_sq,
@@ -1962,8 +1968,8 @@ public:
 };
 
 /** An L2-metric KD-tree adaptor for working with data directly stored in an
- * Eigen Matrix, without duplicating the data storage. Each row in the matrix
- * represents a point in the state space.
+ * Eigen Matrix, without duplicating the data storage. You can select whether a 
+ * row or column in the matrix represents a point in the state space.
  *
  *  Example of usage:
  * \code
@@ -1977,11 +1983,14 @@ public:
  *  \tparam DIM If set to >0, it specifies a compile-time fixed dimensionality
  * for the points in the data set, allowing more compiler optimizations. \tparam
  * Distance The distance metric to use: nanoflann::metric_L1,
- * nanoflann::metric_L2, nanoflann::metric_L2_Simple, etc.
+ * nanoflann::metric_L2, nanoflann::metric_L2_Simple, etc. \tparam row_major 
+ * If set to true the rows of the matrix are used as the points, if set to false
+ * the columns of the matrix are used as the points.
  */
-template <class MatrixType, int DIM = -1, class Distance = nanoflann::metric_L2>
+template <class MatrixType, int DIM = -1, class Distance = nanoflann::metric_L2,
+	  bool row_major = true>
 struct KDTreeEigenMatrixAdaptor {
-  typedef KDTreeEigenMatrixAdaptor<MatrixType, DIM, Distance> self_t;
+  typedef KDTreeEigenMatrixAdaptor<MatrixType, DIM, Distance, row_major> self_t;
   typedef typename MatrixType::Scalar num_t;
   typedef typename MatrixType::Index IndexType;
   typedef
@@ -1998,7 +2007,7 @@ struct KDTreeEigenMatrixAdaptor {
                            const std::reference_wrapper<const MatrixType> &mat,
                            const int leaf_max_size = 10)
       : m_data_matrix(mat) {
-    const auto dims = mat.get().cols();
+    const auto dims = row_major ? mat.get().cols() : mat.get().rows();
     if (size_t(dims) != dimensionality)
       throw std::runtime_error(
           "Error: 'dimensionality' must match column count in data matrix");
@@ -2041,12 +2050,18 @@ public:
 
   // Must return the number of data points
   inline size_t kdtree_get_point_count() const {
-    return m_data_matrix.get().rows();
+    if(row_major)
+      return m_data_matrix.get().rows();
+    else
+      return m_data_matrix.get().cols();
   }
 
   // Returns the dim'th component of the idx'th point in the class:
   inline num_t kdtree_get_pt(const IndexType idx, size_t dim) const {
-    return m_data_matrix.get().coeff(idx, IndexType(dim));
+    if(row_major)
+      return m_data_matrix.get().coeff(idx, IndexType(dim));
+    else
+      return m_data_matrix.get().coeff(IndexType(dim), idx);
   }
 
   // Optional bounding-box computation: return false to default to a standard

@@ -3,7 +3,7 @@
  *
  *  Smallest enclosing circle
  *  Created on: Mar 23, 2015
- *      Author: rlcevg
+ *      Editor: rlcevg
  *      Origin: http://www.nayuki.io/page/smallest-enclosing-circle
  */
 
@@ -77,8 +77,8 @@ public:
 	virtual ~CEncloseCircle();
 
 	void MakeCircle(const std::vector<springai::AIFloat3>& points);
-	const springai::AIFloat3& GetCenter() const;
-	float GetRadius() const;
+	const springai::AIFloat3& GetCenter() const { return center; }
+	float GetRadius() const { return radius; }
 
 private:
 	SCircle MakeCircleOnePoint(const std::vector<SPoint>::iterator& ptsBegin,

@@ -7,18 +7,22 @@
 
 #include "setup/SetupManager.h"
 #include "setup/SetupData.h"
+#include "module/MilitaryManager.h"  // only for CalcLanePos
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/FileSystem.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+#include "spring/SpringMap.h"
+
 #include "OptionValues.h"
 #include "SkirmishAI.h"
 #include "Game.h"
-#include "Map.h"
 #include "DataDirs.h"
 #include "File.h"
 #include "Log.h"
@@ -38,6 +42,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, commander(nullptr)
 		, startPos(-RgtVector)
 		, basePos(-RgtVector)
+		, lanePos(-RgtVector)
 		, emptyShield(0.f)
 		, commChoice(nullptr)
 {
@@ -53,7 +58,6 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 
 CSetupManager::~CSetupManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete config;
 }
 
@@ -100,9 +104,9 @@ void CSetupManager::DisabledUnits(const char* setupScript)
 	}
 }
 
-bool CSetupManager::OpenConfig(const std::string& cfgOption)
+bool CSetupManager::OpenConfig(const std::string& profile, const std::vector<std::string>& parts)
 {
-	bool isOk = LoadConfig(cfgOption);
+	bool isOk = LoadConfig(profile, parts);
 	if (isOk) {
 		OverrideConfig();
 	}
@@ -145,8 +149,8 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 		case StartPosType::METAL_SPOT: {
 			const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
-			STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(commChoice->GetMobileId());
+			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+			STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
 			Lua* lua = circuit->GetLua();
 
 			std::map<int, CMetalData::MetalIndices> validPoints;
@@ -160,7 +164,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 						continue;
 					}
 
-					int iS = terrainManager->GetSectorIndex(spots[i].position);
+					const int iS = terrainMgr->GetSectorIndex(spots[i].position);
 					STerrainMapArea* area = mobileType->sector[iS].area;
 					if ((area != nullptr) && area->areaUsable) {
 						validPoints[idx].push_back(i);
@@ -173,7 +177,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 					unsigned count;
 					float distDivIncome;
 				};
-				const AIFloat3 center(terrainManager->GetTerrainWidth() / 2, 0, terrainManager->GetTerrainHeight() / 2);
+				const AIFloat3 center(terrainMgr->GetTerrainWidth() / 2, 0, terrainMgr->GetTerrainHeight() / 2);
 				std::vector<std::pair<int, SCluster>> validClusters;
 				for (auto& kv : validPoints) {
 					SCluster c;
@@ -207,15 +211,15 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 //			AIFloat3 posFrom(box.left, 0, box.top);
 //			AIFloat3 posTo(box.right, 0, box.bottom);
-//			CMetalManager* metalManager = circuit->GetMetalManager();
-//			CMetalData::MetalIndices inBoxIndices = metalManager->FindWithinRangeSpots(posFrom, posTo);
+//			CMetalManager* metalMgr = circuit->GetMetalManager();
+//			CMetalData::MetalIndices inBoxIndices = metalMgr->FindWithinRangeSpots(posFrom, posTo);
 //			if (!inBoxIndices.empty()) {
-//				const CMetalData::Metals& spots = metalManager->GetSpots();
-//				CTerrainManager* terrainManager = circuit->GetTerrainManager();
-//				STerrainMapMobileType* mobileType = terrainManager->GetMobileTypeById(commChoice->GetMobileId());
+//				const CMetalData::Metals& spots = metalMgr->GetSpots();
+//				CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+//				STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
 //				std::vector<int> filteredIndices;
 //				for (auto idx : inBoxIndices) {
-//					int iS = terrainManager->GetSectorIndex(spots[idx].position);
+//					int iS = terrainMgr->GetSectorIndex(spots[idx].position);
 //					STerrainMapArea* area = mobileType->sector[iS].area;
 //					if ((area != nullptr) && area->areaUsable) {
 //						filteredIndices.push_back(idx);
@@ -245,6 +249,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 	}
 
 	AIFloat3 pos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
+	SetBasePos(pos);
 	circuit->GetGame()->SendStartPosition(false, pos);
 }
 
@@ -254,25 +259,22 @@ bool CSetupManager::PickCommander()
 	float bestPower = .0f;
 
 	if (commChoice == nullptr) {
-		const CCircuitAI::CircuitDefs& defs = circuit->GetCircuitDefs();
-		for (auto& kv : defs) {
-			CCircuitDef* cdef = kv.second;
-
-			std::string lvl1 = cdef->GetUnitDef()->GetName();
+		for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+			std::string lvl1 = cdef.GetDef()->GetName();
 			if ((lvl1.find(commPrefix) != 0) || (lvl1.find(commSuffix) != lvl1.size() - 5)) {
 				continue;
 			}
 
-			const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+			const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
 			auto it = customParams.find("level");
 			if ((it == customParams.end()) || (utils::string_to_int(it->second) != 1)) {
 				continue;
 			}
-			comms.push_back(cdef);
+			comms.push_back(&cdef);
 
-			if (bestPower < cdef->GetBuildDistance()) {  // No more UnitDef->GetAutoHeal() :(
-				bestPower = cdef->GetBuildDistance();
-				commChoice = cdef;
+			if (bestPower < cdef.GetBuildDistance()) {  // No more UnitDef->GetAutoHeal() :(
+				bestPower = cdef.GetBuildDistance();
+				commChoice = &cdef;
 			}
 		}
 		if (comms.empty()) {
@@ -281,7 +283,7 @@ bool CSetupManager::PickCommander()
 	}
 
 	std::string cmd("ai_commander:");
-	cmd += ((commChoice == nullptr) ? comms[rand() % comms.size()] : commChoice)->GetUnitDef()->GetName();
+	cmd += ((commChoice == nullptr) ? comms[rand() % comms.size()] : commChoice)->GetDef()->GetName();
 	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 
 	return true;
@@ -334,7 +336,7 @@ void CSetupManager::ReadConfig()
 			if (it == roleNames.end()) {
 				circuit->LOG("CONFIG %s: default start has unknown role '%s'", cfgName.c_str(), role.asCString());
 			} else {
-				facStart.defaultStart.push_back(it->second);
+				facStart.defaultStart.push_back(it->second.type);
 			}
 		}
 		const Json::Value& facStrt = strt["factory"];
@@ -350,14 +352,14 @@ void CSetupManager::ReadConfig()
 			for (const Json::Value& opener : multiStrt) {
 				const float prob = opener.get((unsigned)0, 1.f).asFloat();
 				const Json::Value& roles = opener[1];
-				std::vector<CCircuitDef::RoleType> queue;
+				std::vector<CCircuitDef::RoleT> queue;
 				queue.reserve(roles.size());
 				for (const Json::Value& role : roles) {
 					auto it = roleNames.find(role.asString());
 					if (it == roleNames.end()) {
 						circuit->LOG("CONFIG %s: %s start has unknown role '%s'", cfgName.c_str(), defName.c_str(), role.asCString());
 					} else {
-						queue.push_back(it->second);
+						queue.push_back(it->second.type);
 					}
 				}
 				facOpeners.emplace_back(prob, queue);
@@ -384,6 +386,7 @@ void CSetupManager::ReadConfig()
 		hide.frame = hhdd.get("time", -1).asInt() * FRAMES_PER_SEC;
 		hide.threat = hhdd.get("threat", 0.f).asFloat();
 		hide.isAir = hhdd.get("air", false).asBool();
+		hide.sqTaskRad = SQUARE(hhdd.get("task_rad", 2000.f).asFloat());
 	}
 
 	if (!commChoices.empty()) {
@@ -402,7 +405,7 @@ void CSetupManager::ReadConfig()
 
 bool CSetupManager::HasModules(const CCircuitDef* cdef, unsigned level) const
 {
-	std::string name = cdef->GetUnitDef()->GetName();
+	std::string name = cdef->GetDef()->GetName();
 	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
 			return kv.second.morph.modules.size() > level;
@@ -413,7 +416,7 @@ bool CSetupManager::HasModules(const CCircuitDef* cdef, unsigned level) const
 
 const std::vector<float>& CSetupManager::GetModules(const CCircuitDef* cdef, unsigned level) const
 {
-	std::string name = cdef->GetUnitDef()->GetName();
+	std::string name = cdef->GetDef()->GetName();
 	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
 			const std::vector<std::vector<float>>& modules = kv.second.morph.modules;
@@ -426,7 +429,7 @@ const std::vector<float>& CSetupManager::GetModules(const CCircuitDef* cdef, uns
 
 int CSetupManager::GetMorphFrame(const CCircuitDef* cdef) const
 {
-	std::string name = cdef->GetUnitDef()->GetName();
+	std::string name = cdef->GetDef()->GetName();
 	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
 			return kv.second.morph.frame;
@@ -435,7 +438,7 @@ int CSetupManager::GetMorphFrame(const CCircuitDef* cdef) const
 	return -1;
 }
 
-const std::vector<CCircuitDef::RoleType>* CSetupManager::GetOpener(const CCircuitDef* facDef) const
+const std::vector<CCircuitDef::RoleT>* CSetupManager::GetOpener(const CCircuitDef* facDef) const
 {
 	auto its = start.find(commChoice->GetId());
 	if (its == start.end()) {
@@ -463,7 +466,7 @@ const std::vector<CCircuitDef::RoleType>* CSetupManager::GetOpener(const CCircui
 
 const CSetupManager::SCommInfo::SHide* CSetupManager::GetHide(const CCircuitDef* cdef) const
 {
-	std::string name = cdef->GetUnitDef()->GetName();
+	std::string name = cdef->GetDef()->GetName();
 	for (auto& kv : commInfos) {
 		if (name.find(kv.first) != std::string::npos) {
 			return &kv.second.hide;
@@ -497,7 +500,6 @@ void CSetupManager::Welcome() const
 
 void CSetupManager::FindStart()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	if (utils::is_valid(startPos)) {
 		circuit->GetScheduler()->RemoveTask(findStart);
 		findStart = nullptr;
@@ -505,6 +507,8 @@ void CSetupManager::FindStart()
 		for (StartFunc& func : startFuncs) {
 			func(startPos);
 		}
+
+		circuit->GetScheduler()->RunTaskAfter(std::make_shared<CGameTask>(&CSetupManager::CalcLanePos, this), FRAMES_PER_SEC);
 		return;
 	}
 
@@ -512,6 +516,11 @@ void CSetupManager::FindStart()
 		return;
 	}
 
+	CalcStartPos();
+}
+
+void CSetupManager::CalcStartPos()
+{
 	const int frame = circuit->GetLastFrame();
 	AIFloat3 midPos = ZeroVector;
 	for (auto& kv : circuit->GetTeamUnits()) {
@@ -534,21 +543,88 @@ void CSetupManager::FindStart()
 	SetStartPos(bestPos);
 }
 
+void CSetupManager::CalcLanePos()
+{
+	std::vector<std::pair<int, AIFloat3>> points;
+	AIFloat3 midPos = ZeroVector;
+	for (CCircuitAI* ai : circuit->GetGameAttribute()->GetCircuits()) {
+		if (ai->IsInitialized() && (ai->GetAllyTeamId() == circuit->GetAllyTeamId())) {
+			const AIFloat3& pos = ai->GetSetupManager()->GetBasePos();
+			points.push_back(std::make_pair(ai->GetSkirmishAIId(), pos));
+			midPos += pos;
+		}
+	}
+	midPos /= points.size();
+
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	float width = terrainMgr->GetTerrainWidth();
+	float height = terrainMgr->GetTerrainHeight();
+	AIFloat3 p1(width - width / 3, 0, height / 3);
+	AIFloat3 p2(width / 3, 0, height / 3);
+	AIFloat3 p3(width / 3, 0, height - height / 3);
+	AIFloat3 p4(width - width / 3, 0, height - height / 3);
+	AIFloat3 centerPos(width / 2, 0, height / 2);
+	AIFloat3 step, offset;
+	if ((midPos.x > p1.x && midPos.z < p1.z) || (midPos.x < p3.x && midPos.z > p3.z)) {  // I, III
+		step = AIFloat3(width / (points.size() + 1), 0, height / (points.size() + 1));
+		offset = AIFloat3(0, 0, 0);
+	} else if ((midPos.x < p2.x && midPos.z < p2.z) || (midPos.x > p4.x && midPos.z > p4.z)) {  // II, IV
+		step = AIFloat3(width / (points.size() + 1), 0, -height / (points.size() + 1));
+		offset = AIFloat3(0, 0, height);
+	} else if (fabs(centerPos.x - midPos.x) * height < fabs(centerPos.z - midPos.z) * width) {  // x-aligned (dX/dZ < w/h)
+		step = AIFloat3(width / (points.size() + 1), 0, 0);
+		offset = AIFloat3(0, 0, height / 2);
+	} else {  // z-aligned
+		step = AIFloat3(0, 0, height / (points.size() + 1));
+		offset = AIFloat3(width / 2, 0, 0);
+	}
+
+	auto sqLenOfProjPointOnLine = [](const AIFloat3& p/*, const AIFloat3& v1*/, const AIFloat3& v2) {
+		// simplified, v1 = ZeroPoint
+		float e1x = v2.x/* - v1.x*/, e1z = v2.z/* - v1.z*/;  // v2-ZeroPoint
+		float e2x = p.x/* - v1.x*/, e2z = p.z/* - v1.z*/;  // p-ZeroPoint
+		float valDp = e1x * e2x + e1z * e2z;  // dotProduct(e1, e2)
+		float sqLen = e1x * e1x + e1z * e1z;
+		float resX = /*v1.x + */(valDp * e1x) / sqLen;
+		float resZ = /*v1.z + */(valDp * e1z) / sqLen;
+		return resX * resX + resZ * resZ;
+	};
+	std::vector<std::pair<int, float>> sortedPoints;
+	for (const std::pair<int, AIFloat3>& pos : points) {
+		sortedPoints.push_back(std::make_pair(pos.first, sqLenOfProjPointOnLine(pos.second, step)));
+	}
+	auto compare = [](const std::pair<int, float>& p1, const std::pair<int, float>& p2) {
+		return p1.second < p2.second;
+	};
+	std::sort(sortedPoints.begin(), sortedPoints.end(), compare);
+	int i = 0;
+	while (i < (int)sortedPoints.size() && circuit->GetSkirmishAIId() != sortedPoints[i].first) {
+		i++;
+	}
+	AIFloat3 bestPos = step * (i + 1) + offset;
+
+	SetLanePos(bestPos);
+	// FIXME: DEBUG
+#ifdef DEBUG_VIS
+	circuit->GetDrawer()->AddPoint(lanePos, utils::int_to_string(circuit->GetSkirmishAIId()).c_str());
+	circuit->GetDrawer()->AddLine((basePos + lanePos) / 2, lanePos);
+	circuit->LOG("baseRange: %f", lanePos.distance2D(basePos));
+#endif  // DEBUG_VIS
+	// FIXME: DEBUG
+
+	// NOTE: #include "module/MilitaryManager.h"
+	circuit->GetMilitaryManager()->SetBaseDefRange(lanePos.distance2D(basePos));
+}
+
 bool CSetupManager::LocatePath(std::string& filename)
 {
-	static const size_t absPath_sizeMax = 2048;
-	char absPath[absPath_sizeMax];
 	DataDirs* datadirs = circuit->GetCallback()->GetDataDirs();
-	const bool dir = !filename.empty() && (*filename.rbegin() == '/' || *filename.rbegin() == '\\');
-	const bool located = datadirs->LocatePath(absPath, absPath_sizeMax, filename.c_str(), false /*writable*/, false /*create*/, dir, false /*common*/);
-	if (located) {
-		filename = absPath;
-	}
+	const bool located = utils::LocatePath(datadirs, filename);
 	delete datadirs;
 	return located;
 }
 
-bool CSetupManager::LoadConfig(const std::string& cfgOption)
+bool CSetupManager::LoadConfig(const std::string& profile, const std::vector<std::string>& parts)
 {
 	Info* info = circuit->GetSkirmishAI()->GetInfo();
 	const char* version = info->GetValueByKey("version");
@@ -558,43 +634,15 @@ bool CSetupManager::LoadConfig(const std::string& cfgOption)
 	std::string dirname;
 
 	/*
-	 * Try startscript specific config
-	 */
-	configName = "startscript";
-	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
-	const char* value = options->GetValueByKey("JSON");
-	std::string cfgStr = ((value != nullptr) && strlen(value) > 0) ? value : "";
-	delete options;
-	if (!cfgStr.empty()) {
-		config = ParseConfig(cfgStr, configName);
-		if (config != nullptr) {
-			return true;
-		}
-	}
-
-	/*
 	 * Try map specific config
 	 */
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	dirname = std::string("LuaRules/Configs/") + name + "/" + version + "/";
 	configName = utils::MakeFileSystemCompatible(map->GetName()) + ".json";
 
-	config = ReadConfig(dirname, {configName});
+	config = ReadConfig(dirname, profile, {configName});
 	if (config != nullptr) {
 		return true;
-	}
-
-	/*
-	 * Prepare config parts
-	 */
-	std::vector<std::string> cfgNames;
-	std::string::const_iterator start = cfgOption.begin();
-	std::string::const_iterator end = cfgOption.end();
-	std::regex patternCfg("\\w+");
-	std::smatch section;
-	while (std::regex_search(start, end, section, patternCfg)) {
-		cfgNames.push_back(std::string(section[0]) + ".json");
-		start = section[0].second;
 	}
 
 	/*
@@ -603,7 +651,7 @@ bool CSetupManager::LoadConfig(const std::string& cfgOption)
 	configName = "config";
 	dirname = configName + SLASH;
 	if (LocatePath(dirname)) {
-		config = ReadConfig(dirname, cfgNames);
+		config = ReadConfig(dirname, profile, parts);
 		if (config != nullptr) {
 			return true;
 		}
@@ -615,27 +663,26 @@ bool CSetupManager::LoadConfig(const std::string& cfgOption)
 	 * Locate develop config: to run ./spring from source dir
 	 */
 	dirname = std::string("AI/Skirmish/") + name + "/data/" + configName + "/";
-	config = ReadConfig(dirname, cfgNames);
+	config = ReadConfig(dirname, profile, parts);
 	return (config != nullptr);
 }
 
-Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::vector<std::string>& cfgNames)
+Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::string& profile, const std::vector<std::string>& parts)
 {
 	Json::Value* cfg = nullptr;
 	File* file = circuit->GetCallback()->GetFile();
 
-	for (const std::string& name : cfgNames) {
-		std::string filename = dirname + name;
-		int fileSize = file->GetSize(filename.c_str());
-		if (fileSize <= 0) {
-			circuit->LOG("No config file! (%s)", filename.c_str());
-			continue;
+	for (const std::string& name : parts) {
+		std::string filename = dirname + profile + "/" + name + ".json";
+		auto cfgStr = utils::ReadFile(file, filename);
+		if (cfgStr.empty()) {
+			filename = dirname + name + ".json";
+			cfgStr = utils::ReadFile(file, filename);
+			if (cfgStr.empty()) {
+				circuit->LOG("No config file! (%s)", filename.c_str());
+				continue;
+			}
 		}
-		char* value = new char [fileSize + 1];
-		file->GetContent(filename.c_str(), value, fileSize);
-		value[fileSize] = 0;
-		std::string cfgStr(value);
-		delete[] value;
 		cfg = ParseConfig(cfgStr, name, cfg);
 	}
 
@@ -684,22 +731,17 @@ void CSetupManager::UpdateJson(Json::Value& a, Json::Value& b) {
 
 void CSetupManager::OverrideConfig()
 {
-	Json::CharReader* reader = Json::CharReaderBuilder().newCharReader();
-	Json::Value json;
+	/*
+	 * Check startscript specific config
+	 */
 	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
-
-	const char* value = options->GetValueByKey("factory");
-	if ((value != nullptr) && reader->parse(value, value + strlen(value), &json, nullptr)) {
-		(*config)["factory"] = json;
-	}
-
-	value = options->GetValueByKey("behaviour");
-	if ((value != nullptr) && reader->parse(value, value + strlen(value), &json, nullptr)) {
-		(*config)["behaviour"] = json;
-	}
-
-	delete reader;
+	const char* value = options->GetValueByKey("JSON");
+	std::string cfgStr = ((value != nullptr) && strlen(value) > 0) ? value : "";
 	delete options;
+	if (!cfgStr.empty()) {
+		circuit->LOG("Override config %s by startscript", configName.c_str());
+		config = ParseConfig(cfgStr, "startscript", config);
+	}
 }
 
 } // namespace circuit

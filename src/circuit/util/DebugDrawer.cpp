@@ -8,12 +8,13 @@
 #ifdef DEBUG_VIS
 
 #include "util/DebugDrawer.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "CircuitAI.h"
+
+#include "spring/SpringCallback.h"
 
 #include "SSkirmishAICallback.h"
 #include "AISCommands.h"
-#include "OOAICallback.h"
 #include "Debug.h"
 
 namespace circuit {
@@ -35,7 +36,6 @@ CDebugDrawer::CDebugDrawer(CCircuitAI* circuit, const struct SSkirmishAICallback
 
 CDebugDrawer::~CDebugDrawer()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete debug;
 	if (isInitialized) {
 		Release();

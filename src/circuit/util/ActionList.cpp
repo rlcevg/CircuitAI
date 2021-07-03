@@ -8,7 +8,7 @@
 
 #include "util/ActionList.h"
 #include "util/Action.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include <algorithm>
 
@@ -24,7 +24,6 @@ CActionList::CActionList()
 
 CActionList::~CActionList()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	Clear();
 }
 
@@ -37,15 +36,14 @@ void CActionList::Update(CCircuitAI* circuit)
 			action->Update(circuit);
 		}
 
-		if (action->IsBlocking()) {
-			blocker = action;
-			return;
-		}
-
-		if (action->IsFinished()) {
+		if (action->IsFinishing()) {
 			action->OnEnd();
-			itAction = Remove(itAction);
+//			itAction = Remove(itAction);
 		} else {
+			if (action->IsBlocking()) {
+				blocker = action;
+				return;
+			}
 			++itAction;
 		}
 	}

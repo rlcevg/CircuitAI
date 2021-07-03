@@ -13,7 +13,7 @@
 
 namespace circuit {
 
-class CEnemyUnit;
+class CEnemyInfo;
 
 class IFighterTask: public IUnitTask {
 public:
@@ -31,30 +31,41 @@ public:
 	virtual void Update() override;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	FightType GetFightType() const { return fightType; }
 	const springai::AIFloat3& GetPosition() const { return position; }
 
 	float GetAttackPower() const { return attackPower; }
-	CEnemyUnit* GetTarget() const { return target; }
+	CEnemyInfo* GetTarget() const { return target; }
 	void ClearTarget() { target = nullptr; }  // Only for ~CEnemyUnit
 
 	const std::set<CCircuitUnit*>& GetShields() const { return shields; }
 
 protected:
-	void SetTarget(CEnemyUnit* enemy);
+	void SetTarget(CEnemyInfo* enemy);
+	void Attack(const int frame);
 
 	FightType fightType;
 	springai::AIFloat3 position;  // attack/scout position
 
 	float attackPower;
 	float powerMod;
-	CEnemyUnit* target;
+	int attackFrame;
+	// NOTE: Never assign directly, use SetTarget() to avoid access to a dead target
+	CEnemyInfo* target;
 
 	std::set<CCircuitUnit*> cowards;
 	std::set<CCircuitUnit*> shields;
+
+	static F3Vec urgentPositions;  // NOTE: micro-opt
+	static F3Vec enemyPositions;  // NOTE: micro-opt
+
+#ifdef DEBUG_VIS
+public:
+	virtual void Log() override;
+#endif
 };
 
 } // namespace circuit

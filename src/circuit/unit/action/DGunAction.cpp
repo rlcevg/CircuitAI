@@ -6,12 +6,14 @@
  */
 
 #include "unit/action/DGunAction.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
-#include "unit/EnemyUnit.h"
+#include "module/EconomyManager.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+
 #include "Drawer.h"
 
 namespace circuit {
@@ -27,7 +29,6 @@ CDGunAction::CDGunAction(CCircuitUnit* owner, float range)
 
 CDGunAction::~CDGunAction()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CDGunAction::Update(CCircuitAI* circuit)
@@ -40,26 +41,25 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	const int frame = circuit->GetLastFrame();
 	// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
 	//       Also checking disarm is more expensive (because of UnitRulesParam).
-	if (!unit->IsDGunReady(frame) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed(frame)*/) {
+	if (!unit->IsDGunReady(frame, circuit->GetEconomyManager()->GetEnergyCur()) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed(frame)*/) {
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(frame);
-	auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, range));
+	auto enemies = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, range);
 	if (enemies.empty()) {
 		return;
 	}
 
 	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
 	bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
-	CEnemyUnit* bestTarget = nullptr;
+	CEnemyInfo* bestTarget = nullptr;
 	float maxThreat = 0.f;
 
-	for (Unit* e : enemies) {
-		if (e == nullptr) {
+	for (int eId : enemies) {
+		if (eId == -1) {
 			continue;
 		}
-		CEnemyUnit* enemy = circuit->GetEnemyUnit(e);
-		delete e;  // replaces utils::free_clear(enemies);
+		CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
 		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetThreat() < THREAT_MIN)) {
 			continue;
 		}
@@ -68,7 +68,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 
-		AIFloat3 dir = enemy->GetUnit()->GetPos() - pos;
+		AIFloat3 dir = enemy->GetPos() - pos;
 		float rayRange = dir.LengthNormalize();
 		// NOTE: TraceRay check is mostly to ensure shot won't go into terrain.
 		//       Doesn't properly work with standoff weapons.
@@ -87,6 +87,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 
 	if (bestTarget != nullptr) {
 		unit->ManualFire(bestTarget, frame + FRAMES_PER_SEC * 5);
+		unit->ClearTarget();
 		isBlocking = true;
 	}
 }

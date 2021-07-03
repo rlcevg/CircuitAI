@@ -9,8 +9,9 @@
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "AISCommands.h"
 
@@ -28,7 +29,6 @@ CRallyTask::CRallyTask(ITaskManager* mgr, float maxPower)
 
 CRallyTask::~CRallyTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CRallyTask::CanAssignTo(CCircuitUnit* unit) const
@@ -50,16 +50,16 @@ bool CRallyTask::CanAssignTo(CCircuitUnit* unit) const
 	return false;
 }
 
-void CRallyTask::Execute(CCircuitUnit* unit)
+void CRallyTask::Start(CCircuitUnit* unit)
 {
 	if (attackPower < maxPower) {
 		CCircuitAI* circuit = manager->GetCircuit();
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		AIFloat3 pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+		AIFloat3 pos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->MoveTo(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-			unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
+			unit->CmdMoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+			unit->CmdWantedSpeed(NO_SPEED_LIMIT);
 		)
 		return;
 	}

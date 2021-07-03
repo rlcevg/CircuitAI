@@ -6,7 +6,7 @@
  */
 
 #include "task/builder/RadarTask.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -21,7 +21,6 @@ CBRadarTask::CBRadarTask(ITaskManager* mgr, Priority priority,
 
 CBRadarTask::~CBRadarTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

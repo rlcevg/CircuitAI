@@ -24,17 +24,19 @@ public:
 	virtual ~IReclaimTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
-	virtual void AssignTo(CCircuitUnit* unit) override;
+	virtual void AssignTo(CCircuitUnit* unit) override = 0;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;  // FIXME: Remove when proper task assignment implemented
 
-	virtual void Execute(CCircuitUnit* unit) override;
-	virtual void Update() override = 0;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
+	virtual void Execute(CCircuitUnit* unit) override;
+
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
+
+	virtual void SetTarget(CCircuitUnit* unit) override;
 
 protected:
 	float radius;

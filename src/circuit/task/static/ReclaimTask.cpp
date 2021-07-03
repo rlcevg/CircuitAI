@@ -10,10 +10,11 @@
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
+#include "unit/action/DGunAction.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
 
 namespace circuit {
 
@@ -28,7 +29,28 @@ CSReclaimTask::CSReclaimTask(ITaskManager* mgr, Priority priority,
 
 CSReclaimTask::~CSReclaimTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+void CSReclaimTask::AssignTo(CCircuitUnit* unit)
+{
+	IUnitTask::AssignTo(unit);
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	ShowAssignee(unit);
+	if (!utils::is_valid(position)) {
+		position = unit->GetPos(circuit->GetLastFrame());
+	}
+
+	if (unit->HasDGun()) {
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange()));
+	}
+
+	lastTouched = circuit->GetLastFrame();
+}
+
+void CSReclaimTask::Start(CCircuitUnit* unit)
+{
+	Execute(unit);
 }
 
 void CSReclaimTask::Update()
@@ -38,13 +60,13 @@ void CSReclaimTask::Update()
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		// Check for damaged units
-		CBuilderManager* builderManager = circuit->GetBuilderManager();
+		CBuilderManager* builderMgr = circuit->GetBuilderManager();
 		CAllyUnit* repairTarget = nullptr;
 		circuit->UpdateFriendlyUnits();
-		auto us = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f));
+		auto us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 		for (Unit* u : us) {
 			CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-			if ((candUnit == nullptr) || builderManager->IsReclaimed(candUnit)) {
+			if ((candUnit == nullptr) || builderMgr->IsReclaimed(candUnit)) {
 				continue;
 			}
 			if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
@@ -65,7 +87,7 @@ void CSReclaimTask::Update()
 	}
 }
 
-void CSReclaimTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CSReclaimTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	// TODO: Terraform attacker into dust
 }

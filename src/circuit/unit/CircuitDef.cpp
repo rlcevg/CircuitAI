@@ -8,7 +8,7 @@
 #include "unit/CircuitDef.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "WeaponMount.h"
 #include "WeaponDef.h"
@@ -16,6 +16,7 @@
 #include "Shield.h"
 #include "MoveData.h"
 #include "Map.h"
+#include "Log.h"
 
 #include <regex>
 
@@ -23,29 +24,9 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitDef::RoleName CCircuitDef::roleNames = {
-	{"builder",    CCircuitDef::RoleType::BUILDER},
-	{"scout",      CCircuitDef::RoleType::SCOUT},
-	{"raider",     CCircuitDef::RoleType::RAIDER},
-	{"riot",       CCircuitDef::RoleType::RIOT},
-	{"assault",    CCircuitDef::RoleType::ASSAULT},
-	{"skirmish",   CCircuitDef::RoleType::SKIRM},
-	{"artillery",  CCircuitDef::RoleType::ARTY},
-	{"anti_air",   CCircuitDef::RoleType::AA},
-	{"anti_sub",   CCircuitDef::RoleType::AS},
-	{"anti_heavy", CCircuitDef::RoleType::AH},
-	{"bomber",     CCircuitDef::RoleType::BOMBER},
-	{"support",    CCircuitDef::RoleType::SUPPORT},
-	{"mine",       CCircuitDef::RoleType::MINE},
-	{"transport",  CCircuitDef::RoleType::TRANS},
-	{"air",        CCircuitDef::RoleType::AIR},
-	{"sub",        CCircuitDef::RoleType::SUB},
-	{"static",     CCircuitDef::RoleType::STATIC},
-	{"heavy",      CCircuitDef::RoleType::HEAVY},
-	{"super",      CCircuitDef::RoleType::SUPER},
-	{"commander",  CCircuitDef::RoleType::COMM},
-};
+#define THREAT_MOD		(1.0f / 128.0f)
 
+CCircuitDef::RoleName* CCircuitDef::roleNames;
 CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"melee",     CCircuitDef::AttrType::MELEE},
 	{"boost",     CCircuitDef::AttrType::BOOST},
@@ -56,24 +37,61 @@ CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"ret_hold",  CCircuitDef::AttrType::RET_HOLD},
 	{"ret_fight", CCircuitDef::AttrType::RET_FIGHT},
 };
-
 CCircuitDef::FireName CCircuitDef::fireNames = {
 	{"hold",   CCircuitDef::FireType::HOLD},
 	{"return", CCircuitDef::FireType::RETURN},
 	{"open",   CCircuitDef::FireType::OPEN},
 };
 
-CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts, Resource* res)
+void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker)
+{
+	std::vector<std::pair<std::string, CMaskHandler::TypeMask>> roles = {
+		{"",           {ROLE_TYPE(NONE),    CCircuitDef::RoleMask::NONE}},
+		{"builder",    {ROLE_TYPE(BUILDER), CCircuitDef::RoleMask::BUILDER}},
+		{"scout",      {ROLE_TYPE(SCOUT),   CCircuitDef::RoleMask::SCOUT}},
+		{"raider",     {ROLE_TYPE(RAIDER),  CCircuitDef::RoleMask::RAIDER}},
+		{"riot",       {ROLE_TYPE(RIOT),    CCircuitDef::RoleMask::RIOT}},
+		{"assault",    {ROLE_TYPE(ASSAULT), CCircuitDef::RoleMask::ASSAULT}},
+		{"skirmish",   {ROLE_TYPE(SKIRM),   CCircuitDef::RoleMask::SKIRM}},
+		{"artillery",  {ROLE_TYPE(ARTY),    CCircuitDef::RoleMask::ARTY}},
+		{"anti_air",   {ROLE_TYPE(AA),      CCircuitDef::RoleMask::AA}},
+		{"anti_sub",   {ROLE_TYPE(AS),      CCircuitDef::RoleMask::AS}},
+		{"anti_heavy", {ROLE_TYPE(AH),      CCircuitDef::RoleMask::AH}},
+		{"bomber",     {ROLE_TYPE(BOMBER),  CCircuitDef::RoleMask::BOMBER}},
+		{"support",    {ROLE_TYPE(SUPPORT), CCircuitDef::RoleMask::SUPPORT}},
+		{"mine",       {ROLE_TYPE(MINE),    CCircuitDef::RoleMask::MINE}},
+		{"transport",  {ROLE_TYPE(TRANS),   CCircuitDef::RoleMask::TRANS}},
+		{"air",        {ROLE_TYPE(AIR),     CCircuitDef::RoleMask::AIR}},
+		{"sub",        {ROLE_TYPE(SUB),     CCircuitDef::RoleMask::SUB}},
+		{"static",     {ROLE_TYPE(STATIC),  CCircuitDef::RoleMask::STATIC}},
+		{"heavy",      {ROLE_TYPE(HEAVY),   CCircuitDef::RoleMask::HEAVY}},
+		{"super",      {ROLE_TYPE(SUPER),   CCircuitDef::RoleMask::SUPER}},
+		{"commander",  {ROLE_TYPE(COMM),    CCircuitDef::RoleMask::COMM}},
+	};
+	for (auto& kv : roles) {
+		CMaskHandler::TypeMask tm = roleMasker->GetTypeMask(kv.first);
+		if ((tm.type != kv.second.type) || (tm.mask != kv.second.mask)) {
+			circuit->LOG("RoleError: %s = (%i, 0x%08X) != (%i, 0x%08X)", kv.first.c_str(),
+						 kv.second.type, kv.second.mask, tm.type, tm.mask);
+		}
+	}
+
+	CCircuitDef::roleNames = &roleMasker->GetMasks();
+}
+
+CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<Id>& buildOpts,
+		Resource* resM, Resource* resE)
 		: def(def)
-		, mainRole(RoleType::SCOUT)
+		, mainRole(ROLE_TYPE(ASSAULT))
 		, enemyRole(RoleMask::NONE)
+		, respRole(RoleMask::NONE)
 		, role(RoleMask::NONE)
+		, attr(NONE)
 		, buildOptions(buildOpts)
 		, count(0)
 		, buildCounts(0)
 		, sinceFrame(-1)
-		, isAttacker(false)
-		, hasDGunAA(false)
+		, dgunDef(nullptr)
 		, dgunMount(nullptr)
 		, shieldMount(nullptr)
 		, weaponMount(nullptr)
@@ -83,6 +101,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, power(.0f)
 		, threat(.0f)
 		, minRange(.0f)
+		, maxRangeType(RangeType::AIR)
 		, maxRange({.0f})
 		, threatRange({0})
 		, shieldRadius(.0f)
@@ -91,14 +110,21 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, targetCategory(0)
 		, immobileTypeId(-1)
 		, mobileTypeId(-1)
+		, isIgnore(false)
+		, isAttacker(false)
+		, hasDGunAA(false)
 		, hasAntiAir(false)
 		, hasAntiLand(false)
 		, hasAntiWater(false)
+		, isAlwaysHit(false)
 		, isAmphibious(false)
 		, isLander(false)
+		, isMex(false)
+		, isPylon(false)
 		, stockCost(.0f)
 		, jumpRange(.0f)
 		, retreat(-1.f)
+		, radius(-1.f)
 		, height(-1.f)
 		, topOffset(-1.f)
 {
@@ -111,27 +137,32 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 //	maxRange[static_cast<RangeT>(RangeType::MAX)] = def->GetMaxWeaponRange();
 	hasDGun         = def->CanManualFire();
 	category        = def->GetCategory();
-	noChaseCategory = (def->GetNoChaseCategory() | circuit->GetBadCategory()) & ~circuit->GetGoodCategory();
+	noChaseCategory = (def->GetNoChaseCategory() | circuit->GetBadCategory())
+					  & ~circuit->GetGoodCategory();
 
 	const int ft = def->GetFireState();
 	fireState = (ft < 0) ? FireType::OPEN : static_cast<FireType>(ft);
 
+	health    = def->GetHealth();
 	speed     = def->GetSpeed();  // elmos per second
 	losRadius = def->GetLosRadius();
-	cost      = def->GetCost(res);
+	costM     = def->GetCost(resM);
+	costE     = def->GetCost(resE);
 	cloakCost = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
 	buildTime = def->GetBuildTime();
 //	altitude  = def->GetWantedHeight();
 
 	MoveData* md = def->GetMoveData();
-	isSubmarine = (md == nullptr) ? false : md->IsSubMarine();
+	isSubmarine  = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
-	isAbleToFly    = def->IsAbleToFly();
-	isPlane        = !def->IsHoverAttack() && isAbleToFly;
-	isFloater      = def->IsFloater() && !isSubmarine && !isAbleToFly;
-	isSonarStealth = def->IsSonarStealth();
-	isTurnLarge    = (speed / (def->GetTurnRate() + 1e-3f) > 0.09f);  // empirical magic number
-	isAbleToCloak  = def->IsAbleToCloak();
+	isAbleToFly     = def->IsAbleToFly();
+	isPlane         = !def->IsHoverAttack() && isAbleToFly;
+	isFloater       = def->IsFloater() && !isSubmarine && !isAbleToFly;
+	isSonarStealth  = def->IsSonarStealth();
+	isTurnLarge     = (speed / (def->GetTurnRate() + 1e-3f) > 0.09f);  // empirical magic number
+	isAbleToCloak   = def->IsAbleToCloak();
+	isAbleToRepair  = def->IsAbleToRepair();
+	isAbleToReclaim = def->IsAbleToReclaim();
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("canjump");
@@ -144,7 +175,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	it = customParams.find("is_drone");
 	if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 		category |= circuit->GetBadCategory();
-		cost *= 0.1f;  // avoid threat metal
+		costM *= 0.1f;  // avoid threat metal
 	}
 
 //	if (customParams.find("boost_speed_mult") != customParams.end()) {
@@ -154,7 +185,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	bool isDynamic = false;
 	if (customParams.find("level") != customParams.end()) {
 		isDynamic = customParams.find("dynamic_comm") != customParams.end();
-		AddRole(RoleType::COMM);
+		AddRole(ROLE_TYPE(COMM));
 	}
 
 	it = customParams.find("midposoffset");
@@ -183,9 +214,19 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	}
 	delete sd;
 
+	WeaponDef* stockDef = def->GetStockpileDef();
+	if (stockDef != nullptr) {
+		it = customParams.find("stockpilecost");
+		if (it != customParams.end()) {
+			stockCost = utils::string_to_float(it->second);
+		}
+		AddAttribute(AttrType::STOCK);
+		delete stockDef;
+	}
+
 	if (!def->IsAbleToAttack()) {
 		if (isShield) {
-			auto mounts = std::move(def->GetWeaponMounts());
+			auto mounts = def->GetWeaponMounts();
 			for (WeaponMount* mount : mounts) {
 				WeaponDef* wd = mount->GetWeaponDef();
 				if ((shieldMount == nullptr) && wd->IsShield()) {
@@ -200,31 +241,23 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		return;
 	}
 
-	WeaponDef* stockDef = def->GetStockpileDef();
-	if (stockDef != nullptr) {
-		it = customParams.find("stockpilecost");
-		if (it != customParams.end()) {
-			stockCost = utils::string_to_float(it->second);
-		}
-		AddAttribute(AttrType::STOCK);
-		delete stockDef;
-	}
-
 	/*
 	 * DPS and Weapon calculations
 	 */
+	std::set<CWeaponDef::Id> allWeaponDefs;
 	minRange = std::numeric_limits<float>::max();
 	float minReloadTime = std::numeric_limits<float>::max();
 	float bestDGunReload = std::numeric_limits<float>::max();
 	float bestWpRange = std::numeric_limits<float>::max();
 	float dps = .0f;  // TODO: split dps like ranges on air, land, water
 	float dmg = .0f;
+	CWeaponDef* bestDGunDef = nullptr;
 	WeaponMount* bestDGunMnt = nullptr;
 	WeaponMount* bestWpMnt = nullptr;
 	bool canTargetAir = false;
 	bool canTargetLand = false;
 	bool canTargetWater = false;
-	auto mounts = std::move(def->GetWeaponMounts());
+	auto mounts = def->GetWeaponMounts();
 	for (WeaponMount* mount : mounts) {
 		WeaponDef* wd = mount->GetWeaponDef();
 		const std::map<std::string, std::string>& customParams = wd->GetCustomParams();
@@ -303,15 +336,14 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		aoe = std::max(aoe, wd->GetAreaOfEffect());
 
 		std::string wt(wd->GetType());  // @see https://springrts.com/wiki/Gamedev:WeaponDefs
-		bool isAirWeapon = false;
 		const float projectileSpeed = wd->GetProjectileSpeed();
 		float range = wd->GetRange();
 
-		isAirWeapon = ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
-				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (projectileSpeed * FRAMES_PER_SEC >= .75f * range);  // Cannons with fast projectiles
-		isAirWeapon |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
+		isAlwaysHit |= ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
+				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (projectileSpeed * FRAMES_PER_SEC >= .8f * range);  // Cannons with fast projectiles
+		isAlwaysHit |= (wt == "BeamLaser") || (wt == "LightningCannon") || (wt == "Rifle") ||  // Instant-hit
 				(((wt == "MissileLauncher") || (wt == "StarburstLauncher") || ((wt == "TorpedoLauncher") && wd->IsSubMissile())) && wd->IsTracks());  // Missiles
-		isAirWeapon &= (range > 150.f);
+		const bool isAirWeapon = isAlwaysHit && (range > 150.f);
 		canTargetAir |= isAirWeapon;
 
 		bool isLandWeapon = ((wt != "TorpedoLauncher") || wd->IsSubMissile());
@@ -320,27 +352,33 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		canTargetWater |= isWaterWeapon;
 
 		minRange = std::min(minRange, range);
-		float& maxR = maxRange[static_cast<RangeT>(RangeType::MAX)];
 		if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::AIR)];
 			mr = std::max(mr, range);
-			maxR = std::max(maxR, mr);
+			if (mr > maxRange[static_cast<RangeT>(maxRangeType)]) {
+				maxRangeType = RangeType::AIR;
+			}
 		}
 		if ((weaponCat & circuit->GetLandCategory()) && isLandWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::LAND)];
-			mr = std::max(mr, (isAbleToFly && (wt == "Cannon")) ? range * 1.25f : range);
-			maxR = std::max(maxR, mr);
+			mr = std::max(mr, (isAbleToFly && (wt == "Cannon")) ? range * 1.25f : range);  // 1.25 - gunship height hax
+			if (mr > maxRange[static_cast<RangeT>(maxRangeType)]) {
+				maxRangeType = RangeType::LAND;
+			}
 		}
 		if ((weaponCat & circuit->GetWaterCategory()) && isWaterWeapon) {
 			float& mr = maxRange[static_cast<RangeT>(RangeType::WATER)];
 			mr = std::max(mr, range);
-			maxR = std::max(maxR, mr);
+			if (mr > maxRange[static_cast<RangeT>(maxRangeType)]) {
+				maxRangeType = RangeType::WATER;
+			}
 		}
 
 		if (wd->IsManualFire() && (reloadTime < bestDGunReload)) {
 			// NOTE: Disable commander's dgun, because no usage atm
 			if (customParams.find("manualfire") == customParams.end()) {
 				bestDGunReload = reloadTime;
+				bestDGunDef = circuit->GetWeaponDef(wd->GetWeaponDefId());
 				delete bestDGunMnt;
 				bestDGunMnt = mount;
 				hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
@@ -360,17 +398,24 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		} else {
 			delete mount;
 		}
+
+		allWeaponDefs.insert(wd->GetWeaponDefId());
+
 		delete wd;
 	}
+
+	circuit->BindUnitToWeaponDefs(GetId(), allWeaponDefs, IsMobile());
+
 	if (isDynamic) {  // FIXME: Dynamo com workaround
 		dps /= mounts.size();
 		dmg /= mounts.size();
 	}
 
 	if (minReloadTime < std::numeric_limits<float>::max()) {
- 		reloadTime = minReloadTime * FRAMES_PER_SEC;
+		reloadTime = minReloadTime * FRAMES_PER_SEC;
 	}
 	if (bestDGunReload < std::numeric_limits<float>::max()) {
+		dgunDef = bestDGunDef;
 		dgunMount = bestDGunMnt;
 	}
 	if (bestWpRange < std::numeric_limits<float>::max()) {
@@ -423,12 +468,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	// TODO: Include projectile-speed/range, armor
 	//       health /= def->GetArmoredMultiple();
 	thrDmg = pwrDmg = dmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
-	threat = power = dmg * sqrtf(def->GetHealth() + maxShield * 2.0f);
+	threat = power = dmg * sqrtf(def->GetHealth() + maxShield * SHIELD_MOD);
 }
 
 CCircuitDef::~CCircuitDef()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete def;
 	delete dgunMount;
 	delete shieldMount;
@@ -488,11 +532,31 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 	isLander = !IsFloater() && !IsAbleToFly() && !IsAmphibious() && !IsSubmarine();
 }
 
-bool CCircuitDef::IsYTargetable(float elevation, float posY) {
+void CCircuitDef::AddRole(RoleT type, RoleT bindType)
+{
+	respRole |= GetMask(type);
+	role |= GetMask(bindType);
+}
+
+float CCircuitDef::GetRadius()
+{
+	if (radius < 0.f) {
+		radius = def->GetRadius();  // Forces loading of the unit model
+	}
+	return radius;
+}
+
+float CCircuitDef::GetHeight()
+{
 	if (height < 0.f) {
 		height    = def->GetHeight();  // Forces loading of the unit model
 		topOffset = height / 2 - def->GetWaterline();
 	}
+	return height;
+}
+
+bool CCircuitDef::IsYTargetable(float elevation, float posY) {
+	GetHeight();
 	return (elevation > -height || posY > -topOffset);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #include "task/builder/StoreTask.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -21,7 +21,6 @@ CBStoreTask::CBStoreTask(ITaskManager* mgr, Priority priority,
 
 CBStoreTask::~CBStoreTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

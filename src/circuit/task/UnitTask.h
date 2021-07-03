@@ -8,9 +8,13 @@
 #ifndef SRC_CIRCUIT_TASK_UNITTASK_H_
 #define SRC_CIRCUIT_TASK_UNITTASK_H_
 
+#include "script/RefCounter.h"
+
 #include "AIFloat3.h"
 
 #include <set>
+#include <map>
+#include <memory>
 
 namespace springai {
 	class Unit;
@@ -19,10 +23,13 @@ namespace springai {
 namespace circuit {
 
 class CCircuitUnit;
-class CEnemyUnit;
+class CEnemyInfo;
 class ITaskManager;
+class IPathQuery;
+class CQueryPathSingle;
+class CQueryPathMulti;
 
-class IUnitTask {  // CSquad, IAction
+class IUnitTask: public IRefCounter {  // CSquad, IAction
 public:
 	enum class Priority: char {LOW = 0, NORMAL = 1, HIGH = 2, NOW = 99};
 	enum class Type: char {NIL, PLAYER, IDLE, WAIT, RETREAT, BUILDER, FACTORY, FIGHTER};
@@ -30,16 +37,17 @@ public:
 
 protected:
 	IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout);
-public:
 	virtual ~IUnitTask();
+public:
+	virtual void ClearRelease();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const;
 	virtual void AssignTo(CCircuitUnit* unit);
 	virtual void RemoveAssignee(CCircuitUnit* unit);
 
-	virtual void Execute(CCircuitUnit* unit) = 0;  // <=> IAction::OnStart()
+	virtual void Start(CCircuitUnit* unit) = 0;  // <=> IAction::OnStart()
 	virtual void Update() = 0;
-	virtual void Close(bool done);  // <=> IAction::OnEnd()
+	virtual void Stop(bool done);  // <=> IAction::OnEnd()
 protected:
 	// NOTE: Do not run time consuming code here. Instead create separate task.
 	virtual void Finish();
@@ -47,9 +55,11 @@ protected:
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) = 0;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) = 0;
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) = 0;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) = 0;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) = 0;
 	void OnUnitMoveFailed(CCircuitUnit* unit);
+
+	virtual void OnTravelEnd(CCircuitUnit* unit);
 
 	const std::set<CCircuitUnit*>& GetAssignees() const { return units; }
 	Priority GetPriority() const { return priority; }
@@ -62,6 +72,11 @@ public:
 	void Dead() { isDead = true; }
 	bool IsDead() const { return isDead; }
 
+protected:
+	bool IsQueryReady(CCircuitUnit* unit) const;
+	bool IsQueryAlive(const IPathQuery* query) const;
+
+public:
 	friend std::ostream& operator<<(std::ostream& os, const IUnitTask& data);
 	friend std::istream& operator>>(std::istream& is, IUnitTask& data);
 protected:
@@ -73,12 +88,18 @@ protected:
 	Priority priority;
 	Type type;
 	State state;
+	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> pathQueries;  // IPathQuery owner
 
 	int lastTouched;
 	int timeout;
 
 	unsigned int updCount;
 	bool isDead;
+
+#ifdef DEBUG_VIS
+public:
+	virtual void Log();
+#endif
 };
 
 inline std::ostream& operator<<(std::ostream& os, const IUnitTask& data)

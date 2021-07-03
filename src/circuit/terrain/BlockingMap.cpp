@@ -21,6 +21,7 @@ SBlockingMap::StructTypes SBlockingMap::structTypes = {
 	{"def_high",  SBlockingMap::StructType::DEF_HIGH},
 	{"special",   SBlockingMap::StructType::SPECIAL},
 	{"nano",      SBlockingMap::StructType::NANO},
+	{"terra",     SBlockingMap::StructType::TERRA},
 	{"unknown",   SBlockingMap::StructType::UNKNOWN},
 };
 
@@ -36,6 +37,7 @@ SBlockingMap::StructMasks SBlockingMap::structMasks = {
 	{"def_high",  SBlockingMap::StructMask::DEF_HIGH},
 	{"special",   SBlockingMap::StructMask::SPECIAL},
 	{"nano",      SBlockingMap::StructMask::NANO},
+	{"terra",     SBlockingMap::StructMask::TERRA},
 	{"unknown",   SBlockingMap::StructMask::UNKNOWN},
 	{"none",      SBlockingMap::StructMask::NONE},
 	{"all",       SBlockingMap::StructMask::ALL},

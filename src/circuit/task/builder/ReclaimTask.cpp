@@ -7,13 +7,15 @@
 
 #include "task/builder/ReclaimTask.h"
 #include "task/TaskManager.h"
+#include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
+#include "unit/action/TravelAction.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+
 #include "AISCommands.h"
 #include "Feature.h"
 #include "FeatureDef.h"
@@ -38,50 +40,55 @@ CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 
 CBReclaimTask::~CBReclaimTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CBReclaimTask::Update()
+void CBReclaimTask::AssignTo(CCircuitUnit* unit)
+{
+	IBuilderTask::AssignTo(unit);
+
+	lastTouched = manager->GetCircuit()->GetLastFrame();
+}
+
+bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 {
 	if (!isMetal) {
-		return;
+		return true;
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (circuit->GetEconomyManager()->IsMetalFull()) {
 		manager->AbortTask(this);
+		return false;
 	} else if (!units.empty()) {
 		/*
 		 * Update reclaim position
 		 */
-		// FIXME: Works only with 1 task per worker
-		CCircuitUnit* unit = *units.begin();
 		const int frame = circuit->GetLastFrame();
 		const AIFloat3& pos = unit->GetPos(frame);
-		auto enemies = std::move(circuit->GetCallback()->GetEnemyUnitsIn(pos, 300.0f));
+		auto enemies = circuit->GetCallback()->GetEnemyUnitsIn(pos, 500.0f);
 		if (!enemies.empty()) {
 			for (Unit* enemy : enemies) {
 				if ((enemy != nullptr) && enemy->IsBeingBuilt()) {
 					TRY_UNIT(circuit, unit,
-						unit->GetUnit()->ReclaimUnit(enemy, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+						unit->GetUnit()->ReclaimUnit(enemy, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 					)
 					utils::free_clear(enemies);
-					return;
+					return false;
 				}
 			}
 			utils::free_clear(enemies);
 		}
 
-		auto features = std::move(circuit->GetCallback()->GetFeaturesIn(pos, 500.0f));
+		auto features = circuit->GetCallback()->GetFeaturesIn(pos, 500.0f);
 		if (!features.empty()) {
-			CTerrainManager* terrainManager = circuit->GetTerrainManager();
+			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 			circuit->GetThreatMap()->SetThreatType(unit);
 			float minSqDist = std::numeric_limits<float>::max();
 			Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 			for (Feature* feature : features) {
 				AIFloat3 featPos = feature->GetPosition();
 				CTerrainManager::CorrectPosition(featPos);  // Impulsed flying feature
-				if (!terrainManager->CanBuildAtSafe(unit, featPos)) {
+				if (!terrainMgr->CanReachAtSafe(unit, featPos, unit->GetCircuitDef()->GetBuildDistance())) {
 					continue;
 				}
 				FeatureDef* featDef = feature->GetDef();
@@ -100,15 +107,11 @@ void CBReclaimTask::Update()
 					minSqDist = sqDist;
 				}
 			}
-			if (minSqDist < std::numeric_limits<float>::max()) {
-				const float radius = 8.0f;  // unit->GetCircuitDef()->GetBuildDistance();
-				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->ReclaimInArea(position, radius, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
-				)
-			}
 			utils::free_clear(features);
 		}
 	}
+
+	return true;
 }
 
 } // namespace circuit

@@ -8,15 +8,17 @@
 #include "setup/DefenceMatrix.h"
 #include "module/MilitaryManager.h"
 #include "resource/MetalManager.h"
+#include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
 #include "util/math/EncloseCircle.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
+#include "json/json.h"
 
-#include "Map.h"
+#include "spring/SpringMap.h"
 
 namespace circuit {
 
@@ -26,11 +28,25 @@ CDefenceMatrix::CDefenceMatrix(CCircuitAI* circuit)
 		: metalManager(nullptr)
 {
 	circuit->GetScheduler()->RunOnInit(std::make_shared<CGameTask>(&CDefenceMatrix::Init, this, circuit));
+
+	ReadConfig(circuit);
 }
 
 CDefenceMatrix::~CDefenceMatrix()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
+{
+	const Json::Value& defence = circuit->GetSetupManager()->GetConfig()["defence"];
+	const Json::Value& baseRad = defence["base_rad"];
+	baseRadMin = baseRad.get((unsigned)0, 1000.f).asFloat();
+	baseRadMax = baseRad.get((unsigned)1, 3000.f).asFloat();
+	baseRange = utils::clamp(CTerrainManager::GetTerrainDiagonal() * 0.3f, baseRadMin, baseRadMax);
+	const Json::Value& commRad = defence["comm_rad"];
+	commRadBegin = commRad.get((unsigned)0, 1000.f).asFloat();
+	const float commRadEnd = commRad.get((unsigned)1, 300.f).asFloat();
+	commRadFraction = (commRadEnd - commRadBegin) / baseRange;
 }
 
 void CDefenceMatrix::Init(CCircuitAI* circuit)
@@ -41,11 +57,11 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 	clusterInfos.resize(clusters.size());
 
 	const bool isWaterMap = circuit->GetTerrainManager()->IsWaterMap();
-	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
-	const std::vector<CCircuitDef*>& defenders = isWaterMap ? militaryManager->GetWaterDefenders() : militaryManager->GetLandDefenders();
-	CCircuitDef* rangeDef = defenders.empty() ? militaryManager->GetDefaultPorc() : defenders.front();
+	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
+	const std::vector<CCircuitDef*>& defenders = isWaterMap ? militaryMgr->GetWaterDefenders() : militaryMgr->GetLandDefenders();
+	CCircuitDef* rangeDef = defenders.empty() ? militaryMgr->GetDefaultPorc() : defenders.front();
 
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	float maxDistance = rangeDef->GetMaxRange() * 0.75f * 2;
 	CHierarchCluster clust;
 	CEncloseCircle enclose;
@@ -99,6 +115,11 @@ CDefenceMatrix::SDefPoint* CDefenceMatrix::GetDefPoint(const AIFloat3& pos, floa
 		}
 	}
 	return &defPoints[idx];
+}
+
+void CDefenceMatrix::SetBaseRange(float range)
+{
+	baseRange = utils::clamp(range, baseRadMin, baseRadMax);
 }
 
 } // namespace circuit

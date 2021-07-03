@@ -10,9 +10,11 @@
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathMulti.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "AISCommands.h"
 
@@ -22,7 +24,6 @@ using namespace springai;
 
 CSupportTask::CSupportTask(ITaskManager* mgr)
 		: IFighterTask(mgr, FightType::SUPPORT, 1.f)
-		, updCount(0)
 {
 	const AIFloat3& pos = manager->GetCircuit()->GetSetupManager()->GetBasePos();
 	position = utils::get_radial_pos(pos, SQUARE_SIZE * 32);
@@ -30,7 +31,6 @@ CSupportTask::CSupportTask(ITaskManager* mgr)
 
 CSupportTask::~CSupportTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CSupportTask::RemoveAssignee(CCircuitUnit* unit)
@@ -41,21 +41,21 @@ void CSupportTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CSupportTask::Execute(CCircuitUnit* unit)
+void CSupportTask::Start(CCircuitUnit* unit)
 {
 	if (State::DISENGAGE == state) {
 		return;
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 pos = position;
 	CTerrainManager::CorrectPosition(pos);
-	pos = terrainManager->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
+	pos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_COMMAND_BUILD_NO_FACING);
 
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-		unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
+		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		unit->CmdWantedSpeed(NO_SPEED_LIMIT);
 	)
 	state = State::DISENGAGE;  // Wait
 }
@@ -67,17 +67,19 @@ void CSupportTask::Update()
 	}
 
 	CCircuitUnit* unit = *units.begin();
-	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::ATTACK);
+	const std::set<IFighterTask*>& tasksA = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::ATTACK);
+	const std::set<IFighterTask*>& tasksD = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::DEFEND);
+	const std::set<IFighterTask*>& tasks = tasksA.empty() ? tasksD : tasksA;
 	if (tasks.empty()) {
-		Execute(unit);
+		Start(unit);
 		return;
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	static F3Vec ourPositions;  // NOTE: micro-opt
-//	ourPositions.reserve(tasks.size());
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	urgentPositions.clear();
+//	urgentPositions.reserve(tasks.size());
 	for (IFighterTask* candy : tasks) {
 		ISquadTask* task = static_cast<ISquadTask*>(candy);
 		CCircuitUnit* leader = task->GetLeader();
@@ -85,7 +87,7 @@ void CSupportTask::Update()
 			continue;
 		}
 		const AIFloat3& pos = leader->GetPos(frame);
-		if (!terrainManager->CanMoveToPos(unit->GetArea(), pos)) {
+		if (!terrainMgr->CanMoveToPos(unit->GetArea(), pos)) {
 			continue;
 		}
 		if ((unit->GetCircuitDef()->IsAmphibious() &&
@@ -94,26 +96,57 @@ void CSupportTask::Update()
 			(leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander()) ||
 			(leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
 		{
-			ourPositions.push_back(pos);
+			urgentPositions.push_back(pos);
 		}
 	}
-	if (ourPositions.empty()) {
-		Execute(unit);
+	if (urgentPositions.empty()) {
+		Start(unit);
 		return;
 	}
 
-	F3Vec path;
-	AIFloat3 startPos = unit->GetPos(frame);
+	if (!IsQueryReady(unit)) {
+		return;
+	}
+
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->FindBestPath(path, startPos, pathfinder->GetSquareSize(), ourPositions, false);
-	ourPositions.clear();
-	if (path.empty()) {
-		Execute(unit);
+	const AIFloat3& startPos = unit->GetPos(frame);
+	const float range = pathfinder->GetSquareSize();
+
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
+			unit, circuit->GetThreatMap(), frame,
+			startPos, range, urgentPositions, nullptr, std::numeric_limits<float>::max(), true);
+	pathQueries[unit] = query;
+	query->HoldTask(this);
+
+	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyPath(static_cast<const CQueryPathMulti*>(query));
+		}
+	});
+}
+
+void CSupportTask::ApplyPath(const CQueryPathMulti* query)
+{
+	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
+
+	if (pPath->posPath.empty()) {
+		Start(unit);
 		return;
 	}
 
-	const AIFloat3& endPos = path.back();
+	const std::set<IFighterTask*>& tasksA = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::ATTACK);
+	const std::set<IFighterTask*>& tasksD = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::DEFEND);
+	const std::set<IFighterTask*>& tasks = tasksA.empty() ? tasksD : tasksA;
+	if (tasks.empty()) {
+		Start(unit);
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& startPos = unit->GetPos(frame);
+	const AIFloat3& endPos = pPath->posPath.back();
 	if (startPos.SqDistance2D(endPos) < SQUARE(1000.f)) {
 		IFighterTask* task = *tasks.begin();
 		float minSqDist = std::numeric_limits<float>::max();
@@ -128,7 +161,7 @@ void CSupportTask::Update()
 //		manager->DoneTask(this);  // NOTE: RemoveAssignee will abort task
 	} else {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(endPos, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Fight(endPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		state = State::ROAM;  // Not wait
 	}

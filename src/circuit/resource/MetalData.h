@@ -24,9 +24,8 @@ class CRagMatrix;
 
 class CMetalData {
 public:
-	using Graph = lemon::SmartGraph;
-	using WeightMap = Graph::EdgeMap<float>;
-	using CenterMap = Graph::EdgeMap<springai::AIFloat3>;
+	using ClusterGraph = lemon::SmartGraph;
+	using ClusterCostMap = ClusterGraph::EdgeMap<float>;
 
 	struct SMetal {
 		float income;
@@ -56,11 +55,13 @@ public:
 	};
 	using PointPredicate = nanoflann::KNNCondResultSet<float, int>::Predicate;
 	using MetalIndices = std::vector<int>;
+	using IndicesDists = std::vector<std::pair<int, float>>;
 	struct SCluster {
 		MetalIndices idxSpots;
 		springai::AIFloat3 position;  // geoCentr
 		springai::AIFloat3 weightCentr;
 		float income;
+		float radius;
 	};
 	using Clusters = std::vector<SCluster>;
 
@@ -80,31 +81,30 @@ public:
 	float GetMaxIncome() const { return maxIncome; }
 
 	const Metals& GetSpots() const { return spots; }
+
 	const int FindNearestSpot(const springai::AIFloat3& pos) const;
 	const int FindNearestSpot(const springai::AIFloat3& pos, PointPredicate& predicate) const;
+	void FindSpotsInRadius(const springai::AIFloat3& pos, const float radius,
+			CMetalData::IndicesDists& outIndices) const;
 
 	const int FindNearestCluster(const springai::AIFloat3& pos) const;
 	const int FindNearestCluster(const springai::AIFloat3& pos, PointPredicate& predicate) const;
 
 	const Clusters& GetClusters() const { return clusters; }
-	const Graph& GetGraph() const { return clusterGraph; }
-	const WeightMap& GetWeights() const { return weights; }
-	const CenterMap& GetCenters() const { return centers; }
+	const ClusterGraph& GetClusterGraph() const { return clusterGraph; }
+	const ClusterCostMap& GetClusterEdgeCosts() const { return clusterEdgeCosts; }
 
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
 	 */
-	void Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distmatrix);
-
-	// debug, could be used for defence perimeter calculation
-//	void DrawConvexHulls(springai::Drawer* drawer);
-//	void DrawCentroids(springai::Drawer* drawer);
-//	void ClearMetalClusters(springai::Drawer* drawer);
+	void Clusterize(float maxDistance, CRagMatrix& distmatrix);
 
 	const SMetal& operator[](int idx) const { return spots[idx]; }
 
 	static void TriangulateGraph(const std::vector<double>& coords,
 			std::function<float (std::size_t A, std::size_t B)> distance,
+			std::function<void (std::size_t A, std::size_t B)> addEdge);
+	static void MakeConvexHull(const std::vector<double>& coords,
 			std::function<void (std::size_t A, std::size_t B)> addEdge);
 private:
 	void BuildClusterGraph();
@@ -129,9 +129,8 @@ private:
 			2 /* dim */, int>;
 	ClusterTree clusterTree;
 
-	Graph clusterGraph;
-	WeightMap weights;
-	CenterMap centers;
+	ClusterGraph clusterGraph;
+	ClusterCostMap clusterEdgeCosts;
 
 	std::atomic<bool> isClusterizing;
 };

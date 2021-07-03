@@ -6,7 +6,7 @@
  */
 
 #include "util/math/RagMatrix.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include <cstring>  // std::memcpy
 //#include <assert.h>
@@ -31,7 +31,6 @@ CRagMatrix::CRagMatrix(const CRagMatrix& matrix) :
 
 CRagMatrix::~CRagMatrix()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	delete[] data;
 }
 

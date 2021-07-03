@@ -19,7 +19,9 @@
 #endif
 
 template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
+// sqrt(2) ~= 1.4142f
 #define SQRT_2				1.4142f
+#define ISQRT_2				(1.f / 1.4142f)
 #define FRAMES_PER_SEC		GAME_SPEED
 #define WATCHDOG_COUNT		3
 #define TASK_RETRIES		10
@@ -41,13 +43,25 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define MAX_TRAVEL_SEC	60
 #define ASSIGN_TIMEOUT	(FRAMES_PER_SEC * 300)
 
-#define THREAT_BASE		1.0f
-#define THREAT_MOD		(1.0f / 256.0f)
 #define THREAT_MIN		1.0f
-#define THREAT_RES		8
-#define DEFAULT_SLACK	(SQUARE_SIZE * THREAT_RES)
+#define DEFAULT_SLACK	(SQUARE_SIZE * 8)
+#define SHIELD_MOD		1.5f
 
 typedef std::vector<springai::AIFloat3> F3Vec;
+typedef std::vector<void*> VoidVec;
+typedef std::vector<float> FloatVec;
+typedef std::vector<bool> BoolVec;
+typedef std::vector<int> IndexVec;
+typedef std::vector<int> IntVec;
+
+struct PathInfo {
+	PathInfo(bool last = false) : start(0), isEndPos(last) {}
+	void Clear() { posPath.clear(); path.clear(); }  // FIXME: stop TravelAction
+	F3Vec posPath;
+	IndexVec path;
+	size_t start;
+	bool isEndPos;
+};
 
 struct cmp_str {
 	bool operator()(char const* a, char const* b) const {

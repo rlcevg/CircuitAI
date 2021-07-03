@@ -7,14 +7,14 @@
 
 #include "task/builder/NanoTask.h"
 #include "task/TaskManager.h"
+#include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
-#include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
+
+#include "spring/SpringMap.h"
 
 #include "AISCommands.h"
-#include "Map.h"
 
 namespace circuit {
 
@@ -29,34 +29,31 @@ CBNanoTask::CBNanoTask(ITaskManager* mgr, Priority priority,
 
 CBNanoTask::~CBNanoTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBNanoTask::Execute(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	Unit* u = unit->GetUnit();
 	TRY_UNIT(circuit, unit,
-		u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		unit->CmdPriority(ClampPriority());
 	)
 
 	const int frame = circuit->GetLastFrame();
 	if (target != nullptr) {
 		TRY_UNIT(circuit, unit,
-			u->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Repair(target->GetUnit(), UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
 		return;
 	}
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	UnitDef* buildUDef = buildDef->GetUnitDef();
+	UnitDef* buildUDef = buildDef->GetDef();
 	if (utils::is_valid(buildPos)) {
 		if (circuit->GetMap()->IsPossibleToBuildAt(buildUDef, buildPos, facing)) {
 			TRY_UNIT(circuit, unit,
-				u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+				unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
 			return;
-		} else {
-			terrainManager->DelBlocker(buildDef, buildPos, facing);
+//		} else {
+//			SetBuildPos(-RgtVector);
 		}
 	}
 
@@ -68,9 +65,8 @@ void CBNanoTask::Execute(CCircuitUnit* unit)
 	FindBuildSite(unit, pos, searchRadius);
 
 	if (utils::is_valid(buildPos)) {
-		terrainManager->AddBlocker(buildDef, buildPos, facing);
 		TRY_UNIT(circuit, unit,
-			u->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+			unit->GetUnit()->Build(buildUDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
 	} else {
 		// Fallback to Guard/Assist/Patrol

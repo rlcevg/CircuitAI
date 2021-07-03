@@ -16,7 +16,7 @@ namespace circuit {
 
 class IUnitModule: public IModule, public IUnitManager, public ITaskManager {  // CActionList
 protected:
-	IUnitModule(CCircuitAI* circuit);
+	IUnitModule(CCircuitAI* circuit, IScript* script);
 public:
 	virtual ~IUnitModule();
 

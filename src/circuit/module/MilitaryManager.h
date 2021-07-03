@@ -9,8 +9,8 @@
 #define SRC_CIRCUIT_MODULE_MILITARYMANAGER_H_
 
 #include "module/UnitModule.h"
+#include "setup/DefenceMatrix.h"
 #include "task/fighter/FighterTask.h"
-#include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 
 #include <vector>
@@ -20,19 +20,11 @@ namespace circuit {
 
 class CGameTask;
 class CBDefenceTask;
-class CDefenceMatrix;
 class CRetreatTask;
 
 class CMilitaryManager: public IUnitModule {
 public:
-	struct SEnemyGroup {
-		SEnemyGroup(const springai::AIFloat3& p) : pos(p), cost(0.f), threat(0.f) {}
-		std::vector<ICoreUnit::Id> units;
-		springai::AIFloat3 pos;
-		std::array<float, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> roleCosts{{0.f}};
-		float cost;
-		float threat;  // thr_mod applied
-	};
+	friend class CMilitaryScript;
 
 	CMilitaryManager(CCircuitAI* circuit);
 	virtual ~CMilitaryManager();
@@ -46,8 +38,8 @@ public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
-	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
-	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	const std::set<IFighterTask*>& GetTasks(IFighterTask::FightType type) const {
 		return fightTasks[static_cast<IFighterTask::FT>(type)];
@@ -55,11 +47,11 @@ public:
 
 	IFighterTask* EnqueueTask(IFighterTask::FightType type);
 	IFighterTask* EnqueueDefend(IFighterTask::FightType promote, float power);
-	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote);
+	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power);
 	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
 	CRetreatTask* EnqueueRetreat();
 private:
-	void DequeueTask(IFighterTask* task, bool done = false);
+	void DequeueTask(IUnitTask* task, bool done = false);
 
 public:
 	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
@@ -73,32 +65,18 @@ public:
 	void AbortDefence(const CBDefenceTask* task);
 	bool HasDefence(int cluster);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
-	void FindBestPos(F3Vec& posPath, springai::AIFloat3& startPos, STerrainMapArea* area);
-	void FillSafePos(const springai::AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions);
+	springai::AIFloat3 GetRaidPosition(CCircuitUnit* unit);
+	void FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions);
+	void FillAttackSafePos(CCircuitUnit* unit, F3Vec& outPositions);
+	void FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions);
+	void FillSafePos(CCircuitUnit* unit, F3Vec& outPositions);
 
-	IFighterTask* AddDefendTask(int cluster);
-	IFighterTask* DelDefendTask(const springai::AIFloat3& pos);
-	IFighterTask* DelDefendTask(int cluster);
-	IFighterTask* GetDefendTask(int cluster) const { return clusterInfos[cluster].defence; }
+	IFighterTask* AddGuardTask(CCircuitUnit* unit);
+	bool DelGuardTask(CCircuitUnit* unit);
+	IFighterTask* GetGuardTask(CCircuitUnit* unit) const;
 
-	float GetEnemyCost(CCircuitDef::RoleType type) const {
-		return enemyInfos[static_cast<CCircuitDef::RoleT>(type)].cost;
-	}
-	float GetEnemyThreat(CCircuitDef::RoleType type) const {
-		return enemyInfos[static_cast<CCircuitDef::RoleT>(type)].threat;
-	}
-	void AddEnemyCost(const CEnemyUnit* e);
-	void DelEnemyCost(const CEnemyUnit* e);
-	float GetMobileThreat() const { return mobileThreat; }
-	float GetStaticThreat() const { return staticThreat; }
-	float GetEnemyThreat() const { return mobileThreat + staticThreat; }
-	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
-	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
-	void UpdateEnemyGroups() { KMeansIteration(); }
-	bool IsAirValid() const { return GetEnemyThreat(CCircuitDef::RoleType::AA) <= maxAAThreat; }
-
-	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleType type) const {
-		return roleInfos[static_cast<CCircuitDef::RoleT>(type)].units;
+	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleT type) const {
+		return roleInfos[type].units;
 	}
 	void AddResponse(CCircuitUnit* unit);
 	void DelResponse(CCircuitUnit* unit);
@@ -107,10 +85,7 @@ public:
 	bool IsNeedBigGun(const CCircuitDef* cdef) const;
 	springai::AIFloat3 GetBigGunPos(CCircuitDef* bigDef) const;
 	void DiceBigGun();
-	float ClampMobileCostRatio() const {
-		return (enemyMobileCost > armyCost) ? (armyCost / enemyMobileCost) : 1.f;
-	}
-
+	float ClampMobileCostRatio() const;
 	void UpdateDefenceTasks();
 	void UpdateDefence();
 	void MakeBaseDefence(const springai::AIFloat3& pos);
@@ -120,15 +95,23 @@ public:
 	CCircuitDef* GetBigGunDef() const { return bigGunDef; }
 	CCircuitDef* GetDefaultPorc() const { return defaultPorc; }
 
+	void SetBaseDefRange(float range) { defence->SetBaseRange(range); }
+	float GetBaseDefRange() const { return defence->GetBaseRange(); }
+	float GetCommDefRadBegin() const { return defence->GetCommRadBegin(); }
+	float GetCommDefRad(float baseDist) const { return defence->GetCommRad(baseDist); }
+
+	void MarkPointOfInterest(CEnemyInfo* enemy);
+	void UnmarkPointOfInterest(CEnemyInfo* enemy);
+
 private:
+	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
+
 	void Watchdog();
 	void UpdateIdle();
 	void UpdateFight();
 
 	void AddArmyCost(CCircuitUnit* unit);
 	void DelArmyCost(CCircuitUnit* unit);
-
-	void KMeansIteration();
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -143,8 +126,16 @@ private:
 	CDefenceMatrix* defence;
 	unsigned int defenceIdx;
 
-	std::vector<unsigned int> scoutPath;  // list of cluster ids
+	std::vector<unsigned int> scoutPath;  // list of spot ids
 	unsigned int scoutIdx;
+
+	struct SRaidPoint {
+		unsigned int idx;
+		int lastFrame;
+		float weight;
+		std::set<CEnemyInfo*> units;
+	};
+	std::vector<SRaidPoint> raidPath;  // list of cluster ids
 
 	struct SRoleInfo {
 		float cost;
@@ -152,8 +143,8 @@ private:
 		float factor;
 		std::set<CCircuitUnit*> units;
 		struct SVsInfo {
-			SVsInfo(CCircuitDef::RoleType t, float r, float i) : role(t), ratio(r), importance(i) {}
-			CCircuitDef::RoleType role;
+			SVsInfo(CCircuitDef::RoleT t, float r, float i) : role(t), ratio(r), importance(i) {}
+			CCircuitDef::RoleT role;
 			float ratio;
 			float importance;
 		};
@@ -164,25 +155,7 @@ private:
 	std::set<CCircuitUnit*> army;
 	float armyCost;
 
-	float enemyMobileCost;
-	float mobileThreat;  // thr_mod.mobile applied
-	float staticThreat;  // thr_mod.static applied
-	struct SInitThreatMod {
-		float inMobile;
-		float inStatic;
-	} initThrMod;
-	struct SEnemyInfo {
-		float cost;
-		float threat;
-	};
-	std::array<SEnemyInfo, static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_)> enemyInfos{{{0.f}, {0.f}}};
-	std::vector<SEnemyGroup> enemyGroups;
-	springai::AIFloat3 enemyPos;
-
-	struct SClusterInfo {
-		IFighterTask* defence;
-	};
-	std::vector<SClusterInfo> clusterInfos;
+	std::map<CCircuitUnit*, IFighterTask*> guardTasks;
 
 	struct SRaidQuota {
 		float min;
@@ -190,12 +163,10 @@ private:
 	} raid;
 	unsigned int maxScouts;
 	float minAttackers;
-	float defRadius;
 	struct SThreatQuota {
 		float min;
 		float len;
 	} attackMod, defenceMod;
-	float maxAAThreat;
 
 	std::vector<CCircuitDef*> defenderDefs;
 	std::vector<CCircuitDef*> landDefenders;

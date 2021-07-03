@@ -7,7 +7,7 @@
 
 #include "util/math/ApproxMNK.h"
 #include "util/math/GaussSolver.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -57,7 +57,6 @@ CApproxMNK::CApproxMNK(unsigned int n, const Vector& X, const Vector& Y)
 
 CApproxMNK::~CApproxMNK()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 float CApproxMNK::GetValueAt(float x)

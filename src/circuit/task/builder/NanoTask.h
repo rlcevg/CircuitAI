@@ -20,6 +20,7 @@ public:
 			   float cost, float shake, int timeout);
 	virtual ~CBNanoTask();
 
+protected:
 	virtual void Execute(CCircuitUnit* unit) override;
 };
 

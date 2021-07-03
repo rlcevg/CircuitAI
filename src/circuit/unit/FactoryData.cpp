@@ -7,14 +7,13 @@
 
 #include "unit/FactoryData.h"
 #include "module/FactoryManager.h"
-#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
-#include "Map.h"
+#include "spring/SpringMap.h"
 
 #include <algorithm>
 
@@ -24,6 +23,122 @@ using namespace springai;
 
 CFactoryData::CFactoryData(CCircuitAI *circuit)
 		: choiceNum(0)
+{
+	ReadConfig(circuit);
+}
+
+CFactoryData::~CFactoryData()
+{
+}
+
+CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 position,
+											 bool isStart, bool isReset)
+{
+	std::vector<SFactory> availFacs;
+	std::map<CCircuitDef::Id, float> percents;
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	SAreaData* areaData = terrainMgr->GetAreaData();
+	const std::vector<STerrainMapImmobileType>& immobileType = areaData->immobileType;
+	const std::vector<STerrainMapMobileType>& mobileType = areaData->mobileType;
+	const bool isAirValid = circuit->GetEnemyManager()->IsAirValid();
+
+	std::function<bool (CCircuitDef*)> predicate;
+	bool isPosValid = utils::is_valid(position);
+//	CTerrainManager::CorrectPosition(position);
+	if (isPosValid) {
+		predicate = [position, terrainMgr](CCircuitDef* cdef) {
+			return terrainMgr->CanBeBuiltAtSafe(cdef, position);
+		};
+	} else {
+		predicate = [](CCircuitDef* cdef) {
+			return true;
+		};
+	}
+
+	const int frame = circuit->GetLastFrame();
+	for (const auto& kv : allFactories) {
+		const SFactory& sfac = kv.second;
+		CCircuitDef* cdef = circuit->GetCircuitDef(sfac.id);
+		if (!cdef->IsAvailable(frame) ||
+			!immobileType[cdef->GetImmobileId()].typeUsable ||
+			!predicate(cdef))
+		{
+			continue;
+		}
+		float importance;
+		if (isStart) {
+			CCircuitDef* bdef = factoryMgr->GetRoleDef(cdef, ROLE_TYPE(BUILDER));
+			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable(frame)) ? 1.f : .1f);
+		} else {
+			importance = sfac.switchImp;
+		}
+		if (importance <= .0f) {
+			continue;
+		}
+
+		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
+		if (((mtId < 0) && isAirValid) ||
+			((mtId >= 0) && mobileType[mtId].typeUsable))
+		{
+			availFacs.push_back(sfac);
+			const float offset = (float)rand() / RAND_MAX * lenOffset + minOffset;
+			const float speedPercent = sfac.mapSpeedPerc;
+			const float mapPercent = (mtId < 0) ? airMapPerc : mobileType[mtId].areaLargest->percentOfMap;
+			percents[sfac.id] = offset + importance * (mapPercent + speedPercent);
+		}
+	}
+
+	if (availFacs.empty()) {
+		return nullptr;
+	}
+
+	auto cmp = [&percents](const SFactory& a, const SFactory& b) {
+		if (a.count < b.count) {
+			return true;
+		} else if (a.count > b.count) {
+			return false;
+		}
+		return percents[a.id] > percents[b.id];
+	};
+	std::sort(availFacs.begin(), availFacs.end(), cmp);
+
+	if (isReset) {
+		choiceNum = 0;
+	}
+
+	// Don't start with air
+	if (((choiceNum++ < noAirNum) || (isPosValid && terrainMgr->IsWaterSector(position))) &&
+		(circuit->GetCircuitDef(availFacs.front().id)->GetMobileId() < 0))
+	{
+		for (SFactory& fac : availFacs) {
+			if (circuit->GetCircuitDef(fac.id)->GetMobileId() >= 0) {
+				std::swap(availFacs.front(), fac);
+				break;
+			}
+		}
+	}
+
+	return circuit->GetCircuitDef(availFacs.front().id);
+}
+
+void CFactoryData::AddFactory(const CCircuitDef* cdef)
+{
+	auto it = allFactories.find(cdef->GetId());
+	if (it != allFactories.end()) {
+		++it->second.count;
+	}
+}
+
+void CFactoryData::DelFactory(const CCircuitDef* cdef)
+{
+	auto it = allFactories.find(cdef->GetId());
+	if (it != allFactories.end()) {
+		--it->second.count;
+	}
+}
+
+void CFactoryData::ReadConfig(CCircuitAI* circuit)
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& factories = root["factory"];
@@ -97,118 +212,6 @@ CFactoryData::CFactoryData(CCircuitAI *circuit)
 	}
 
 	noAirNum = select.get("no_air", 2).asUInt();
-}
-
-CFactoryData::~CFactoryData()
-{
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-}
-
-CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 position,
-											 bool isStart, bool isReset)
-{
-	std::vector<SFactory> availFacs;
-	std::map<CCircuitDef::Id, float> percents;
-	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	SAreaData* areaData = terrainManager->GetAreaData();
-	const std::vector<STerrainMapImmobileType>& immobileType = areaData->immobileType;
-	const std::vector<STerrainMapMobileType>& mobileType = areaData->mobileType;
-	const bool isAirValid = circuit->GetMilitaryManager()->IsAirValid();
-
-	std::function<bool (CCircuitDef*)> predicate;
-	bool isPosValid = utils::is_valid(position);
-//	CTerrainManager::CorrectPosition(position);
-	if (isPosValid) {
-		predicate = [position, terrainManager](CCircuitDef* cdef) {
-			return terrainManager->CanBeBuiltAtSafe(cdef, position);
-		};
-	} else {
-		predicate = [](CCircuitDef* cdef) {
-			return true;
-		};
-	}
-
-	const int frame = circuit->GetLastFrame();
-	for (const auto& kv : allFactories) {
-		const SFactory& sfac = kv.second;
-		CCircuitDef* cdef = circuit->GetCircuitDef(sfac.id);
-		if (!cdef->IsAvailable(frame) ||
-			!immobileType[cdef->GetImmobileId()].typeUsable ||
-			!predicate(cdef))
-		{
-			continue;
-		}
-		float importance;
-		if (isStart) {
-			CCircuitDef* bdef = factoryManager->GetRoleDef(cdef, CCircuitDef::RoleType::BUILDER);
-			importance = sfac.startImp * (((bdef != nullptr) && bdef->IsAvailable()) ? 1.f : .1f);
-		} else {
-			importance = sfac.switchImp;
-		}
-		if (importance <= .0f) {
-			continue;
-		}
-
-		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
-		if (((mtId < 0) && isAirValid) ||
-			((mtId >= 0) && mobileType[mtId].typeUsable))
-		{
-			availFacs.push_back(sfac);
-			const float offset = (float)rand() / RAND_MAX * lenOffset + minOffset;
-			const float speedPercent = sfac.mapSpeedPerc;
-			const float mapPercent = (mtId < 0) ? airMapPerc : mobileType[mtId].areaLargest->percentOfMap;
-			percents[sfac.id] = offset + importance * (mapPercent + speedPercent);
-		}
-	}
-
-	if (availFacs.empty()) {
-		return nullptr;
-	}
-
-	auto cmp = [&percents](const SFactory& a, const SFactory& b) {
-		if (a.count < b.count) {
-			return true;
-		} else if (a.count > b.count) {
-			return false;
-		}
-		return percents[a.id] > percents[b.id];
-	};
-	std::sort(availFacs.begin(), availFacs.end(), cmp);
-
-	if (isReset) {
-		choiceNum = 0;
-	}
-
-	// Don't start with air
-	if (((choiceNum++ < noAirNum) || (isPosValid && terrainManager->IsWaterSector(position))) &&
-		(circuit->GetCircuitDef(availFacs.front().id)->GetMobileId() < 0))
-	{
-		for (SFactory& fac : availFacs) {
-			if (circuit->GetCircuitDef(fac.id)->GetMobileId() >= 0) {
-				std::swap(availFacs.front(), fac);
-				break;
-			}
-		}
-	}
-
-	return circuit->GetCircuitDef(availFacs.front().id);
-}
-
-void CFactoryData::AddFactory(CCircuitDef* cdef)
-{
-	auto it = allFactories.find(cdef->GetId());
-	if (it != allFactories.end()) {
-		++it->second.count;
-	}
-}
-
-void CFactoryData::DelFactory(CCircuitDef* cdef)
-{
-	auto it = allFactories.find(cdef->GetId());
-	if (it != allFactories.end()) {
-		--it->second.count;
-	}
 }
 
 } // namespace circuit

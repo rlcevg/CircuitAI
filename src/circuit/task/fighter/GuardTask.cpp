@@ -8,7 +8,7 @@
 #include "task/fighter/GuardTask.h"
 #include "task/TaskManager.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -23,7 +23,6 @@ CFGuardTask::CFGuardTask(ITaskManager* mgr, CCircuitUnit* vip, float maxPower)
 
 CFGuardTask::~CFGuardTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 bool CFGuardTask::CanAssignTo(CCircuitUnit* unit) const
@@ -31,14 +30,14 @@ bool CFGuardTask::CanAssignTo(CCircuitUnit* unit) const
 	return (attackPower < maxPower) && unit->GetCircuitDef()->IsRoleRiot();
 }
 
-void CFGuardTask::Execute(CCircuitUnit* unit)
+void CFGuardTask::Start(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
 	if (vip != nullptr) {
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Guard(vip->GetUnit());
-			unit->GetUnit()->ExecuteCustomCommand(CMD_WANTED_SPEED, {NO_SPEED_LIMIT});
+			unit->CmdWantedSpeed(NO_SPEED_LIMIT);
 		)
 	} else {
 		manager->AbortTask(this);

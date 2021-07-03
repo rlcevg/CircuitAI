@@ -8,7 +8,7 @@
 #include "resource/MetalData.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/EncloseCircle.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "triangulate/delaunator.hpp"
 
 #include <map>
@@ -21,27 +21,25 @@ using namespace nanoflann;
 CMetalData::CMetalData()
 		: isInitialized(false)
 		, spotsAdaptor(spots)
-		, metalTree(2 /*dim*/, spotsAdaptor, KDTreeSingleIndexAdaptorParams(8 /*max leaf*/))
+		, metalTree(2 /*dim*/, spotsAdaptor, KDTreeSingleIndexAdaptorParams(4 /*max leaf*/))
 		, minIncome(std::numeric_limits<float>::max())
 		, avgIncome(0.f)
 		, maxIncome(0.f)
 		, clustersAdaptor(clusters)
 		, clusterTree(2 /*dim*/, clustersAdaptor, KDTreeSingleIndexAdaptorParams(2 /*max leaf*/))
-		, weights(clusterGraph)
-		, centers(clusterGraph)
+		, clusterEdgeCosts(clusterGraph)
 		, isClusterizing(false)
 {
 }
 
 CMetalData::~CMetalData()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CMetalData::Init(const Metals& spots)
 {
 	this->spots = spots;
-	for (auto& spot : spots) {
+	for (const SMetal& spot : spots) {
 		minIncome = std::min(minIncome, spot.income);
 		maxIncome = std::max(maxIncome, spot.income);
 		avgIncome += spot.income;
@@ -78,6 +76,18 @@ const int CMetalData::FindNearestSpot(const AIFloat3& pos, PointPredicate& predi
 	return -1;
 }
 
+void CMetalData::FindSpotsInRadius(const AIFloat3& pos, const float radius,
+		CMetalData::IndicesDists& outIndices) const
+{
+	MetalIndices result;
+
+	float query_pt[2] = {pos.x, pos.z};
+	nanoflann::SearchParams searchParams;
+	searchParams.sorted = false;
+
+	metalTree.radiusSearch(&query_pt[0], radius, outIndices, searchParams);
+}
+
 const int CMetalData::FindNearestCluster(const AIFloat3& pos) const
 {
 	float query_pt[2] = {pos.x, pos.z};
@@ -102,13 +112,11 @@ const int CMetalData::FindNearestCluster(const AIFloat3& pos, PointPredicate& pr
 	return -1;
 }
 
-void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distMatrix)
+void CMetalData::Clusterize(float maxDistance, CRagMatrix& distMatrix)
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-
 	// Clusterize metal spots by distance to each other
 	CHierarchCluster clust;
-	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(*distMatrix, maxDistance);
+	const CHierarchCluster::Clusters& iclusters = clust.Clusterize(distMatrix, maxDistance);
 
 	// Fill cluster structures, calculate centers
 	const int nclusters = iclusters.size();
@@ -136,6 +144,7 @@ void CMetalData::Clusterize(float maxDistance, std::shared_ptr<CRagMatrix> distM
 		enclose.MakeCircle(points);
 		c.position = enclose.GetCenter();
 		c.position.y = centr.y;
+		c.radius = enclose.GetRadius();
 
 		clusterGraph.addNode();
 	}
@@ -150,52 +159,139 @@ void CMetalData::TriangulateGraph(const std::vector<double>& coords,
 		std::function<float (std::size_t A, std::size_t B)> distance,
 		std::function<void (std::size_t A, std::size_t B)> addEdge)
 {
-	delaunator::Delaunator d(coords);
-	using DEdge = std::pair<std::size_t, std::size_t>;
-	std::map<DEdge, std::set<std::size_t>> edges;
-	auto adjacent = [&edges](std::size_t A, std::size_t B, std::size_t C) {
-		if (A > B) {  // undirected edges (i < j)
-			std::swap(A, B);
-		}
-		edges[std::make_pair(A, B)].insert(C);
-	};
-	for (std::size_t i = 0; i < d.triangles.size(); i += 3) {
-		const std::size_t A = d.triangles[i + 0];
-		const std::size_t B = d.triangles[i + 1];
-		const std::size_t C = d.triangles[i + 2];
-		adjacent(A, B, C);
-		adjacent(B, C, A);
-		adjacent(C, A, B);
-	}
-	auto badEdge = [&edges, distance](const DEdge e, const std::set<std::size_t>& vs) {
-		float AB = distance(e.first, e.second);
-		for (std::size_t C : vs) {
-			float AC = distance(e.first, C);
-			float BC = distance(e.second, C);
-			if (AB > (BC + AC) * 0.9f) {
-				return true;
+	try {
+		delaunator::Delaunator d(coords);
+		using DEdge = std::pair<std::size_t, std::size_t>;
+		std::map<DEdge, std::set<std::size_t>> edges;
+		auto adjacent = [&edges](std::size_t A, std::size_t B, std::size_t C) {
+			if (A > B) {  // undirected edges (i < j)
+				std::swap(A, B);
 			}
+			edges[std::make_pair(A, B)].insert(C);
+		};
+		for (std::size_t i = 0; i < d.triangles.size(); i += 3) {
+			const std::size_t A = d.triangles[i + 0];
+			const std::size_t B = d.triangles[i + 1];
+			const std::size_t C = d.triangles[i + 2];
+			adjacent(A, B, C);
+			adjacent(B, C, A);
+			adjacent(C, A, B);
 		}
-		return false;
-	};
-	for (auto kv : edges) {
-		const DEdge& e = kv.first;
-		const std::set<std::size_t>& vs = kv.second;
-		if (badEdge(e, vs)) {
-			continue;
+		auto badEdge = [&edges, distance](const DEdge e, const std::set<std::size_t>& vs) {
+			float AB = distance(e.first, e.second);
+			for (std::size_t C : vs) {
+				float AC = distance(e.first, C);
+				float BC = distance(e.second, C);
+				if (AB > (BC + AC) * 0.9f) {
+					return true;
+				}
+			}
+			return false;
+		};
+		for (auto kv : edges) {
+			const DEdge& e = kv.first;
+			const std::set<std::size_t>& vs = kv.second;
+			if (badEdge(e, vs)) {
+				continue;
+			}
+			addEdge(e.first, e.second);
 		}
-		addEdge(e.first, e.second);
+	} catch (...) {
+		MakeConvexHull(coords, addEdge);
 	}
+}
+
+void CMetalData::MakeConvexHull(const std::vector<double>& coords,
+		std::function<void (std::size_t A, std::size_t B)> addEdge)
+{
+	// !!! Graham scan !!!
+	// Coord system:  *-----x
+	//                |
+	//                |
+	//                z
+	struct Point {
+		size_t id;
+		double x, z;
+	};
+	auto orientation = [](const Point& p1, const Point& p2, const Point& p3) {
+		// orientation > 0 : counter-clockwise turn,
+		// orientation < 0 : clockwise,
+		// orientation = 0 : collinear
+		return (p2.x - p1.x) * (p3.z - p1.z) - (p2.z - p1.z) * (p3.x - p1.x);
+	};
+	// number of points
+	size_t N = coords.size() / 2;
+	// the array of points
+	std::vector<Point> points;
+	points.reserve(N + 1);
+	points.push_back({});  // sentinel
+	// Find the bottom-most point
+	size_t min = 1;
+	double zmin = coords[1];
+	for (size_t i = 0; i < N; ++i) {
+		points.push_back({i, coords[i * 2 + 0], coords[i * 2 + 1]});
+		float z = coords[i * 2 + 1];
+		// Pick the bottom-most or chose the left most point in case of tie
+		if ((z < zmin) || (zmin == z && points[i + 1].x < points[min].x)) {
+			zmin = z, min = i + 1;
+		}
+	}
+	std::swap(points[1], points[min]);
+
+	// A function used to sort an array of
+	// points with respect to the first point
+	Point& p0 = points[1];
+	auto compare = [&p0, orientation](const Point& p1, const Point& p2) {
+		// Find orientation
+		int o = orientation(p0, p1, p2);
+		if (o == 0) {
+			double sqDist1 = SQUARE(p1.x - p0.x) + SQUARE(p1.z - p0.z);
+			double sqDist2 = SQUARE(p2.z - p0.x) + SQUARE(p2.z - p0.z);
+			return sqDist1 < sqDist2;
+		}
+		return o > 0;
+	};
+	// Sort n-1 points with respect to the first point. A point p1 comes
+	// before p2 in sorted output if p2 has larger polar angle (in
+	// counterclockwise direction) than p1
+	std::sort(points.begin() + 2, points.end(), compare);
+
+	// let points[0] be a sentinel point that will stop the loop
+	points[0] = points[N];
+
+//	size_t M = 1; // Number of points on the convex hull.
+//	for (int i(2); i <= N; ++i) {
+//		while (orientation(points[M - 1], points[M], points[i]) <= 0) {
+//			if (M > 1) {
+//				M--;
+//			} else if (i == N) {
+//				break;
+//			} else {
+//				i++;
+//			}
+//		}
+//		std::swap(points[++M], points[i]);
+//	}
+	size_t M = N;  // FIXME: Remove. Hull through all points
+
+	// draw convex hull
+	size_t start = points[0].id, end;
+	for (size_t i = 1; i < M; ++i) {
+		end = points[i].id;
+		addEdge(start, end);
+		start = end;
+	}
+//	end = points[0].id;
+//	addEdge(start, end);
 }
 
 void CMetalData::BuildClusterGraph()
 {
 	auto addEdge = [this](std::size_t A, std::size_t B) -> void {
-		Graph::Edge edge = clusterGraph.addEdge(clusterGraph.nodeFromId(A), clusterGraph.nodeFromId(B));
+		ClusterGraph::Edge edge = clusterGraph.addEdge(clusterGraph.nodeFromId(A), clusterGraph.nodeFromId(B));
 		const SCluster& clA = clusters[A];
 		const SCluster& clB = clusters[B];
-		weights[edge] = clA.position.distance(clB.position) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
-		centers[edge] = (clA.position + clB.position) * 0.5f;
+		clusterEdgeCosts[edge] = clA.position.distance(clB.position) / (clA.income + clB.income) * (clA.idxSpots.size() + clB.idxSpots.size());
 	};
 	if (clusters.size() < 2) {
 		// do nothing
@@ -214,120 +310,5 @@ void CMetalData::BuildClusterGraph()
 		}, addEdge);
 	}
 }
-
-//void CMetalData::DrawConvexHulls(Drawer* drawer)
-//{
-//	for (const MetalIndices& indices : GetClusters()) {
-//		if (indices.empty()) {
-//			continue;
-//		} else if (indices.size() == 1) {
-//			drawer->AddPoint(spots[indices[0]].position, "Cluster 1");
-//		} else if (indices.size() == 2) {
-//			drawer->AddLine(spots[indices[0]].position, spots[indices[1]].position);
-//		} else {
-//			// !!! Graham scan !!!
-//			// Coord system:  *-----x
-//			//                |
-//			//                |
-//			//                z
-//			auto orientation = [](const AIFloat3& p1, const AIFloat3& p2, const AIFloat3& p3) {
-//				// orientation > 0 : counter-clockwise turn,
-//				// orientation < 0 : clockwise,
-//				// orientation = 0 : collinear
-//				return (p2.x - p1.x) * (p3.z - p1.z) - (p2.z - p1.z) * (p3.x - p1.x);
-//			};
-//			// number of points
-//			int N = indices.size();
-//			// the array of points
-//			std::vector<AIFloat3> points(N + 1);
-//			// Find the bottom-most point
-//			int min = 1, i = 1;
-//			float zmin = spots[indices[0]].position.z;
-//			for (const int idx : indices) {
-//				points[i] = spots[idx].position;
-//				float z = spots[idx].position.z;
-//				// Pick the bottom-most or chose the left most point in case of tie
-//				if ((z < zmin) || (zmin == z && points[i].x < points[min].x)) {
-//					zmin = z, min = i;
-//				}
-//				i++;
-//			}
-//			auto swap = [](AIFloat3& p1, AIFloat3& p2) {
-//				AIFloat3 tmp = p1;
-//				p1 = p2;
-//				p2 = tmp;
-//			};
-//			swap(points[1], points[min]);
-//
-//			// A function used to sort an array of
-//			// points with respect to the first point
-//			AIFloat3& p0 = points[1];
-//			auto compare = [&p0, orientation](const AIFloat3& p1, const AIFloat3& p2) {
-//				// Find orientation
-//				int o = orientation(p0, p1, p2);
-//				if (o == 0) {
-//					return p0.SqDistance2D(p1) < p0.SqDistance2D(p2);
-//				}
-//				return o > 0;
-//			};
-//			// Sort n-1 points with respect to the first point. A point p1 comes
-//			// before p2 in sorted output if p2 has larger polar angle (in
-//			// counterclockwise direction) than p1
-//			std::sort(points.begin() + 2, points.end(), compare);
-//
-//			// let points[0] be a sentinel point that will stop the loop
-//			points[0] = points[N];
-//
-////			int M = 1; // Number of points on the convex hull.
-////			for (int i(2); i <= N; ++i) {
-////				while (orientation(points[M - 1], points[M], points[i]) <= 0) {
-////					if (M > 1) {
-////						M--;
-////					} else if (i == N) {
-////						break;
-////					} else {
-////						i++;
-////					}
-////				}
-////				swap(points[++M], points[i]);
-////			}
-//
-//			// FIXME: Remove next DEBUG line
-//			int M = N;
-//			// draw convex hull
-//			AIFloat3 start = points[0], end;
-//			for (int i = 1; i < M; i++) {
-//				end = points[i];
-//				drawer->AddLine(start, end);
-//				start = end;
-//			}
-//			end = points[0];
-//			drawer->AddLine(start, end);
-//		}
-//	}
-//}
-
-//void CMetalManager::DrawCentroids(Drawer* drawer)
-//{
-//	for (int i = 0; i < metalCluster.size(); i++) {
-//		std::string msgText = utils::string_format("%i mexes cluster", metalCluster[i].size());
-//		drawer->AddPoint(centroids[i], msgText.c_str());
-//	}
-//}
-
-//void CMetalData::ClearMetalClusters(Drawer* drawer)
-//{
-//	for (auto& cluster : GetClusters()) {
-//		for (auto& idx : cluster) {
-//			drawer->DeletePointsAndLines(spots[idx].position);
-//		}
-//	}
-////	clusters.clear();
-////
-////	for (auto& centroid : centroids) {
-////		drawer->DeletePointsAndLines(centroid);
-////	}
-////	centroids.clear();
-//}
 
 } // namespace circuit

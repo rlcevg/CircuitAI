@@ -8,8 +8,9 @@
 #include "task/builder/BigGunTask.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -24,7 +25,6 @@ CBBigGunTask::CBBigGunTask(ITaskManager* mgr, Priority priority,
 
 CBBigGunTask::~CBBigGunTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBBigGunTask::Finish()
@@ -36,7 +36,7 @@ void CBBigGunTask::Finish()
 CAllyUnit* CBBigGunTask::FindSameAlly(CCircuitUnit* builder, const std::vector<Unit*>& friendlies)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
 
 	for (Unit* au : friendlies) {
@@ -46,7 +46,7 @@ CAllyUnit* CBBigGunTask::FindSameAlly(CCircuitUnit* builder, const std::vector<U
 		}
 		if (alu->GetCircuitDef()->IsRoleSuper() && au->IsBeingBuilt()) {
 			const AIFloat3& pos = alu->GetPos(frame);
-			if (terrainManager->CanBuildAtSafe(builder, pos)) {
+			if (terrainMgr->CanReachAtSafe(builder, pos, builder->GetCircuitDef()->GetBuildDistance())) {
 				return alu;
 			}
 		}

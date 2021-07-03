@@ -25,7 +25,8 @@ public:
 	CMultiQueue(const CMultiQueue&) = delete; // disable copying
 
 	/*
-	 * Pop object from queue if any exists and return it, otherwise wait for object to appear in queue
+	 * Pop object from queue if any exists and return it,
+	 * otherwise wait for object to appear in queue.
 	 */
 	T Pop();
 	/*
@@ -34,12 +35,18 @@ public:
 	void Pop(T& item);
 	void Push(const T& item);
 	bool IsEmpty();
+	size_t Size();
 	/*
-	 * Pop object if any exists in queue and process it, quit immediately otherwise
+	 * Pop object if any exists in queue and process it, quit immediately otherwise.
+	 * Return true if object was processed.
 	 */
-	void PopAndProcess(ProcessFunction process);
+	bool PopAndProcess(ProcessFunction process);
 	/*
-	 * Remove all elements for which condition is true
+	 * Pop all objects in queue and process it.
+	 */
+	void PopAndProcessAll(ProcessFunction process);
+	/*
+	 * Remove all elements for which condition is true.
 	 */
 	void RemoveAllIf(ConditionFunction condition);
 	void Clear();

@@ -21,14 +21,23 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit) override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 private:
 	void FindTarget();
+	void FallbackDisengage();
+	void ApplyDisengagePath(const CQueryPathSingle* query);
+	void ApplyTargetPath(const CQueryPathSingle* query);
+	void FallbackSafePos();
+	void ApplySafePos(const CQueryPathMulti* query);
+	void FallbackCommPos();
+	void Fallback();
+
+	void ApplyDamagedPath(const CQueryPathMulti* query);
 };
 
 } // namespace circuit

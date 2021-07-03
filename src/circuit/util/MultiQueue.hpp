@@ -50,14 +50,19 @@ void CMultiQueue<T>::Push(const T& item)
 template <typename T>
 bool CMultiQueue<T>::IsEmpty()
 {
-	std::unique_lock<spring::mutex> mlock(_mutex);
-	bool isEmpty = _queue.empty();
-	mlock.unlock();
-    return isEmpty;
+	std::lock_guard<spring::mutex> mlock(_mutex);
+	return _queue.empty();
 }
 
 template <typename T>
-void CMultiQueue<T>::PopAndProcess(ProcessFunction process)
+size_t CMultiQueue<T>::Size()
+{
+	std::lock_guard<spring::mutex> mlock(_mutex);
+	return _queue.size();
+}
+
+template <typename T>
+bool CMultiQueue<T>::PopAndProcess(ProcessFunction process)
 {
 	std::unique_lock<spring::mutex> mlock(_mutex);
 	if (!_queue.empty()) {
@@ -65,13 +70,28 @@ void CMultiQueue<T>::PopAndProcess(ProcessFunction process)
 		_queue.pop_front();
 		mlock.unlock();
 		process(item);
+		return true;
+	}
+	return false;
+}
+
+template <typename T>
+void CMultiQueue<T>::PopAndProcessAll(ProcessFunction process)
+{
+	std::unique_lock<spring::mutex> mlock(_mutex);
+	while (!_queue.empty()) {
+		auto item = _queue.front();
+		_queue.pop_front();
+//		mlock.unlock();
+		process(item);
+//		mlock.lock();
 	}
 }
 
 template <typename T>
 void CMultiQueue<T>::RemoveAllIf(ConditionFunction condition)
 {
-	std::unique_lock<spring::mutex> mlock(_mutex);
+	std::lock_guard<spring::mutex> mlock(_mutex);
 	typename std::deque<T>::iterator iter = _queue.begin();
 	while (iter != _queue.end()) {
 		if (condition(*iter)) {
@@ -87,7 +107,7 @@ void CMultiQueue<T>::RemoveAllIf(ConditionFunction condition)
 template <typename T>
 void CMultiQueue<T>::Clear()
 {
-	std::unique_lock<spring::mutex> mlock(_mutex);
+	std::lock_guard<spring::mutex> mlock(_mutex);
 	_queue.clear();
 }
 

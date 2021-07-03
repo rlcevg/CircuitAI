@@ -14,19 +14,20 @@ namespace circuit {
 
 class CDefendTask: public ISquadTask {
 public:
-	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position, float radius,
+	CDefendTask(ITaskManager* mgr, const springai::AIFloat3& position,
 				FightType check, FightType promote, float maxPower, float powerMod);
 	virtual ~CDefendTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+	virtual void AssignTo(CCircuitUnit* unit) override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 
 	void SetPosition(const springai::AIFloat3& pos) { position = pos; }
 	void SetMaxPower(float power) { maxPower = power * powerMod; }
-	void SetWantedTarget(CEnemyUnit* enemy) { SetTarget(enemy); }
+//	void SetWantedTarget(CEnemyInfo* enemy) { SetTarget(enemy); }
 
 	FightType GetPromote() const { return promote; }
 
@@ -35,9 +36,13 @@ protected:
 
 private:
 	virtual void Merge(ISquadTask* task) override;
-	void FindTarget();
-
-	float radius;
+	bool FindTarget();
+	void ApplyTargetPath(const CQueryPathMulti* query);
+	void FallbackFrontPos();
+	void ApplyFrontPos(const CQueryPathMulti* query);
+	void FallbackBasePos();
+	void ApplyBasePos(const CQueryPathSingle* query);
+	void Fallback();
 
 	FightType check;
 	FightType promote;

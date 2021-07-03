@@ -8,8 +8,9 @@
 #ifndef SRC_CIRCUIT_CIRCUIT_H_
 #define SRC_CIRCUIT_CIRCUIT_H_
 
-#include "unit/AllyTeam.h"
 #include "unit/CircuitDef.h"
+#include "unit/CircuitWDef.h"
+#include "unit/ally/AllyTeam.h"
 #include "util/Defines.h"
 
 #include <memory>
@@ -47,28 +48,30 @@ namespace circuit {
 
 class CGameAttribute;
 class CSetupManager;
+class CEnemyManager;
+class CMapManager;
 class CThreatMap;
+class CInfluenceMap;
 class CPathFinder;
 class CTerrainManager;
 class CBuilderManager;
 class CFactoryManager;
 class CEconomyManager;
 class CMilitaryManager;
+class CScriptManager;
+class CInitScript;
 class CScheduler;
 class IModule;
 class CCircuitUnit;
-class CEnemyUnit;
+class CEnemyInfo;
+class COOAICallback;
+class CEngine;
+class CMap;
 #ifdef DEBUG_VIS
 class CDebugDrawer;
 #endif
 
-/*
- * Эти парни не созданы чувствовать!
- * Ледяная душа не боится жути!
- * Только под ногами их крутятся:
- * По оси земля, по полу полу-люди!
- */
-constexpr char version[]{"1.0.8"};
+extern const char version[];
 
 class CException: public std::exception {
 public:
@@ -89,7 +92,7 @@ public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
 	void NotifyResign();
-	void Resign(int newTeamId);
+	void Resign(int newTeamId, springai::Economy* economy);
 private:
 	typedef int (CCircuitAI::*EventHandlerPtr)(int topic, const void* data);
 	int HandleGameEvent(int topic, const void* data);
@@ -114,21 +117,23 @@ private:
 	int UnitFinished(CCircuitUnit* unit);
 	int UnitIdle(CCircuitUnit* unit);
 	int UnitMoveFailed(CCircuitUnit* unit);
-	int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker/*, int weaponId*/);
-	int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker);
+	int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker, int weaponId, springai::AIFloat3 dir);
+	int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker);
 	int UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId);
 	int UnitCaptured(ICoreUnit::Id unitId, int oldTeamId, int newTeamId);
-	int EnemyEnterLOS(CEnemyUnit* enemy);
-	int EnemyLeaveLOS(CEnemyUnit* enemy);
-	int EnemyEnterRadar(CEnemyUnit* enemy);
-	int EnemyLeaveRadar(CEnemyUnit* enemy);
-	int EnemyDamaged(CEnemyUnit* enemy);
-	int EnemyDestroyed(CEnemyUnit* enemy);
-	int PlayerCommand(std::vector<CCircuitUnit*>& units);
+	int EnemyEnterLOS(CEnemyInfo* enemy);
+	int EnemyLeaveLOS(CEnemyInfo* enemy);
+	int EnemyEnterRadar(CEnemyInfo* enemy);
+	int EnemyLeaveRadar(CEnemyInfo* enemy);
+	int EnemyDamaged(CEnemyInfo* enemy);
+	int EnemyDestroyed(CEnemyInfo* enemy);
+	int PlayerCommand(const std::vector<CCircuitUnit*>& units);
 //	int CommandFinished(CCircuitUnit* unit, int commandTopicId, springai::Command* cmd);
 	int Load(std::istream& is);
 	int Save(std::ostream& os);
 	int LuaMessage(const char* inData);
+
+	bool InitSide();
 
 // ---- Units ---- BEGIN
 public:
@@ -144,21 +149,21 @@ public:
 	CCircuitUnit* GetTeamUnit(ICoreUnit::Id unitId) const;
 	const Units& GetTeamUnits() const { return teamUnits; }
 
-	void UpdateFriendlyUnits() { allyTeam->UpdateFriendlyUnits(this); }
+	void UpdateFriendlyUnits() { allyTeam->UpdateFriendlyUnits(); }
 	CAllyUnit* GetFriendlyUnit(springai::Unit* u) const;
 	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const { return allyTeam->GetFriendlyUnit(unitId); }
-	const CAllyTeam::Units& GetFriendlyUnits() const { return allyTeam->GetFriendlyUnits(); }
+	const CAllyTeam::AllyUnits& GetFriendlyUnits() const { return allyTeam->GetFriendlyUnits(); }
 
-	using EnemyUnits = std::map<ICoreUnit::Id, CEnemyUnit*>;
+	using EnemyInfos = std::map<ICoreUnit::Id, CEnemyInfo*>;
 private:
-	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS = false);
-	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
-	void UnregisterEnemyUnit(CEnemyUnit* unit);
-	void UpdateEnemyUnits();
+	std::pair<CEnemyInfo*, bool> RegisterEnemyInfo(ICoreUnit::Id unitId, bool isInLOS = false);
+	CEnemyInfo* RegisterEnemyInfo(springai::Unit* e);
+	void UnregisterEnemyInfo(CEnemyInfo* enemy);
+	void CreateFakeEnemy(int weaponId, const springai::AIFloat3& startPos, const springai::AIFloat3& dir);
 public:
-	CEnemyUnit* GetEnemyUnit(springai::Unit* u) const { return GetEnemyUnit(u->GetUnitId()); }
-	CEnemyUnit* GetEnemyUnit(ICoreUnit::Id unitId) const;
-	const EnemyUnits& GetEnemyUnits() const { return enemyUnits; }
+	CEnemyInfo* GetEnemyInfo(springai::Unit* u) const;
+	CEnemyInfo* GetEnemyInfo(ICoreUnit::Id unitId) const;
+	const EnemyInfos& GetEnemyInfos() const { return enemyInfos; }
 
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
@@ -169,13 +174,11 @@ public:
 	void AddActionUnit(CCircuitUnit* unit) { actionUnits.push_back(unit); }
 
 private:
-	void ActionUpdate();
+	void UpdateActions();
 
 	Units teamUnits;  // owner
-	EnemyUnits enemyUnits;  // owner
+	EnemyInfos enemyInfos;  // owner
 	CAllyTeam* allyTeam;
-	int uEnemyMark;
-	int kEnemyMark;
 
 	std::vector<CCircuitUnit*> actionUnits;
 	unsigned int actionIterator;
@@ -197,42 +200,82 @@ private:
 
 // ---- UnitDefs ---- BEGIN
 public:
-	using CircuitDefs = std::unordered_map<CCircuitDef::Id, CCircuitDef*>;
+	using CircuitDefs = std::vector<CCircuitDef>;  // UnitDefId=0 is not valid, @see rts/Sim/Units/UnitDefHandler.h
 	using NamedDefs = std::map<const char*, CCircuitDef*, cmp_str>;
 
-	const CircuitDefs& GetCircuitDefs() const { return defsById; }
+	/*const */CircuitDefs& GetCircuitDefs() /*const */{ return defsById; }
 	CCircuitDef* GetCircuitDef(const char* name);
-	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId);
-//	const std::vector<CCircuitDef*>& GetKnownDefs() const { return knownDefs; }
+	bool IsValidUnitDefId(CCircuitDef::Id unitDefId) const {
+		return (unitDefId > 0) && ((size_t)unitDefId < defsById.size());
+	}
+	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId) {
+		return /*IsValidUnitDefId(unitDefId) ? */&defsById[unitDefId - 1]/* : nullptr*/;
+	}
+	void BindRole(CCircuitDef::RoleT role, CCircuitDef::RoleT actAsRole) {
+		roleBind[role] = actAsRole;
+	}
+	CCircuitDef::RoleT GetBindedRole(CCircuitDef::RoleT role) const {
+		return roleBind[role];
+	}
 private:
 	void InitUnitDefs(float& outDcr);
-//	void InitKnownDefs(const CCircuitDef* commDef);
 	CircuitDefs defsById;  // owner
 	NamedDefs defsByName;
-//	std::vector<CCircuitDef*> knownDefs;
+	std::array<CCircuitDef::RoleT, CMaskHandler::GetMaxMasks()> roleBind;
 // ---- UnitDefs ---- END
+
+// ---- WeaponDefs ---- BEGIN
+public:
+	using WeaponDefs = std::vector<CWeaponDef>;
+
+	bool IsValidWeaponDefId(CWeaponDef::Id weaponDefId) const {
+		return (weaponDefId >= 0) && ((size_t)weaponDefId < weaponDefs.size());
+	}
+	CWeaponDef* GetWeaponDef(CWeaponDef::Id weaponDefId) {
+		return /*IsValidWeaponDefId(weaponDefId) ? */&weaponDefs[weaponDefId]/* : nullptr*/;
+	}
+	void BindUnitToWeaponDefs(CCircuitDef::Id unitDefId, const std::set<CWeaponDef::Id>& weaponDefs, bool isMobile);
+private:
+	void InitWeaponDefs();
+	WeaponDefs weaponDefs;  // owner
+	struct SWeaponToUnitDef {
+		std::set<CCircuitDef::Id> ids;
+		std::set<CCircuitDef::Id> mobileIds;
+		std::set<CCircuitDef::Id> staticIds;
+	};
+	std::vector<SWeaponToUnitDef> weaponToUnitDefs;  // weapon (id=index) to unit defs
+// ---- WeaponDefs ---- END
 
 public:
 	bool IsInitialized() const { return isInitialized; }
 	bool IsLoadSave() const { return isLoadSave; }
 	CGameAttribute* GetGameAttribute() const { return gameAttribute.get(); }
-	std::shared_ptr<CScheduler>& GetScheduler() { return scheduler; }
+	const std::shared_ptr<CScheduler>& GetScheduler() { return scheduler; }
 	int GetLastFrame()    const { return lastFrame; }
 	int GetSkirmishAIId() const { return skirmishAIId; }
 	int GetTeamId()       const { return teamId; }
 	int GetAllyTeamId()   const { return allyTeamId; }
-	springai::OOAICallback* GetCallback()   const { return callback; }
-	springai::Log*          GetLog()        const { return log.get(); }
-	springai::Game*         GetGame()       const { return game.get(); }
-	springai::Map*          GetMap()        const { return map.get(); }
-	springai::Lua*          GetLua()        const { return lua.get(); }
-	springai::Pathing*      GetPathing()    const { return pathing.get(); }
-	springai::Drawer*       GetDrawer()     const { return drawer.get(); }
-	springai::SkirmishAI*   GetSkirmishAI() const { return skirmishAI.get(); }
-	springai::Team*         GetTeam()       const { return team.get(); }
+	SideType GetSideId()             const { return sideId; }
+	const std::string& GetSideName() const { return sideName; }
+
+	COOAICallback*        GetCallback()   const { return callback.get(); }
+	CEngine*              GetEngine()     const { return engine.get(); }
+	springai::Cheats*     GetCheats()     const { return cheats.get(); }
+	springai::Log*        GetLog()        const { return log.get(); }
+	springai::Game*       GetGame()       const { return game.get(); }
+	CMap*                 GetMap()        const { return map.get(); }
+	springai::Lua*        GetLua()        const { return lua.get(); }
+	springai::Pathing*    GetPathing()    const { return pathing.get(); }
+	springai::Drawer*     GetDrawer()     const { return drawer.get(); }
+	springai::SkirmishAI* GetSkirmishAI() const { return skirmishAI.get(); }
+	springai::Team*       GetTeam()       const { return team.get(); }
+	CScriptManager*   GetScriptManager()   const { return scriptManager.get(); }
 	CSetupManager*    GetSetupManager()    const { return setupManager.get(); }
+	CEnemyManager*    GetEnemyManager()    const { return enemyManager.get(); }
 	CMetalManager*    GetMetalManager()    const { return metalManager.get(); }
-	CThreatMap*       GetThreatMap()       const { return threatMap.get(); }
+	CMapManager*      GetMapManager()      const { return mapManager.get(); }
+	CThreatMap*       GetThreatMap()       const;
+	CInfluenceMap*    GetInflMap()         const;
 	CPathFinder*      GetPathfinder()      const { return pathfinder.get(); }
 	CTerrainManager*  GetTerrainManager()  const { return terrainManager.get(); }
 	CBuilderManager*  GetBuilderManager()  const { return builderManager.get(); }
@@ -240,16 +283,13 @@ public:
 	CEconomyManager*  GetEconomyManager()  const { return economyManager.get(); }
 	CMilitaryManager* GetMilitaryManager() const { return militaryManager.get(); }
 
-	int GetAirCategory()   const { return airCategory; }
-	int GetLandCategory()  const { return landCategory; }
-	int GetWaterCategory() const { return waterCategory; }
-	int GetBadCategory()   const { return badCategory; }
-	int GetGoodCategory()  const { return goodCategory; }
+	int GetAirCategory()    const { return airCategory; }
+	int GetLandCategory()   const { return landCategory; }
+	int GetWaterCategory()  const { return waterCategory; }
+	int GetBadCategory()    const { return badCategory; }
+	int GetGoodCategory()   const { return goodCategory; }
 
 private:
-	// debug
-//	void DrawClusters();
-
 	bool isInitialized;
 	bool isLoadSave;
 	bool isResigned;
@@ -257,11 +297,15 @@ private:
 	int skirmishAIId;
 	int teamId;
 	int allyTeamId;
-	const struct SSkirmishAICallback* sAICallback;
-	springai::OOAICallback*               callback;
+	SideType sideId;
+	std::string sideName;
+
+	std::unique_ptr<COOAICallback>        callback;
+	std::unique_ptr<CEngine>              engine;
+	std::unique_ptr<springai::Cheats>     cheats;
 	std::unique_ptr<springai::Log>        log;
 	std::unique_ptr<springai::Game>       game;
-	std::unique_ptr<springai::Map>        map;
+	std::unique_ptr<CMap>                 map;
 	std::unique_ptr<springai::Lua>        lua;
 	std::unique_ptr<springai::Pathing>    pathing;
 	std::unique_ptr<springai::Drawer>     drawer;
@@ -270,12 +314,14 @@ private:
 
 	static std::unique_ptr<CGameAttribute> gameAttribute;
 	static unsigned int gaCounter;
-	void CreateGameAttribute(unsigned int seed);
+	void CreateGameAttribute();
 	void DestroyGameAttribute();
 	std::shared_ptr<CScheduler> scheduler;
+	std::shared_ptr<CScriptManager> scriptManager;
 	std::shared_ptr<CSetupManager> setupManager;
+	std::shared_ptr<CEnemyManager> enemyManager;
 	std::shared_ptr<CMetalManager> metalManager;
-	std::shared_ptr<CThreatMap> threatMap;
+	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CTerrainManager> terrainManager;
 	std::shared_ptr<CBuilderManager> builderManager;
@@ -284,12 +330,17 @@ private:
 	std::shared_ptr<CMilitaryManager> militaryManager;
 	std::vector<std::shared_ptr<IModule>> modules;
 
+	friend class CInitScript;
+	CInitScript* script;  // owner
 	// TODO: Move into GameAttribute? Or use locally
 	int airCategory;  // over surface
 	int landCategory;  // on surface
 	int waterCategory;  // under surface
 	int badCategory;
 	int goodCategory;
+
+public:
+	void PrepareAreaUpdate();
 
 #ifdef DEBUG_VIS
 private:

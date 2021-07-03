@@ -23,8 +23,12 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit) override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
+	virtual void Stop(bool done) override;
+
+protected:
 	virtual void Execute(CCircuitUnit* unit) override;
 
+public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 private:

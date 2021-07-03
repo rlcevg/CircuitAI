@@ -15,6 +15,9 @@ class CActionList;
 class CCircuitAI;
 
 class IAction {
+public:
+	enum class State: char {NONE = 0, WAIT, ACTIVE, FINISH, HALT, _SIZE_};
+
 protected:
 	IAction(CActionList* owner);
 public:
@@ -24,19 +27,29 @@ public:
 	virtual void OnStart();
 	virtual void OnEnd();
 
-	void SetFinished(bool value) { isFinished = value; }
-	bool IsFinished() const { return isFinished; }
 	void SetBlocking(bool value) { isBlocking = value; }
 	bool IsBlocking() const { return isBlocking; }
-	void SetActive(bool value) { isActive = value; }
-	bool IsActive() const { return isActive; }
+
+	void StateWait() { state = State::WAIT; }
+	bool IsWait() const { return state == State::WAIT; }
+
+	void StateActivate() { state = State::ACTIVE; }
+	bool IsActive() const { return state == State::ACTIVE; }
+
+	void StateFinish() { state = State::FINISH; }
+	bool IsFinishing() const { return state == State::FINISH; }
+
+	void StateHalt() { state = State::HALT; }
+	bool IsFinished() const { return state >= State::FINISH; }
+
+	void SetState(State value) { state = value; }
+	State GetState() const { return state; }
 
 protected:
 	CActionList* ownerList;
 
-	bool isFinished;
 	bool isBlocking;
-	bool isActive;
+	State state;
 };
 
 } // namespace circuit

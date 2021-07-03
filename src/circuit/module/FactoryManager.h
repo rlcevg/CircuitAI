@@ -21,6 +21,8 @@ class CFactoryData;
 
 class CFactoryManager: public IUnitModule {
 public:
+	friend class CFactoryScript;
+
 	CFactoryManager(CCircuitAI* circuit);
 	virtual ~CFactoryManager();
 
@@ -33,7 +35,7 @@ public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
-	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	CRecruitTask* EnqueueTask(CRecruitTask::Priority priority,
 							  CCircuitDef* buildDef,
@@ -62,7 +64,7 @@ public:
 	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	CCircuitUnit* NeedUpgrade();
 	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
-//	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleType role);
+//	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleT role);
 
 	CCircuitDef* GetAirpadDef() const { return airpadDef; }
 	CCircuitDef* GetAssistDef() const { return assistDef; }
@@ -75,15 +77,16 @@ public:
 
 	CCircuitDef* GetFactoryToBuild(springai::AIFloat3 position = -RgtVector,
 								   bool isStart = false, bool isReset = false);
-	void AddFactory(CCircuitDef* cdef);
-	void DelFactory(CCircuitDef* cdef);
-	CCircuitDef* GetRoleDef(CCircuitDef* facDef, CCircuitDef::RoleType role) const;
-	CCircuitDef* GetLandDef(CCircuitDef* facDef) const;
-	CCircuitDef* GetWaterDef(CCircuitDef* facDef) const;
+	void AddFactory(const CCircuitDef* cdef);
+	void DelFactory(const CCircuitDef* cdef);
+	CCircuitDef* GetRoleDef(const CCircuitDef* facDef, CCircuitDef::RoleT role) const;
+	CCircuitDef* GetLandDef(const CCircuitDef* facDef) const;
+	CCircuitDef* GetWaterDef(const CCircuitDef* facDef) const;
 
 private:
 	void EnableFactory(CCircuitUnit* unit);
 	void DisableFactory(CCircuitUnit* unit);
+	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
 	IUnitTask* CreateFactoryTask(CCircuitUnit* unit);
 	IUnitTask* CreateAssistTask(CCircuitUnit* unit);
 
@@ -133,8 +136,8 @@ private:
 			, isRequireEnergy(false)
 			, nanoCount(0)
 		{}
-		CCircuitDef* GetRoleDef(CCircuitDef::RoleType role) const {
-			return roleDefs[static_cast<CCircuitDef::RoleT>(role)];
+		CCircuitDef* GetRoleDef(CCircuitDef::RoleT role) const {
+			return roleDefs[role];
 		}
 
 		std::vector<CCircuitDef*> roleDefs;  // cheapest role def

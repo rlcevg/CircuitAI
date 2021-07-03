@@ -6,7 +6,7 @@
  */
 
 #include "task/builder/SonarTask.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -21,7 +21,6 @@ CBSonarTask::CBSonarTask(ITaskManager* mgr, Priority priority,
 
 CBSonarTask::~CBSonarTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 } // namespace circuit

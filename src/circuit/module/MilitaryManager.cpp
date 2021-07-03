@@ -8,7 +8,10 @@
 #include "module/MilitaryManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "map/InfluenceMap.h"
+#include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
+#include "script/MilitaryScript.h"
 #include "setup/SetupManager.h"
 #include "setup/DefenceMatrix.h"
 #include "task/NilTask.h"
@@ -28,33 +31,31 @@
 #include "task/fighter/SupportTask.h"
 #include "task/static/SuperTask.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
-#include "terrain/PathFinder.h"
-#include "unit/EnemyUnit.h"
+#include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathMulti.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/Scheduler.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 #include "json/json.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
 #include "Command.h"
 #include "Log.h"
-#include "Map.h"
 
 namespace circuit {
 
 using namespace springai;
 
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
-		: IUnitModule(circuit)
+		: IUnitModule(circuit, new CMilitaryScript(circuit->GetScriptManager(), this))
 		, fightIterator(0)
 		, defenceIdx(0)
 		, scoutIdx(0)
 		, armyCost(0.f)
-		, enemyMobileCost(0.f)
-		, mobileThreat(0.f)
-		, staticThreat(0.f)
 		, radarDef(nullptr)
 		, sonarDef(nullptr)
 		, bigGunDef(nullptr)
@@ -69,9 +70,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 		)
 	};
-	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
-		float defCost = unit->GetCircuitDef()->GetCost();
+		float defCost = unit->GetCircuitDef()->GetCostM();
 		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetPos(frame), defCost);
 		if (point != nullptr) {
 			point->cost -= defCost;
@@ -101,7 +102,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		TRY_UNIT(this->circuit, unit,
 			if (unit->GetCircuitDef()->IsAbleToFly()) {
 				if (unit->GetCircuitDef()->IsAttrNoStrafe()) {
-					unit->GetUnit()->ExecuteCustomCommand(CMD_AIR_STRAFE, {0.0f});
+					unit->CmdAirStrafe(0);
 				}
 				if (unit->GetCircuitDef()->IsRoleMine()) {
 					unit->GetUnit()->SetIdleMode(1);
@@ -109,7 +110,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			}
 			if (unit->GetCircuitDef()->IsAttrStock()) {
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
+				unit->CmdMiscPriority(2);
 			}
 		)
 	};
@@ -119,10 +120,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->GetTask()->OnUnitIdle(unit);
 		}
 	};
-	auto attackerDamagedHandler = [](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto attackerDamagedHandler = [](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		unit->GetTask()->OnUnitDamaged(unit, attacker);
 	};
-	auto attackerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto attackerDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
@@ -156,11 +157,11 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			unit->GetUnit()->SetTrajectory(1);
 			if (unit->GetCircuitDef()->IsAttrStock()) {
 				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-				unit->GetUnit()->ExecuteCustomCommand(CMD_MISC_PRIORITY, {2.0f});
+				unit->CmdMiscPriority(2);
 			}
 		)
 	};
-	auto superDestroyedHandler = [](CCircuitUnit* unit, CEnemyUnit* attacker) {
+	auto superDestroyedHandler = [](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
 		task->OnUnitDestroyed(unit, attacker);  // can change task
 		unit->GetTask()->RemoveAssignee(unit);  // Remove unit from IdleTask
@@ -169,34 +170,34 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	/*
 	 * Defend buildings handler
 	 */
-	auto structDamagedHandler = [this](CCircuitUnit* unit, CEnemyUnit* attacker) {
-		const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
-		if (tasks.empty()) {
-			return;
-		}
-		int frame = this->circuit->GetLastFrame();
-		const AIFloat3& pos = unit->GetPos(frame);
-		CTerrainManager* terrainManager = this->circuit->GetTerrainManager();
-		CDefendTask* defendTask = nullptr;
-		float minSqDist = std::numeric_limits<float>::max();
-		for (IFighterTask* task : tasks) {
-			CDefendTask* dt = static_cast<CDefendTask*>(task);
-			const float sqDist = pos.SqDistance2D(dt->GetPosition());
-			if ((minSqDist <= sqDist) || !terrainManager->CanMoveToPos(dt->GetLeader()->GetArea(), pos)) {
-				continue;
-			}
-			if ((dt->GetTarget() == nullptr) ||
-				(dt->GetTarget()->GetPos().SqDistance2D(dt->GetLeader()->GetPos(frame)) > sqDist))
-			{
-				minSqDist = sqDist;
-				defendTask = dt;
-			}
-		}
-		if (defendTask != nullptr) {
-			defendTask->SetPosition(pos);
-			defendTask->SetWantedTarget(attacker);
-		}
-	};
+//	auto structDamagedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+//		const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
+//		if (tasks.empty()) {
+//			return;
+//		}
+//		int frame = this->circuit->GetLastFrame();
+//		const AIFloat3& pos = unit->GetPos(frame);
+//		CTerrainManager* terrainMgr = this->circuit->GetTerrainManager();
+//		CDefendTask* defendTask = nullptr;
+//		float minSqDist = std::numeric_limits<float>::max();
+//		for (IFighterTask* task : tasks) {
+//			CDefendTask* dt = static_cast<CDefendTask*>(task);
+//			const float sqDist = pos.SqDistance2D(dt->GetPosition());
+//			if ((minSqDist <= sqDist) || !terrainMgr->CanMoveToPos(dt->GetLeader()->GetArea(), pos)) {
+//				continue;
+//			}
+//			if ((dt->GetTarget() == nullptr) ||
+//				(dt->GetTarget()->GetPos().SqDistance2D(dt->GetLeader()->GetPos(frame)) > sqDist))
+//			{
+//				minSqDist = sqDist;
+//				defendTask = dt;
+//			}
+//		}
+//		if (defendTask != nullptr) {
+//			defendTask->SetPosition(pos);
+//			defendTask->SetWantedTarget(attacker);
+//		}
+//	};
 
 	// NOTE: IsRole used below
 	ReadConfig();
@@ -212,55 +213,53 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	float maxSonarDivCost = 0.f;
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
-	const CCircuitAI::CircuitDefs& allDefs = circuit->GetCircuitDefs();
-	for (auto& kv : allDefs) {
-		CCircuitDef::Id unitDefId = kv.first;
-		CCircuitDef* cdef = kv.second;
-		if (cdef->IsRoleComm()) {
-			cdef->ModThreat(commMod);
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		CCircuitDef::Id unitDefId = cdef.GetId();
+		if (cdef.IsRoleComm()) {
+			cdef.ModThreat(commMod);
 		}
-		if (cdef->GetUnitDef()->IsBuilder()) {
-			damagedHandler[unitDefId] = structDamagedHandler;
+		if (cdef.GetDef()->IsBuilder()) {
+//			damagedHandler[unitDefId] = structDamagedHandler;
 			continue;
 		}
-		const std::map<std::string, std::string>& customParams = cdef->GetUnitDef()->GetCustomParams();
+		const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
 		auto it = customParams.find("is_drone");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 			continue;
 		}
-		if (cdef->IsMobile()) {
+		if (cdef.IsMobile()) {
 			createdHandler[unitDefId] = attackerCreatedHandler;
 			finishedHandler[unitDefId] = attackerFinishedHandler;
 			idleHandler[unitDefId] = attackerIdleHandler;
 			damagedHandler[unitDefId] = attackerDamagedHandler;
 			destroyedHandler[unitDefId] = attackerDestroyedHandler;
 
-			if (cdef->GetRetreat() < 0.f) {
-				cdef->SetRetreat(fighterRet);
+			if (cdef.GetRetreat() < 0.f) {
+				cdef.SetRetreat(fighterRet);
 			}
 		} else {
-			damagedHandler[unitDefId] = structDamagedHandler;
-			if (cdef->IsAttacker()) {
-				if (cdef->IsRoleSuper()) {
+//			damagedHandler[unitDefId] = structDamagedHandler;
+			if (cdef.IsAttacker()) {
+				if (cdef.IsRoleSuper()) {
 					createdHandler[unitDefId] = superCreatedHandler;
 					finishedHandler[unitDefId] = superFinishedHandler;
 					destroyedHandler[unitDefId] = superDestroyedHandler;
-				} else if (cdef->IsAttrStock()) {
+				} else if (cdef.IsAttrStock()) {
 					finishedHandler[unitDefId] = defenceFinishedHandler;
 				}
 			}
-			if (commDef->CanBuild(cdef)) {
-				float range = cdef->GetUnitDef()->GetRadarRadius();
-				float areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
+			if (commDef->CanBuild(&cdef)) {
+				float range = cdef.GetDef()->GetRadarRadius();
+				float areaDivCost = M_PI * SQUARE(range) / cdef.GetCostM();
 				if (maxRadarDivCost < areaDivCost) {
 					maxRadarDivCost = areaDivCost;
-					radarDef = cdef;
+					radarDef = &cdef;
 				}
-				range = cdef->GetUnitDef()->GetSonarRadius();
-				areaDivCost = M_PI * SQUARE(range) / cdef->GetCost();
+				range = cdef.GetDef()->GetSonarRadius();
+				areaDivCost = M_PI * SQUARE(range) / cdef.GetCostM();
 				if (maxSonarDivCost < areaDivCost) {
 					maxSonarDivCost = areaDivCost;
-					sonarDef = cdef;
+					sonarDef = &cdef;
 				}
 			}
 		}
@@ -269,15 +268,13 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
 
 	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::_SIZE_));
-
-	enemyPos = AIFloat3(circuit->GetTerrainManager()->GetTerrainWidth() / 2, 0, circuit->GetTerrainManager()->GetTerrainHeight() / 2);
-	enemyGroups.push_back(SEnemyGroup(enemyPos));
 }
 
 CMilitaryManager::~CMilitaryManager()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
-	utils::free_clear(fightUpdates);
+	for (IUnitTask* task : fightUpdates) {
+		task->ClearRelease();
+	}
 }
 
 void CMilitaryManager::ReadConfig()
@@ -288,9 +285,9 @@ void CMilitaryManager::ReadConfig()
 
 	const Json::Value& responses = root["response"];
 	const float teamSize = circuit->GetAllyTeam()->GetSize();
-	roleInfos.resize(static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_), {.0f});
+	roleInfos.resize(roleNames.size(), {.0f});
 	for (const auto& pair : roleNames) {
-		SRoleInfo& info = roleInfos[static_cast<CCircuitDef::RoleT>(pair.second)];
+		SRoleInfo& info = roleInfos[pair.second.type];
 		const Json::Value& response = responses[pair.first];
 
 		if (response.isNull()) {
@@ -315,7 +312,7 @@ void CMilitaryManager::ReadConfig()
 			}
 			float rat = ratio.get(i, 1.0f).asFloat();
 			float imp = importance.get(i, 1.0f).asFloat();
-			info.vs.push_back(SRoleInfo::SVsInfo(roleNames[roleName], rat, imp));
+			info.vs.push_back(SRoleInfo::SVsInfo(it->second.type, rat, imp));
 		}
 	}
 
@@ -325,7 +322,6 @@ void CMilitaryManager::ReadConfig()
 	raid.min = qraid.get((unsigned)0, 3.f).asFloat();
 	raid.avg = qraid.get((unsigned)1, 5.f).asFloat();
 	minAttackers = quotas.get("attack", 8.f).asFloat();
-	defRadius = quotas.get("def_rad", 2000.f).asFloat();
 	const Json::Value& qthrMod = quotas["thr_mod"];
 	const Json::Value& qthrAtk = qthrMod["attack"];
 	attackMod.min = qthrAtk.get((unsigned)0, 1.f).asFloat();
@@ -333,9 +329,6 @@ void CMilitaryManager::ReadConfig()
 	const Json::Value& qthrDef = qthrMod["defence"];
 	defenceMod.min = qthrDef.get((unsigned)0, 1.f).asFloat();
 	defenceMod.len = qthrDef.get((unsigned)1, 1.f).asFloat() - defenceMod.min;
-	initThrMod.inMobile = qthrMod.get("mobile", 1.f).asFloat();
-	initThrMod.inStatic = qthrMod.get("static", 0.f).asFloat();
-	maxAAThreat = quotas.get("aa_threat", 42.f).asFloat();
 
 	const Json::Value& porc = root["porcupine"];
 	const Json::Value& defs = porc["unit"];
@@ -407,9 +400,9 @@ void CMilitaryManager::ReadConfig()
 			circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), items[i].asCString());
 			continue;
 		}
-		si.cdef->SetMainRole(CCircuitDef::RoleType::SUPER);  // override mainRole
-		si.cdef->AddEnemyRole(CCircuitDef::RoleType::SUPER);
-		si.cdef->AddRole(CCircuitDef::RoleType::SUPER);
+		si.cdef->SetMainRole(ROLE_TYPE(SUPER));  // override mainRole
+		si.cdef->AddEnemyRole(ROLE_TYPE(SUPER));
+		si.cdef->AddRole(ROLE_TYPE(SUPER));
 		si.weight = probs.get(i, 1.f).asFloat();
 		superInfos.push_back(si);
 	}
@@ -423,14 +416,18 @@ void CMilitaryManager::ReadConfig()
 
 void CMilitaryManager::Init()
 {
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	const CMetalData::Metals& spots = metalManager->GetSpots();
-
-	clusterInfos.resize(metalManager->GetClusters().size(), {nullptr});
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	const CMetalData::Metals& spots = metalMgr->GetSpots();
+	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
 
 	scoutPath.reserve(spots.size());
 	for (unsigned i = 0; i < spots.size(); ++i) {
 		scoutPath.push_back(i);
+	}
+
+	raidPath.reserve(clusters.size());
+	for (unsigned i = 0; i < clusters.size(); ++i) {
+		raidPath.push_back({i, -1, 1.f});
 	}
 
 	CSetupManager::StartFunc subinit = [this, &spots](const AIFloat3& pos) {
@@ -443,7 +440,7 @@ void CMilitaryManager::Init()
 		const int interval = 4;
 		const int offset = circuit->GetSkirmishAIId() % interval;
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), interval / 2, offset + 1);
+		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateFight, this), 1/*interval / 2*/, offset + 1);
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::UpdateDefenceTasks, this), FRAMES_PER_SEC * 5, offset + 2);
 
 		scheduler->RunTaskEvery(std::make_shared<CGameTask>(&CMilitaryManager::Watchdog, this),
@@ -461,6 +458,9 @@ void CMilitaryManager::Release()
 	for (IUnitTask* task : fightUpdates) {
 		AbortTask(task);
 		// NOTE: Do not delete task as other AbortTask may ask for it
+	}
+	for (IUnitTask* task : fightUpdates) {
+		task->ClearRelease();
 	}
 	fightUpdates.clear();
 }
@@ -495,7 +495,7 @@ int CMilitaryManager::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto search = damagedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != damagedHandler.end()) {
@@ -505,7 +505,7 @@ int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	return 0; //signaling: OK
 }
 
-int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
@@ -521,8 +521,8 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 	switch (type) {
 		default:
 		case IFighterTask::FightType::RALLY: {
-//			CEconomyManager* economyManager = circuit->GetEconomyManager();
-//			float power = economyManager->GetAvgMetalIncome() * economyManager->GetEcoFactor() * 32.0f;
+//			CEconomyManager* economyMgr = circuit->GetEconomyManager();
+//			float power = economyMgr->GetAvgMetalIncome() * economyMgr->GetEcoFactor() * 32.0f;
 			task = new CRallyTask(this, /*power*/1);  // TODO: pass enemy's threat
 			break;
 		}
@@ -578,17 +578,17 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, float power)
 {
 	const float mod = (float)rand() / RAND_MAX * defenceMod.len + defenceMod.min;
-	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius,
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(),
 										 promote, promote, power, 1.0f / mod);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
 	return task;
 }
 
-IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote)
+IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power)
 {
-	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(), defRadius,
-										 check, promote, std::numeric_limits<float>::max(), 1.0f);
+	IFighterTask* task = new CDefendTask(this, circuit->GetSetupManager()->GetBasePos(),
+										 check, promote, power, 1.0f);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
 	return task;
@@ -609,79 +609,32 @@ CRetreatTask* CMilitaryManager::EnqueueRetreat()
 	return task;
 }
 
-void CMilitaryManager::DequeueTask(IFighterTask* task, bool done)
+void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 {
-	if (task->GetType() == IUnitTask::Type::FIGHTER) {
-		fightTasks[static_cast<IFighterTask::FT>(task->GetFightType())].erase(task);
+	switch (task->GetType()) {
+		case IUnitTask::Type::FIGHTER: {
+			IFighterTask* taskF = static_cast<IFighterTask*>(task);
+			fightTasks[static_cast<IFighterTask::FT>(taskF->GetFightType())].erase(taskF);
+		} break;
+		default: break;
 	}
 	task->Dead();
-	task->Close(done);
+	task->Stop(done);
 }
 
 IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 {
-	// FIXME: Make central task assignment system.
-	//        MilitaryManager should decide what tasks to merge.
-	static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SCOUT),   IFighterTask::FightType::SCOUT},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::RAIDER),  IFighterTask::FightType::RAID},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::ARTY),    IFighterTask::FightType::ARTY},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AA),      IFighterTask::FightType::AA},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::AH),      IFighterTask::FightType::AH},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::BOMBER),  IFighterTask::FightType::BOMB},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SUPPORT), IFighterTask::FightType::SUPPORT},
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::MINE),    IFighterTask::FightType::SCOUT},  // FIXME
-		{static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::SUPER),   IFighterTask::FightType::SUPER},
-	};
-	IFighterTask* task = nullptr;
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsRoleSupport()) {
-		if (/*cdef->IsAttacker() && */GetTasks(IFighterTask::FightType::ATTACK).empty()) {
-			task = EnqueueDefend(IFighterTask::FightType::ATTACK,
-								 IFighterTask::FightType::SUPPORT);
-		} else {
-			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
-		}
-	} else {
-		auto it = types.find(cdef->GetMainRole());
-		if (it != types.end()) {
-			switch (it->second) {
-				case IFighterTask::FightType::RAID: {
-					if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
-						task = EnqueueTask(IFighterTask::FightType::SCOUT);
-					} else if (GetTasks(IFighterTask::FightType::RAID).empty()) {
-						task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
-					}
-				} break;
-				case IFighterTask::FightType::AH: {
-					if (!cdef->IsRoleMine() && (GetEnemyCost(CCircuitDef::RoleType::HEAVY) < 1.f)) {
-						task = EnqueueTask(IFighterTask::FightType::ATTACK);
-					}
-				} break;
-				default: break;
-			}
-			if (task == nullptr) {
-				task = EnqueueTask(it->second);
-			}
-		} else {
-			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
-			const float power = std::max(minAttackers, GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
-			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
-							: EnqueueTask(IFighterTask::FightType::ATTACK);
-		}
-	}
-
-	return task;
+	return static_cast<CMilitaryScript*>(script)->MakeTask(unit);  // DefaultMakeTask
 }
 
 void CMilitaryManager::AbortTask(IUnitTask* task)
 {
-	DequeueTask(static_cast<IFighterTask*>(task), false);
+	DequeueTask(task, false);
 }
 
 void CMilitaryManager::DoneTask(IUnitTask* task)
 {
-	DequeueTask(static_cast<IFighterTask*>(task), true);
+	DequeueTask(task, true);
 }
 
 void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
@@ -722,7 +675,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	if (closestPoint == nullptr) {
 		return;
 	}
-	CBuilderManager* builderManager = circuit->GetBuilderManager();
+	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	float totalCost = .0f;
 	IBuilderTask* parentTask = nullptr;
 	// NOTE: circuit->GetTerrainManager()->IsWaterSector(pos) checks whole sector
@@ -742,9 +695,9 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		CThreatMap* threatMap = circuit->GetThreatMap();
 		const CMetalData::Clusters& clusters = mm->GetClusters();
 		const CMetalData::Metals& spots = mm->GetSpots();
-		const CMetalData::Graph& clusterGraph = mm->GetGraph();
-		CMetalData::Graph::Node node = clusterGraph.nodeFromId(cluster);
-		CMetalData::Graph::IncEdgeIt edgeIt(clusterGraph, node);
+		const CMetalData::ClusterGraph& clusterGraph = mm->GetClusterGraph();
+		CMetalData::ClusterGraph::Node node = clusterGraph.nodeFromId(cluster);
+		CMetalData::ClusterGraph::IncEdgeIt edgeIt(clusterGraph, node);
 		for (; edgeIt != lemon::INVALID; ++edgeIt) {
 			int idx0 = clusterGraph.id(clusterGraph.oppositeNode(node, edgeIt));
 			if (mm->IsClusterFinished(idx0)) {
@@ -764,11 +717,11 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 		}
 	}
 	if (!isPorc) {
-		for (IBuilderTask* t : builderManager->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
+		for (IBuilderTask* t : builderMgr->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 			if ((t->GetTarget() == nullptr) && (t->GetNextTask() != nullptr) &&
 				(closestPoint->position.SqDistance2D(t->GetTaskPos()) < SQUARE(SQUARE_SIZE)))
 			{
-				builderManager->AbortTask(t);
+				builderMgr->AbortTask(t);
 				break;
 			}
 		}
@@ -779,13 +732,14 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	AIFloat3 backPos = closestPoint->position + backDir.Normalize2D() * SQUARE_SIZE * 16;
 	CTerrainManager::CorrectPosition(backPos);
 
+	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 	const int frame = circuit->GetLastFrame();
 	for (unsigned i = 0; i < num; ++i) {
 		CCircuitDef* defDef = defenders[i];
-		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (GetEnemyCost(CCircuitDef::RoleType::AIR) < 1.f))) {
+		if (!defDef->IsAvailable(frame) || (defDef->IsRoleAA() && (enemyMgr->GetEnemyCost(ROLE_TYPE(AIR)) < 1.f))) {
 			continue;
 		}
-		float defCost = defDef->GetCost();
+		float defCost = defDef->GetCostM();
 		totalCost += defCost;
 		if (totalCost <= closestPoint->cost) {
 			continue;
@@ -794,7 +748,7 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 			closestPoint->cost += defCost;
 			bool isFirst = (parentTask == nullptr);
 			const AIFloat3& buildPos = defDef->IsAttacker() ? closestPoint->position : backPos;
-			IBuilderTask* task = builderManager->EnqueueTask(IBuilderTask::Priority::HIGH, defDef, buildPos,
+			IBuilderTask* task = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, defDef, buildPos,
 					IBuilderTask::BuildType::DEFENCE, defCost, SQUARE_SIZE * 32, isFirst);
 			if (parentTask != nullptr) {
 				parentTask->SetNextTask(task);
@@ -807,50 +761,48 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 	}
 
 	// Build sensors
-	auto checkSensor = [this, &backPos, builderManager](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
+	auto checkSensor = [this, &backPos, builderMgr](IBuilderTask::BuildType type, CCircuitDef* cdef, float range) {
 		bool isBuilt = false;
-		auto friendlies = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(backPos, range));
-		for (Unit* au : friendlies) {
-			if (au == nullptr) {
+		COOAICallback* clb = circuit->GetCallback();
+		auto friendlies = clb->GetFriendlyUnitIdsIn(backPos, range);
+		for (int auId : friendlies) {
+			if (auId == -1) {
 				continue;
 			}
-			UnitDef* udef = au->GetDef();
-			CCircuitDef::Id defId = udef->GetUnitDefId();
-			delete udef;
+			CCircuitDef::Id defId = clb->Unit_GetDefId(auId);
 			if (defId == cdef->GetId()) {
 				isBuilt = true;
 				break;
 			}
 		}
-		utils::free_clear(friendlies);
 		if (!isBuilt) {
 			const IBuilderTask* task = nullptr;
-			const float qdist = range * range;
-			for (const IBuilderTask* t : builderManager->GetTasks(type)) {
+			const float qdist = SQUARE(range);
+			for (const IBuilderTask* t : builderMgr->GetTasks(type)) {
 				if (backPos.SqDistance2D(t->GetTaskPos()) < qdist) {
 					task = t;
 					break;
 				}
 			}
 			if (task == nullptr) {
-				builderManager->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, backPos, type);
+				builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, cdef, backPos, type);
 			}
 		}
 	};
 	// radar
-	if ((radarDef != nullptr) && radarDef->IsAvailable(frame) && (radarDef->GetCost() < maxCost)) {
-		const float range = radarDef->GetUnitDef()->GetRadarRadius() / (isPorc ? 4.f : SQRT_2);
+	if ((radarDef != nullptr) && radarDef->IsAvailable(frame) && (radarDef->GetCostM() < maxCost)) {
+		const float range = radarDef->GetDef()->GetRadarRadius() / (isPorc ? 4.f : SQRT_2);
 		checkSensor(IBuilderTask::BuildType::RADAR, radarDef, range);
 	}
 	// sonar
-	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable(frame) && (sonarDef->GetCost() < maxCost)) {
-		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetUnitDef()->GetSonarRadius());
+	if (isWater && (sonarDef != nullptr) && sonarDef->IsAvailable(frame) && (sonarDef->GetCostM() < maxCost)) {
+		checkSensor(IBuilderTask::BuildType::SONAR, sonarDef, sonarDef->GetDef()->GetSonarRadius());
 	}
 }
 
 void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
 {
-	float defCost = task->GetBuildDef()->GetCost();
+	float defCost = task->GetBuildDef()->GetCostM();
 	CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(task->GetPosition(), defCost);
 	if (point != nullptr) {
 		if ((task->GetTarget() == nullptr) && (point->cost >= defCost)) {
@@ -859,7 +811,7 @@ void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
 		IBuilderTask* next = task->GetNextTask();
 		while (next != nullptr) {
 			if (next->GetBuildDef() != nullptr) {
-				defCost = next->GetBuildDef()->GetCost();
+				defCost = next->GetBuildDef()->GetCostM();
 			} else{
 				defCost = next->GetCost();
 			}
@@ -873,10 +825,6 @@ void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
 
 bool CMilitaryManager::HasDefence(int cluster)
 {
-	// FIXME: Resume fighter/DefendTask experiment
-	return true;
-	// FIXME: Resume fighter/DefendTask experiment
-
 	const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
 	for (const CDefenceMatrix::SDefPoint& defPoint : points) {
 		if (defPoint.cost > .5f) {
@@ -888,18 +836,18 @@ bool CMilitaryManager::HasDefence(int cluster)
 
 AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 {
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CMetalManager* metalManager = circuit->GetMetalManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
 	STerrainMapArea* area = unit->GetArea();
-	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-	const float minSqRange = SQUARE(unit->GetCircuitDef()->GetLosRadius());
-	const CMetalData::Metals& spots = metalManager->GetSpots();
+//	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+//	const float minSqRange = SQUARE(unit->GetCircuitDef()->GetLosRadius());
+	const CMetalData::Metals& spots = metalMgr->GetSpots();
 	decltype(scoutIdx) prevIdx = scoutIdx;
 	while (scoutIdx < scoutPath.size()) {
 		int index = scoutPath[scoutIdx++];
-		if (!metalManager->IsMexInFinished(index) &&
-			terrainManager->CanMoveToPos(area, spots[index].position) &&
-			(pos.SqDistance2D(spots[index].position) > minSqRange))
+		if (!metalMgr->IsMexInFinished(index)
+			&& terrainMgr->CanMoveToPos(area, spots[index].position)
+			/*&& (pos.SqDistance2D(spots[index].position) > minSqRange)*/)
 		{
 			return spots[index].position;
 		}
@@ -907,9 +855,9 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	scoutIdx = 0;
 	while (scoutIdx < prevIdx) {
 		int index = scoutPath[scoutIdx++];
-		if (!metalManager->IsMexInFinished(index) &&
-			terrainManager->CanMoveToPos(area, spots[index].position) &&
-			(pos.SqDistance2D(spots[index].position) > minSqRange))
+		if (!metalMgr->IsMexInFinished(index)
+			&& terrainMgr->CanMoveToPos(area, spots[index].position)
+			/*&& (pos.SqDistance2D(spots[index].position) > minSqRange)*/)
 		{
 			return spots[index].position;
 		}
@@ -918,113 +866,139 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	return -RgtVector;
 }
 
-void CMilitaryManager::FindBestPos(F3Vec& posPath, AIFloat3& startPos, STerrainMapArea* area)
+AIFloat3 CMilitaryManager::GetRaidPosition(CCircuitUnit* unit)
 {
-	static F3Vec ourPositions;  // NOTE: micro-opt
+	// FIXME: Resume. Not well thought, not finished.
+	return GetScoutPosition(unit);
+	// FIXME: Resume. Not well thought, not finished.
 
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
-	CPathFinder* pathfinder = circuit->GetPathfinder();
+//	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+//	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+//	STerrainMapArea* area = unit->GetArea();
+//	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+//	CThreatMap* threatMap = circuit->GetThreatMap();
+//	threatMap->SetThreatType(unit);  // TODO: Check if required? Upper function may already call it
+//	float bestWeight = -1.f;
+//	float sqBestDist = std::numeric_limits<float>::max();
+//	int bestIndex = -1;
+//	for (size_t index = 0; index < raidPath.size(); ++index) {
+//		if (!terrainMgr->CanMoveToPos(area, clusters[index].position)) {
+//			continue;
+//		}
+//		const SRaidPoint& rp = raidPath[index];
+//		float weight = rp.weight / (threatMap->GetThreatAt(clusters[index].position) + 1.f);
+//		if (bestWeight < weight) {
+//			bestWeight = weight;
+//			bestIndex = index;
+//			sqBestDist = pos.SqDistance2D(clusters[index].position);
+//		} else if (rp.weight == bestWeight) {
+//			float sqDist = pos.SqDistance2D(clusters[index].position);
+//			if (sqBestDist > sqDist) {
+//				sqBestDist = sqDist;
+//				bestWeight = weight;
+//				bestIndex = index;
+//			}
+//		}
+//	}
+//	return (bestIndex != -1) ? clusters[bestIndex].position : AIFloat3(-RgtVector);
+}
+
+void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)
+{
+	outPositions.clear();
+
+	CInfluenceMap* inflMap = circuit->GetInflMap();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	STerrainMapArea* area = unit->GetArea();
+	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
+
+	CMetalData::PointPredicate predicate = [inflMap, metalMgr, terrainMgr, area, clusters](const int index) {
+		return ((inflMap->GetInfluenceAt(clusters[index].position) > -INFL_EPS)
+			&& (metalMgr->IsClusterQueued(index) || metalMgr->IsClusterFinished(index))
+			&& terrainMgr->CanMoveToPos(area, clusters[index].position));
+	};
+
+	CSetupManager* setupMgr = circuit->GetSetupManager();
+	int index = metalMgr->FindNearestCluster(setupMgr->GetLanePos(), predicate);
+
+	if (index >= 0) {
+		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
+		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+			outPositions.push_back(defPoint.position);
+		}
+	}
+}
+
+void CMilitaryManager::FillAttackSafePos(CCircuitUnit* unit, F3Vec& outPositions)
+{
+	outPositions.clear();
+
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
 
-	/*
-	 * Check mobile groups
-	 */
+	STerrainMapArea* area = unit->GetArea();
+
 	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
 	for (IFighterTask::FightType type : types) {
 		const std::set<IFighterTask*>& atkTasks = GetTasks(type);
 		for (IFighterTask* task : atkTasks) {
 			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
-			if (terrainManager->CanMoveToPos(area, ourPos)) {
-				ourPositions.push_back(ourPos);
-			}
-		}
-
-		if (!ourPositions.empty()) {
-			pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
-			ourPositions.clear();
-			if (!posPath.empty()) {
-				return;
+			if (terrainMgr->CanMoveToPos(area, ourPos)) {
+				outPositions.push_back(ourPos);
 			}
 		}
 	}
+}
 
-	/*
-	 * Check static cluster defences
-	 */
-//	unsigned threatCount = 0;
-//	unsigned clusterCount = 0;
-//	CThreatMap* threatMap = circuit->GetThreatMap();
-//	CMetalManager* mm = circuit->GetMetalManager();
-//	const CMetalData::Clusters& clusters = mm->GetClusters();
-//	const CMetalData::Metals& spots = mm->GetSpots();
-//	const CMetalData::Graph& clusterGraph = mm->GetGraph();
-//	CMetalData::Graph::out_edge_iterator outEdgeIt, outEdgeEnd;
-//	std::tie(outEdgeIt, outEdgeEnd) = boost::out_edges(cluster, clusterGraph);
-//	for (; (outEdgeIt != outEdgeEnd); ++outEdgeIt) {
-//		const CMetalData::EdgeDesc& edgeId = *outEdgeIt;
-//		int idx0 = boost::target(edgeId, clusterGraph);
-//		if (mm->IsClusterFinished(idx0)) {
-//			continue;
-//		}
-//		// check if there is enemy neighbor
-//		for (int idx : clusters[idx0].idxSpots) {
-//			if (threatMap->GetAllThreatAt(spots[idx].position) > THREAT_MIN * 2) {
-//				threatCount++;
-//				break;
-//			}
-//		}
-//		if (threatCount >= 2) {  // if 2 nearby clusters are a threat
-//			threatCount = 0;
-//			if (++clusterCount >= 3) {
-//				break;
-//			}
-//		}
-//	}
+void CMilitaryManager::FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions)
+{
+	outPositions.clear();
+
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	const int frame = circuit->GetLastFrame();
+
+	const AIFloat3& startPos = unit->GetPos(frame);
+	STerrainMapArea* area = unit->GetArea();
 
 	CDefenceMatrix* defMat = defence;
-	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
+	CMetalData::PointPredicate predicate = [defMat, terrainMgr, area](const int index) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
+			if ((defPoint.cost > 100.0f) && terrainMgr->CanMoveToPos(area, defPoint.position)) {
 				return true;
 			}
 		}
 		return false;
 	};
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(startPos, predicate);
+
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	int index = metalMgr->FindNearestCluster(startPos, predicate);
+
 	if (index >= 0) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-			ourPositions.push_back(defPoint.position);
-		}
-
-		pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
-		ourPositions.clear();
-		if (!posPath.empty()) {
-			return;
+			outPositions.push_back(defPoint.position);
 		}
 	}
-
-	/*
-	 * Use base
-	 */
-	ourPositions.push_back(circuit->GetSetupManager()->GetBasePos());
-	pathfinder->FindBestPath(posPath, startPos, pathfinder->GetSquareSize(), ourPositions, false);
-	ourPositions.clear();
 }
 
-void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F3Vec& outPositions)
+void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 {
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	outPositions.clear();
+
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
+
+	const springai::AIFloat3& pos = unit->GetPos(frame);
+	STerrainMapArea* area = unit->GetArea();
 
 	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
 	for (IFighterTask::FightType type : types) {
 		const std::set<IFighterTask*>& atkTasks = GetTasks(type);
 		for (IFighterTask* task : atkTasks) {
 			const AIFloat3& ourPos = static_cast<ISquadTask*>(task)->GetLeaderPos(frame);
-			if (terrainManager->CanMoveToPos(area, ourPos)) {
+			if (terrainMgr->CanMoveToPos(area, ourPos)) {
 				outPositions.push_back(ourPos);
 			}
 		}
@@ -1034,17 +1008,17 @@ void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F
 	}
 
 	CDefenceMatrix* defMat = defence;
-	CMetalData::PointPredicate predicate = [defMat, terrainManager, area](const int index) {
+	CMetalData::PointPredicate predicate = [defMat, terrainMgr, area](const int index) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
-			if ((defPoint.cost > 100.0f) && terrainManager->CanMoveToPos(area, defPoint.position)) {
+			if ((defPoint.cost > 100.0f) && terrainMgr->CanMoveToPos(area, defPoint.position)) {
 				return true;
 			}
 		}
 		return false;
 	};
-	CMetalManager* metalManager = circuit->GetMetalManager();
-	int index = metalManager->FindNearestCluster(pos, predicate);
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	int index = metalMgr->FindNearestCluster(pos, predicate);
 	if (index >= 0) {
 		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
 		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
@@ -1057,103 +1031,46 @@ void CMilitaryManager::FillSafePos(const AIFloat3& pos, STerrainMapArea* area, F
 	}
 }
 
-IFighterTask* CMilitaryManager::AddDefendTask(int cluster)
+IFighterTask* CMilitaryManager::AddGuardTask(CCircuitUnit* unit)
 {
-	// FIXME: Resume fighter/DefendTask experiment
-	return nullptr;
-	// FIXME: Resume fighter/DefendTask experiment
+	auto it = guardTasks.find(unit);
+	if (it != guardTasks.end()) {
+		return it->second;
+	}
 
-//	IFighterTask* task = clusterInfos[cluster].defence;
-//	if (task != nullptr) {
-//		return task;
-//	}
-//
-//	const AIFloat3& pos = circuit->GetMetalManager()->GetClusters()[cluster].geoCentr;
-////	task = EnqueueTask(IFighterTask::FightType::DEFEND, pos, 1);
-//	task = new CGuardTask(this, pos, 1);
-//	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
-//	clusterInfos[cluster].defence = task;
-//	return task;
+	IFighterTask* task = EnqueueGuard(unit);
+	guardTasks[unit] = task;
+	return task;
 }
 
-IFighterTask* CMilitaryManager::DelDefendTask(const AIFloat3& pos)
+bool CMilitaryManager::DelGuardTask(CCircuitUnit* unit)
 {
-	// FIXME: Resume fighter/DefendTask experiment
-	return nullptr;
-	// FIXME: Resume fighter/DefendTask experiment
+	auto it = guardTasks.find(unit);
+	if (it == guardTasks.end()) {
+		return false;
+	}
 
-//	int index = circuit->GetMetalManager()->FindNearestCluster(pos);
-//	if (index < 0) {
-//		return nullptr;
-//	}
-//
-//	return DelDefendTask(index);
+	AbortTask(it->second);
+	guardTasks.erase(it);
+	return true;
 }
 
-IFighterTask* CMilitaryManager::DelDefendTask(int cluster)
+IFighterTask* CMilitaryManager::GetGuardTask(CCircuitUnit* unit) const
 {
-	// FIXME: Resume fighter/DefendTask experiment
-	return nullptr;
-	// FIXME: Resume fighter/DefendTask experiment
-
-//	IFighterTask* task = clusterInfos[cluster].defence;
-//	if (task == nullptr) {
-//		return nullptr;
-//	}
-//
-//	clusterInfos[cluster].defence = nullptr;
-//	return task;
-}
-
-void CMilitaryManager::AddEnemyCost(const CEnemyUnit* e)
-{
-	CCircuitDef* cdef = e->GetCircuitDef();
-	assert(cdef != nullptr);
-
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
-			SEnemyInfo& info = enemyInfos[i];
-			info.cost   += e->GetCost();
-			info.threat += cdef->GetThreat();
-		}
-	}
-	if (cdef->IsMobile()) {
-		mobileThreat += cdef->GetThreat() * initThrMod.inMobile;
-		enemyMobileCost += e->GetCost();
-	} else {
-		staticThreat += cdef->GetThreat() * initThrMod.inStatic;
-	}
-}
-
-void CMilitaryManager::DelEnemyCost(const CEnemyUnit* e)
-{
-	CCircuitDef* cdef = e->GetCircuitDef();
-	assert(cdef != nullptr);
-
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsEnemyRoleAny(CCircuitDef::GetMask(i))) {
-			SEnemyInfo& info = enemyInfos[i];
-			info.cost   = std::max(info.cost   - e->GetCost(),      0.f);
-			info.threat = std::max(info.threat - cdef->GetThreat(), 0.f);
-		}
-	}
-	if (cdef->IsMobile()) {
-		mobileThreat = std::max(mobileThreat - cdef->GetThreat() * initThrMod.inMobile, 0.f);
-		enemyMobileCost = std::max(enemyMobileCost - e->GetCost(), 0.f);
-	} else {
-		staticThreat = std::max(staticThreat - cdef->GetThreat() * initThrMod.inStatic, 0.f);
-	}
+	auto it = guardTasks.find(unit);
+	return (it != guardTasks.end()) ? it->second : nullptr;
 }
 
 void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
-	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
-			roleInfos[i].cost += cost;
-			roleInfos[i].units.insert(unit);
+	const float cost = cdef->GetCostM();
+	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
+	assert(roleInfos.size() == roleSize);
+	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
+		if (cdef->IsRespRoleAny(CCircuitDef::GetMask(type))) {
+			roleInfos[type].cost += cost;
+			roleInfos[type].units.insert(unit);
 		}
 	}
 }
@@ -1161,28 +1078,30 @@ void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 void CMilitaryManager::DelResponse(CCircuitUnit* unit)
 {
 	const CCircuitDef* cdef = unit->GetCircuitDef();
-	const float cost = cdef->GetCost();
-	assert(roleInfos.size() == static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_));
-	for (CCircuitDef::RoleT i = 0; i < static_cast<CCircuitDef::RoleT>(CCircuitDef::RoleType::_SIZE_); ++i) {
-		if (cdef->IsRoleAny(CCircuitDef::GetMask(i))) {
-			float& metal = roleInfos[i].cost;
+	const float cost = cdef->GetCostM();
+	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
+	assert(roleInfos.size() == roleSize);
+	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
+		if (cdef->IsRespRoleAny(CCircuitDef::GetMask(type))) {
+			float& metal = roleInfos[type].cost;
 			metal = std::max(metal - cost, .0f);
-			roleInfos[i].units.erase(unit);
+			roleInfos[type].units.erase(unit);
 		}
 	}
 }
 
 float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 {
+	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 	const SRoleInfo& info = roleInfos[cdef->GetMainRole()];
 	float maxProb = 0.f;
 	for (const SRoleInfo::SVsInfo& vs : info.vs) {
-		const float enemyMetal = GetEnemyCost(vs.role);
-		const float nextMetal = info.cost + cdef->GetCost();
+		const float enemyMetal = enemyMgr->GetEnemyCost(vs.role);
+		const float nextMetal = info.cost + cdef->GetCostM();
 		const float prob = enemyMetal / (info.cost + 1.f) * vs.importance;
 		if ((prob > maxProb) &&
 			(enemyMetal * vs.ratio >= nextMetal * info.factor) &&
-			(nextMetal <= (armyCost + cdef->GetCost()) * info.maxPerc))
+			(nextMetal <= (armyCost + cdef->GetCostM()) * info.maxPerc))
 		{
 			maxProb = prob;
 		}
@@ -1192,19 +1111,19 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 
 bool CMilitaryManager::IsNeedBigGun(const CCircuitDef* cdef) const
 {
-	return armyCost * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCost();
+	return armyCost * circuit->GetEconomyManager()->GetEcoFactor() > cdef->GetCostM();
 }
 
 AIFloat3 CMilitaryManager::GetBigGunPos(CCircuitDef* bigDef) const
 {
-	CTerrainManager* terrainManager = circuit->GetTerrainManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 pos = circuit->GetSetupManager()->GetBasePos();
-	if (bigDef->GetMaxRange() < std::max(terrainManager->GetTerrainWidth(), terrainManager->GetTerrainHeight())) {
-		CMetalManager* metalManager = circuit->GetMetalManager();
-		const CMetalData::Clusters& clusters = metalManager->GetClusters();
+	if (bigDef->GetMaxRange() < std::max(terrainMgr->GetTerrainWidth(), terrainMgr->GetTerrainHeight())) {
+		CMetalManager* metalMgr = circuit->GetMetalManager();
+		const CMetalData::Clusters& clusters = metalMgr->GetClusters();
 		unsigned size = 1;
 		for (unsigned i = 0; i < clusters.size(); ++i) {
-			if (metalManager->IsClusterFinished(i)) {
+			if (metalMgr->IsClusterFinished(i)) {
 				pos += clusters[i].position;
 				++size;
 			}
@@ -1224,7 +1143,7 @@ void CMilitaryManager::DiceBigGun()
 	candidates.reserve(superInfos.size());
 	float magnitude = 0.f;
 	for (SSuperInfo& info : superInfos) {
-		if (info.cdef->IsAvailable()) {
+		if (info.cdef->IsAvailable(circuit->GetLastFrame())) {
 			candidates.push_back(info);
 			magnitude += info.weight;
 		}
@@ -1246,56 +1165,63 @@ void CMilitaryManager::DiceBigGun()
 	bigGunDef = candidates[choice].cdef;
 }
 
+float CMilitaryManager::ClampMobileCostRatio() const
+{
+	const float enemyMobileCost = circuit->GetEnemyManager()->GetEnemyMobileCost();
+	return (enemyMobileCost > armyCost) ? (armyCost / enemyMobileCost) : 1.f;
+}
+
 void CMilitaryManager::UpdateDefenceTasks()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	/*
 	 * Defend expansion
 	 */
 	const std::set<IFighterTask*>& tasks = GetTasks(IFighterTask::FightType::DEFEND);
 	CMetalManager* mm = circuit->GetMetalManager();
-	CEconomyManager* em = circuit->GetEconomyManager();
-	CTerrainManager* tm = circuit->GetTerrainManager();
-	const CMetalData::Metals& spots = mm->GetSpots();
+//	CEconomyManager* em = circuit->GetEconomyManager();
+//	CTerrainManager* tm = circuit->GetTerrainManager();
+//	const CMetalData::Metals& spots = mm->GetSpots();
 	const CMetalData::Clusters& clusters = mm->GetClusters();
+//	const std::vector<CEnemyManager::SEnemyGroup>& enemyGroups = circuit->GetEnemyManager()->GetEnemyGroups();
 	for (IFighterTask* task : tasks) {
 		CDefendTask* dt = static_cast<CDefendTask*>(task);
-		if (dt->GetTarget() != nullptr) {
-			continue;
-		}
-		STerrainMapArea* area = dt->GetLeader()->GetArea();
-		CMetalData::PointPredicate predicate = [em, tm, area, &spots, &clusters](const int index) {
-			const CMetalData::MetalIndices& idcs = clusters[index].idxSpots;
-			for (int idx : idcs) {
-				if (!em->IsOpenSpot(idx) && tm->CanMoveToPos(area, spots[idx].position)) {
-					return true;
-				}
-			}
-			return false;
-		};
-		AIFloat3 center(tm->GetTerrainWidth() / 2, 0, tm->GetTerrainHeight() / 2);
-		int index = mm->FindNearestCluster(center, predicate);
-		if (index >= 0) {
-			dt->SetPosition(clusters[index].position);
-		}
+//		if (dt->GetTarget() != nullptr) {
+//			continue;
+//		}
+//		STerrainMapArea* area = dt->GetLeader()->GetArea();
+//		CMetalData::PointPredicate predicate = [em, tm, area, &spots, &clusters](const int index) {
+//			const CMetalData::MetalIndices& idcs = clusters[index].idxSpots;
+//			for (int idx : idcs) {
+//				if (!em->IsOpenSpot(idx) && tm->CanMoveToPos(area, spots[idx].position)) {
+//					return true;
+//				}
+//			}
+//			return false;
+//		};
+//		AIFloat3 center(tm->GetTerrainWidth() / 2, 0, tm->GetTerrainHeight() / 2);
+//		int index = mm->FindNearestCluster(center, predicate);
+//		if (index >= 0) {
+//			dt->SetPosition(clusters[index].position);
+//		}
 
 		if (dt->GetPromote() != IFighterTask::FightType::ATTACK) {
 			continue;
 		}
-		int groupIdx = -1;
-		float minSqDist = std::numeric_limits<float>::max();
-		const AIFloat3& position = dt->GetPosition();
-		for (unsigned i = 0; i < enemyGroups.size(); ++i) {
-			const CMilitaryManager::SEnemyGroup& group = enemyGroups[i];
-			const float sqDist = position.SqDistance2D(group.pos);
-			if (sqDist < minSqDist) {
-				minSqDist = sqDist;
-				groupIdx = i;
-			}
-		}
-		if (groupIdx >= 0) {
-			dt->SetMaxPower(std::max(minAttackers, enemyGroups[groupIdx].threat));
-		}
+//		int groupIdx = -1;
+//		float minSqDist = std::numeric_limits<float>::max();
+//		const AIFloat3& position = dt->GetPosition();
+//		for (unsigned i = 0; i < enemyGroups.size(); ++i) {
+//			const CEnemyManager::SEnemyGroup& group = enemyGroups[i];
+//			const float sqDist = position.SqDistance2D(group.pos);
+//			if (sqDist < minSqDist) {
+//				minSqDist = sqDist;
+//				groupIdx = i;
+//			}
+//		}
+//		if (groupIdx >= 0) {
+//			dt->SetMaxPower(std::max(minAttackers, enemyGroups[groupIdx].threat));
+//		}
+		dt->SetMaxPower(std::max(minAttackers, circuit->GetEnemyManager()->GetMaxGroupThreat()));
 	}
 
 	/*
@@ -1358,15 +1284,119 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 	}
 }
 
+void CMilitaryManager::MarkPointOfInterest(CEnemyInfo* enemy)
+{
+	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetMexDef()) {  // TODO: if one of the list
+		return;
+	}
+	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());
+	SRaidPoint& rp = raidPath[index];
+	rp.lastFrame = circuit->GetLastFrame();
+	rp.units.insert(enemy);
+	rp.weight = rp.units.size();  // TODO
+}
+
+void CMilitaryManager::UnmarkPointOfInterest(CEnemyInfo* enemy)
+{
+	if (enemy->GetCircuitDef() != circuit->GetEconomyManager()->GetMexDef()) {  // TODO: if one of the list
+		return;
+	}
+	int index = circuit->GetMetalManager()->FindNearestCluster(enemy->GetPos());
+	SRaidPoint& rp = raidPath[index];
+	rp.lastFrame = circuit->GetLastFrame();
+	rp.units.erase(enemy);
+	rp.weight = rp.units.size();  // TODO
+}
+
+IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
+{
+	// FIXME: Make central task assignment system.
+	//        MilitaryManager should decide what tasks to merge.
+	static const std::map<CCircuitDef::RoleT, IFighterTask::FightType> types = {
+		{ROLE_TYPE(SCOUT),   IFighterTask::FightType::SCOUT},
+		{ROLE_TYPE(RAIDER),  IFighterTask::FightType::RAID},
+		{ROLE_TYPE(RIOT),    IFighterTask::FightType::DEFEND},
+		{ROLE_TYPE(ARTY),    IFighterTask::FightType::ARTY},
+		{ROLE_TYPE(AA),      IFighterTask::FightType::AA},
+		{ROLE_TYPE(AH),      IFighterTask::FightType::AH},
+		{ROLE_TYPE(BOMBER),  IFighterTask::FightType::BOMB},
+		{ROLE_TYPE(SUPPORT), IFighterTask::FightType::SUPPORT},
+		{ROLE_TYPE(MINE),    IFighterTask::FightType::SCOUT},  // FIXME
+		{ROLE_TYPE(SUPER),   IFighterTask::FightType::SUPER},
+	};
+	IFighterTask* task = nullptr;
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (cdef->IsRoleSupport()) {
+		if (/*cdef->IsAttacker() && */GetTasks(IFighterTask::FightType::ATTACK).empty() && GetTasks(IFighterTask::FightType::DEFEND).empty()) {
+			task = EnqueueDefend(IFighterTask::FightType::ATTACK,
+								 IFighterTask::FightType::SUPPORT, minAttackers);
+		} else {
+			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
+		}
+	} else {
+		auto it = types.find(circuit->GetBindedRole(cdef->GetMainRole()));
+		if (it != types.end()) {
+			switch (it->second) {
+				case IFighterTask::FightType::RAID: {
+					if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
+						task = EnqueueTask(IFighterTask::FightType::SCOUT);
+					} else {
+						const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
+						for (IFighterTask* t : guards) {
+							if (t->GetAssignees().empty()) {
+								task = t;
+								break;
+							}
+						}
+						if (task == nullptr) {
+							if (GetTasks(IFighterTask::FightType::RAID).empty()) {
+								task = EnqueueDefend(IFighterTask::FightType::RAID, raid.min);
+							}
+						}
+					}
+				} break;
+				case IFighterTask::FightType::AH: {
+					if (!cdef->IsRoleMine() && (circuit->GetEnemyManager()->GetEnemyCost(ROLE_TYPE(HEAVY)) < 1.f)) {
+						task = EnqueueTask(IFighterTask::FightType::ATTACK);
+					}
+				} break;
+				case IFighterTask::FightType::DEFEND: {
+					const std::set<IFighterTask*>& guards = GetTasks(IFighterTask::FightType::GUARD);
+					for (IFighterTask* t : guards) {
+						if (t->GetAssignees().empty()) {
+							task = t;
+							break;
+						}
+					}
+					if (task == nullptr) {
+						const float power = std::max(minAttackers, circuit->GetEnemyManager()->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
+						task = EnqueueDefend(IFighterTask::FightType::ATTACK, power);
+					}
+				} break;
+				default: break;
+			}
+			if (task == nullptr) {
+				task = EnqueueTask(it->second);
+			}
+		} else {
+			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty();
+			const float power = std::max(minAttackers, circuit->GetEnemyManager()->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
+			task = isDefend ? EnqueueDefend(IFighterTask::FightType::ATTACK, power)
+							: EnqueueTask(IFighterTask::FightType::ATTACK);
+		}
+	}
+
+	return task;
+}
+
 void CMilitaryManager::Watchdog()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	for (CCircuitUnit* unit : army) {
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			continue;
 		}
-		auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
+		auto commands = unit->GetUnit()->GetCurrentCommands();
 		if (commands.empty()) {
 			UnitIdle(unit);
 		}
@@ -1395,7 +1425,7 @@ void CMilitaryManager::UpdateFight()
 		if (task->IsDead()) {
 			fightUpdates[fightIterator] = fightUpdates.back();
 			fightUpdates.pop_back();
-			delete task;
+			task->ClearRelease();  // delete task;
 		} else {
 			task->Update();
 			++fightIterator;
@@ -1407,123 +1437,13 @@ void CMilitaryManager::UpdateFight()
 void CMilitaryManager::AddArmyCost(CCircuitUnit* unit)
 {
 	AddResponse(unit);
-	armyCost += unit->GetCircuitDef()->GetCost();
+	armyCost += unit->GetCircuitDef()->GetCostM();
 }
 
 void CMilitaryManager::DelArmyCost(CCircuitUnit* unit)
 {
 	DelResponse(unit);
-	armyCost = std::max(armyCost - unit->GetCircuitDef()->GetCost(), .0f);
-}
-
-/*
- * 2d only, ignores y component.
- * @see KAIK/AttackHandler::KMeansIteration for general reference
- */
-void CMilitaryManager::KMeansIteration()
-{
-	const CCircuitAI::EnemyUnits& units = circuit->GetEnemyUnits();
-	// calculate a new K. change the formula to adjust max K, needs to be 1 minimum.
-	constexpr int KMEANS_BASE_MAX_K = 32;
-	int newK = std::min(KMEANS_BASE_MAX_K, 1 + (int)sqrtf(units.size()));
-
-	// change the number of means according to newK
-	assert(newK > 0/* && enemyGoups.size() > 0*/);
-	// add a new means, just use one of the positions
-	AIFloat3 newMeansPosition = units.begin()->second->GetPos();
-//	newMeansPosition.y = circuit->GetMap()->GetElevationAt(newMeansPosition.x, newMeansPosition.z) + K_MEANS_ELEVATION;
-	enemyGroups.resize(newK, SEnemyGroup(newMeansPosition));
-
-	// check all positions and assign them to means, complexity n*k for one iteration
-	std::vector<int> unitsClosestMeanID(units.size(), -1);
-	std::vector<int> numUnitsAssignedToMean(newK, 0);
-
-	{
-		int i = 0;
-		for (const auto& kv : units) {
-			CEnemyUnit* enemy = kv.second;
-			if (enemy->IsHidden()) {
-				continue;
-			}
-			AIFloat3 unitPos = enemy->GetPos();
-			float closestDistance = std::numeric_limits<float>::max();
-			int closestIndex = -1;
-
-			for (int m = 0; m < newK; m++) {
-				const AIFloat3& mean = enemyGroups[m].pos;
-				float distance = unitPos.SqDistance2D(mean);
-
-				if (distance < closestDistance) {
-					closestDistance = distance;
-					closestIndex = m;
-				}
-			}
-
-			// position i is closest to the mean at closestIndex
-			unitsClosestMeanID[i++] = closestIndex;
-			numUnitsAssignedToMean[closestIndex]++;
-		}
-	}
-
-	// change the means according to which positions are assigned to them
-	// use meanAverage for indexes with 0 pos'es assigned
-	// make a new means list
-//	std::vector<AIFloat3> newMeans(newK, ZeroVector);
-	std::vector<SEnemyGroup>& newMeans = enemyGroups;
-	for (unsigned i = 0; i < newMeans.size(); i++) {
-		SEnemyGroup& eg = newMeans[i];
-		eg.units.clear();
-		eg.units.reserve(numUnitsAssignedToMean[i]);
-		eg.pos = ZeroVector;
-		std::fill(eg.roleCosts.begin(), eg.roleCosts.end(), 0.f);
-		eg.cost = 0.f;
-		eg.threat = 0.f;
-	}
-
-	{
-		int i = 0;
-		for (const auto& kv : units) {
-			CEnemyUnit* enemy = kv.second;
-			if (enemy->IsHidden()) {
-				continue;
-			}
-			int meanIndex = unitsClosestMeanID[i++];
-			SEnemyGroup& eg = newMeans[meanIndex];
-
-			// don't divide by 0
-			float num = std::max(1, numUnitsAssignedToMean[meanIndex]);
-			eg.pos += enemy->GetPos() / num;
-
-			eg.units.push_back(kv.first);
-
-			const CCircuitDef* cdef = enemy->GetCircuitDef();
-			if (cdef != nullptr) {
-				eg.roleCosts[cdef->GetMainRole()] += cdef->GetCost();
-				if (!cdef->IsMobile() || enemy->IsInRadarOrLOS()) {
-					eg.cost += cdef->GetCost();
-				}
-				eg.threat += enemy->GetThreat() * (cdef->IsMobile() ? initThrMod.inMobile : initThrMod.inStatic);
-			} else {
-				eg.threat += enemy->GetThreat();
-			}
-		}
-	}
-
-	// do a check and see if there are any empty means and set the height
-	enemyPos = ZeroVector;
-	for (int i = 0; i < newK; i++) {
-		// if a newmean is unchanged, set it to the new means pos instead of (0, 0, 0)
-		if (newMeans[i].pos == ZeroVector) {
-			newMeans[i] = newMeansPosition;
-		} else {
-			// get the proper elevation for the y-coord
-//			newMeans[i].pos.y = circuit->GetMap()->GetElevationAt(newMeans[i].pos.x, newMeans[i].pos.z) + K_MEANS_ELEVATION;
-		}
-		enemyPos += newMeans[i].pos;
-	}
-	enemyPos /= newK;
-
-//	return newMeans;
+	armyCost = std::max(armyCost - unit->GetCircuitDef()->GetCostM(), .0f);
 }
 
 } // namespace circuit

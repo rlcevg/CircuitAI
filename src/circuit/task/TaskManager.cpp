@@ -8,6 +8,7 @@
 #include "task/TaskManager.h"
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
+#include "task/PlayerTask.h"
 #include "unit/CircuitUnit.h"
 
 namespace circuit {
@@ -15,6 +16,7 @@ namespace circuit {
 ITaskManager::ITaskManager()
 		: nilTask(nullptr)
 		, idleTask(nullptr)
+		, playerTask(nullptr)
 		, metalPull(0.f)
 {
 }
@@ -23,13 +25,14 @@ ITaskManager::~ITaskManager()
 {
 	delete nilTask;
 	delete idleTask;
+	delete playerTask;
 }
 
 void ITaskManager::AssignTask(CCircuitUnit* unit, IUnitTask* task)
 {
 	unit->GetTask()->RemoveAssignee(unit);
 	task->AssignTo(unit);
-	task->Execute(unit);
+	task->Start(unit);
 }
 
 void ITaskManager::AssignTask(CCircuitUnit* unit)
@@ -54,6 +57,12 @@ void ITaskManager::Init()
 {
 	nilTask = new CNilTask(this);
 	idleTask = new CIdleTask(this);
+	playerTask = new CPlayerTask(this);
+}
+
+void ITaskManager::AssignPlayerTask(CCircuitUnit* unit)
+{
+	AssignTask(unit, playerTask);
 }
 
 } // namespace circuit

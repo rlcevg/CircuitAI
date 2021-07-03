@@ -21,15 +21,19 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit) override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
-	CEnemyUnit* FindTarget(CCircuitUnit* unit, CEnemyUnit* lastTarget, const springai::AIFloat3& pos, F3Vec& path);
+	springai::AIFloat3 FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const springai::AIFloat3& pos);
+	void ApplyTargetPath(const CQueryPathSingle* query, bool isUpdating);
+	void FallbackScout(CCircuitUnit* unit, bool isUpdating);
+	void ApplyScoutPath(const CQueryPathSingle* query);
+	void Fallback(CCircuitUnit* unit, bool proceed);
 };
 
 } // namespace circuit

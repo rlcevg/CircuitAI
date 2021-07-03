@@ -10,7 +10,7 @@
 #include "module/EconomyManager.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -26,7 +26,6 @@ CBEnergyTask::CBEnergyTask(ITaskManager* mgr, Priority priority,
 
 CBEnergyTask::~CBEnergyTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CBEnergyTask::Update()
@@ -44,7 +43,7 @@ void CBEnergyTask::Update()
 	isStalling = isEnergyStalling;
 	priority = isEnergyStalling ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
 	TRY_UNIT(circuit, target,
-		target->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
+		target->CmdPriority(ClampPriority());
 	)
 }
 

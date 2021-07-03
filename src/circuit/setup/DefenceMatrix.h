@@ -33,15 +33,29 @@ public:
 	virtual ~CDefenceMatrix();
 
 private:
+	void ReadConfig(CCircuitAI* circuit);
 	void Init(CCircuitAI* circuit);
 
 public:
 	std::vector<SDefPoint>& GetDefPoints(int index) { return clusterInfos[index].defPoints; }
 	SDefPoint* GetDefPoint(const springai::AIFloat3& pos, float cost);
 
+	void SetBaseRange(float range);
+	float GetBaseRange() const { return baseRange; }
+	float GetCommRadBegin() const { return commRadBegin; }
+	float GetCommRad(float baseDist) const {
+		return commRadFraction * baseDist + commRadBegin;
+	}
+
 private:
 	CMetalManager* metalManager;
 	std::vector<SClusterInfo> clusterInfos;
+
+	float baseRadMin;
+	float baseRadMax;
+	float baseRange;
+	float commRadBegin;
+	float commRadFraction;
 };
 
 } // namespace circuit

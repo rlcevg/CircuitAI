@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_RESOURCE_ENERGYGRID_H_
 
 #include "resource/EnergyLink.h"
+#include "resource/EnergyNode.h"
 #include "resource/MetalData.h"
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
@@ -35,47 +36,56 @@ private:
 public:
 	void Update();
 	void SetForceRebuild(bool value) { isForceRebuild = value; }
-	CEnergyLink* GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos);
+	IGridLink* GetLinkToBuild(CCircuitDef*& outDef, springai::AIFloat3& outPos);
 
 	float GetPylonRange(CCircuitDef::Id defId);
 
 	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
 
 private:
+	CEnergyNode* FindNodeDef(CCircuitDef*& outDef, springai::AIFloat3& outPos, CEnergyNode* node);
+	CEnergyLink* FindLinkDef(CCircuitDef*& outDef, springai::AIFloat3& outPos, CEnergyLink* link);
+
 	CCircuitAI* circuit;
 
 	int markFrame;
-	std::deque<ICoreUnit::Id> markedPylons;  // sorted by insertion
+	std::deque<std::pair<ICoreUnit::Id, std::vector<CEnergyNode*>>> markedPylons;  // sorted by insertion
 	std::unordered_map<CCircuitDef::Id, float> pylonRanges;
 	std::map<float, CCircuitDef::Id> rangePylons;
 
 	std::vector<bool> linkedClusters;
 	std::set<int> linkPylons, unlinkPylons;
+	std::set<CEnergyNode*> linkNodes;
 	std::vector<CEnergyLink> links;  // Graph's exterior property
+	std::vector<CEnergyNode*> nodes;  // Graph's exterior property
 
 	void MarkAllyPylons(const std::vector<CAllyUnit*>& pylons);
-	void AddPylon(ICoreUnit::Id unitId, CCircuitDef::Id defId, const springai::AIFloat3& pos);
-	void RemovePylon(ICoreUnit::Id unitId);
+	void AddPylon(const ICoreUnit::Id unitId, const CCircuitDef::Id defId, const springai::AIFloat3& pos,
+			std::vector<CEnergyNode*>& outNodes);
+	void RemovePylon(const std::pair<ICoreUnit::Id, std::vector<CEnergyNode*>>& pylonId);
 	void CheckGrid();
 
 	std::vector<int> linkClusters;
 	std::vector<int> unlinkClusters;
 	bool isForceRebuild;
 
+	class SpanningNode;
 	class SpanningLink;
+	class DetectNode;
 	class DetectLink;
-	using OwnedFilter = CMetalData::Graph::NodeMap<bool>;
-	using OwnedGraph = lemon::FilterNodes<const CMetalData::Graph, OwnedFilter>;
-	using SpanningTree = std::set<CMetalData::Graph::Edge>;
-	using SpanningGraph = lemon::FilterEdges<const CMetalData::Graph, SpanningLink>;
+	using OwnedFilter = CMetalData::ClusterGraph::NodeMap<bool>;
+	using OwnedGraph = lemon::FilterNodes<const CMetalData::ClusterGraph, OwnedFilter>;
+	using SpanningTree = std::set<CMetalData::ClusterGraph::Edge>;
+	using SpanningGraph = lemon::SubGraph<const CMetalData::ClusterGraph, SpanningNode, SpanningLink>;
 	using SpanningBFS = lemon::Bfs<SpanningGraph>;
 
 	SpanningTree spanningTree;
 	OwnedFilter* ownedFilter;
 	OwnedGraph* ownedClusters;
-	CMetalData::WeightMap* edgeCosts;
+	CMetalData::ClusterCostMap* edgeCosts;
 
-	SpanningLink* spanningFilter;
+	SpanningNode* nodeFilter;
+	SpanningLink* linkFilter;
 	SpanningGraph* spanningGraph;
 	SpanningBFS* spanningBfs;  // breadth-first search
 
@@ -95,6 +105,8 @@ public:
 	bool IsVis() const { return isVis; }
 	void UpdateVis();
 	void ToggleVis();
+	void DrawNodePylons(const springai::AIFloat3& pos);
+	void DrawLinkPylons(const springai::AIFloat3& pos);
 #endif
 };
 

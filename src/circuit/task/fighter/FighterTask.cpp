@@ -7,17 +7,23 @@
 
 #include "task/fighter/FighterTask.h"
 #include "task/RetreatTask.h"
+#include "map/InfluenceMap.h"
+#include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
-#include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
-#include "unit/EnemyUnit.h"
+#include "unit/action/TravelAction.h"
+#include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
 using namespace springai;
+
+F3Vec IFighterTask::urgentPositions;  // NOTE: micro-opt
+F3Vec IFighterTask::enemyPositions;  // NOTE: micro-opt
 
 IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, int timeout)
 		: IUnitTask(mgr, Priority::NORMAL, Type::FIGHTER, timeout)
@@ -25,6 +31,7 @@ IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, in
 		, position(-RgtVector)
 		, attackPower(.0f)
 		, powerMod(powerMod)
+		, attackFrame(-1)
 		, target(nullptr)
 {
 }
@@ -48,8 +55,7 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 
 	if (unit->HasDGun()) {
 		const float range = std::max(unit->GetDGunRange() * 1.1f, cdef->GetLosRadius());
-		CDGunAction* act = new CDGunAction(unit, range);
-		unit->PushBack(act);
+		unit->PushDGunAct(new CDGunAction(unit, range));
 	}
 }
 
@@ -67,12 +73,12 @@ void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
 void IFighterTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CMilitaryManager* militaryManager = circuit->GetMilitaryManager();
+	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	const float minShield = circuit->GetSetupManager()->GetEmptyShield();
 	decltype(units) tmpUnits = shields;
 	for (CCircuitUnit* unit : tmpUnits) {
 		if (!unit->IsShieldCharged(minShield)) {
-			CRetreatTask* task = militaryManager->EnqueueRetreat();
+			CRetreatTask* task = militaryMgr->EnqueueRetreat();
 			manager->AssignTask(unit, task);
 		}
 	}
@@ -90,7 +96,7 @@ void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
-void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
@@ -110,7 +116,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 		}
 		return;
 	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat
-		CRetreatTask* task = manager->GetCircuit()->GetMilitaryManager()->EnqueueRetreat();
+		CRetreatTask* task = circuit->GetMilitaryManager()->EnqueueRetreat();
 		manager->AssignTask(unit, task);
 		return;
 	}
@@ -133,12 +139,12 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
 	cowards.insert(unit);
 }
 
-void IFighterTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void IFighterTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
 }
 
-void IFighterTask::SetTarget(CEnemyUnit* enemy)
+void IFighterTask::SetTarget(CEnemyInfo* enemy)
 {
 	if (target != nullptr) {
 		target->UnbindTask(this);
@@ -148,5 +154,39 @@ void IFighterTask::SetTarget(CEnemyUnit* enemy)
 	}
 	target = enemy;
 }
+
+void IFighterTask::Attack(const int frame)
+{
+	const int targetTile = manager->GetCircuit()->GetInflMap()->Pos2Index(target->GetPos());
+	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
+	attackFrame = isRepeatAttack ? frame : attackFrame;
+	for (CCircuitUnit* unit : units) {
+		unit->GetTravelAct()->StateWait();
+		if (unit->Blocker() != nullptr) {
+			continue;  // Do not interrupt current action
+		}
+
+		if (isRepeatAttack
+			|| (unit->GetTarget() != target)
+			|| (unit->GetTargetTile() != targetTile))
+		{
+			unit->Attack(target->GetPos(), target, targetTile, frame + FRAMES_PER_SEC * 60);
+		}
+	}
+}
+
+#ifdef DEBUG_VIS
+void IFighterTask::Log()
+{
+	IUnitTask::Log();
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->GetDrawer()->AddPoint(position, "position");
+	circuit->LOG("fightType: %i | attackPower: %f | powerMod: %f", fightType, attackPower, powerMod);
+	if (target != nullptr) {
+		circuit->GetDrawer()->AddPoint(target->GetPos(), "target");
+	}
+}
+#endif
 
 } // namespace circuit

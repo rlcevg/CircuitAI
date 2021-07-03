@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_MODULE_ECONOMYMANAGER_H_
 
 #include "module/Module.h"
+#include "util/AvailList.h"
 
 #include "AIFloat3.h"
 
@@ -25,13 +26,17 @@ namespace circuit {
 #define INCOME_SAMPLES	5
 #define HIDDEN_STORAGE	10000.0f
 
+extern const char* RES_NAME_METAL;
+extern const char* RES_NAME_ENERGY;
+
 class IBuilderTask;
-class CLagrangeInterPol;
 class CGameTask;
 class CEnergyGrid;
 
 class CEconomyManager: public IModule {
 public:
+	friend class CEconomyScript;
+
 	CEconomyManager(CCircuitAI* circuit);
 	virtual ~CEconomyManager();
 
@@ -42,8 +47,8 @@ private:
 public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
-	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
-	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	springai::Resource* GetMetalRes() const { return metalRes; }
 	springai::Resource* GetEnergyRes() const { return energyRes; }
@@ -61,7 +66,9 @@ public:
 	float GetAvgEnergyIncome() const { return energyIncome; }
 	float GetEcoFactor() const { return ecoFactor; }
 	float GetPullMtoS() const { return pullMtoS; }
+	float GetMetalCur();
 	float GetMetalPull();
+	float GetEnergyCur();
 	float GetEnergyPull();
 	float GetEnergyUse();
 	bool IsMetalEmpty();
@@ -90,9 +97,9 @@ public:
 	void RemoveMorphee(CCircuitUnit* unit) { morphees.erase(unit); }
 	void UpdateMorph();
 
-private:
-	void OpenStrategy(CCircuitDef* facDef, const springai::AIFloat3& pos);
+	void OpenStrategy(const CCircuitDef* facDef, const springai::AIFloat3& pos);
 
+private:
 	float GetStorage(springai::Resource* res);
 	void UpdateEconomy();
 
@@ -122,18 +129,12 @@ private:
 	std::vector<bool> openSpots;  // AI-local metal info
 	int mexCount;
 
-	std::set<CCircuitDef*> allEnergyDefs;
-	std::set<CCircuitDef*> availEnergyDefs;
-	struct SEnergyInfo {
-		CCircuitDef* cdef;
-		float cost;
+	struct SEnergyExt {
 		float make;
-		float costDivMake;
 		int limit;
-		bool operator==(const CCircuitDef* d) { return cdef == d; }
 	};
-	std::vector<SEnergyInfo> energyInfos;
-	CLagrangeInterPol* engyPol;
+	CAvailList<SEnergyExt> energyDefs;
+	std::unordered_map<CCircuitDef*, int> engyLimits;
 
 	float ecoStep;
 	float ecoFactor;
@@ -176,10 +177,14 @@ private:
 	bool isEnergyStalling;
 	bool isEnergyEmpty;
 
+	int metalCurFrame;
 	int metalPullFrame;
+	int energyCurFrame;
 	int energyPullFrame;
 	int energyUseFrame;
+	float metalCur;
 	float metalPull;
+	float energyCur;
 	float energyPull;
 	float energyUse;
 

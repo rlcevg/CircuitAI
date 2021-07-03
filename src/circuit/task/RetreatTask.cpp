@@ -7,18 +7,20 @@
 
 #include "task/RetreatTask.h"
 #include "task/TaskManager.h"
+#include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "setup/SetupManager.h"
-#include "terrain/PathFinder.h"
+#include "terrain/path/PathFinder.h"
+#include "terrain/path/QueryPathSingle.h"
+#include "terrain/path/QueryCostMap.h"
 #include "terrain/TerrainManager.h"
-#include "terrain/ThreatMap.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/JumpAction.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "AISCommands.h"
 
@@ -34,7 +36,12 @@ CRetreatTask::CRetreatTask(ITaskManager* mgr, int timeout)
 
 CRetreatTask::~CRetreatTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
+}
+
+void CRetreatTask::ClearRelease()
+{
+	costQuery = nullptr;
+	IUnitTask::ClearRelease();
 }
 
 void CRetreatTask::AssignTo(CCircuitUnit* unit)
@@ -42,8 +49,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	IUnitTask::AssignTo(unit);
 
 	if (unit->HasDGun()) {
-		CDGunAction* act = new CDGunAction(unit, unit->GetDGunRange() * 0.8f);
-		unit->PushBack(act);
+		unit->PushDGunAct(new CDGunAction(unit, unit->GetDGunRange() * 0.8f));
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -55,9 +61,9 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 		TRY_UNIT(circuit, unit,
 			if (cdef->IsPlane()) {
-				unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+				unit->CmdFindPad(frame);
 			}
-			unit->GetUnit()->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame);
+			unit->CmdManualFire(UNIT_COMMAND_OPTION_ALT_KEY, frame);
 		)
 		return;
 	}
@@ -71,12 +77,11 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
-	unit->PushBack(travelAction);
+	unit->PushTravelAct(travelAction);
 
 	// Mobile repair
 	if (!cdef->IsPlane()) {
-		CBuilderManager* builderManager = circuit->GetBuilderManager();
-		builderManager->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
+		circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
 	}
 }
 
@@ -92,18 +97,16 @@ void CRetreatTask::RemoveAssignee(CCircuitUnit* unit)
 	)
 }
 
-void CRetreatTask::Execute(CCircuitUnit* unit)
+void CRetreatTask::Start(CCircuitUnit* unit)
 {
-	IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-	if (!act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
+	if ((unit->GetTravelAct() == nullptr) || unit->GetTravelAct()->IsFinished()) {
 		return;
 	}
-	ITravelAction* travelAction = static_cast<ITravelAction*>(act);
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	AIFloat3 startPos = unit->GetPos(frame);
+	const AIFloat3& startPos = unit->GetPos(frame);
 	AIFloat3 endPos;
 	float range;
 
@@ -111,23 +114,36 @@ void CRetreatTask::Execute(CCircuitUnit* unit)
 		endPos = repairer->GetPos(frame);
 		range = pathfinder->GetSquareSize();
 	} else {
-		CFactoryManager* factoryManager = circuit->GetFactoryManager();
-		endPos = factoryManager->GetClosestHaven(unit);
+		CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+		endPos = factoryMgr->GetClosestHaven(unit);
 		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
-		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+		range = factoryMgr->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
-	std::shared_ptr<F3Vec> pPath = std::make_shared<F3Vec>();
 
-	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	pathfinder->MakePath(*pPath, startPos, endPos, range, minThreat);
-
-	if (pPath->empty()) {
-		pPath->push_back(endPos);
+	if (unit->GetTravelAct()->GetPath() == nullptr) {
+		std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
+		pPath->posPath.push_back(endPos);
+		unit->GetTravelAct()->SetPath(pPath);
 	}
-	travelAction->SetPath(pPath);
+
+	if (!IsQueryReady(unit)) {
+		return;
+	}
+
+//	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
+	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
+			unit, circuit->GetThreatMap(), frame,
+			startPos, endPos, range/*, nullptr, minThreat*/);
+	pathQueries[unit] = query;
+	query->HoldTask(this);
+
+	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+		if (this->IsQueryAlive(query)) {
+			this->ApplyPath(static_cast<const CQueryPathSingle*>(query));
+		}
+	});
 }
 
 void CRetreatTask::Update()
@@ -138,17 +154,14 @@ void CRetreatTask::Update()
 	auto assignees = units;
 	for (CCircuitUnit* unit : assignees) {
 		const float healthPerc = unit->GetHealthPercent();
-		bool isRepaired;
-		if (unit->HasShield()) {
-			isRepaired = (healthPerc > 0.98f) && unit->IsShieldCharged(circuit->GetSetupManager()->GetFullShield());
-		} else {
-			isRepaired = healthPerc > 0.98f;
-		}
+		bool isRepaired = unit->HasShield()
+				? (healthPerc > 0.98f) && unit->IsShieldCharged(circuit->GetSetupManager()->GetFullShield())
+				: healthPerc > 0.98f;
 
 		if (isRepaired && !unit->IsDisarmed(frame)) {
 			RemoveAssignee(unit);
-		} else if (unit->IsForceExecute() || isExecute) {
-			Execute(unit);
+		} else if (unit->IsForceUpdate(frame) || isExecute) {
+			Start(unit);
 		}
 	}
 }
@@ -178,39 +191,38 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			state = State::ROAM;
 			return;
 		}
-		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
-			static_cast<ITravelAction*>(act)->SetFinished(true);
+		if (unit->GetTravelAct() != nullptr) {
+			unit->GetTravelAct()->StateFinish();
 		}
 
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ExecuteCustomCommand(CMD_FIND_PAD, {}, UNIT_COMMAND_OPTION_INTERNAL_ORDER, frame + FRAMES_PER_SEC * 60);
+			unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
 		)
 		state = State::REGROUP;
 		return;
 	}
 
-	CFactoryManager* factoryManager = circuit->GetFactoryManager();
-	AIFloat3 haven = (repairer != nullptr) ? repairer->GetPos(frame) : factoryManager->GetClosestHaven(unit);
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	AIFloat3 haven = (repairer != nullptr) ? repairer->GetPos(frame) : factoryMgr->GetClosestHaven(unit);
 	if (!utils::is_valid(haven)) {
 		haven = circuit->GetSetupManager()->GetBasePos();
 	}
 
-	const float maxDist = factoryManager->GetAssistDef()->GetBuildDistance();
+	const float maxDist = factoryMgr->GetAssistDef()->GetBuildDistance();
 	const AIFloat3& unitPos = unit->GetPos(frame);
 	if (unitPos.SqDistance2D(haven) > maxDist * maxDist) {
 		// TODO: push MoveAction into unit? to avoid enemy fire
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->MoveTo(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 1);
+			unit->CmdMoveTo(haven, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 1);
 		)
 		// TODO: Add fail counter?
 	} else {
 		// TODO: push WaitAction into unit
 		AIFloat3 pos = unitPos;
 		const float size = SQUARE_SIZE * 16;
-		CTerrainManager* terrainManager = circuit->GetTerrainManager();
-		float centerX = terrainManager->GetTerrainWidth() / 2;
-		float centerZ = terrainManager->GetTerrainHeight() / 2;
+		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+		float centerX = terrainMgr->GetTerrainWidth() / 2;
+		float centerZ = terrainMgr->GetTerrainHeight() / 2;
 		pos.x += (pos.x > centerX) ? size : -size;
 		pos.z += (pos.z > centerZ) ? size : -size;
 		AIFloat3 oldPos = pos;
@@ -223,53 +235,112 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
 			return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
 		};
-		pos = terrainManager->FindBuildSite(cdef, pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
+		pos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_COMMAND_BUILD_NO_FACING, predicate);
 		TRY_UNIT(circuit, unit,
-//			unit->GetUnit()->ExecuteCustomCommand(CMD_PRIORITY, {0.0f});
+//			unit->CmdPriority(0);
 			unit->GetUnit()->PatrolTo(pos);
 		)
 
-		IUnitAction* act = static_cast<IUnitAction*>(unit->End());
-		if (act->IsAny(IUnitAction::Mask::MOVE | IUnitAction::Mask::FIGHT | IUnitAction::Mask::JUMP)) {
-			static_cast<ITravelAction*>(act)->SetFinished(true);
+		if (unit->GetTravelAct() != nullptr) {
+			unit->GetTravelAct()->StateFinish();
 		}
 		state = State::REGROUP;
 	}
 }
 
-void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	if (State::REGROUP != state) {
 		return;
 	}
 	state = State::ROAM;
 
-	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	ITravelAction* travelAction;
-	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsAbleToJump() && !cdef->IsAttrNoJump()) {
-		travelAction = new CJumpAction(unit, squareSize);
-	} else if (cdef->IsAttrRetFight()) {
-		travelAction = new CFightAction(unit, squareSize);
-	} else {
-		travelAction = new CMoveAction(unit, squareSize);
+	if (unit->GetTravelAct() == nullptr) {
+		// NOTE: IsAttrBoost units don't get travel action on AssignTo
+		int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+		ITravelAction* travelAction;
+		CCircuitDef* cdef = unit->GetCircuitDef();
+		if (cdef->IsAbleToJump() && !cdef->IsAttrNoJump()) {
+			travelAction = new CJumpAction(unit, squareSize);
+		} else if (cdef->IsAttrRetFight()) {
+			travelAction = new CFightAction(unit, squareSize);
+		} else {
+			travelAction = new CMoveAction(unit, squareSize);
+		}
+		unit->PushTravelAct(travelAction);
 	}
-	unit->PushBack(travelAction);
+	unit->GetTravelAct()->StateActivate();
 
-	Execute(unit);
+	Start(unit);
 }
 
-void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CRetreatTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
 }
 
-void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
+void CRetreatTask::CheckRepairer(CCircuitUnit* newRep)
+{
+	CCircuitUnit* unit = *units.begin();
+
+	if ((costQuery != nullptr) && (costQuery->GetState() != IPathQuery::State::READY)) {  // not ready
+		return;
+	}
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& startPos = unit->GetPos(frame);
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	costQuery = pathfinder->CreateCostMapQuery(
+			unit, circuit->GetThreatMap(), frame, startPos);
+	costQuery->HoldTask(this);
+
+	CCircuitUnit::Id newRepId = newRep->GetId();
+	pathfinder->RunQuery(costQuery, [this, newRepId](const IPathQuery* query) {
+		CCircuitUnit* newRep = this->ValidateNewRepairer(query, newRepId);
+		if (newRep != nullptr) {
+			this->ApplyCostMap(static_cast<const CQueryCostMap*>(query), newRep);
+		}
+	});
+}
+
+void CRetreatTask::ApplyPath(const CQueryPathSingle* query)
+{
+	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
+	CCircuitUnit* unit = query->GetUnit();
+
+	if (pPath->posPath.empty()) {
+		pPath->posPath.push_back(query->GetEndPos());
+	}
+	unit->GetTravelAct()->SetPath(pPath);
+}
+
+CCircuitUnit* CRetreatTask::ValidateNewRepairer(const IPathQuery* query, int newRepId) const
+{
+	if (isDead || (costQuery == nullptr) || (costQuery->GetId() != query->GetId())) {
+		return nullptr;
+	}
+	CCircuitUnit* newRep = manager->GetCircuit()->GetTeamUnit(newRepId);
+	if (newRep == nullptr) {
+		return nullptr;
+	}
+	if (newRep->GetTask()->GetType() != IUnitTask::Type::BUILDER) {
+		return nullptr;
+	}
+	IBuilderTask* taskB = static_cast<IBuilderTask*>(newRep->GetTask());
+	if ((taskB->GetBuildType() != IBuilderTask::BuildType::REPAIR) || (taskB->GetTarget() != query->GetUnit())) {
+		return nullptr;
+	}
+	return newRep;
+}
+
+void CRetreatTask::ApplyCostMap(const CQueryCostMap* query, CCircuitUnit* newRep)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	AIFloat3 startPos = (*units.begin())->GetPos(frame);
+	CCircuitUnit* unit = query->GetUnit();
 	AIFloat3 endPos;
 	float range;
 
@@ -278,29 +349,27 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* unit)
 		endPos = repairer->GetPos(frame);
 		range = pathfinder->GetSquareSize();
 	} else {
-		CFactoryManager* factoryManager = circuit->GetFactoryManager();
-		endPos = factoryManager->GetClosestHaven(unit);
+		CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+		endPos = factoryMgr->GetClosestHaven(unit);
 		if (!utils::is_valid(endPos)) {
 			endPos = circuit->GetSetupManager()->GetBasePos();
 		}
-		range = factoryManager->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
+		range = factoryMgr->GetAssistDef()->GetBuildDistance() * 0.6f + pathfinder->GetSquareSize();
 	}
 
-//	CTerrainManager::CorrectPosition(startPos);
-	pathfinder->SetMapData(unit, circuit->GetThreatMap(), frame);
-	float prevCost = pathfinder->PathCost(startPos, endPos, range);
+	float prevCost = query->GetCostAt(endPos, range);
 	if (isRepairer && repairer->GetCircuitDef()->IsMobile()) {
 		prevCost /= 2;
 	}
 
 	endPos = unit->GetPos(frame);
-	float nextCost = pathfinder->PathCost(startPos, endPos, range);
+	float nextCost = query->GetCostAt(endPos, range);
 	if (unit->GetCircuitDef()->IsMobile()) {
 		nextCost /= 2;
 	}
 
 	if (prevCost > nextCost) {
-		SetRepairer(unit);
+		SetRepairer(newRep);
 	}
 }
 

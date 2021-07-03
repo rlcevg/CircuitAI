@@ -6,17 +6,25 @@
  */
 
 #include "module/Module.h"
+#include "script/Script.h"
 #include "unit/CircuitUnit.h"
 
 namespace circuit {
 
-IModule::IModule(CCircuitAI* circuit)
+IModule::IModule(CCircuitAI* circuit, IScript* script)
 		: circuit(circuit)
+		, script(script)
 {
 }
 
 IModule::~IModule()
 {
+	delete script;
+}
+
+void IModule::InitScript()
+{
+	script->Init();
 }
 
 int IModule::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -34,12 +42,12 @@ int IModule::UnitIdle(CCircuitUnit* unit)
 	return 0; //signaling: OK
 }
 
-int IModule::UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+int IModule::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	return 0; //signaling: OK
 }
 
-int IModule::UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+int IModule::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	return 0; //signaling: OK
 }

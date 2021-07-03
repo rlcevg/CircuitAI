@@ -6,7 +6,7 @@
  */
 
 #include "util/GameTask.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -14,7 +14,6 @@ std::shared_ptr<CGameTask> CGameTask::emptyTask = std::make_shared<CGameTask>([]
 
 CGameTask::~CGameTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CGameTask::Run()

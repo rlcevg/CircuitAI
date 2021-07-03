@@ -9,7 +9,7 @@
 #include "task/TaskManager.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -21,7 +21,6 @@ CIdleTask::CIdleTask(ITaskManager* mgr)
 
 CIdleTask::~CIdleTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CIdleTask::AssignTo(CCircuitUnit* unit)
@@ -36,10 +35,10 @@ void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 		updateUnits.erase(unit);
 	}
 
-	unit->Clear();
+	unit->ClearAct();
 }
 
-void CIdleTask::Execute(CCircuitUnit* unit)
+void CIdleTask::Start(CCircuitUnit* unit)
 {
 }
 
@@ -57,7 +56,7 @@ void CIdleTask::Update()
 		it = updateUnits.erase(it);
 
 		manager->AssignTask(ass);  // should RemoveAssignee() on AssignTo()
-		ass->GetTask()->Execute(ass);
+		ass->GetTask()->Start(ass);
 
 		if (++i >= updateSlice) {
 			break;
@@ -65,8 +64,9 @@ void CIdleTask::Update()
 	}
 }
 
-void CIdleTask::Close(bool done)
+void CIdleTask::Stop(bool done)
 {
+	// NOTE: Should not be ever called
 	units.clear();
 	updateUnits.clear();
 }
@@ -76,12 +76,12 @@ void CIdleTask::OnUnitIdle(CCircuitUnit* unit)
 	// Do nothing. Unit is already idling.
 }
 
-void CIdleTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CIdleTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	// TODO: React while idling: analyze situation and create appropriate task/action
 }
 
-void CIdleTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CIdleTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 }
 

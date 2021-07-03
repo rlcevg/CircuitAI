@@ -41,8 +41,11 @@ private:
 	void ReadConfig();
 
 public:
-	static inline int GetTerrainWidth() { return CTerrainData::terrainWidth; }
-	static inline int GetTerrainHeight() { return CTerrainData::terrainHeight; }
+	static inline int GetTerrainWidth() { return springai::AIFloat3::maxxpos; }
+	static inline int GetTerrainHeight() { return springai::AIFloat3::maxzpos; }
+	static inline int GetTerrainDiagonal() {
+		return sqrtf(SQUARE(springai::AIFloat3::maxxpos) + SQUARE(springai::AIFloat3::maxzpos));
+	}
 
 public:
 	void Init();
@@ -119,6 +122,9 @@ public:
 	int GetSectorXSize() const { return terrainData->sectorXSize; }
 	int GetSectorZSize() const { return terrainData->sectorZSize; }
 	static void CorrectPosition(springai::AIFloat3& position) { CTerrainData::CorrectPosition(position); }
+	static springai::AIFloat3 CorrectPosition(const springai::AIFloat3& pos, const springai::AIFloat3& dir, float& len) {
+		return CTerrainData::CorrectPosition(pos, dir, len);
+	}
 	std::pair<STerrainMapArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	int GetSectorIndex(const springai::AIFloat3& position) const { return terrainData->GetSectorIndex(position); }
 	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
@@ -159,12 +165,13 @@ public:
 	}
 
 	// position must be valid
-	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float range = .0);  // NOTE: returns false if the area was too small to be recorded
-	bool CanBeBuiltAtSafe(CCircuitDef* cdef, const springai::AIFloat3& position, const float range = .0);
-	bool CanBuildAt(CCircuitUnit* unit, const springai::AIFloat3& destination);
-	bool CanBuildAtSafe(CCircuitUnit* unit, const springai::AIFloat3& destination);
-	bool CanMobileBuildAt(STerrainMapArea* area, CCircuitDef* builderDef, const springai::AIFloat3& destination);
-	bool CanMobileBuildAtSafe(STerrainMapArea* area, CCircuitDef* builderDef, const springai::AIFloat3& destination);
+	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position, const float range);  // NOTE: returns false if the area was too small to be recorded
+	bool CanBeBuiltAt(CCircuitDef* cdef, const springai::AIFloat3& position);
+	bool CanBeBuiltAtSafe(CCircuitDef* cdef, const springai::AIFloat3& position);
+	bool CanReachAt(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range);
+	bool CanReachAtSafe(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range);
+	bool CanMobileReachAt(STerrainMapArea* area, const springai::AIFloat3& destination, const float range);
+	bool CanMobileReachAtSafe(STerrainMapArea* area, const springai::AIFloat3& destination, const float range);
 
 	float GetPercentLand() const { return areaData->percentLand; }
 	bool IsWaterMap() const { return areaData->percentLand < 40.0; }
@@ -174,19 +181,28 @@ public:
 
 	SAreaData* GetAreaData() const { return areaData; }
 	void UpdateAreaUsers(int interval);
-	void DidUpdateAreaUsers() { terrainData->DidUpdateAreaUsers(); }
+	void OnAreaUsersUpdated() { terrainData->OnAreaUsersUpdated(); }
 private:
 	SAreaData* areaData;
 	CTerrainData* terrainData;
+
+public:
+	bool IsEnemyInArea(STerrainMapArea* area) const {
+		return enemyAreas.find(area) != enemyAreas.end();
+	}
+private:
+	std::unordered_set<const STerrainMapArea*> enemyAreas;
 
 #ifdef DEBUG_VIS
 private:
 	int dbgTextureId;
 	uint32_t sdlWindowId;
 	float* dbgMap;
+	bool isWidgetDrawing = false;
 	void UpdateVis();
 public:
 	void ToggleVis();
+	void ToggleWidgetDraw();
 #endif
 };
 

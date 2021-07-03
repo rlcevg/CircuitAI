@@ -7,9 +7,9 @@
 
 #include "setup/SetupData.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
-#include "Map.h"
+#include "spring/SpringMap.h"
 
 #include <regex>
 
@@ -25,7 +25,6 @@ CSetupData::CSetupData() :
 
 CSetupData::~CSetupData()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 	utils::free_clear(allyTeams);
 }
 
@@ -38,7 +37,7 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 	CSetupData::BoxMap boxes;
 
 	// Detect start boxes
-	Map* map = circuit->GetMap();
+	CMap* map = circuit->GetMap();
 	float width = map->GetWidth() * SQUARE_SIZE;
 	float height = map->GetHeight() * SQUARE_SIZE;
 
@@ -153,10 +152,10 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 		allyTeams.push_back(new CAllyTeam(teamIds, isZkBox ? boxes[0] : boxes[kv.first]));
 	}
 
-	Init(allyTeams, boxes, startPosType);
+	Init(std::move(allyTeams), std::move(boxes), startPosType);
 }
 
-void CSetupData::Init(const AllyMap& ats, const BoxMap& bm, CGameSetup::StartPosType spt)
+void CSetupData::Init(AllyMap&& ats, BoxMap&& bm, CGameSetup::StartPosType spt)
 {
 	allyTeams = ats;
 	boxes = bm;

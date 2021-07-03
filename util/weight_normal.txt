@@ -1,0 +1,36 @@
+#include <iomanip>
+#include <sstream>
+
+// FIXME: DEBUG
+auto round = [](float var) {
+	// 37.66666 * 100 =3766.66
+	// 3766.66 + .5 =3767.16  for rounding off value
+	// then type cast to int so value is 3767
+	// then divided by 100 so the value converted into 37.67
+	float value = (int)(var * 100 + .5);
+	return (float)value / 100;
+};
+std::vector<float> ppp;
+float sum2 = .0f;
+int maxInd = 0;
+int iii = 0;
+for (float p : probs) {
+	float v = round(p / sum);
+	ppp.push_back(v);
+	sum2 += v;
+	if (p > probs[maxInd]) {
+		maxInd = iii;
+	}
+	++iii;
+}
+ppp[maxInd] += 1.f - sum2;
+std::stringstream stream;
+stream << std::fixed << std::setprecision(2);
+float sum3 = 0;
+for (float p : ppp) {
+	stream << ", " << p;
+	sum3 += p;
+}
+stream << " | " << sum2 << " | " << sum3;
+circuit->LOG("%s", stream.str().c_str());
+// FIXME: DEBUG

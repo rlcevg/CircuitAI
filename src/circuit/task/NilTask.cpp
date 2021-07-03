@@ -7,7 +7,7 @@
 
 #include "task/NilTask.h"
 #include "unit/CircuitUnit.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -18,7 +18,6 @@ CNilTask::CNilTask(ITaskManager* mgr)
 
 CNilTask::~CNilTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CNilTask::AssignTo(CCircuitUnit* unit)
@@ -30,7 +29,7 @@ void CNilTask::RemoveAssignee(CCircuitUnit* unit)
 {
 }
 
-void CNilTask::Execute(CCircuitUnit* unit)
+void CNilTask::Start(CCircuitUnit* unit)
 {
 }
 
@@ -38,7 +37,7 @@ void CNilTask::Update()
 {
 }
 
-void CNilTask::Close(bool done)
+void CNilTask::Stop(bool done)
 {
 }
 
@@ -46,11 +45,11 @@ void CNilTask::OnUnitIdle(CCircuitUnit* unit)
 {
 }
 
-void CNilTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CNilTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 }
 
-void CNilTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CNilTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 }
 

@@ -41,11 +41,15 @@ public:
 
 public:
 	const CMetalData::Metals& GetSpots() const { return metalData->GetSpots(); }
+
 	const int FindNearestSpot(const springai::AIFloat3& pos) const {
 		return metalData->FindNearestSpot(pos);
 	}
 	const int FindNearestSpot(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate) const {
 		return metalData->FindNearestSpot(pos, predicate);
+	}
+	void FindSpotsInRadius(const springai::AIFloat3& pos, const float radius, CMetalData::IndicesDists& outIndices) const {
+		metalData->FindSpotsInRadius(pos, radius, outIndices);
 	}
 
 	const int FindNearestCluster(const springai::AIFloat3& pos) const {
@@ -56,9 +60,8 @@ public:
 	}
 
 	const CMetalData::Clusters& GetClusters() const { return metalData->GetClusters(); }
-	const CMetalData::Graph& GetGraph() const { return metalData->GetGraph(); }
-	const CMetalData::WeightMap& GetWeights() const { return metalData->GetWeights(); }
-	const CMetalData::CenterMap& GetCenters() const { return metalData->GetCenters(); }
+	const CMetalData::ClusterGraph& GetClusterGraph() const { return metalData->GetClusterGraph(); }
+	const CMetalData::ClusterCostMap& GetClusterEdgeCosts() const { return metalData->GetClusterEdgeCosts(); }
 
 public:
 	void SetOpenSpot(int index, bool value);
@@ -106,8 +109,8 @@ private:
 
 	class SafeCluster;
 	class DetectCluster;
-	using ClusterGraph = lemon::FilterNodes<const CMetalData::Graph, SafeCluster>;
-	using ShortPath = lemon::Dijkstra<ClusterGraph, CMetalData::WeightMap>;
+	using ClusterGraph = lemon::FilterNodes<const CMetalData::ClusterGraph, SafeCluster>;
+	using ShortPath = lemon::Dijkstra<ClusterGraph, CMetalData::ClusterCostMap>;
 
 	SafeCluster* threatFilter;
 	ClusterGraph* filteredGraph;

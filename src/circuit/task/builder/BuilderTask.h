@@ -9,9 +9,11 @@
 #define SRC_CIRCUIT_TASK_BUILDER_BUILDERTASK_H_
 
 #include "task/UnitTask.h"
-#include "util/utils.h"
+#include "util/Defines.h"
+#include "util/Point.h"
 
 #include <map>
+#include <vector>
 
 namespace circuit {
 
@@ -60,17 +62,21 @@ public:
 	virtual void AssignTo(CCircuitUnit* unit) override;
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
-	virtual void Close(bool done) override;
+	virtual void Stop(bool done) override;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
+	virtual void Execute(CCircuitUnit* unit);
+
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+
+	virtual void OnTravelEnd(CCircuitUnit* unit) override;
 
 	void Activate();
 	void Deactivate();
@@ -82,7 +88,7 @@ public:
 	float GetBuildPower() const { return buildPower; }
 	float GetCost() const { return cost; }
 
-	void SetBuildPos(const springai::AIFloat3& pos) { buildPos = pos; }
+	void SetBuildPos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetBuildPos() const { return buildPos; }
 	const springai::AIFloat3& GetPosition() const { return utils::is_valid(buildPos) ? buildPos : position; }
 
@@ -101,6 +107,11 @@ public:
 	float ClampPriority() const { return std::min(static_cast<float>(priority), 2.0f); }
 
 protected:
+	CCircuitUnit* GetNextAssignee();
+	void Update(CCircuitUnit* unit);
+	virtual bool Reevaluate(CCircuitUnit* unit);
+	void UpdatePath(CCircuitUnit* unit);
+	void ApplyPath(const CQueryPathSingle* query);
 	void HideAssignee(CCircuitUnit* unit);
 	void ShowAssignee(CCircuitUnit* unit);
 	virtual CAllyUnit* FindSameAlly(CCircuitUnit* builder, const std::vector<springai::Unit*>& friendlies);
@@ -121,12 +132,18 @@ protected:
 	CCircuitUnit* target;  // FIXME: Replace target with unitId
 	springai::AIFloat3 buildPos;
 	int facing;
-	IBuilderTask* nextTask;
+	IBuilderTask* nextTask;  // old list style
 
 	float savedIncome;
 	int buildFails;
 
 	decltype(units)::const_iterator unitIt;  // update iterator
+
+	std::set<CCircuitUnit*> traveled;
+
+#ifdef DEBUG_VIS
+	virtual void Log() override;
+#endif
 };
 
 } // namespace circuit

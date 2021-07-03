@@ -42,12 +42,12 @@ void IWaitTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void IWaitTask::Execute(CCircuitUnit* unit)
+void IWaitTask::Start(CCircuitUnit* unit)
 {
 	if (!isStop) {
 		return;
 	}
-	auto commands = std::move(unit->GetUnit()->GetCurrentCommands());
+	auto commands = unit->GetUnit()->GetCurrentCommands();
 	if (commands.empty()) {
 		return;
 	}
@@ -58,7 +58,7 @@ void IWaitTask::Execute(CCircuitUnit* unit)
 		delete cmd;
 	}
 	TRY_UNIT(manager->GetCircuit(), unit,
-		unit->GetUnit()->ExecuteCustomCommand(CMD_REMOVE, params, UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+		unit->CmdRemove(std::move(params), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
 	)
 }
 
@@ -70,7 +70,7 @@ void IWaitTask::OnUnitIdle(CCircuitUnit* unit)
 {
 }
 
-void IWaitTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker)
+void IWaitTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
 }

@@ -10,7 +10,7 @@
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -23,10 +23,9 @@ CBWaitTask::CBWaitTask(ITaskManager* mgr, int timeout)
 
 CBWaitTask::~CBWaitTask()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
-void CBWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker)
+void CBWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();

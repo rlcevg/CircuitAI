@@ -2,11 +2,11 @@
  * EncloseCircle.cpp
  *
  *  Created on: Mar 23, 2015
- *      Author: rlcevg
+ *      Editor: rlcevg
  */
 
 #include "util/math/EncloseCircle.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include <algorithm>
 #include <assert.h>
@@ -22,7 +22,6 @@ CEncloseCircle::CEncloseCircle()
 
 CEncloseCircle::~CEncloseCircle()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 /*
@@ -65,19 +64,9 @@ void CEncloseCircle::MakeCircle(const std::vector<AIFloat3>& points)
 	radius = circle.r;
 }
 
-const AIFloat3& CEncloseCircle::GetCenter() const
-{
-	return center;
-}
-
-float CEncloseCircle::GetRadius() const
-{
-	return radius;
-}
-
 // One boundary point known
 CEncloseCircle::SCircle CEncloseCircle::MakeCircleOnePoint(const std::vector<SPoint>::iterator& ptsBegin,
-										   const std::vector<SPoint>::iterator& ptsEnd, const SPoint& p)
+		const std::vector<SPoint>::iterator& ptsEnd, const SPoint& p)
 {
 	// ptsBegin - Inclusive, ptsEnd - Exclusive
 	SCircle c(p, 0);
@@ -95,10 +84,9 @@ CEncloseCircle::SCircle CEncloseCircle::MakeCircleOnePoint(const std::vector<SPo
 	return c;
 }
 
-
 // Two boundary points known
 CEncloseCircle::SCircle CEncloseCircle::MakeCircleTwoPoints(const std::vector<SPoint>::iterator& ptsBegin,
-											const std::vector<SPoint>::iterator& ptsEnd, const SPoint& p, const SPoint& q)
+		const std::vector<SPoint>::iterator& ptsEnd, const SPoint& p, const SPoint& q)
 {
 	SCircle temp = MakeDiameter(p, q);
 	if (temp.contains(ptsBegin, ptsEnd)) {

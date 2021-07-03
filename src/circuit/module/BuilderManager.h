@@ -24,15 +24,19 @@ namespace springai {
 
 namespace circuit {
 
-class CEnergyLink;
+class IGridLink;
+class CQueryCostMap;
 class CRetreatTask;
 class CBRepairTask;
 class CBReclaimTask;
+class CCombatTask;
 
 struct SBuildChain;
 
 class CBuilderManager: public IUnitModule {
 public:
+	friend class CBuilderScript;
+
 	CBuilderManager(CCircuitAI* circuit);
 	virtual ~CBuilderManager();
 
@@ -45,8 +49,8 @@ public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
-	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
-	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual int UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	CCircuitDef* GetTerraDef() const { return terraDef; }
 
@@ -83,7 +87,7 @@ public:
 	IBuilderTask* EnqueuePylon(IBuilderTask::Priority priority,
 							   CCircuitDef* buildDef,
 							   const springai::AIFloat3& position,
-							   CEnergyLink* link,
+							   IGridLink* link,
 							   float cost,
 							   bool isActive = true,
 							   int timeout = ASSIGN_TIMEOUT);
@@ -114,6 +118,7 @@ public:
 							   int timeout = ASSIGN_TIMEOUT);
 	IUnitTask* EnqueueWait(int timeout);
 	CRetreatTask* EnqueueRetreat();
+	CCombatTask* EnqueueCombat(float powerMod);
 
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,
@@ -124,10 +129,10 @@ private:
 						  float shake,
 						  bool isActive,
 						  int timeout);
-	void DequeueTask(IBuilderTask* task, bool done = false);
+	void DequeueTask(IUnitTask* task, bool done = false);
 
 public:
-	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position);  // Check if build-area has proper builder
+	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position) const;  // Check if build-area has proper builder
 
 	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
 	virtual void AbortTask(IUnitTask* task) override;
@@ -139,8 +144,9 @@ public:
 	bool IsReclaimed(CAllyUnit* unit) const { return reclaimedUnits.find(unit) != reclaimedUnits.end(); }
 
 private:
-	IBuilderTask* MakeCommTask(CCircuitUnit* unit);
-	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit);
+	IUnitTask* DefaultMakeTask(CCircuitUnit* unit);
+	IBuilderTask* MakeCommTask(CCircuitUnit* unit, const CQueryCostMap* query, float sqMaxBaseRange);
+	IBuilderTask* MakeBuilderTask(CCircuitUnit* unit, const CQueryCostMap* query);
 	IBuilderTask* CreateBuilderTask(const springai::AIFloat3& position, CCircuitUnit* unit);
 
 	void AddBuildList(CCircuitUnit* unit);
@@ -166,6 +172,7 @@ private:
 	unsigned int buildIterator;
 
 	std::set<CCircuitUnit*> workers;
+	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> costQueries;  // IPathQuery owner
 
 	CCircuitDef* terraDef;
 	std::unordered_map<IBuilderTask::BT, std::unordered_map<CCircuitDef*, SBuildChain*>> buildChains;  // owner

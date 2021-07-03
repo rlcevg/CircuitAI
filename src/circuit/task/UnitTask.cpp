@@ -8,9 +8,10 @@
 #include "task/UnitTask.h"
 #include "task/IdleTask.h"
 #include "task/TaskManager.h"
+#include "terrain/path/PathQuery.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 namespace circuit {
 
@@ -32,6 +33,12 @@ IUnitTask::~IUnitTask()
 {
 }
 
+void IUnitTask::ClearRelease()
+{
+	pathQueries.clear();
+	Release();
+}
+
 bool IUnitTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	return true;
@@ -48,6 +55,7 @@ void IUnitTask::AssignTo(CCircuitUnit* unit)
 
 void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 {
+	pathQueries.erase(unit);
 	units.erase(unit);
 	unit->Clear();
 
@@ -58,7 +66,7 @@ void IUnitTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void IUnitTask::Close(bool done)
+void IUnitTask::Stop(bool done)
 {
 	if (done) {
 		Finish();
@@ -72,6 +80,7 @@ void IUnitTask::Close(bool done)
 		idleTask->AssignTo(unit);
 	}
 	units.clear();
+	pathQueries.clear();
 }
 
 void IUnitTask::Finish()
@@ -88,8 +97,28 @@ void IUnitTask::OnUnitMoveFailed(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = utils::get_radial_pos(unit->GetPos(frame), SQUARE_SIZE * 32);
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->MoveTo(pos, 0, frame + FRAMES_PER_SEC);
+		unit->CmdMoveTo(pos, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC);
 	)
+}
+
+void IUnitTask::OnTravelEnd(CCircuitUnit* unit)
+{
+}
+
+bool IUnitTask::IsQueryReady(CCircuitUnit* unit) const
+{
+	const auto it = pathQueries.find(unit);
+	std::shared_ptr<IPathQuery> query = (it == pathQueries.end()) ? nullptr : it->second;
+	return (query == nullptr) || (IPathQuery::State::READY == query->GetState());
+}
+
+bool IUnitTask::IsQueryAlive(const IPathQuery* query) const
+{
+	if (isDead) {
+		return false;
+	}
+	const auto it = pathQueries.find(query->GetUnit());
+	return (it != pathQueries.end()) && (it->second->GetId() == query->GetId());
 }
 
 #define SERIALIZE(stream, func)	\
@@ -110,5 +139,13 @@ void IUnitTask::Save(std::ostream& os) const
 {
 	SERIALIZE(os, write)
 }
+
+#ifdef DEBUG_VIS
+void IUnitTask::Log()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->LOG("type: %i | state: %i | this: %i", type, state, this);
+}
+#endif
 
 } // namespace circuit

@@ -21,7 +21,7 @@ public:
 	CKMeansCluster(const springai::AIFloat3& initPos);
 	virtual ~CKMeansCluster();
 
-	void Iteration(const std::vector<springai::AIFloat3>& unitPositions, int newK);
+	void Iteration(const std::vector<springai::AIFloat3>& positions, int newK);
 	const std::vector<springai::AIFloat3>& GetMeans() const { return means; }
 
 private:

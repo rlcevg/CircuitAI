@@ -19,9 +19,14 @@ public:
 				  float cost, float shake, int timeout);
 	virtual ~CBDefenceTask();
 
+	virtual void Update() override;
+
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
+
+	bool isUrgent;
+	float normalCost;
 };
 
 } // namespace circuit

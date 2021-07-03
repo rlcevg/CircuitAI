@@ -25,17 +25,20 @@ public:
 	virtual ~CRecruitTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+	virtual void AssignTo(CCircuitUnit* unit) override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
+	virtual void Execute(CCircuitUnit* unit) override;
+
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
-	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyUnit* attacker) override;
-	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyUnit* attacker) override;
+	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
+	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
 	RecruitType GetRecruitType() const { return recruitType; }
 

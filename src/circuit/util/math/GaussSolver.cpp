@@ -6,7 +6,7 @@
  */
 
 #include "util/math/GaussSolver.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include <assert.h>
 #include <math.h>
@@ -19,7 +19,6 @@ CGaussSolver::CGaussSolver()
 
 CGaussSolver::~CGaussSolver()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 const CGaussSolver::Vector& CGaussSolver::Solve(Matrix& A, Vector& B)

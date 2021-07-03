@@ -9,7 +9,7 @@
 #include "unit/CircuitUnit.h"
 #include "task/fighter/SquadTask.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
 #include "AISCommands.h"
 
@@ -28,7 +28,6 @@ CSupportAction::CSupportAction(CCircuitUnit* owner)
 
 CSupportAction::~CSupportAction()
 {
-	PRINT_DEBUG("Execute: %s\n", __PRETTY_FUNCTION__);
 }
 
 void CSupportAction::Update(CCircuitAI* circuit)
@@ -43,6 +42,9 @@ void CSupportAction::Update(CCircuitAI* circuit)
 	CCircuitUnit* leader = static_cast<ISquadTask*>(unit->GetTask())->GetLeader();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = leader->GetPos(frame);
+	if (pos.SqDistance2D(unit->GetPos(frame)) < SQUARE(SQUARE_SIZE * 8)) {
+		return;  // stop pushing
+	}
 	TRY_UNIT(circuit, unit,
 		if (unit->GetCircuitDef()->IsAttrMelee()) {
 			unit->GetUnit()->Guard(leader->GetUnit());

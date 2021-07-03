@@ -11,9 +11,10 @@
 //#include "module/BuilderManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
-#include "util/utils.h"
+#include "util/Utils.h"
 
-#include "OOAICallback.h"
+#include "spring/SpringCallback.h"
+
 #include "AISCommands.h"
 
 namespace circuit {
@@ -28,6 +29,11 @@ IRepairTask::IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyU
 
 IRepairTask::~IRepairTask()
 {
+}
+
+bool IRepairTask::CanAssignTo(CCircuitUnit* unit) const
+{
+	return unit->GetCircuitDef()->IsAbleToRepair() && (target != nullptr) && (cost > buildPower * MIN_BUILD_SEC);
 }
 
 void IRepairTask::RemoveAssignee(CCircuitUnit* unit)
@@ -54,35 +60,16 @@ void IRepairTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void IRepairTask::Execute(CCircuitUnit* unit)
+void IRepairTask::Start(CCircuitUnit* unit)
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	CAllyUnit* repTarget;
 	if (targetId == -1) {
-		repTarget = FindUnitToAssist(unit);
+		CAllyUnit* repTarget = FindUnitToAssist(unit);
 		if (repTarget == nullptr) {
 			manager->FallbackTask(unit);
 			return;
 		}
-		cost = repTarget->GetCircuitDef()->GetCost();
+		cost = repTarget->GetCircuitDef()->GetCostM();
 		targetId = repTarget->GetId();
-	} else {
-		repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
-	}
-
-	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
-		Unit* u = unit->GetUnit();
-		TRY_UNIT(circuit, unit,
-			u->ExecuteCustomCommand(CMD_PRIORITY, {ClampPriority()});
-			u->Repair(repTarget->GetUnit(), UNIT_COMMAND_OPTION_INTERNAL_ORDER, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
-		)
-
-		IUnitTask* task = repTarget->GetTask();
-		if ((task != nullptr) && (task->GetType() == IUnitTask::Type::RETREAT)) {
-			static_cast<CRetreatTask*>(task)->CheckRepairer(unit);
-		}
-	} else {
-		manager->AbortTask(this);
 	}
 }
 
@@ -122,12 +109,32 @@ void IRepairTask::Cancel()
 	}
 }
 
+void IRepairTask::Execute(CCircuitUnit* unit)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	CAllyUnit* repTarget = (target != nullptr) ? target : circuit->GetFriendlyUnit(targetId);
+
+	if ((repTarget != nullptr) && (repTarget->GetUnit()->GetHealth() < repTarget->GetUnit()->GetMaxHealth())) {
+		TRY_UNIT(circuit, unit,
+			unit->CmdPriority(ClampPriority());
+			unit->GetUnit()->Repair(repTarget->GetUnit(), UNIT_CMD_OPTION, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		)
+
+		IUnitTask* task = repTarget->GetTask();
+		if ((task != nullptr) && (task->GetType() == IUnitTask::Type::RETREAT)) {
+			static_cast<CRetreatTask*>(task)->CheckRepairer(unit);
+		}
+	} else {
+		manager->AbortTask(this);
+	}
+}
+
 void IRepairTask::SetTarget(CAllyUnit* unit)
 {
 	if (unit != nullptr) {
 		CCircuitAI* circuit = manager->GetCircuit();
-		target = circuit->GetTeamUnit(unit->GetId());
-		cost = unit->GetCircuitDef()->GetCost();
+		target = circuit->GetTeamUnit(unit->GetId());  // can be nullptr, using targetId
+		cost = unit->GetCircuitDef()->GetCostM();
 		position = buildPos = unit->GetPos(circuit->GetLastFrame());
 //		CTerrainManager::CorrectPosition(buildPos);  // position will contain non-corrected value
 		targetId = unit->GetId();
@@ -155,7 +162,7 @@ CAllyUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	maxSpeed = SQUARE(maxSpeed * 1.5f / FRAMES_PER_SEC);
 
 	circuit->UpdateFriendlyUnits();
-	auto units = std::move(circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius));
+	auto units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (Unit* u : units) {
 		if ((u != nullptr) && (u->GetHealth() < u->GetMaxHealth()) && (u->GetVel().SqLength2D() <= maxSpeed)) {
 			target = circuit->GetFriendlyUnit(u);
