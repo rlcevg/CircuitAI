@@ -621,7 +621,7 @@
 		"role": ["scout", "anti_air", "raider"]
 	},
 	"armdecade": {
-		"role": ["scout", "raider", "skirmish"]
+		"role": ["raider", "skirmish"]
 	},
 	"armpship": {
 		"role": ["assault", "skirmish"]
@@ -883,7 +883,7 @@
 		"role": ["scout", "anti_air", "raider"]
 	},
 	"coresupp": {
-		"role": ["scout", "raider", "skirmish"]
+		"role": ["raider", "skirmish"]
 	},
 	"corpship": {
 		"role": ["assault", "skirmish"]

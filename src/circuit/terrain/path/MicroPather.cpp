@@ -907,7 +907,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 	return NO_SOLUTION;
 }
 
-void CMicroPather::MakeCostMap(void* startNode, std::vector<float>& costMap)
+void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<float>& costMap)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -965,6 +965,11 @@ void CMicroPather::MakeCostMap(void* startNode, std::vector<float>& costMap)
 
 			PathNode* directNode = &pathNodeMem[indexEnd];
 
+			const float threat = threatArray[directNode->index2];
+			if (threat > maxThreat) {
+				continue;
+			}
+
 			if (directNode->frame != frame) {
 				directNode->Reuse(frame);
 			}
@@ -982,8 +987,7 @@ void CMicroPather::MakeCostMap(void* startNode, std::vector<float>& costMap)
 			#endif
 
 			float newCost = nodeCostFromStart;
-			const int index2 = directNode->index2;
-			const float nodeCost = COST_BASE + threatArray[index2];
+			const float nodeCost = COST_BASE + threat;
 
 			#ifdef USE_ASSERTIONS
 			assert(nodeCost > 0.f);  // > 1.f for speed

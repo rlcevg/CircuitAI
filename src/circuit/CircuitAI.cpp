@@ -450,7 +450,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			break;
 		}
 		default: {
-			LOG("<CircuitAI> %i WARNING unrecognized event: %i", skirmishAIId, topic);
+			LOG("%i WARNING unrecognized event: %i", skirmishAIId, topic);
 			ret = 0;
 			break;
 		}
@@ -631,34 +631,36 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		scheduler->RunJobAt(CScheduler::GameJob(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
 	}
 
-	if ((callback->GetEnemyTeamSize() < allyTeam->GetAliveSize() / 2.f) || (allyTeam->GetAliveSize() > 4)) {
-		mergeTask = CScheduler::GameJob([this] {
-			if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetFactoryCount() > 0)) {
-				MobileSlave(allyTeam->GetLeaderId());
-				scheduler->RemoveJob(mergeTask);
-			}
+	if (isCommMerge) {
+		if ((callback->GetEnemyTeamSize() < allyTeam->GetAliveSize() / 2.f) || (allyTeam->GetAliveSize() > 4)) {
+			mergeTask = CScheduler::GameJob([this] {
+				if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetFactoryCount() > 0)) {
+					MobileSlave(allyTeam->GetLeaderId());
+					scheduler->RemoveJob(mergeTask);
+				}
 
-			// Complete resign by area
-//			if (factoryManager->GetFactoryCount() > 0) {
-//				CCircuitUnit* commander = setupManager->GetCommander();
-//				if (commander == nullptr) {
-//					commander = teamUnits.begin()->second;
+				// Complete resign by area
+//				if (factoryManager->GetFactoryCount() > 0) {
+//					CCircuitUnit* commander = setupManager->GetCommander();
+//					if (commander == nullptr) {
+//						commander = teamUnits.begin()->second;
+//					}
+//					int ownerId = allyTeam->GetAreaTeam(commander->GetArea()).teamId;
+//					if ((ownerId != teamId) && (ownerId >= 0)) {
+//						Resign(ownerId);
+//					}
 //				}
-//				int ownerId = allyTeam->GetAreaTeam(commander->GetArea()).teamId;
-//				if ((ownerId != teamId) && (ownerId >= 0)) {
-//					Resign(ownerId);
-//				}
-//			}
-		});
-		scheduler->RunJobEvery(mergeTask, 1, FRAMES_PER_SEC);
-	} else if (allyTeam->GetAliveSize() > 2) {
-		mergeTask = CScheduler::GameJob([this] {
-			if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetNoT1FacCount() > 0)) {
-				MobileSlave(allyTeam->GetLeaderId());
-				scheduler->RemoveJob(mergeTask);
-			}
-		});
-		scheduler->RunJobEvery(mergeTask, 1, FRAMES_PER_SEC);
+			});
+			scheduler->RunJobEvery(mergeTask, 1, FRAMES_PER_SEC);
+		} else if (allyTeam->GetAliveSize() > 2) {
+			mergeTask = CScheduler::GameJob([this] {
+				if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetNoT1FacCount() > 0)) {
+					MobileSlave(allyTeam->GetLeaderId());
+					scheduler->RemoveJob(mergeTask);
+				}
+			});
+			scheduler->RunJobEvery(mergeTask, 1, FRAMES_PER_SEC);
+		}
 	}
 
 	scheduler->ProcessInit();  // Init modules: allows to manipulate units on gadget:Initialize

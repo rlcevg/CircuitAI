@@ -249,14 +249,17 @@ public:
 	bool IsAlwaysHit()    const { return isAlwaysHit; }
 
 	bool IsMobile()          const { return speed > .1f; }
-	bool IsAbleToFly()       const { return isAbleToFly; }
 	bool IsPlane()           const { return isPlane; }
 	bool IsFloater()         const { return isFloater; }
 	bool IsSubmarine()       const { return isSubmarine; }
 	bool IsAmphibious()      const { return isAmphibious; }
 	bool IsLander()          const { return isLander; }
+	bool IsSurfer()          const { return isSurfer; }
 	bool IsSonarStealth()    const { return isSonarStealth; }
 	bool IsTurnLarge()       const { return isTurnLarge; }
+	bool IsAbleToFly()       const { return isAbleToFly; }
+	bool IsAbleToSwim()      const { return isAbleToSwim; }
+	bool IsAbleToDive()      const { return isAbleToDive; }
 	bool IsAbleToCloak()     const { return isAbleToCloak; }
 	bool IsAbleToJump()      const { return isAbleToJump; }
 	bool IsAbleToRepair()    const { return isAbleToRepair; }
@@ -387,9 +390,12 @@ private:
 	bool isSubmarine : 1;
 	bool isAmphibious : 1;
 	bool isLander : 1;
+	bool isSurfer : 1;  // isFloater && isLander
 	bool isSonarStealth : 1;
 	bool isTurnLarge : 1;
 	bool isAbleToFly : 1;
+	bool isAbleToSwim : 1;  // isFloater && isAmphibious
+	bool isAbleToDive : 1;  // isSubmarine || isAmphibious
 	bool isAbleToCloak : 1;
 	bool isAbleToJump : 1;
 	bool isAbleToRepair : 1;

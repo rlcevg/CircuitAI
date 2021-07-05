@@ -254,7 +254,7 @@ NSMicroPather::TestFunc CAntiAirTask::GetHitTest() const
 	const std::vector<STerrainMapSector>& sectors = terrainMgr->GetAreaData()->sector;
 	const int sectorXSize = terrainMgr->GetSectorXSize();
 	CCircuitDef* cdef = leader->GetCircuitDef();
-	if (cdef->IsAbleToFly() || cdef->IsFloater()) {
+	if (cdef->IsAbleToFly() || cdef->IsSurfer()) {
 		return nullptr;
 	}
 	return [&sectors, sectorXSize, cdef](int2 start, int2 end) {  // cdef->IsAmphibious()

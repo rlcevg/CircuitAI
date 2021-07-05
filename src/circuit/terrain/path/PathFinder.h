@@ -63,7 +63,7 @@ public:
 			const springai::AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets,
 			NSMicroPather::TestFunc&& hitTest = nullptr, bool withGoal = false, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
-			const springai::AIFloat3& startPos);
+			const springai::AIFloat3& startPos, float maxThreat = std::numeric_limits<float>::max());
 	std::shared_ptr<IPathQuery> CreateLineMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 
 	void RunQuery(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);

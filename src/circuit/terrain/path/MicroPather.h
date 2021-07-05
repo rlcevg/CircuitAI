@@ -242,7 +242,7 @@ namespace NSMicroPather {
 					IndexVec* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat, TestFunc hitTest,
 					IndexVec* path, float* cost);
-			void MakeCostMap(void* startNode, std::vector<float>& costMap);
+			void MakeCostMap(void* startNode, float maxThreat, std::vector<float>& costMap);
 
 			size_t RefinePath(IndexVec& path);
 			void FillPathInfo(PathInfo& iPath);

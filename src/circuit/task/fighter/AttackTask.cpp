@@ -62,14 +62,10 @@ bool CAttackTask::CanAssignTo(CCircuitUnit* unit) const
 	if (leader->GetPos(frame).SqDistance2D(unit->GetPos(frame)) > SQUARE(1000.f)) {
 		return false;
 	}
-	if (unit->GetCircuitDef()->IsAmphibious()
-		&& (leader->GetCircuitDef()->IsAmphibious()
-			|| leader->GetCircuitDef()->IsLander()
-			|| leader->GetCircuitDef()->IsFloater()))
-	{
-		return true;
-	}
 	if ((leader->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly())
+		|| (leader->GetCircuitDef()->IsAmphibious() && unit->GetCircuitDef()->IsAmphibious())
+		|| (leader->GetCircuitDef()->IsSurfer() && unit->GetCircuitDef()->IsSurfer())
+		|| (leader->GetCircuitDef()->IsSubmarine() && unit->GetCircuitDef()->IsSubmarine())
 		|| (leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander())
 		|| (leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
 	{

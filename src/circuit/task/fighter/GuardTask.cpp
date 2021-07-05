@@ -42,14 +42,10 @@ bool CFGuardTask::CanAssignTo(CCircuitUnit* unit) const
 	if (vip == nullptr) {
 		return false;
 	}
-	if (unit->GetCircuitDef()->IsAmphibious()
-		&& (vip->GetCircuitDef()->IsAmphibious()
-			|| vip->GetCircuitDef()->IsLander()
-			|| vip->GetCircuitDef()->IsFloater()))
-	{
-		return true;
-	}
-	if ((vip->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly())
+	if (((unit->GetCircuitDef()->IsAmphibious() || unit->GetCircuitDef()->IsSurfer())
+			&& (vip->GetCircuitDef()->IsAbleToDive() || vip->GetCircuitDef()->IsSurfer()))
+		|| (vip->GetCircuitDef()->IsSubmarine() && unit->GetCircuitDef()->IsSubmarine())
+		|| (vip->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly())
 		|| (vip->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander())
 		|| (vip->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
 	{

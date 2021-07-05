@@ -13,10 +13,11 @@
 
 namespace circuit {
 
-CBGuardTask::CBGuardTask(ITaskManager* mgr, Priority priority, CCircuitUnit* vip, int timeout)
+CBGuardTask::CBGuardTask(ITaskManager* mgr, Priority priority, CCircuitUnit* vip, bool isInterrupt, int timeout)
 		: IBuilderTask(mgr, priority, nullptr, vip->GetPos(mgr->GetCircuit()->GetLastFrame()),
 					   Type::BUILDER, BuildType::GUARD, 0.f, 0.f, timeout)
 		, vipId(vip->GetId())
+		, isInterrupt(isInterrupt)
 {
 }
 
@@ -35,6 +36,10 @@ void CBGuardTask::AssignTo(CCircuitUnit* unit)
 
 	if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
 		static_cast<CBuilderManager*>(manager)->DelBuildPower(unit);
+	}
+
+	if (!isInterrupt) {
+		lastTouched = manager->GetCircuit()->GetLastFrame();
 	}
 }
 
@@ -88,6 +93,14 @@ void CBGuardTask::OnUnitIdle(CCircuitUnit* unit)
 	} else {
 		manager->AbortTask(this);
 	}
+}
+
+bool CBGuardTask::Reevaluate(CCircuitUnit* unit)
+{
+	if (!isInterrupt) {
+		return true;
+	}
+	return IBuilderTask::Reevaluate(unit);
 }
 
 } // namespace circuit

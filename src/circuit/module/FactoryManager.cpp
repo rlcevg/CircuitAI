@@ -250,8 +250,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 		if (cdef.IsRoleComm()) {
 			// NOTE: Omit AddRole to exclude commanders from response
-			cdef.SetMainRole(ROLE_TYPE(BUILDER));
+//			cdef.SetMainRole(ROLE_TYPE(BUILDER));  // breaks retreat
 			cdef.AddEnemyRole(ROLE_TYPE(COMM));
+			cdef.AddEnemyRole(ROLE_TYPE(BUILDER));
 		}
 	}
 

@@ -16,7 +16,7 @@ namespace circuit {
 class CBGuardTask: public IBuilderTask {
 public:
 	CBGuardTask(ITaskManager* mgr, Priority priority,
-				CCircuitUnit* vip, int timeout);
+				CCircuitUnit* vip, bool isInterrupt, int timeout);
 	virtual ~CBGuardTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
@@ -31,8 +31,12 @@ protected:
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
+protected:
+	virtual bool Reevaluate(CCircuitUnit* unit);
+
 private:
 	ICoreUnit::Id vipId;
+	bool isInterrupt;
 };
 
 } // namespace circuit

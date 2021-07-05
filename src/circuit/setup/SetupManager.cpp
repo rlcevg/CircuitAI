@@ -270,10 +270,10 @@ void CSetupManager::SetBasePos(const AIFloat3& pos)
 //	}
 	const AIFloat3 enemyDir = (mapCenter - refPos).Normalize2D();
 	const AIFloat3 normal = AIFloat3(-enemyDir.z, 0, enemyDir.x) * ((rand() < RAND_MAX / 2) ? -1.f : 1.f);
-	const AIFloat3 backPos = refPos - enemyDir * 300.f;
-	metalBase = backPos + normal * 150.f;
-	energyBase = backPos - normal * 150.f;
-	energyBase2 = backPos - enemyDir * 300.f;
+	const AIFloat3 backPos = refPos - enemyDir * 400.f;
+	metalBase = backPos + normal * 200.f;
+	energyBase = backPos - normal * 200.f;
+	energyBase2 = backPos - enemyDir * 400.f;
 	CTerrainManager::CorrectPosition(metalBase);
 	CTerrainManager::CorrectPosition(energyBase);
 	CTerrainManager::CorrectPosition(energyBase2);

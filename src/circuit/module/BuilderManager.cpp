@@ -852,9 +852,10 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 
 IBuilderTask* CBuilderManager::EnqueueGuard(IBuilderTask::Priority priority,
 											CCircuitUnit* target,
+											bool isInterrupt,
 											int timeout)
 {
-	IBuilderTask* task = new CBGuardTask(this, priority, target, timeout);
+	IBuilderTask* task = new CBGuardTask(this, priority, target, isInterrupt, timeout);
 	buildUpdates.push_back(task);
 	TaskCreated(task);
 	return task;
@@ -1064,7 +1065,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, circuit->GetThreatMap(), frame,
-			/*unit->IsAttrBase() ? circuit->GetSetupManager()->GetBasePos() : */pos);
+			/*unit->IsAttrBase() ? circuit->GetSetupManager()->GetBasePos() : */pos, cdef->GetPower());
 	costQueries[unit] = q;
 	pathfinder->RunQuery(q);
 
@@ -1107,7 +1108,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 		&& GetTasks(IBuilderTask::BuildType::FACTORY).empty()
 		&& GetTasks(IBuilderTask::BuildType::NANO).empty())
 	{
-		return MakeCommPeaceTask(unit, query, SQUARE(2000));
+		return MakeCommPeaceTask(unit, query, SQUARE(2000.f));
 	}
 
 	CThreatMap* threatMap = circuit->GetThreatMap();
@@ -1131,6 +1132,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
+	const float buildSqDistance = SQUARE(buildDistance);
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
@@ -1174,12 +1176,12 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 			}
 
 			float distCost;
-			const float rawDist = pos.SqDistance2D(buildPos);
-			if (rawDist < buildDistance) {
-				distCost = rawDist / pathfinder->GetSquareSize() * COST_BASE;
+			const float rawSqDist = pos.SqDistance2D(buildPos);
+			if (rawSqDist < buildSqDistance) {
+				distCost = sqrtf(rawSqDist) / pathfinder->GetSquareSize() * COST_BASE * 0.5f;
 			} else {
 				distCost = query->GetCostAt(buildPos, buildDistance);
-				if (distCost < 0.f) {  // path blocked by buildings
+				if (distCost < 0.f) {  // path blocked by buildings or threat too high
 					continue;
 				}
 			}
@@ -1213,7 +1215,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	{
 		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(pos);
 		if (vip != nullptr) {
-			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 10);
+			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 10);
 		} else {
 			task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
 		}
@@ -1245,6 +1247,7 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
+	const float buildSqDistance = SQUARE(buildDistance);
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
@@ -1280,12 +1283,12 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 			}
 
 			float distCost;
-			const float rawDist = pos.SqDistance2D(buildPos);
-			if (rawDist < buildDistance) {
-				distCost = rawDist / pathfinder->GetSquareSize() * COST_BASE;
+			const float rawSqDist = pos.SqDistance2D(buildPos);
+			if (rawSqDist < buildSqDistance) {
+				distCost = sqrtf(rawSqDist) / pathfinder->GetSquareSize() * COST_BASE * 0.5f;
 			} else {
 				distCost = query->GetCostAt(buildPos, buildDistance);
-				if (distCost < 0.f) {  // path blocked by buildings
+				if (distCost < 0.f) {  // path blocked by buildings or threat too high
 					continue;
 				}
 			}
@@ -1319,7 +1322,7 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 	{
 		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(pos);
 		if (vip != nullptr) {
-			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 60);
+			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
 		} else {
 			task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
 		}
@@ -1348,6 +1351,7 @@ IBuilderTask* CBuilderManager::MakeCommDangerTask(CCircuitUnit* unit, const CQue
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
+	const float buildSqDistance = SQUARE(buildDistance);
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
@@ -1381,12 +1385,12 @@ IBuilderTask* CBuilderManager::MakeCommDangerTask(CCircuitUnit* unit, const CQue
 			}
 
 			float distCost;
-			const float rawDist = pos.SqDistance2D(buildPos);
-			if (rawDist < buildDistance) {
-				distCost = rawDist / pathfinder->GetSquareSize() * COST_BASE;
+			const float rawSqDist = pos.SqDistance2D(buildPos);
+			if (rawSqDist < buildSqDistance) {
+				distCost = sqrtf(rawSqDist) / pathfinder->GetSquareSize() * COST_BASE * 0.5f;
 			} else {
 				distCost = query->GetCostAt(buildPos, buildDistance);
-				if (distCost < 0.f) {  // path blocked by buildings
+				if (distCost < 0.f) {  // path blocked by buildings or threat too high
 					continue;
 				}
 			}
@@ -1420,7 +1424,7 @@ IBuilderTask* CBuilderManager::MakeCommDangerTask(CCircuitUnit* unit, const CQue
 	{
 		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(pos);
 		if (vip != nullptr) {
-			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 60);
+			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
 		} else {
 			task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
 		}
@@ -1439,10 +1443,19 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 //	CTerrainManager::CorrectPosition(pos);
 
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	if (economyMgr->IsAssistRequired() && !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty()) {
+		CCircuitUnit* vip = *factoryMgr->GetTasks().front()->GetAssignees().begin();
+		if (vip->GetPos(frame).SqDistance2D(pos) < SQUARE(1000.f)) {
+			economyMgr->ClearAssistRequired();
+			return EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * 30);
+		}
+	}
 	task = economyMgr->MakeEconomyTasks(pos, unit);
 //	if (task != nullptr) {
 //		return const_cast<IBuilderTask*>(task);
 //	}
+
 	const bool isStalling = economyMgr->IsMetalEmpty() &&
 							(economyMgr->GetAvgMetalIncome() * 1.2f < economyMgr->GetMetalPull()) &&
 							(metalPull > economyMgr->GetPullMtoS() * circuit->GetFactoryManager()->GetMetalPull());
@@ -1456,6 +1469,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const float maxThreat = threatMap->GetUnitPower(unit);
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
+	const float buildSqDistance = SQUARE(buildDistance);
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
@@ -1491,12 +1505,12 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 			}
 
 			float distCost;
-			const float rawDist = pos.SqDistance2D(buildPos);
-			if (rawDist < buildDistance) {
-				distCost = rawDist / pathfinder->GetSquareSize() * COST_BASE;
+			const float rawSqDist = pos.SqDistance2D(buildPos);
+			if (rawSqDist < buildSqDistance) {
+				distCost = sqrtf(rawSqDist) / pathfinder->GetSquareSize() * COST_BASE * 0.5f;
 			} else {
 				distCost = query->GetCostAt(buildPos, buildDistance);
-				if (distCost < 0.f) {  // path blocked by buildings
+				if (distCost < 0.f) {  // path blocked by buildings or threat too high
 					continue;
 				}
 			}
@@ -1577,12 +1591,12 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 
 	CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(position);
 	if (vip != nullptr) {
-		return EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, FRAMES_PER_SEC * 60);
+		return EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
 	}
 
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 	if ((setupMgr->GetCommander() != nullptr) && !unit->GetCircuitDef()->IsAbleToAssist()) {
-		return EnqueueGuard(IBuilderTask::Priority::LOW, setupMgr->GetCommander(), FRAMES_PER_SEC * 20);
+		return EnqueueGuard(IBuilderTask::Priority::LOW, setupMgr->GetCommander(), true, FRAMES_PER_SEC * 20);
 	}
 	return EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
 }

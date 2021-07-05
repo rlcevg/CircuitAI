@@ -112,6 +112,7 @@ void CThreatMap::Init(const int roleSize, std::set<CCircuitDef::RoleT>&& modRole
 			roleThreat.airThreat.resize(mapSize, THREAT_BASE);
 			roleThreat.surfThreat.resize(mapSize, THREAT_BASE);
 			roleThreat.amphThreat.resize(mapSize, THREAT_BASE);
+			roleThreat.swimThreat.resize(mapSize, THREAT_BASE);
 		}
 	}
 
@@ -243,9 +244,10 @@ void CThreatMap::SetThreatType(CCircuitUnit* unit)
 	CCircuitDef::RoleT role = unit->GetCircuitDef()->GetMainRole();
 	if (unit->GetCircuitDef()->IsAbleToFly()) {
 		threatArray = pThreatData.load()->roleThreatPtrs[role]->airThreat.data();
-//	} else if (unit->GetPos(circuit->GetLastFrame()).y < -SQUARE_SIZE * 5) {
-	} else if (unit->GetCircuitDef()->IsAmphibious()) {
+	} else if (unit->GetCircuitDef()->IsAbleToDive()) {
 		threatArray = pThreatData.load()->roleThreatPtrs[role]->amphThreat.data();
+	} else if (unit->GetCircuitDef()->IsAbleToSwim()) {
+		threatArray = pThreatData.load()->roleThreatPtrs[role]->swimThreat.data();
 	} else {
 		threatArray = pThreatData.load()->roleThreatPtrs[role]->surfThreat.data();
 	}
@@ -271,9 +273,11 @@ float CThreatMap::GetThreatAt(CCircuitUnit* unit, const AIFloat3& position) cons
 	if (unit->GetCircuitDef()->IsAbleToFly()) {
 		return pThreatData.load()->roleThreatPtrs[role]->airThreat[z * width + x] - THREAT_BASE;
 	}
-//	if (unit->GetPos(circuit->GetLastFrame()).y < -SQUARE_SIZE * 5) {
-	if (unit->GetCircuitDef()->IsAmphibious()) {
+	if (unit->GetCircuitDef()->IsAbleToDive()) {
 		return pThreatData.load()->roleThreatPtrs[role]->amphThreat[z * width + x] - THREAT_BASE;
+	}
+	if (unit->GetCircuitDef()->IsAbleToSwim()) {
+		return pThreatData.load()->roleThreatPtrs[role]->swimThreat[z * width + x] - THREAT_BASE;
 	}
 	return pThreatData.load()->roleThreatPtrs[role]->surfThreat[z * width + x] - THREAT_BASE;
 }
@@ -371,7 +375,8 @@ void CThreatMap::AddEnemyAir(const float threat, float* drawAirThreat,
 	}
 }
 
-void CThreatMap::AddEnemyAmphConst(const float threatSurf, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
+void CThreatMap::AddEnemyAmphConst(const float threatSurf, const float threatWater,
+		float* drawSurfThreat, float* drawAmphThreat, float* drawSwimThreat,
 		const SEnemyData& e, const int slack)
 {
 	int posx, posz;
@@ -405,19 +410,23 @@ void CThreatMap::AddEnemyAmphConst(const float threatSurf, const float threatWat
 					if (sector[index].position.y >= -SQUARE_SIZE * 5) {  // check head sticking out of water
 						drawAmphThreat[index] += threatSurf;
 					}
+					drawSwimThreat[index] += threatSurf;
 				}
 				if ((sum <= rangeWaterSq) && (sector[index].position.y < -SQUARE_SIZE * 2)) {  // check minimum depth
 					drawAmphThreat[index] += threatWater;
+					drawSwimThreat[index] += threatWater;
 				}
 			} else if (sum <= rangeSurfSq) {
 				drawSurfThreat[index] += threatSurf;
 				drawAmphThreat[index] += threatSurf;
+				drawSwimThreat[index] += threatSurf;
 			}
 		}
 	}
 }
 
-void CThreatMap::AddEnemyAmphGradient(const float threatSurf, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
+void CThreatMap::AddEnemyAmphGradient(const float threatSurf, const float threatWater,
+		float* drawSurfThreat, float* drawAmphThreat, float* drawSwimThreat,
 		const SEnemyData& e, const int slack)
 {
 	int posx, posz;
@@ -457,15 +466,18 @@ void CThreatMap::AddEnemyAmphGradient(const float threatSurf, const float threat
 					if (sector[index].position.y >= -SQUARE_SIZE * 5) {  // check head sticking out of water
 						drawAmphThreat[index] += heatLand;
 					}
+					drawSwimThreat[index] += heatLand;
 				}
 				if ((sum <= rangeWaterSq) && (sector[index].position.y < -SQUARE_SIZE * 2)) {  // check minimum depth
 					const float heatWater = threatWater * (1.0f - half / rangeWater);
 					drawAmphThreat[index] += heatWater;
+					drawSwimThreat[index] += heatWater;
 				}
 			} else if (sum <= rangeLandSq) {
 				const float heatLand = threatSurf * (1.0f - half / rangeLand);
 				drawSurfThreat[index] += heatLand;
 				drawAmphThreat[index] += heatLand;
+				drawSwimThreat[index] += heatLand;
 			}
 		}
 	}
@@ -580,19 +592,21 @@ std::shared_ptr<IMainJob> CThreatMap::AmphDrawer(CCircuitDef::RoleT role)
 	SRoleThreat& roleThreat = threatData.roleThreats[role];
 	std::fill(roleThreat.surfThreat.begin(), roleThreat.surfThreat.end(), THREAT_BASE);
 	std::fill(roleThreat.amphThreat.begin(), roleThreat.amphThreat.end(), THREAT_BASE);
+	std::fill(roleThreat.swimThreat.begin(), roleThreat.swimThreat.end(), THREAT_BASE);
 	float* drawSurfThreat = roleThreat.surfThreat.data();
 	float* drawAmphThreat = roleThreat.amphThreat.data();
+	float* drawSwimThreat = roleThreat.swimThreat.data();
 
 	for (const SEnemyData* e : amphDraws) {
 		if (e->cdef == nullptr) {
-			AddEnemyAmphGradient(0.1f, 0.1f, drawSurfThreat, drawAmphThreat, *e);  // unknown enemy is a threat
+			AddEnemyAmphGradient(0.1f, 0.1f, drawSurfThreat, drawAmphThreat, drawSwimThreat, *e);  // unknown enemy is a threat
 		} else {
 			const float threatSurf = e->GetSurfDamage(role) * e->thrHealth;
 			const float threatWater = e->GetWaterDamage(role) * e->thrHealth;
 			const int vsl = std::min(int(e->vel.Length2D() * slackMod.speedMod), slackMod.speedModMax);
 			e->cdef->IsAlwaysHit()
-					? AddEnemyAmphConst(threatSurf, threatWater, drawSurfThreat, drawAmphThreat, *e, vsl)
-					: AddEnemyAmphGradient(threatSurf, threatWater, drawSurfThreat, drawAmphThreat, *e, vsl);
+					? AddEnemyAmphConst(threatSurf, threatWater, drawSurfThreat, drawAmphThreat, drawSwimThreat, *e, vsl)
+					: AddEnemyAmphGradient(threatSurf, threatWater, drawSurfThreat, drawAmphThreat, drawSwimThreat, *e, vsl);
 		}
 	}
 	return ApplyDrawers();
@@ -689,6 +703,9 @@ void CThreatMap::UpdateVis()
 			} break;
 			case 2: {
 				threatArray = pThreatData.load()->roleThreats[0].amphThreat.data();
+			} break;
+			case 3: {
+				threatArray = pThreatData.load()->roleThreats[0].swimThreat.data();
 			} break;
 		}
 		cmd.write(reinterpret_cast<const char*>(threatArray), mapSize * sizeof(float));
@@ -806,6 +823,8 @@ void CThreatMap::SetMaxThreat(float maxThreat, std::string layer)
 		layerDbg = 0;
 	} else if (layer == "amph") {
 		layerDbg = 2;
+	} else if (layer == "swim") {
+		layerDbg = 3;
 	} else {  // surf
 		layerDbg = 1;
 	}

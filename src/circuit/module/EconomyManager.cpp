@@ -61,6 +61,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, energy(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energyUse(.0f)
 		, factoryTask(nullptr)
+		, isAssistRequired(false)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName(RES_NAME_METAL);
 	energyRes = circuit->GetCallback()->GetResourceByName(RES_NAME_ENERGY);
@@ -977,7 +978,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 		}
 
 		const unsigned int mexTaskSize = builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size();
-		if (mexTaskSize < builderMgr->GetWorkerCount() * 2 + 1) {
+		if (mexTaskSize < (unsigned)mexMax/*builderMgr->GetWorkerCount() * 2 + 1*/) {
 			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
 			std::vector<CCircuitDef*> mexDefs;
 			for (CCircuitDef* mDef : mexDefOptions) {
@@ -1377,7 +1378,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		UpdateEnergyTasks(position, unit);
 		return nullptr;
 	}
-	if (!isStart && !factoryMgr->IsSwitchAllowed(facDef)) {
+	if (!isStart && !circuit->IsSlave() && !factoryMgr->IsSwitchAllowed(facDef)) {
+		isAssistRequired = true;
 		return nullptr;
 	}
 

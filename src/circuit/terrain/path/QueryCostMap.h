@@ -17,7 +17,7 @@ public:
 	CQueryCostMap(const CPathFinder& pathfinder, int id);
 	virtual ~CQueryCostMap();
 
-	void InitQuery(const springai::AIFloat3& startPos);
+	void InitQuery(const springai::AIFloat3& startPos, float maxThreat);
 
 	void Prepare();
 
@@ -26,6 +26,7 @@ public:
 
 	// Input Data
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
+	const float GetMaxThreat() const { return maxThreat; }
 
 	// Result
 	float GetCostAt(const springai::AIFloat3& endPos, int radius) const;
@@ -34,6 +35,7 @@ private:
 	std::vector<float> costMap;
 
 	springai::AIFloat3 startPos;
+	float maxThreat = 0.f;
 };
 
 } // namespace circuit

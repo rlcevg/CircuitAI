@@ -128,6 +128,7 @@ public:
 								   int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueueGuard(IBuilderTask::Priority priority,
 							   CCircuitUnit* target,
+							   bool isInterrupt,
 							   int timeout = ASSIGN_TIMEOUT);
 	IUnitTask* EnqueueWait(int timeout);
 	virtual CRetreatTask* EnqueueRetreat() override;

@@ -55,6 +55,7 @@ public:
 	float* GetAirThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreatPtrs[type]->airThreat.data(); }
 	float* GetSurfThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreatPtrs[type]->surfThreat.data(); }
 	float* GetAmphThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreatPtrs[type]->amphThreat.data(); }
+	float* GetSwimThreatArray(CCircuitDef::RoleT type) { return pThreatData.load()->roleThreatPtrs[type]->swimThreat.data(); }
 	float* GetCloakThreatArray() { return cloakThreat; }
 	int GetThreatMapWidth() const { return width; }
 	int GetThreatMapHeight() const { return height; }
@@ -72,6 +73,7 @@ private:
 		FloatVec airThreat;  // air layer
 		FloatVec surfThreat;  // surface (water and land)
 		FloatVec amphThreat;  // under water and surface on land
+		FloatVec swimThreat;  // under water and on water
 	};
 	struct SThreatData {
 		std::map<CCircuitDef::RoleT, SRoleThreat> roleThreats;
@@ -90,9 +92,11 @@ private:
 	void AddEnemyUnit(SEnemyData& e);
 	void AddEnemyAir(const float threat, float* drawAirThreat,
 			const SEnemyData& e, const int slack = 0);  // Enemy AntiAir
-	void AddEnemyAmphConst(const float threatLand, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
+	void AddEnemyAmphConst(const float threatLand, const float threatWater,
+			float* drawSurfThreat, float* drawAmphThreat, float* drawSwimThreat,
 			const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
-	void AddEnemyAmphGradient(const float threatLand, const float threatWater, float* drawSurfThreat, float* drawAmphThreat,
+	void AddEnemyAmphGradient(const float threatLand, const float threatWater,
+			float* drawSurfThreat, float* drawAmphThreat, float* drawSwimThreat,
 			const SEnemyData& e, const int slack = 0);  // Enemy AntiAmph
 	void AddDecloaker(float* drawCloakThreat, const SEnemyData& e);
 	void AddShield(float* drawShieldArray, const SEnemyData& e);

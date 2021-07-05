@@ -139,8 +139,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, hasSubToLand(false)
 		, hasSubToWater(false)
 		, isAlwaysHit(false)
+		, isFloater(false)
 		, isAmphibious(false)
 		, isLander(false)
+		, isSurfer(false)
+		, isAbleToSwim(false)
+		, isAbleToDive(false)
 		, isMex(false)
 		, isPylon(false)
 		, isAssist(false)
@@ -193,7 +197,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	delete md;
 	isAbleToFly       = def->IsAbleToFly();
 	isPlane           = !def->IsHoverAttack() && isAbleToFly;
-	isFloater         = def->IsFloater() && !isSubmarine && !isAbleToFly;
 	isSonarStealth    = def->IsSonarStealth();
 	isTurnLarge       = (speed / (def->GetTurnRate() + 1e-3f) > 0.09f);  // empirical magic number
 	isAbleToCloak     = def->IsAbleToCloak();
@@ -621,23 +624,44 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 		mobileTypeId = terrainData.udMobileType[GetId()];
 	}
 
+	auto fillSurface = [this, circuit](const float minElev, const float maxElev) {
+		const bool isOnWater = def->IsFloater() && !IsSubmarine() && !IsAbleToFly();
+		isFloater = isOnWater && ((minElev < -1.f) && (maxElev < 1.f));
+		isLander = (minElev > -100.f) && (maxElev > 100.f);
+		isSurfer = isOnWater && ((minElev < -1.f) && (maxElev > 100.f));
+		// FIXME: can't filter out hover. This should be floater or walking-ship
+		isAbleToSwim = IsFloater();  // isOnWater && ((minElev < -1.f) && (maxElev > -100.f));
+		isAbleToDive = ((minElev < -1.f) || (maxElev < 1.f)) && !IsFloater() && !IsSurfer() && !IsLander();
+	};
 	if (IsMobile()) {
 		if (mobileTypeId >= 0) {
 			STerrainMapMobileType& mt = terrainData.areaData0.mobileType[mobileTypeId];
-			isAmphibious = ((mt.minElevation < -SQUARE_SIZE * 5) || (mt.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
+			fillSurface(mt.minElevation, mt.maxElevation);
 		}
 	} else {
 		if (immobileTypeId >= 0) {
 			STerrainMapImmobileType& it = terrainData.areaData0.immobileType[immobileTypeId];
-			isAmphibious = ((it.minElevation < -SQUARE_SIZE * 5) || (it.maxElevation < SQUARE_SIZE * 5)) && !IsFloater();
+			fillSurface(it.minElevation, it.maxElevation);
 		}
 	}
-	isLander = !IsFloater() && !IsAbleToFly() && !IsAmphibious() && !IsSubmarine();
+	isAmphibious = IsAbleToDive() && !IsSubmarine() && !IsSurfer();
 
 	UnitDef* decoyDef = def->GetDecoyDef();
 	if (decoyDef != nullptr) {
 		circuit->GetCircuitDef(decoyDef->GetUnitDefId())->SetIsDecoy(true);
 		delete decoyDef;
+	}
+
+	int surface = 0;
+	if (isAbleToFly) surface++;
+	if (isFloater) surface++;
+	if (isSubmarine) surface++;
+	if (isAmphibious) surface++;
+	if (isLander) surface++;
+	if (isSurfer) surface++;
+	if (surface != 1) {
+		circuit->LOG("ALARM: %s | isAbleToFly: %i | isFloater: %i | isSubmarine: %i | isAmphibious: %i | isLander: %i | isSurfer: %i", def->GetName(),
+				isAbleToFly, isFloater, isSubmarine, isAmphibious, isLander, isSurfer);
 	}
 }
 
@@ -671,7 +695,7 @@ bool CCircuitDef::IsInWater(float elevation, float posY) {
 
 bool CCircuitDef::IsPredictInWater(float elevation)
 {
-	return IsAmphibious() ? IsInWater(elevation, elevation) : false;
+	return IsAbleToDive() ? IsInWater(elevation, elevation) : false;
 }
 
 AIFloat3 CCircuitDef::GetMidPosOffset(int facing) const

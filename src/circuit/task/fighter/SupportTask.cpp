@@ -90,11 +90,12 @@ void CSupportTask::Update()
 		if (!terrainMgr->CanMoveToPos(unit->GetArea(), pos)) {
 			continue;
 		}
-		if ((unit->GetCircuitDef()->IsAmphibious() &&
-				(leader->GetCircuitDef()->IsAmphibious() || leader->GetCircuitDef()->IsLander() || leader->GetCircuitDef()->IsFloater())) ||
-			(leader->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly()) ||
-			(leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander()) ||
-			(leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
+		if (((unit->GetCircuitDef()->IsAmphibious() || unit->GetCircuitDef()->IsSurfer())
+				&& (leader->GetCircuitDef()->IsAbleToDive() || leader->GetCircuitDef()->IsSurfer()))
+			|| (leader->GetCircuitDef()->IsSubmarine() && unit->GetCircuitDef()->IsSubmarine())
+			|| (leader->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly())
+			|| (leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander())
+			|| (leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
 		{
 			urgentPositions.push_back(pos);
 		}

@@ -40,10 +40,12 @@ bool CRallyTask::CanAssignTo(CCircuitUnit* unit) const
 		return false;
 	}
 	CCircuitDef* cdef = (*units.begin())->GetCircuitDef();
-	if ((cdef->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly()) ||
-		(cdef->IsAmphibious() && unit->GetCircuitDef()->IsAmphibious()) ||
-		(cdef->IsLander() && unit->GetCircuitDef()->IsLander()) ||
-		(cdef->IsFloater() && unit->GetCircuitDef()->IsFloater()))
+	if ((cdef->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly())
+		|| (cdef->IsAmphibious() && unit->GetCircuitDef()->IsAmphibious())
+		|| (cdef->IsSurfer() && unit->GetCircuitDef()->IsSurfer())
+		|| (cdef->IsSubmarine() && unit->GetCircuitDef()->IsSubmarine())
+		|| (cdef->IsLander() && unit->GetCircuitDef()->IsLander())
+		|| (cdef->IsFloater() && unit->GetCircuitDef()->IsFloater()))
 	{
 		return true;
 	}

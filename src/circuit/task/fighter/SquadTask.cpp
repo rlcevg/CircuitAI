@@ -186,9 +186,9 @@ ISquadTask* ISquadTask::CheckMergeTask()
 
 	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(fightType);
 	for (const IFighterTask* candidate : tasks) {
-		if ((candidate == this) ||
-			(candidate->GetAttackPower() < attackPower) ||
-			!candidate->CanAssignTo(leader))
+		if ((candidate == this)
+			|| (candidate->GetAttackPower() < attackPower)
+			|| !candidate->CanAssignTo(leader))
 		{
 			continue;
 		}

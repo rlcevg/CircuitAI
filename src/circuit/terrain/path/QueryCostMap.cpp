@@ -20,9 +20,10 @@ CQueryCostMap::~CQueryCostMap()
 {
 }
 
-void CQueryCostMap::InitQuery(const AIFloat3& startPos)
+void CQueryCostMap::InitQuery(const AIFloat3& startPos, float maxThreat)
 {
 	this->startPos = startPos;
+	this->maxThreat = maxThreat;
 }
 
 void CQueryCostMap::Prepare()

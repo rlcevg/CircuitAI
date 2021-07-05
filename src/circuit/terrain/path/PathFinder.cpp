@@ -193,7 +193,7 @@ AIFloat3 CPathFinder::MoveNode2Pos(void* node) const
 {
 	const size_t index = (size_t)node;
 
-	float3 pos;
+	AIFloat3 pos;
 	size_t z = index / moveMapXSize;
 	pos.z = (z - 1) * squareSize + squareSize / 2;
 	pos.x = (index - (z * moveMapXSize) - 1) * squareSize + squareSize / 2;
@@ -238,7 +238,7 @@ void CPathFinder::PathIndex2MoveXY(int index, int* x, int* y) const
 
 AIFloat3 CPathFinder::PathIndex2Pos(int index) const
 {
-	float3 pos;
+	AIFloat3 pos;
 	int z = index / pathMapXSize;
 	pos.z = z * squareSize + squareSize / 2;
 	pos.x = (index - (z * pathMapXSize)) * squareSize + squareSize / 2;
@@ -282,13 +282,13 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
  */
 std::shared_ptr<IPathQuery> CPathFinder::CreateCostMapQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
-		const AIFloat3& startPos)
+		const AIFloat3& startPos, float maxThreat)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryCostMap>(*this, MakeQueryId());
 	CQueryCostMap* query = static_cast<CQueryCostMap*>(pQuery.get());
 
 	FillMapData(query, unit, threatMap, frame);
-	query->InitQuery(startPos);
+	query->InitQuery(startPos, maxThreat);
 
 	return pQuery;
 }
@@ -342,13 +342,16 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	CostFunc threatFun;
 	// TODO: Re-organize and pre-calculate moveFun for each move-type
 	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
-		threatArray = threatMap->GetAmphThreatArray(cdef->GetMainRole());  // cloak doesn't work under water
+		threatArray = cdef->IsAbleToSwim()  // cloak doesn't work under water
+				? threatMap->GetSwimThreatArray(cdef->GetMainRole())
+				: threatMap->GetAmphThreatArray(cdef->GetMainRole());
 		moveFun = [&sectors, maxSlope](int index) {
 			return (sectors[index].isWater ? 2.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
 		};
 		threatFun = [threatArray](int index) {
 			return 2.f * threatArray[index];
 		};
+
 	} else if (unit->GetUnit()->IsCloaked()) {
 		threatArray = threatMap->GetCloakThreatArray();
 		moveFun = [&sectors, maxSlope](int index) {
@@ -357,6 +360,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 		threatFun = [threatArray](int index) {
 			return threatArray[index];
 		};
+
 	} else if (cdef->IsAbleToFly()) {
 		threatArray = threatMap->GetAirThreatArray(cdef->GetMainRole());
 		moveFun = [](int index) {
@@ -365,31 +369,50 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 		threatFun = [threatArray](int index) {
 			return 2.f * threatArray[index];
 		};
-	} else if (cdef->IsAmphibious()) {
-		threatArray = threatMap->GetAmphThreatArray(cdef->GetMainRole());
-		if (maxSlope > SPIDER_SLOPE) {
-			const float minElev = areaData->minElevation;
-			float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
-			moveFun = [&sectors, minElev, elevLen](int index) {
-				return 2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
-						(sectors[index].isWater ? 2.f : 0.f);
-			};
-			threatFun = [threatArray](int index) {
-				return 2.f * threatArray[index];
-			};
-		} else {
-			moveFun = [&sectors, maxSlope](int index) {
-				return (sectors[index].isWater ? 2.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
-			};
-			threatFun = [threatArray](int index) {
-				return 2.f * threatArray[index];
-			};
-		}
+
 	} else {
-		threatArray = threatMap->GetSurfThreatArray(cdef->GetMainRole());
-		moveFun = [&sectors, maxSlope](int index) {
-			return sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope);
-		};
+		if (cdef->IsAbleToSwim()) {
+			threatArray = threatMap->GetSwimThreatArray(cdef->GetMainRole());
+			if (maxSlope > SPIDER_SLOPE) {
+				const float minElev = areaData->minElevation;
+				float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
+				moveFun = [&sectors, minElev, elevLen](int index) {
+					return sectors[index].isWater ? 1.f : (2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen));
+				};
+			} else {
+				moveFun = [&sectors, maxSlope](int index) {
+					return sectors[index].isWater ? 1.f : (2.f * sectors[index].maxSlope / maxSlope);
+				};
+			}
+		} else if (cdef->IsAbleToDive()) {
+			threatArray = threatMap->GetAmphThreatArray(cdef->GetMainRole());
+			if (maxSlope > SPIDER_SLOPE) {
+				const float minElev = areaData->minElevation;
+				float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
+				moveFun = [&sectors, minElev, elevLen](int index) {
+					return 2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen) +
+							(sectors[index].isWater ? 2.f : 0.f);
+				};
+			} else {
+				moveFun = [&sectors, maxSlope](int index) {
+					return 2.f * sectors[index].maxSlope / maxSlope +
+							(sectors[index].isWater ? 2.f : 0.f);
+				};
+			}
+		} else {
+			threatArray = threatMap->GetSurfThreatArray(cdef->GetMainRole());
+			if (maxSlope > SPIDER_SLOPE) {
+				const float minElev = areaData->minElevation;
+				float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
+				moveFun = [&sectors, minElev, elevLen](int index) {
+					return sectors[index].isWater ? 0.f : (2.f * (1.f - (sectors[index].maxElevation - minElev) / elevLen));
+				};
+			} else {
+				moveFun = [&sectors, maxSlope](int index) {
+					return sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope);
+				};
+			}
+		}
 		threatFun = [threatArray](int index) {
 			return 2.f * threatArray[index];
 		};
@@ -651,10 +674,11 @@ void CPathFinder::MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* mi
 	const SAreaData* areaData = q->GetAreaData();
 
 	const AIFloat3& startPos = q->GetStartPos();
+	const float maxThreat = q->GetMaxThreat();
 	std::vector<float>& costMap = q->GetCostMapRef();
 
 	micropather->SetMapData(canMoveArray, threatArray, moveFun, threatFun, areaData);
-	micropather->MakeCostMap(Pos2MoveNode(startPos), costMap);
+	micropather->MakeCostMap(Pos2MoveNode(startPos), maxThreat, costMap);
 }
 
 #ifdef DEBUG_VIS
