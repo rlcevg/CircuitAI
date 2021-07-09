@@ -49,10 +49,18 @@ void CIdleTask::Update()
 		updateSlice = updateUnits.size() / TEAM_SLOWUPDATE_RATE;
 	}
 
+	const int frame = manager->GetCircuit()->GetLastFrame();
 	auto it = updateUnits.begin();
 	unsigned int i = 0;
 	while (it != updateUnits.end()) {
 		CCircuitUnit* ass = *it;
+
+		// get rid of delayed by engine UnitIdle event from previous task
+		if (frame < ass->GetTaskFrame() + 20) {
+			++it;
+			continue;
+		}
+
 		it = updateUnits.erase(it);
 
 		manager->AssignTask(ass);  // should RemoveAssignee() on AssignTo()
