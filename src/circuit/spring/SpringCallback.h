@@ -54,7 +54,7 @@ public:
 
 	std::vector<springai::Feature*> GetFeatures() const { return callback->GetFeatures(); }
 	std::vector<springai::Feature*> GetFeaturesIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const {
-		return callback->GetFeaturesIn(pos, radius, spherical);
+		return callback->GetFeaturesIn(pos, radius/*, spherical*/);
 	}
 	bool IsFeatures() const;
 	bool IsFeaturesIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const;
