@@ -49,8 +49,9 @@ bool CQueryLineMap::IsSafeLine(const AIFloat3& startPos, const AIFloat3& endPos)
 			err += dx; y += sy;
 		}
 
-		int index = y * threatXSize + x;
-		if (!canMoveArray[index] || (threatArray[index] > THREAT_BASE)) {
+		int index2 = y * threatXSize + x;
+		int index = (y + 1) * (threatXSize + 2) + x + 1;  // move-index, +2 for edges
+		if (!canMoveArray[index] || (threatArray[index2] > THREAT_BASE)) {
 			return false;
 		}
 	}
