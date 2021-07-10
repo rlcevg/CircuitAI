@@ -137,4 +137,9 @@ int COOAICallback::Unit_GetDefId(int unitId) const
 	return sAICallback->Unit_getDef(skirmishAIId, unitId);
 }
 
+bool COOAICallback::UnitDef_HasYardMap(int unitDefId) const
+{
+	return sAICallback->UnitDef_getYardMap(skirmishAIId, unitDefId, UNIT_FACING_SOUTH, nullptr, -1) > 0;
+}
+
 } // namespace circuit

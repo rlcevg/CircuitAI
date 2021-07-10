@@ -59,6 +59,8 @@ public:
 
 	int Unit_GetDefId(int unitId) const;
 
+	bool UnitDef_HasYardMap(int unitDefId) const;
+
 private:
 	const struct SSkirmishAICallback* sAICallback;
 	springai::OOAICallback* callback;
