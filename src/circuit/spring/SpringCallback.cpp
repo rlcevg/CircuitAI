@@ -57,7 +57,7 @@ const std::vector<Unit*>& COOAICallback::GetFriendlyUnitsIn(const AIFloat3& pos,
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
 	unitIds.resize(MAX_UNITS);
-	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius/*, spherical*/, unitIds.data(), MAX_UNITS);
+	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
 
 	units.resize(size);
 	for (int i = 0; i < size; ++i) {
@@ -71,7 +71,7 @@ bool COOAICallback::IsFriendlyUnitsIn(const AIFloat3& pos, float radius, bool sp
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
-	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius/*, spherical*/, nullptr, -1);
+	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, nullptr, -1);
 	return size > 0;
 }
 
@@ -80,7 +80,7 @@ const std::vector<int>& COOAICallback::GetFriendlyUnitIdsIn(const springai::AIFl
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
 	unitIds.resize(MAX_UNITS);
-	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius/*, spherical*/, unitIds.data(), MAX_UNITS);
+	int size = sAICallback->getFriendlyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
 	unitIds.resize(size);
 	return unitIds;
 }
@@ -103,7 +103,7 @@ const std::vector<Unit*>& COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, fl
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
 	unitIds.resize(MAX_UNITS);
-	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius/*, spherical*/, unitIds.data(), MAX_UNITS);
+	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
 
 	units.resize(size);
 	for (int i = 0; i < size; ++i) {
@@ -118,7 +118,7 @@ const std::vector<int>& COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, fl
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
 	unitIds.resize(MAX_UNITS);
-	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius/*, spherical*/, unitIds.data(), MAX_UNITS);
+	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
 	unitIds.resize(size);
 	return unitIds;
 }
@@ -133,7 +133,7 @@ bool COOAICallback::IsFeaturesIn(const AIFloat3& pos, float radius, bool spheric
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
-	int size = sAICallback->getFeaturesIn(skirmishAIId, pos_posF3, radius/*, spherical*/, nullptr, -1);
+	int size = sAICallback->getFeaturesIn(skirmishAIId, pos_posF3, radius, spherical, nullptr, -1);
 	return size > 0;
 }
 

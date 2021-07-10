@@ -56,9 +56,9 @@ private:
 		FloatVec allyInfl;
 		FloatVec allyDefendInfl;
 		FloatVec influence;
-		FloatVec tension;
-		FloatVec vulnerability;
-		FloatVec featureInfl;
+//		FloatVec tension;
+//		FloatVec vulnerability;
+//		FloatVec featureInfl;
 	};
 
 	CMapManager* manager;
@@ -69,7 +69,7 @@ private:
 	void AddStaticArmed(CAllyUnit* u);
 	void AddUnarmed(CAllyUnit* u);
 	void AddEnemy(const SEnemyData& e);
-	void AddFeature(springai::Feature* f);
+//	void AddFeature(springai::Feature* f);
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 
 	void Prepare(SInfluenceData& inflData);
@@ -85,7 +85,7 @@ private:
 	int height;
 	int mapSize;
 
-	float vulnMax;
+//	float vulnMax;
 
 	SInfluenceData inflData0, inflData1;  // Double-buffer for threading
 	std::atomic<SInfluenceData*> pInflData;
@@ -93,18 +93,18 @@ private:
 	float* drawAllyInfl;
 	float* drawAllyDefendInfl;
 	float* drawInfluence;
-	float* drawTension;
-	float* drawVulnerability;
-	float* drawFeatureInfl;
+//	float* drawTension;
+//	float* drawVulnerability;
+//	float* drawFeatureInfl;
 	bool isUpdating;
 
 	float* enemyInfl;
 	float* allyInfl;
 	float* allyDefendInfl;
 	float* influence;
-	float* tension;
-	float* vulnerability;
-	float* featureInfl;
+//	float* tension;
+//	float* vulnerability;
+//	float* featureInfl;
 
 	float defRadius;
 

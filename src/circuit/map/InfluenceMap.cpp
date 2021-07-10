@@ -28,7 +28,7 @@ using namespace springai;
 
 CInfluenceMap::CInfluenceMap(CMapManager* manager)
 		: manager(manager)
-		, vulnMax(0.f)
+//		, vulnMax(0.f)
 		, isUpdating(false)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
@@ -42,26 +42,26 @@ CInfluenceMap::CInfluenceMap(CMapManager* manager)
 		inflData->allyInfl.resize(mapSize, INFL_BASE);
 		inflData->allyDefendInfl.resize(mapSize, INFL_BASE);
 		inflData->influence.resize(mapSize, INFL_BASE);
-		inflData->tension.resize(mapSize, INFL_BASE);
-		inflData->vulnerability.resize(mapSize, INFL_BASE);
-		inflData->featureInfl.resize(mapSize, INFL_BASE);
+//		inflData->tension.resize(mapSize, INFL_BASE);
+//		inflData->vulnerability.resize(mapSize, INFL_BASE);
+//		inflData->featureInfl.resize(mapSize, INFL_BASE);
 	}
 
 	enemyInfl = inflData0.enemyInfl.data();
 	allyInfl = inflData0.allyInfl.data();
 	allyDefendInfl = inflData0.allyDefendInfl.data();
 	influence = inflData0.influence.data();
-	tension = inflData0.tension.data();
-	vulnerability = inflData0.vulnerability.data();
-	featureInfl = inflData0.featureInfl.data();
+//	tension = inflData0.tension.data();
+//	vulnerability = inflData0.vulnerability.data();
+//	featureInfl = inflData0.featureInfl.data();
 
 	drawEnemyInfl = inflData1.enemyInfl.data();
 	drawAllyInfl = inflData1.allyInfl.data();
 	drawAllyDefendInfl = inflData1.allyDefendInfl.data();
 	drawInfluence = inflData1.influence.data();
-	drawTension = inflData1.tension.data();
-	drawVulnerability = inflData1.vulnerability.data();
-	drawFeatureInfl = inflData1.featureInfl.data();
+//	drawTension = inflData1.tension.data();
+//	drawVulnerability = inflData1.vulnerability.data();
+//	drawFeatureInfl = inflData1.featureInfl.data();
 
 	ReadConfig();
 }
@@ -102,17 +102,17 @@ void CInfluenceMap::Prepare(SInfluenceData& inflData)
 	std::fill(inflData.allyInfl.begin(), inflData.allyInfl.end(), INFL_BASE);
 	std::fill(inflData.allyDefendInfl.begin(), inflData.allyDefendInfl.end(), INFL_BASE);
 	std::fill(inflData.influence.begin(), inflData.influence.end(), INFL_BASE);
-	std::fill(inflData.tension.begin(), inflData.tension.end(), INFL_BASE);
-	std::fill(inflData.vulnerability.begin(), inflData.vulnerability.end(), INFL_BASE);
-	std::fill(inflData.featureInfl.begin(), inflData.featureInfl.end(), INFL_BASE);
+//	std::fill(inflData.tension.begin(), inflData.tension.end(), INFL_BASE);
+//	std::fill(inflData.vulnerability.begin(), inflData.vulnerability.end(), INFL_BASE);
+//	std::fill(inflData.featureInfl.begin(), inflData.featureInfl.end(), INFL_BASE);
 
 	drawEnemyInfl = inflData.enemyInfl.data();
 	drawAllyInfl = inflData.allyInfl.data();
 	drawAllyDefendInfl = inflData.allyDefendInfl.data();
 	drawInfluence = inflData.influence.data();
-	drawTension = inflData.tension.data();
-	drawVulnerability = inflData.vulnerability.data();
-	drawFeatureInfl = inflData.featureInfl.data();
+//	drawTension = inflData.tension.data();
+//	drawVulnerability = inflData.vulnerability.data();
+//	drawFeatureInfl = inflData.featureInfl.data();
 }
 
 std::shared_ptr<IMainJob> CInfluenceMap::Update(CEnemyManager* enemyMgr)
@@ -146,26 +146,26 @@ void CInfluenceMap::Apply()
 	for (int i = 0; i < mapSize; ++i) {
 		drawInfluence[i] = drawAllyInfl[i] - drawEnemyInfl[i];
 	}
-	for (int i = 0; i < mapSize; ++i) {
-		drawTension[i] = drawAllyInfl[i] + drawEnemyInfl[i];
-	}
-	vulnMax = 0.f;
-	for (int i = 0; i < mapSize; ++i) {
-		drawVulnerability[i] = drawTension[i] - std::fabs(drawInfluence[i]);
-		if (vulnMax < drawVulnerability[i]) {
-			vulnMax = drawVulnerability[i];
-		}
-	}
+//	for (int i = 0; i < mapSize; ++i) {
+//		drawTension[i] = drawAllyInfl[i] + drawEnemyInfl[i];
+//	}
+//	vulnMax = 0.f;
+//	for (int i = 0; i < mapSize; ++i) {
+//		drawVulnerability[i] = drawTension[i] - std::fabs(drawInfluence[i]);
+//		if (vulnMax < drawVulnerability[i]) {
+//			vulnMax = drawVulnerability[i];
+//		}
+//	}
 //	Cheats* cheats = circuit->GetCheats();
 //	cheats->SetEnabled(true);
-	auto features = circuit->GetCallback()->GetFeatures();
-	for (Feature* f : features) {
-		if (f == nullptr) {
-			continue;
-		}
-		AddFeature(f);
-		delete f;
-	}
+//	auto features = circuit->GetCallback()->GetFeatures();
+//	for (Feature* f : features) {
+//		if (f == nullptr) {
+//			continue;
+//		}
+//		AddFeature(f);
+//		delete f;
+//	}
 //	cheats->SetEnabled(false);
 
 	SwapBuffers();
@@ -184,9 +184,9 @@ void CInfluenceMap::SwapBuffers()
 	allyInfl = inflData.allyInfl.data();
 	allyDefendInfl = inflData.allyDefendInfl.data();
 	influence = inflData.influence.data();
-	tension = inflData.tension.data();
-	vulnerability = inflData.vulnerability.data();
-	featureInfl = inflData.featureInfl.data();
+//	tension = inflData.tension.data();
+//	vulnerability = inflData.vulnerability.data();
+//	featureInfl = inflData.featureInfl.data();
 }
 
 float CInfluenceMap::GetEnemyInflAt(const AIFloat3& position) const
@@ -389,42 +389,42 @@ void CInfluenceMap::AddEnemy(const SEnemyData& e)
 	}
 }
 
-void CInfluenceMap::AddFeature(Feature* f)
-{
-	CCircuitAI* circuit = manager->GetCircuit();
-	int posx, posz;
-	PosToXZ(f->GetPosition(), posx, posz);
-
-	FeatureDef* featDef = f->GetDef();
-	if (!featDef->IsReclaimable()) {
-		delete featDef;
-		return;
-	}
-	const float val = featDef->GetContainedResource(circuit->GetEconomyManager()->GetMetalRes()) * f->GetReclaimLeft();
-	delete featDef;
-	const int range = 2;
-	const int rangeSq = SQUARE(range);
-
-	const int beginX = std::max(int(posx - range + 1),       0);
-	const int endX   = std::min(int(posx + range    ),  width);
-	const int beginZ = std::max(int(posz - range + 1),       0);
-	const int endZ   = std::min(int(posz + range    ), height);
-
-	for (int z = beginZ; z < endZ; ++z) {
-		const int dzSq = SQUARE(posz - z);
-		for (int x = beginX; x < endX; ++x) {
-			const int dxSq = SQUARE(posx - x);
-			const int lenSq = dxSq + dzSq;
-			if (lenSq > rangeSq) {
-				continue;
-			}
-
-			const int index = z * width + x;
-			const float infl = val * (1.0f - 1.0f * sqrtf(lenSq) / range);
-			drawFeatureInfl[index] += infl;
-		}
-	}
-}
+//void CInfluenceMap::AddFeature(Feature* f)
+//{
+//	CCircuitAI* circuit = manager->GetCircuit();
+//	int posx, posz;
+//	PosToXZ(f->GetPosition(), posx, posz);
+//
+//	FeatureDef* featDef = f->GetDef();
+//	if (!featDef->IsReclaimable()) {
+//		delete featDef;
+//		return;
+//	}
+//	const float val = featDef->GetContainedResource(circuit->GetEconomyManager()->GetMetalRes()) * f->GetReclaimLeft();
+//	delete featDef;
+//	const int range = 2;
+//	const int rangeSq = SQUARE(range);
+//
+//	const int beginX = std::max(int(posx - range + 1),       0);
+//	const int endX   = std::min(int(posx + range    ),  width);
+//	const int beginZ = std::max(int(posz - range + 1),       0);
+//	const int endZ   = std::min(int(posz + range    ), height);
+//
+//	for (int z = beginZ; z < endZ; ++z) {
+//		const int dzSq = SQUARE(posz - z);
+//		for (int x = beginX; x < endX; ++x) {
+//			const int dxSq = SQUARE(posx - x);
+//			const int lenSq = dxSq + dzSq;
+//			if (lenSq > rangeSq) {
+//				continue;
+//			}
+//
+//			const int index = z * width + x;
+//			const float infl = val * (1.0f - 1.0f * sqrtf(lenSq) / range);
+//			drawFeatureInfl[index] += infl;
+//		}
+//	}
+//}
 
 inline void CInfluenceMap::PosToXZ(const AIFloat3& pos, int& x, int& z) const
 {
@@ -481,25 +481,25 @@ void CInfluenceMap::UpdateVis()
 	}
 	circuit->GetDebugDrawer()->DrawTex(sdlWindowId, dbgMap);
 
-	std::tie(sdlWindowId, dbgMap) = sdlWindows[3];
-	for (int i = 0; i < mapSize; ++i) {
-		dbgMap[i] = std::min<float>(tension[i] / 200.0f, 1.0f);
-	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {255, 50, 10, 0});
-
-	std::tie(sdlWindowId, dbgMap) = sdlWindows[4];
-	for (int i = 0; i < mapSize; ++i) {
-		float value = utils::clamp((vulnerability[i] - vulnMax / 2) / (vulnMax / 2), -1.f, 1.f);
-		if (value < 0) ALLY(dbgMap, i, -value)
-		else ENEMY(dbgMap, i, value)
-	}
-	circuit->GetDebugDrawer()->DrawTex(sdlWindowId, dbgMap);
-
-	std::tie(sdlWindowId, dbgMap) = sdlWindows[5];
-	for (int i = 0; i < mapSize; ++i) {
-		dbgMap[i] = std::min<float>((featureInfl[i] - INFL_BASE) / 500.f, 1.0f);
-	}
-	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {10, 50, 255, 0});
+//	std::tie(sdlWindowId, dbgMap) = sdlWindows[3];
+//	for (int i = 0; i < mapSize; ++i) {
+//		dbgMap[i] = std::min<float>(tension[i] / 200.0f, 1.0f);
+//	}
+//	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {255, 50, 10, 0});
+//
+//	std::tie(sdlWindowId, dbgMap) = sdlWindows[4];
+//	for (int i = 0; i < mapSize; ++i) {
+//		float value = utils::clamp((vulnerability[i] - vulnMax / 2) / (vulnMax / 2), -1.f, 1.f);
+//		if (value < 0) ALLY(dbgMap, i, -value)
+//		else ENEMY(dbgMap, i, value)
+//	}
+//	circuit->GetDebugDrawer()->DrawTex(sdlWindowId, dbgMap);
+//
+//	std::tie(sdlWindowId, dbgMap) = sdlWindows[5];
+//	for (int i = 0; i < mapSize; ++i) {
+//		dbgMap[i] = std::min<float>((featureInfl[i] - INFL_BASE) / 500.f, 1.0f);
+//	}
+//	circuit->GetDebugDrawer()->DrawMap(sdlWindowId, dbgMap, {10, 50, 255, 0});
 }
 
 void CInfluenceMap::ToggleSDLVis()
@@ -525,20 +525,20 @@ void CInfluenceMap::ToggleSDLVis()
 		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width, height, label.c_str());
 		sdlWindows.push_back(win);
 
-		win.second = new float [mapSize * 3];
-		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: Tension Map");
-		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width, height, label.c_str());
-		sdlWindows.push_back(win);
-
-		win.second = new float [mapSize * 3];
-		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: Vulnerability Map");
-		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width, height, label.c_str());
-		sdlWindows.push_back(win);
-
-		win.second = new float [mapSize];
-		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: Feature Influence Map");
-		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width, height, label.c_str());
-		sdlWindows.push_back(win);
+//		win.second = new float [mapSize * 3];
+//		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: Tension Map");
+//		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width, height, label.c_str());
+//		sdlWindows.push_back(win);
+//
+//		win.second = new float [mapSize * 3];
+//		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: Vulnerability Map");
+//		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width, height, label.c_str());
+//		sdlWindows.push_back(win);
+//
+//		win.second = new float [mapSize];
+//		label = utils::int_to_string(circuit->GetSkirmishAIId(), "Circuit AI [%i] :: Feature Influence Map");
+//		win.first = circuit->GetDebugDrawer()->AddSDLWindow(width, height, label.c_str());
+//		sdlWindows.push_back(win);
 
 		UpdateVis();
 	} else {

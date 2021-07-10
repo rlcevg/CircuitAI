@@ -153,6 +153,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			bool isStart = (frame < FRAMES_PER_SEC * 10);
 			AIFloat3 buildPos = -RgtVector;
 			if (unit->GetUnit()->GetRulesParamFloat("facplop", 0) == 1) {
+				// TODO: check factory's customparam ploppable=1
 				const AIFloat3& pos = unit->GetPos(frame);
 				CCircuitDef* facDef = this->circuit->GetFactoryManager()->GetFactoryToBuild(pos, isStart);
 				if (facDef != nullptr) {

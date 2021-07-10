@@ -659,13 +659,11 @@ void CSetupManager::CalcLanePos()
 	AIFloat3 bestPos = step * (i + 1) + offset;
 
 	SetLanePos(bestPos);
-	// FIXME: DEBUG
 #ifdef DEBUG_VIS
 	circuit->GetDrawer()->AddPoint(lanePos, utils::int_to_string(circuit->GetSkirmishAIId()).c_str());
 	circuit->GetDrawer()->AddLine((basePos + lanePos) / 2, lanePos);
 	circuit->LOG("baseRange: %f", lanePos.distance2D(basePos));
 #endif  // DEBUG_VIS
-	// FIXME: DEBUG
 
 	// NOTE: #include "module/MilitaryManager.h"
 	circuit->GetMilitaryManager()->SetBaseDefRange(lanePos.distance2D(basePos));

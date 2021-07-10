@@ -231,7 +231,9 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	ReadConfig();
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const float fighterRet = root["retreat"].get("fighter", 0.5f).asFloat();
+	const Json::Value& retreat = root["retreat"]["fighter"];
+	const float fighterRet = retreat.get((unsigned)0, 0.5f).asFloat();
+	const float retMod = retreat.get((unsigned)1, 1.0f).asFloat();
 	const float commMod = root["quota"]["thr_mod"].get("comm", 1.f).asFloat();
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
@@ -261,6 +263,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 			if (cdef.GetRetreat() < 0.f) {
 				cdef.SetRetreat(fighterRet);
+			} else {
+				cdef.SetRetreat(cdef.GetRetreat() * retMod);
 			}
 		} else {
 //			damagedHandler[unitDefId] = structDamagedHandler;
