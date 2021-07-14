@@ -28,7 +28,7 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define TASK_RETRIES		20
 #define DEBUG_MARK			0xBAD0C0DE
 #define UNKNOWN_CATEGORY	0xFFFFFFFF
-#define NO_SPEED_LIMIT		-1.0f
+#define NO_SPEED_LIMIT		2000.0f
 
 // UNIT_COMMAND_BUILD_NO_FACING
 #define UNIT_NO_FACING		-1

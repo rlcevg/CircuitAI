@@ -273,6 +273,8 @@ void CCircuitUnit::CmdAttackGround(const AIFloat3& pos, short options, int timeo
 
 void CCircuitUnit::CmdWantedSpeed(float speed)
 {
+//	unit->SetWantedMaxSpeed(speed / FRAMES_PER_SEC, true);
+//	unit->SetWantedMaxSpeed(0.5f, true);
 //	unit->ExecuteCustomCommand(CMD_WANTED_SPEED, {speed});
 }
 
