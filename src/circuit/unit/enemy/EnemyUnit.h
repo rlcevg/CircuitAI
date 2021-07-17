@@ -24,6 +24,7 @@ class IFighterTask;
 /*
  * Data only structure ease of copy (double-buffer)
  */
+#undef IGNORE  // FIXME: mingw64-gcc5.4 workaround
 struct SEnemyData {
 	using RangeArray = std::array<int, static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_)>;
 

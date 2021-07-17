@@ -137,7 +137,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 	const int frame = circuit->GetLastFrame();
 
 	const float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
-	if (buildDistance > 200.0f) {
+	if (unit->GetCircuitDef()->IsAbleToAssist() && (buildDistance > 200.f)) {  // not factory, striderhub
 		// striderhub
 		AIFloat3 pos = unit->GetPos(frame);
 		const float size = DEFAULT_SLACK / 2;

@@ -10,6 +10,8 @@
 #include "util/GameAttribute.h"
 #include "util/Utils.h"
 
+#include "spring/SpringCallback.h"
+
 #include "WeaponMount.h"
 #include "WeaponDef.h"
 #include "Damage.h"
@@ -152,6 +154,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	buildTime = def->GetBuildTime();
 //	altitude  = def->GetWantedHeight();
 
+	COOAICallback* clb = circuit->GetCallback();
 	MoveData* md = def->GetMoveData();
 	isSubmarine  = (md == nullptr) ? false : md->IsSubMarine();
 	delete md;
@@ -163,6 +166,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isAbleToCloak   = def->IsAbleToCloak();
 	isAbleToRepair  = def->IsAbleToRepair();
 	isAbleToReclaim = def->IsAbleToReclaim();
+	isAbleToAssist  = def->IsAbleToAssist() && !clb->UnitDef_HasYardMap(id);
+	// Factory: def->IsBuilder() && !def->GetYardMap(0).empty() && !def->GetBuildOptions().empty()
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("canjump");

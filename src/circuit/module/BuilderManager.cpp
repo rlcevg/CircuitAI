@@ -143,7 +143,9 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 //	};
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
-	const float builderRet = root["retreat"].get("builder", 0.8f).asFloat();
+	const Json::Value& retreat = root["retreat"]["builder"];
+	const float builderRet = retreat.get((unsigned)0, 0.8f).asFloat();
+	const float retMod = retreat.get((unsigned)1, 1.0f).asFloat();
 
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
@@ -164,6 +166,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 				if (cdef.GetRetreat() < 0.f) {
 					cdef.SetRetreat(builderRet);
+				} else {
+					cdef.SetRetreat(cdef.GetRetreat() * retMod);
 				}
 //			} else if (cdef->GetCostM() > 999.0f) {
 //				createdHandler[unitDefId] = heavyCreatedHandler;

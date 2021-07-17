@@ -111,6 +111,7 @@ void IBuilderTask::RemoveAssignee(CCircuitUnit* unit)
 		++unitIt;
 	}
 	IUnitTask::RemoveAssignee(unit);
+	traveled.erase(unit);
 
 	HideAssignee(unit);
 }

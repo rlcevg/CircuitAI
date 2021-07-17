@@ -21,8 +21,8 @@
 
 // If unit's health drops below specified percent it will retreat
 "retreat": {
-	"builder": 0.70,  // default value for all builders
-	"fighter": 0.45,  // default value for all not-builder units
+	"builder": [0.70, 1.0],  // [<default>, <UnitDef modifier>] for all builders
+	"fighter": [0.45, 1.0],  // [<default>, <UnitDef modifier>] for all not-builder units
 	"shield": [0.25, 0.275]  // [<empty>, <full>] shield power
 },
 

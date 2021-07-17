@@ -224,6 +224,7 @@ public:
 	bool IsAbleToJump()    const { return isAbleToJump; }
 	bool IsAbleToRepair()  const { return isAbleToRepair; }
 	bool IsAbleToReclaim() const { return isAbleToReclaim; }
+	bool IsAbleToAssist()  const { return isAbleToAssist; }
 	bool IsAssistable()    const { return buildTime < 1e6f; }
 
 	void SetIsMex(bool value) { isMex = value; }
@@ -323,6 +324,7 @@ private:
 	bool isAbleToJump : 1;
 	bool isAbleToRepair : 1;
 	bool isAbleToReclaim : 1;
+	bool isAbleToAssist : 1;
 
 	bool isMex : 1;
 	bool isPylon : 1;
