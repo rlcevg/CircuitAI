@@ -1,5 +1,5 @@
 #include "virtual_asm.h"
-#include <Windows.h>
+#include <windows.h>
 
 namespace assembler {
 
