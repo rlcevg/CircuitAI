@@ -1232,7 +1232,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId)
 CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 {
 	CCircuitDef* cdef = GetCircuitDef(GetCallback()->Unit_GetDefId(unitId));
-	CCircuitUnit* unit = new CCircuitUnit(unitId, u, cdef);
+	CCircuitUnit* unit = new CCircuitUnit(this, unitId, u, cdef);
 
 	STerrainMapArea* area;
 	bool isValid;

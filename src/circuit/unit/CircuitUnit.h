@@ -48,6 +48,7 @@ namespace circuit {
 
 class CCircuitDef;
 class CEnemyInfo;
+class CWeaponDef;
 class IUnitManager;
 class CDGunAction;
 class ITravelAction;
@@ -57,7 +58,7 @@ class CCircuitUnit: public CAllyUnit, public CActionList {
 public:
 	CCircuitUnit(const CCircuitUnit& that) = delete;
 	CCircuitUnit& operator=(const CCircuitUnit&) = delete;
-	CCircuitUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef);
+	CCircuitUnit(CCircuitAI* circuit, Id unitId, springai::Unit* unit, CCircuitDef* cdef);
 	virtual ~CCircuitUnit();
 
 	void SetTask(IUnitTask* task);
@@ -152,6 +153,7 @@ private:
 	bool execFrame;  // TODO: Replace by CExecuteAction?
 	bool isDead;
 
+	CWeaponDef* dgunDef;
 	springai::Weapon* dgun;
 	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* shield;
