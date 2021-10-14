@@ -55,6 +55,7 @@ namespace circuit {
 // FIXME: BA
 
 class CEnemyInfo;
+class CWeaponDef;
 class IUnitManager;
 class CDGunAction;
 class ITravelAction;
@@ -66,7 +67,7 @@ public:
 
 	CCircuitUnit(const CCircuitUnit& that) = delete;
 	CCircuitUnit& operator=(const CCircuitUnit&) = delete;
-	CCircuitUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef);
+	CCircuitUnit(CCircuitAI* circuit, Id unitId, springai::Unit* unit, CCircuitDef* cdef);
 	virtual ~CCircuitUnit();
 
 	void SetTask(IUnitTask* task);
@@ -196,6 +197,7 @@ private:
 	// ---- Bit fields ---- END
 
 	springai::Command* command;  // current top command
+	CWeaponDef* dgunDef;
 	springai::Weapon* dgun;
 	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* shield;

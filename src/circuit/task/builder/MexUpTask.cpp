@@ -104,7 +104,7 @@ void CBMexUpTask::Execute(CCircuitUnit* unit)
 
 	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 	// FIXME: short on purpose, won't work with EnqueueReclaim() in Finish()
-	const float searchRadius = /*buildDef->GetDef()->GetResourceExtractorRange(metalRes) + */SQUARE_SIZE * 6;
+	const float searchRadius = /*buildDef->GetDef()->GetResourceExtractorRange(metalRes) + */SQUARE_SIZE * 4;
 	FindBuildSite(unit, position, searchRadius);
 
 	if (utils::is_valid(buildPos)) {

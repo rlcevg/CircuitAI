@@ -27,7 +27,7 @@ namespace circuit {
 
 using namespace springai;
 
-CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
+CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitDef* cdef)
 		: CAllyUnit(unitId, unit, cdef)
 		, taskFrame(-1)
 		, manager(nullptr)
@@ -57,6 +57,7 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 	WeaponMount* wpMnt;
 //	if (cdef->IsRoleComm()) {
 //		dgun = nullptr;
+//		dgunDef = nullptr;
 //		for (int num = 1; num < 3; ++num) {
 //			std::string str = utils::int_to_string(num, "comm_weapon_manual_%i");
 //			if (unit->GetRulesParamFloat(str.c_str(), -1) <= 0.f) {
@@ -72,12 +73,16 @@ CCircuitUnit::CCircuitUnit(Id unitId, Unit* unit, CCircuitDef* cdef)
 //				continue;
 //			}
 //			dgun = unit->GetWeapon(wpMnt);
+//			WeaponDef* wd = dgun->GetDef();
+//			dgunDef = circuit->GetWeaponDef(wd->GetWeaponDefId());
+//			delete wd;
 //			delete wpMnt;
 //			break;
 //		}
 //	} else {
 		wpMnt = cdef->GetDGunMount();
 		dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
+		dgunDef = cdef->GetDGunDef();
 //	}
 	wpMnt = cdef->GetWeaponMount();
 	weapon = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
@@ -187,7 +192,7 @@ bool CCircuitUnit::IsWeaponReady(int frame)
 
 bool CCircuitUnit::IsDGunReady(int frame, float energy)
 {
-	return (dgun->GetReloadFrame() <= frame) && (circuitDef->GetDGunDef()->GetCostE() < energy + 1.f);
+	return (dgun->GetReloadFrame() <= frame) && (dgunDef->GetCostE() < energy + 1.f);
 }
 
 bool CCircuitUnit::IsShieldCharged(float percent)

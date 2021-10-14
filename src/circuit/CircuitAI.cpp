@@ -77,7 +77,7 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.4.3"};
+constexpr char version[]{"1.4.4"};
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -1331,7 +1331,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId)
 CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 {
 	CCircuitDef* cdef = GetCircuitDef(GetCallback()->Unit_GetDefId(unitId));
-	CCircuitUnit* unit = new CCircuitUnit(unitId, u, cdef);
+	CCircuitUnit* unit = new CCircuitUnit(this, unitId, u, cdef);
 
 	STerrainMapArea* area;
 	bool isValid;

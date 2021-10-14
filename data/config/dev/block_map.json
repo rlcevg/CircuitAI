@@ -86,7 +86,7 @@
 		"mex": {
 			"type": ["rectangle", "mex"],
 //			"offset": [0, -5],
-			"yard": [2, 2],
+//			"yard": [2, 2],
 			"ignore": ["all"]
 		},
 		"mex2": {

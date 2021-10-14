@@ -21,6 +21,8 @@ CEnergyData::~CEnergyData()
 void CEnergyData::Init(const Geos&& spots)
 {
 	this->spots = spots;
+
+	isInitialized = true;
 }
 
 } // namespace circuit

@@ -90,7 +90,7 @@
 		},
 		"mex": {
 			"type": ["rectangle", "mex"],
-			"yard": [2, 2],
+//			"yard": [2, 2],
 			"offset": [0, -4],
 			"ignore": ["all"]
 		},

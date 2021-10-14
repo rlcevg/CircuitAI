@@ -1047,8 +1047,8 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 	}
 
 	int2 corner;
-	corner.x = int(pos.x + 0.5f) / (SQUARE_SIZE * 2) - (xssize / 2);
-	corner.y = int(pos.z + 0.5f) / (SQUARE_SIZE * 2) - (zssize / 2);
+	corner.x = int(pos.x/* + 0.5f*/) / (SQUARE_SIZE * 2) - (xssize / 2);
+	corner.y = int(pos.z/* + 0.5f*/) / (SQUARE_SIZE * 2) - (zssize / 2);
 
 	int2 m1 = corner - mask->GetStructOffset(facing);	// top-left mask corner
 	int2 m2(m1.x + xmsize, m1.y + zmsize);				// bottom-right mask corner
@@ -1106,8 +1106,8 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
-	const int x1 = int(pos.x + 0.5f) / (SQUARE_SIZE * 2) - (xsize / 2), x2 = x1 + xsize;
-	const int z1 = int(pos.z + 0.5f) / (SQUARE_SIZE * 2) - (zsize / 2), z2 = z1 + zsize;
+	const int x1 = int(pos.x/* + 0.5f*/) / (SQUARE_SIZE * 2) - (xsize / 2), x2 = x1 + xsize;
+	const int z1 = int(pos.z/* + 0.5f*/) / (SQUARE_SIZE * 2) - (zsize / 2), z2 = z1 + zsize;
 
 	int2 m1(x1, z1);
 	int2 m2(x2, z2);

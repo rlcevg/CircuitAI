@@ -39,7 +39,14 @@ CMetalData::~CMetalData()
 void CMetalData::Init(const Metals&& spots)
 {
 	this->spots = spots;
-	for (const SMetal& spot : spots) {
+	for (SMetal& spot : this->spots) {
+		// NOTE: Build-cells have size of (SQURE_SIZE * 2)=16.
+		//       Engine treats [0..8) as cell_0, [8..24) as cell_1.
+		//       But CircuitAI treats [0..16) as cell_0, [16..32) as cell_1.
+		//       Hence snap position to multiples of (SQUARE_SIZE * 2).
+		spot.position.x = int(spot.position.x / (SQUARE_SIZE * 2)) * SQUARE_SIZE * 2;
+		spot.position.z = int(spot.position.z / (SQUARE_SIZE * 2)) * SQUARE_SIZE * 2;
+
 		minIncome = std::min(minIncome, spot.income);
 		maxIncome = std::max(maxIncome, spot.income);
 		avgIncome += spot.income;
