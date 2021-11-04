@@ -123,6 +123,34 @@ const std::vector<int>& COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, fl
 	return unitIds;
 }
 
+const std::vector<Unit*>& COOAICallback::GetNeutralUnits()
+{
+	unitIds.resize(MAX_UNITS);
+	int size = sAICallback->getNeutralUnits(skirmishAIId, unitIds.data(), MAX_UNITS);
+
+	units.resize(size);
+	for (int i = 0; i < size; ++i) {
+		units[i] = WrappUnit::GetInstance(skirmishAIId, unitIds[i]);
+	}
+
+	return units;
+}
+
+const std::vector<Unit*>& COOAICallback::GetNeutralUnitsIn(const AIFloat3& pos, float radius, bool spherical)
+{
+	float pos_posF3[3];
+	pos.LoadInto(pos_posF3);
+	unitIds.resize(MAX_UNITS);
+	int size = sAICallback->getNeutralUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
+
+	units.resize(size);
+	for (int i = 0; i < size; ++i) {
+		units[i] = WrappUnit::GetInstance(skirmishAIId, unitIds[i]);
+	}
+
+	return units;
+}
+
 bool COOAICallback::IsFeatures() const
 {
 	int size = sAICallback->getFeatures(skirmishAIId, nullptr, -1);

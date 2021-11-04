@@ -152,7 +152,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isSonar(false)
 		, isDecoy(false)
 		, isOnSlow(false)
-		, stockCost(.0f)
 		, jumpRange(.0f)
 		, retreat(-1.f)
 		, radius(-1.f)
@@ -185,10 +184,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	sonarRadius  = def->GetSonarRadius();
 	costM        = def->GetCost(resM);
 	costE        = def->GetCost(resE);
+	upkeepM      = def->GetUpkeep(resM);
 	upkeepE      = def->GetUpkeep(resE);
 	cloakCost    = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
 	buildTime    = def->GetBuildTime();
-	captureSpeed = def->GetCaptureSpeed() / TEAM_SLOWUPDATE_RATE;
+	captureSpeed = def->IsAbleToCapture() ? def->GetCaptureSpeed() / TEAM_SLOWUPDATE_RATE : 0.f;
 //	altitude     = def->GetWantedHeight();
 
 	COOAICallback* clb = circuit->GetCallback();
@@ -203,8 +203,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	isAbleToRepair    = def->IsAbleToRepair();
 	isAbleToReclaim   = def->IsAbleToReclaim();
 	isAbleToResurrect = def->IsAbleToResurrect();
-	isAbleToAssist    = def->IsAbleToAssist() && !clb->UnitDef_HasYardMap(id);
 	// Factory: def->IsBuilder() && !def->GetYardMap(0).empty() && !def->GetBuildOptions().empty()
+	isAbleToAssist    = def->IsAbleToAssist() && !clb->UnitDef_HasYardMap(id);
+	isAbleToRestore   = def->IsAbleToRestore();
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("energyconv_capacity");
@@ -265,11 +266,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	WeaponDef* stockDef = def->GetStockpileDef();
 	if (stockDef != nullptr) {
-		it = customParams.find("stockpilecost");
-		if (it != customParams.end()) {
-			stockCost = utils::string_to_float(it->second);
-		}
 		AddAttribute(ATTR_TYPE(STOCK));
+		weaponDef = circuit->GetWeaponDef(stockDef->GetWeaponDefId());
 		delete stockDef;
 	}
 

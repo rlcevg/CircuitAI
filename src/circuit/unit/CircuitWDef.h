@@ -18,7 +18,7 @@ public:
 
 //	CWeaponDef(const CWeaponDef& that) = delete;
 	CWeaponDef& operator=(const CWeaponDef&) = delete;
-	CWeaponDef(springai::WeaponDef* def, springai::Resource* resE);
+	CWeaponDef(springai::WeaponDef* def, springai::Resource* resM, springai::Resource* resE);
 	virtual ~CWeaponDef();
 
 	static Id WeaponIdFromLua(int luaId);
@@ -27,6 +27,7 @@ public:
 
 	float GetRange() const { return range; }
 	float GetAoe() const { return aoe; }
+	float GetCostM() const { return costM; }
 	float GetCostE() const { return costE; }
 
 private:
@@ -34,6 +35,7 @@ private:
 
 	float range;
 	float aoe;
+	float costM;
 	float costE;
 };
 

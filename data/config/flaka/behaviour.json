@@ -479,9 +479,17 @@
 		"coruwadvms" : {
 		"role": ["static"],
 		"limit": 1
-		},	
-		
+		},
+
 		// ignore
+		"armdrag": {
+			"role": ["static"],
+			"ignore": true
+		},
+		"cordrag": {
+			"role": ["static"],
+			"ignore": true
+		},
 		"armfort": {
 			"role": ["static"],
 			"ignore": true
@@ -503,6 +511,14 @@
 			"ignore": true
 		},
 		"corfort_scav": {
+			"role": ["static"],
+			"ignore": true
+		},
+		"corscavdrag": {
+			"role": ["static"],
+			"ignore": true
+		},
+		"corscavdrag_scav": {
 			"role": ["static"],
 			"ignore": true
 		},

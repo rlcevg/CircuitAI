@@ -152,27 +152,29 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 	++blockCount;
 
 	COOAICallback* clb = circuit->GetCallback();
-	CEnemyInfo* enemy = nullptr;
-	bool blocked = sqPosDist < SQUARE(unit->GetCircuitDef()->GetBuildDistance() + SQUARE_SIZE);
-	if (blocked) {
-		auto& allies = clb->GetFriendlyUnitIdsIn(buildPos, SQUARE_SIZE);
-		for (int allyId : allies) {
-			if (allyId != -1) {
-				blocked = false;
-				break;
-			}
-		}
-	}
-	auto& enemies = clb->GetEnemyUnitIdsIn(buildPos, SQUARE_SIZE);
-	for (int enemyId : enemies) {
-		if (enemyId != -1) {
-			blocked = true;
-			enemy = circuit->GetEnemyInfo(enemyId);
+	Unit* neutral = nullptr;
+	auto& neutrals = clb->GetNeutralUnitsIn(buildPos, SQUARE_SIZE * 8);
+	for (Unit* n : neutrals) {
+		if (n != nullptr) {
+			neutral = n;
 			break;
 		}
 	}
-	if (!blocked) {
-		return false;
+	if (neutral != nullptr) {
+		state = State::REGROUP;
+		TRY_UNIT(circuit, unit,
+			unit->GetUnit()->ReclaimUnit(neutral);
+		);
+		return true;
+	}
+
+	CEnemyInfo* enemy = nullptr;
+	auto& enemies = clb->GetEnemyUnitIdsIn(buildPos, SQUARE_SIZE * 8);
+	for (ICoreUnit::Id enemyId : enemies) {
+		if (enemyId != -1) {
+			enemy = circuit->GetEnemyInfo(enemyId);
+			break;
+		}
 	}
 
 	if (enemy != nullptr) {
@@ -180,7 +182,20 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 		TRY_UNIT(circuit, unit,
 			unit->CmdReclaimEnemy(enemy);
 		);
-	} else {
+		return true;
+	}
+
+	bool blocked = sqPosDist < SQUARE(unit->GetCircuitDef()->GetBuildDistance() + SQUARE_SIZE);
+	if (blocked) {
+		auto& allies = clb->GetFriendlyUnitIdsIn(buildPos, SQUARE_SIZE * 8);
+		for (ICoreUnit::Id allyId : allies) {
+			if (allyId != -1) {
+				blocked = false;
+				break;
+			}
+		}
+	}
+	if (blocked) {
 		AIFloat3 dir = (buildPos - pos).Normalize2D();
 		const float step = unit->GetCircuitDef()->GetBuildDistance() / 4;
 		TRY_UNIT(circuit, unit,
@@ -191,8 +206,10 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 			}
 			unit->CmdBuild(buildDef, buildPos, facing, UNIT_COMMAND_OPTION_SHIFT_KEY, frame + FRAMES_PER_SEC * 60);
 		);
+		return true;
 	}
-	return true;
+
+	return false;
 }
 
 bool CBMexTask::CheckWaterBlock(CCircuitUnit* unit)

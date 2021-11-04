@@ -6,6 +6,7 @@
  */
 
 #include "unit/CircuitWDef.h"
+#include "util/Defines.h"
 
 #include "Lua/LuaConfig.h"
 
@@ -13,14 +14,17 @@ namespace circuit {
 
 using namespace springai;
 
-CWeaponDef::CWeaponDef(WeaponDef* def, Resource* resE)
+CWeaponDef::CWeaponDef(WeaponDef* def, Resource* resM, Resource* resE)
 		: def(def)
 {
 	range = def->GetRange();
 	aoe = def->GetAreaOfEffect();
+	costM = def->GetCost(resM);
 	costE = def->GetCost(resE);
 	if (def->IsStockpileable()) {
-		costE /= def->GetStockpileTime();
+		const float stockTime = def->GetStockpileTime() / FRAMES_PER_SEC;
+		costM /= stockTime;
+		costE /= stockTime;
 	}
 }
 

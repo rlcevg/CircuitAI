@@ -11,6 +11,8 @@
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
+#include "AISCommands.h"
+
 namespace circuit {
 
 CBGuardTask::CBGuardTask(ITaskManager* mgr, Priority priority, CCircuitUnit* vip, bool isInterrupt, int timeout)
@@ -75,7 +77,11 @@ void CBGuardTask::Execute(CCircuitUnit* unit)
 	if (vip != nullptr) {
 		TRY_UNIT(circuit, unit,
 			unit->CmdPriority(ClampPriority());
-			unit->GetUnit()->Guard(vip->GetUnit());
+			const bool isRestore = unit->GetCircuitDef()->IsAbleToRestore();
+			if (isRestore) {
+				unit->GetUnit()->RestoreArea(vip->GetPos(circuit->GetLastFrame()), 128.f);
+			}
+			unit->GetUnit()->Guard(vip->GetUnit(), isRestore ? UNIT_COMMAND_OPTION_SHIFT_KEY : 0);
 		)
 	} else {
 		manager->AbortTask(this);

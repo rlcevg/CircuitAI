@@ -20,6 +20,7 @@
 #include "terrain/path/PathFinder.h"
 #include "terrain/path/QueryPathSingle.h"
 #include "unit/action/DGunAction.h"
+#include "unit/action/CaptureAction.h"
 #include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
 #include "CircuitAI.h"
@@ -111,6 +112,10 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 	if (unit->HasDGun()) {
 		const float range = std::max(unit->GetDGunRange(), unit->GetCircuitDef()->GetLosRadius());
 		unit->PushDGunAct(new CDGunAction(unit, range));
+	}
+	if (unit->GetCircuitDef()->IsAbleToCapture()) {
+		unit->PushBack(new CCaptureAction(unit, 500.f));
+		// TODO: remove if started to build
 	}
 
 	// NOTE: only for unit->GetCircuitDef()->IsMobile()
@@ -443,8 +448,8 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 				const bool prio = !ecoMgr->IsEnergyStalling() || (buildType == BuildType::ENERGY) || (buildType == BuildType::GEO);
 				unit->CmdBARPriority(prio ? 1.f : 0.f);
 				if (unit->GetTravelAct()->IsFinished()) {
-					unit->CmdWait(ecoMgr->IsEnergyEmpty() && (buildType != BuildType::ENERGY)
-							&& (buildType != BuildType::GEO) && (buildType != BuildType::STORE));
+					unit->CmdWait(ecoMgr->IsEnergyEmpty() && (buildType != BuildType::ENERGY) && (buildType != BuildType::GEO)
+							&& (buildType != BuildType::STORE) && (buildType != BuildType::RECLAIM));
 				}
 			)
 			return true;

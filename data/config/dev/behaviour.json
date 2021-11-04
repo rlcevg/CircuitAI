@@ -1044,6 +1044,38 @@
 		"role": ["static"],
 		"ignore": true
 	},
+	"corscavdrag": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"corscavdrag_scav": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"corscavfort": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"corscavfort_scav": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"armfdrag": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"armfdrag_scav": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"corfdrag": {
+		"role": ["static"],
+		"ignore": true
+	},
+	"corfdrag_scav": {
+		"role": ["static"],
+		"ignore": true
+	},
 
 	// FIXME: temporary factory buildSpeed
 	"armlab": {

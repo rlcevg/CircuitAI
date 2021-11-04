@@ -266,6 +266,8 @@ public:
 	bool IsAbleToReclaim()   const { return isAbleToReclaim; }
 	bool IsAbleToResurrect() const { return isAbleToResurrect; }
 	bool IsAbleToAssist()    const { return isAbleToAssist; }
+	bool IsAbleToRestore()   const { return isAbleToRestore; }
+	bool IsAbleToCapture()   const { return captureSpeed > .1f; }
 	bool IsAssistable()      const { return buildTime < 1e6f; }
 
 	void SetIsMex(bool value) { isMex = value; }
@@ -289,9 +291,9 @@ public:
 	float GetSonarRadius()  const { return sonarRadius; }
 	float GetCostM()        const { return costM; }
 	float GetCostE()        const { return costE; }
+	float GetUpkeepM()      const { return upkeepM; }
 	float GetUpkeepE()      const { return upkeepE; }
 	float GetCloakCost()    const { return cloakCost; }
-	float GetStockCost()    const { return stockCost; }
 	float GetBuildTime()    const { return buildTime; }
 	float GetCaptureSpeed() const { return captureSpeed; }
 //	float GetAltitude()     const { return altitude; }
@@ -402,6 +404,7 @@ private:
 	bool isAbleToReclaim : 1;
 	bool isAbleToResurrect : 1;
 	bool isAbleToAssist : 1;
+	bool isAbleToRestore : 1;
 
 	bool isMex : 1;
 	bool isPylon : 1;
@@ -418,9 +421,9 @@ private:
 	float sonarRadius;
 	float costM;
 	float costE;
+	float upkeepM;
 	float upkeepE;
 	float cloakCost;
-	float stockCost;
 	float buildTime;
 	float captureSpeed;
 //	float altitude;

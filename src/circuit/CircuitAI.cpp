@@ -1652,13 +1652,15 @@ void CCircuitAI::BindUnitToWeaponDefs(CCircuitDef::Id unitDefId, const std::set<
 
 void CCircuitAI::InitWeaponDefs()
 {
+	Resource* resM = callback->GetResourceByName(RES_NAME_METAL);
 	Resource* resE = callback->GetResourceByName(RES_NAME_ENERGY);
 	auto weapDefs = callback->GetWeaponDefs();
 	weaponDefs.reserve(weapDefs.size());
 	for (WeaponDef* wd : weapDefs) {
-		// new CWeaponDef(wd, resE);
-		weaponDefs.emplace_back(wd, resE);
+		// new CWeaponDef(wd, resM, resE);
+		weaponDefs.emplace_back(wd, resM, resE);
 	}
+	delete resM;
 	delete resE;
 	weaponToUnitDefs.resize(weapDefs.size());
 }
