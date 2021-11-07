@@ -34,6 +34,8 @@ public:
 		return callback->GetResourceByName(resourceName);
 	}
 
+	int GetEnemyTeamSize() const;
+
 	std::vector<springai::Unit*> GetTeamUnits() const { return callback->GetTeamUnits(); }
 
 	std::vector<springai::Unit*> GetFriendlyUnits();

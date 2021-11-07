@@ -77,7 +77,7 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.2.2"};
+constexpr char version[]{"1.2.4"};
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -1559,6 +1559,11 @@ CThreatMap* CCircuitAI::GetThreatMap() const
 CInfluenceMap* CCircuitAI::GetInflMap() const
 {
 	return mapManager->GetInflMap();
+}
+
+int CCircuitAI::GetEnemyTeamSize() const
+{
+	return callback->GetEnemyTeamSize();
 }
 
 void CCircuitAI::CreateGameAttribute()
