@@ -290,6 +290,8 @@ public:
 	int GetBadCategory()    const { return badCategory; }
 	int GetGoodCategory()   const { return goodCategory; }
 
+	int GetEnemyTeamSize() const;
+
 private:
 	bool isInitialized;
 	bool isLoadSave;
