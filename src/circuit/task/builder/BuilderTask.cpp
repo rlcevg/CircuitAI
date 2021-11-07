@@ -115,7 +115,6 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 	}
 	if (unit->GetCircuitDef()->IsAbleToCapture()) {
 		unit->PushBack(new CCaptureAction(unit, 500.f));
-		// TODO: remove if started to build
 	}
 
 	// NOTE: only for unit->GetCircuitDef()->IsMobile()

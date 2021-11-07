@@ -1658,7 +1658,7 @@ void CBuilderManager::Watchdog()
 	Resource* metalRes = economyMgr->GetMetalRes();
 	// somehow workers get stuck
 	for (CCircuitUnit* worker : workers) {
-		if (!worker->IsInExecute()) {  // FIXME: Doesn't deal with Reclaim and Resurrect of Features
+		if (CCircuitUnit::ETaskState::EXECUTE != worker->GetTaskState()) {  // FIXME: Doesn't deal with Reclaim and Resurrect of Features
 			continue;
 		}
 		IUnitTask* task = worker->GetTask();

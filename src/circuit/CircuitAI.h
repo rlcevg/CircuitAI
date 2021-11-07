@@ -303,6 +303,8 @@ public:
 
 	bool IsSlave() const { return isSlave; }
 
+	int GetEnemyTeamSize() const;
+
 private:
 	bool isInitialized;
 	bool isLoadSave;

@@ -65,6 +65,8 @@ class CCircuitUnit: public CAllyUnit, public CActionList {
 public:
 	friend class CInitScript;
 
+	enum class ETaskState: char {NONE = 0, ASSIGN, START, TRAVEL, EXECUTE, STOP};
+
 	CCircuitUnit(const CCircuitUnit& that) = delete;
 	CCircuitUnit& operator=(const CCircuitUnit&) = delete;
 	CCircuitUnit(CCircuitAI* circuit, Id unitId, springai::Unit* unit, CCircuitDef* cdef);
@@ -155,7 +157,8 @@ public:
 	void StopUpgrade();
 	bool IsMorphing() const { return isMorphing; }
 
-	bool IsInExecute() const { return isInExecute; }
+	void SetTaskState(ETaskState value) { taskState = value; }
+	ETaskState GetTaskState() const { return taskState; }
 
 	Id GetUnitIdReclaim() const;
 
@@ -171,6 +174,7 @@ private:
 	// NOTE: taskFrame assigned on task change and OnUnitIdle to workaround idle spam.
 	//       Proper fix: do not issue any commands OnUnitIdle, delay them until next frame?
 	int taskFrame;
+	ETaskState taskState;
 	IUnitManager* manager;
 	STerrainMapArea* area;  // = nullptr if a unit flies
 
@@ -193,7 +197,6 @@ private:
 	bool isWeaponReady : 1;
 	bool isMorphing : 1;
 	bool isSelfD : 1;
-	bool isInExecute : 1;
 	// ---- Bit fields ---- END
 
 	springai::Command* command;  // current top command

@@ -30,6 +30,7 @@ using namespace springai;
 CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitDef* cdef)
 		: CAllyUnit(unitId, unit, cdef)
 		, taskFrame(-1)
+		, taskState(ETaskState::NONE)
 		, manager(nullptr)
 		, area(nullptr)
 		, dgunAct(nullptr)
@@ -47,7 +48,6 @@ CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitD
 		, isWeaponReady(true)
 		, isMorphing(false)
 		, isSelfD(false)
-		, isInExecute(false)
 		, target(nullptr)
 		, targetTile(-1)
 		, attr(CCircuitDef::NONE)
@@ -102,7 +102,7 @@ void CCircuitUnit::SetTask(IUnitTask* task)
 {
 	this->task = task;
 	SetTaskFrame(manager->GetCircuit()->GetLastFrame());
-	isInExecute = false;
+	taskState = ETaskState::NONE;
 }
 
 void CCircuitUnit::ClearAct()
@@ -368,13 +368,13 @@ bool CCircuitUnit::IsWaiting() const
 void CCircuitUnit::CmdRepair(CAllyUnit* target, short options, int timeout)
 {
 	unit->Repair(target->GetUnit(), options, timeout);
-	isInExecute = true;
+	taskState = ETaskState::EXECUTE;
 }
 
 void CCircuitUnit::CmdBuild(CCircuitDef* buildDef, const AIFloat3& buildPos, int facing, short options, int timeout)
 {
 	unit->Build(buildDef->GetDef(), buildPos, facing, options, timeout);
-	isInExecute = true;
+	taskState = ETaskState::EXECUTE;
 }
 
 void CCircuitUnit::CmdReclaimEnemy(CEnemyInfo* enemy, short options, int timeout)
@@ -385,7 +385,7 @@ void CCircuitUnit::CmdReclaimEnemy(CEnemyInfo* enemy, short options, int timeout
 void CCircuitUnit::CmdReclaimUnit(CAllyUnit* toReclaim, short options, int timeout)
 {
 	unit->ReclaimUnit(toReclaim->GetUnit(), options, timeout);
-	isInExecute = true;
+	taskState = ETaskState::EXECUTE;
 }
 
 void CCircuitUnit::CmdReclaimInArea(const AIFloat3& pos, float radius, short options, int timeout)

@@ -632,7 +632,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	}
 
 	if (isCommMerge) {
-		if ((callback->GetEnemyTeamSize() < allyTeam->GetAliveSize() / 2.f)/* || (allyTeam->GetAliveSize() > 4)*/) {
+		if ((GetEnemyTeamSize() < allyTeam->GetAliveSize() / 2.f)/* || (allyTeam->GetAliveSize() > 4)*/) {
 			mergeTask = CScheduler::GameJob([this] {
 				if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetFactoryCount() > 0)) {
 					MobileSlave(allyTeam->GetLeaderId());
@@ -1005,6 +1005,7 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 	TRY_UNIT(this, unit,
 		unit->CmdFireAtRadar(true);
 		unit->GetUnit()->SetAutoRepairLevel(0);
+		unit->GetUnit()->SetOn(true);
 		if (unit->GetCircuitDef()->IsAbleToCloak()
 			&& unit->GetCircuitDef()->GetCloakCost() < economyManager->GetAvgEnergyIncome() * 0.1f)
 		{
@@ -1111,6 +1112,7 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 		unit->GetUnit()->Stop();
 		unit->CmdFireAtRadar(true);
 		unit->GetUnit()->SetAutoRepairLevel(0);
+		unit->GetUnit()->SetOn(true);
 		if (unit->GetCircuitDef()->IsAbleToCloak()
 			&& unit->GetCircuitDef()->GetCloakCost() < economyManager->GetAvgEnergyIncome() * 0.1f)
 		{
@@ -1673,6 +1675,11 @@ CThreatMap* CCircuitAI::GetThreatMap() const
 CInfluenceMap* CCircuitAI::GetInflMap() const
 {
 	return mapManager->GetInflMap();
+}
+
+int CCircuitAI::GetEnemyTeamSize() const
+{
+	return callback->GetEnemyTeamSize();
 }
 
 void CCircuitAI::CreateGameAttribute()

@@ -37,6 +37,11 @@ void CCaptureAction::Update(CCircuitAI* circuit)
 	isBlocking = false;
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 
+//	if (CCircuitUnit::ETaskState::EXECUTE == unit->GetTaskState()) {
+//		StateWait();
+//		return;
+//	}
+
 	COOAICallback* clb = circuit->GetCallback();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
