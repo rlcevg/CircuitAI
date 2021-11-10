@@ -1133,6 +1133,19 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	}
 }
 
+void CTerrainManager::SnapPosition(AIFloat3& position)
+{
+	// NOTE: Build-cells have size of (SQURE_SIZE * 2)=16 elmos.
+	//       Build-position in engine is footprint's center, and depends on (size/2)'s oddity.
+	//       With !(size & 2) => !(size/2 & 1) engine treats [0..8) as cell_0, [8..24) as cell_1.
+	//       But CircuitAI treats [0..16) as cell_0, [16..32) as cell_1.
+	//       Hence snap source position to multiples of (SQUARE_SIZE * 2) to avoid further oddity hussle.
+	// @see rts/Sim/Units/CommandAI/BuilderCAI.cpp:CBuilderCAI::ExecuteBuildCmd()
+	// @see rts/Game/GameHelper.cpp:CGameHelper::Pos2BuildPos()
+	position.x = int(position.x / (SQUARE_SIZE * 2)) * SQUARE_SIZE * 2;
+	position.z = int(position.z / (SQUARE_SIZE * 2)) * SQUARE_SIZE * 2;
+}
+
 std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)
 {
 	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());

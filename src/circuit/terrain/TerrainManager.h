@@ -132,6 +132,7 @@ public:
 	static springai::AIFloat3 CorrectPosition(const springai::AIFloat3& pos, const springai::AIFloat3& dir, float& len) {
 		return CTerrainData::CorrectPosition(pos, dir, len);
 	}
+	static void SnapPosition(springai::AIFloat3& position);
 	std::pair<STerrainMapArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	int GetSectorIndex(const springai::AIFloat3& position) const { return terrainData->GetSectorIndex(position); }
 	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);

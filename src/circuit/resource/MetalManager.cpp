@@ -160,7 +160,11 @@ void CMetalManager::ParseMetalSpots()
 		const int xsize = mexDef->GetDef()->GetXSize();
 		const int zsize = mexDef->GetDef()->GetZSize();
 		for (unsigned i = 0; i < spotsPos.size(); i += inc) {
-			const AIFloat3& pos = spotsPos[i];
+			AIFloat3& pos = spotsPos[i];
+			// move position closer to center
+			pos.x += xsize * SQUARE_SIZE / 2;
+			pos.z += zsize * SQUARE_SIZE / 2;
+			CTerrainManager::SnapPosition(pos);
 			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
 			const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;
 			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height) &&
@@ -185,6 +189,7 @@ void CMetalManager::ParseMetalSpots()
 			spots[i].position.z = game->GetRulesParamFloat(param.c_str(), 0.f);
 			param = utils::int_to_string(i + 1, "mex_metal%i");
 			spots[i].income = game->GetRulesParamFloat(param.c_str(), 0.f);
+			CTerrainManager::SnapPosition(spots[i].position);
 		}
 	}
 
