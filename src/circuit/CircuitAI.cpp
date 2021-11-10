@@ -177,6 +177,7 @@ void CCircuitAI::MobileSlave(int newTeamId)
 	}
 	economy->SendUnits(migrants, newTeamId);
 	for (CCircuitUnit* unit : clean) {
+		// NOTE: won't send unfinished nanoframes, this may cause issues on UnitFinished.
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
 	}
@@ -631,10 +632,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		scheduler->RunJobAt(CScheduler::GameJob(&CCircuitAI::CheatPreload, this), skirmishAIId + 1);
 	}
 
-	if (isCommMerge) {
+	if (isCommMerge && (allyTeam->GetLeaderId() != teamId)) {
 		if ((GetEnemyTeamSize() < allyTeam->GetAliveSize() / 2.f)/* || (allyTeam->GetAliveSize() > 4)*/) {
 			mergeTask = CScheduler::GameJob([this] {
-				if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetFactoryCount() > 0)) {
+				if (factoryManager->GetFactoryCount() > 0) {
 					MobileSlave(allyTeam->GetLeaderId());
 					scheduler->RemoveJob(mergeTask);
 				}
@@ -654,7 +655,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 			scheduler->RunJobEvery(mergeTask, 1, FRAMES_PER_SEC);
 //		} else if (allyTeam->GetAliveSize() > 2) {
 //			mergeTask = CScheduler::GameJob([this] {
-//				if ((allyTeam->GetLeaderId() != teamId) && (factoryManager->GetNoT1FacCount() > 0)) {
+//				if (factoryManager->GetNoT1FacCount() > 0) {
 //					MobileSlave(allyTeam->GetLeaderId());
 //					scheduler->RemoveJob(mergeTask);
 //				}
@@ -990,7 +991,9 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		&& !unit->GetCircuitDef()->IsRoleBuilder())
 	{
 		economy->SendUnits({unit->GetUnit()}, allyTeam->GetLeaderId());
-		UnitDestroyed(unit, nullptr);
+		if (unit->GetTask() != nullptr) {  // NOTE: Won't send nanoframes but UnregisterTeamUnit may be already called.
+			UnitDestroyed(unit, nullptr);
+		}
 		// BAR on SendUnits invokes EVENT_UNIT_CAPTURED, no need for:
 		UnregisterTeamUnit(unit);
 		return 0;
@@ -1238,6 +1241,10 @@ int CCircuitAI::PlayerCommand(const std::vector<CCircuitUnit*>& units)
 int CCircuitAI::Load(std::istream& is)
 {
 	isLoadSave = true;
+
+//	if (mergeTask != nullptr) {
+//		scheduler->RemoveJob(mergeTask);
+//	}
 
 	auto units = callback->GetTeamUnits();
 	for (Unit* u : units) {
