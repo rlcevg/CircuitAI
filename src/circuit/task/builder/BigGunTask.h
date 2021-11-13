@@ -17,6 +17,7 @@ public:
 	CBBigGunTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 float cost, float shake, int timeout);
+	CBBigGunTask(ITaskManager* mgr);  // Load
 	virtual ~CBBigGunTask();
 
 protected:

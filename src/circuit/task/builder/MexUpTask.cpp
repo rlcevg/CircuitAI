@@ -32,6 +32,13 @@ CBMexUpTask::CBMexUpTask(ITaskManager* mgr, Priority priority,
 	manager->GetCircuit()->GetEconomyManager()->SetUpgradingSpot(spotId, true);
 }
 
+CBMexUpTask::CBMexUpTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::MEXUP)
+		, spotId(-1)
+		, reclaimMex(nullptr)
+{
+}
+
 CBMexUpTask::~CBMexUpTask()
 {
 }
@@ -147,6 +154,31 @@ void CBMexUpTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 
 	IBuilderTask::OnUnitIdle(unit);
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, spotId);		\
+	utils::binary_##func(stream, reclaimMexId);
+
+void CBMexUpTask::Load(std::istream& is)
+{
+	CCircuitUnit::Id reclaimMexId;
+
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	reclaimMex = circuit->GetTeamUnit(reclaimMexId);
+
+	circuit->GetEconomyManager()->SetUpgradingSpot(spotId, true);
+}
+
+void CBMexUpTask::Save(std::ostream& os) const
+{
+	CCircuitUnit::Id reclaimMexId = (reclaimMex != nullptr) ? reclaimMex->GetId() : -1;
+
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 }

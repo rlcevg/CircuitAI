@@ -28,6 +28,12 @@ IRepairTask::IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyU
 	SetTarget(target);
 }
 
+IRepairTask::IRepairTask(ITaskManager* mgr, Type type)
+		: IBuilderTask(mgr, type, BuildType::REPAIR)
+		, targetId(-1)
+{
+}
+
 IRepairTask::~IRepairTask()
 {
 }
@@ -181,6 +187,21 @@ CAllyUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	}
 	utils::free(units);
 	return target;
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, targetId);
+
+void IRepairTask::Load(std::istream& is)
+{
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+}
+
+void IRepairTask::Save(std::ostream& os) const
+{
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

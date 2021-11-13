@@ -77,7 +77,8 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.4.4"};
+constexpr char version[]{"1.4.5"};
+constexpr uint32_t VERSION_SAVE = 0;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -206,29 +207,25 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			} catch (...) {
 				ret = ERROR_INIT;
 			}
-			break;
-		}
+		} break;
 		case EVENT_RELEASE: {
 			PRINT_TOPIC("EVENT_RELEASE", topic);
 			SCOPED_TIME(this, "EVENT_RELEASE");
 			struct SReleaseEvent* evt = (struct SReleaseEvent*)data;
 			ret = this->Release(evt->reason);
-			break;
-		}
+		} break;
 		case EVENT_UPDATE: {
 //			PRINT_TOPIC("EVENT_UPDATE", topic);
 			SCOPED_TIME(this, "EVENT_UPDATE");
 			struct SUpdateEvent* evt = (struct SUpdateEvent*)data;
 			ret = this->Update(evt->frame);
-			break;
-		}
+		} break;
 		case EVENT_MESSAGE: {
 			PRINT_TOPIC("EVENT_MESSAGE", topic);
 			SCOPED_TIME(this, "EVENT_MESSAGE");
 			struct SMessageEvent* evt = (struct SMessageEvent*)data;
 			ret = this->Message(evt->player, evt->message);
-			break;
-		}
+		} break;
 		case EVENT_UNIT_CREATED: {
 			PRINT_TOPIC("EVENT_UNIT_CREATED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_CREATED");
@@ -236,8 +233,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			CCircuitUnit* builder = GetTeamUnit(evt->builder);
 			CCircuitUnit* unit = GetOrRegTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitCreated(unit, builder) : ERROR_UNIT_CREATED;
-			break;
-		}
+		} break;
 		case EVENT_UNIT_FINISHED: {
 			PRINT_TOPIC("EVENT_UNIT_FINISHED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_FINISHED");
@@ -247,24 +243,21 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			// @see rts/Sim/Units/Unit.cpp CUnit::PostInit
 			CCircuitUnit* unit = GetOrRegTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitFinished(unit) : ERROR_UNIT_FINISHED;
-			break;
-		}
+		} break;
 		case EVENT_UNIT_IDLE: {
 			PRINT_TOPIC("EVENT_UNIT_IDLE", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_IDLE");
 			struct SUnitIdleEvent* evt = (struct SUnitIdleEvent*)data;
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitIdle(unit) : ERROR_UNIT_IDLE;
-			break;
-		}
+		} break;
 		case EVENT_UNIT_MOVE_FAILED: {
 			PRINT_TOPIC("EVENT_UNIT_MOVE_FAILED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_MOVE_FAILED");
 			struct SUnitMoveFailedEvent* evt = (struct SUnitMoveFailedEvent*)data;
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitMoveFailed(unit) : ERROR_UNIT_MOVE_FAILED;
-			break;
-		}
+		} break;
 		case EVENT_UNIT_DAMAGED: {
 			PRINT_TOPIC("EVENT_UNIT_DAMAGED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_DAMAGED");
@@ -274,8 +267,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			ret = (unit != nullptr)
 					? this->UnitDamaged(unit, attacker, evt->weaponDefId, AIFloat3(evt->dir_posF3))
 					: ERROR_UNIT_DAMAGED;
-			break;
-		}
+		} break;
 		case EVENT_UNIT_DESTROYED: {
 			PRINT_TOPIC("EVENT_UNIT_DESTROYED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_DESTROYED");
@@ -288,22 +280,19 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			} else {
 				ret = ERROR_UNIT_DESTROYED;
 			}
-			break;
-		}
+		} break;
 		case EVENT_UNIT_GIVEN: {
 			PRINT_TOPIC("EVENT_UNIT_GIVEN", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_GIVEN");
 			struct SUnitGivenEvent* evt = (struct SUnitGivenEvent*)data;
 			ret = this->UnitGiven(evt->unitId, evt->oldTeamId, evt->newTeamId);
-			break;
-		}
+		} break;
 		case EVENT_UNIT_CAPTURED: {
 			PRINT_TOPIC("EVENT_UNIT_CAPTURED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_CAPTURED");
 			struct SUnitCapturedEvent* evt = (struct SUnitCapturedEvent*)data;
 			ret = this->UnitCaptured(evt->unitId, evt->oldTeamId, evt->newTeamId);
-			break;
-		}
+		} break;
 		case EVENT_ENEMY_ENTER_LOS: {
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_LOS", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_LOS");
@@ -314,8 +303,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			ret = isReal
 					? (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS
 					: 0;
-			break;
-		}
+		} break;
 		case EVENT_ENEMY_LEAVE_LOS: {
 			PRINT_TOPIC("EVENT_ENEMY_LEAVE_LOS", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_LEAVE_LOS");
@@ -326,8 +314,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 				CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 				ret = (enemy != nullptr) ? this->EnemyLeaveLOS(enemy) : ERROR_ENEMY_LEAVE_LOS;
 			}
-			break;
-		}
+		} break;
 		case EVENT_ENEMY_ENTER_RADAR: {
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_RADAR", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_RADAR");
@@ -338,8 +325,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			ret = isReal
 					? (unit != nullptr) ? this->EnemyEnterRadar(unit) : ERROR_ENEMY_ENTER_RADAR
 					: 0;
-			break;
-		}
+		} break;
 		case EVENT_ENEMY_LEAVE_RADAR: {
 			PRINT_TOPIC("EVENT_ENEMY_LEAVE_RADAR", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_LEAVE_RADAR");
@@ -350,16 +336,14 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 				CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 				ret = (enemy != nullptr) ? this->EnemyLeaveRadar(enemy) : ERROR_ENEMY_LEAVE_RADAR;
 			}
-			break;
-		}
+		} break;
 		case EVENT_ENEMY_DAMAGED: {
 			PRINT_TOPIC("EVENT_ENEMY_DAMAGED", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_DAMAGED");
 			struct SEnemyDamagedEvent* evt = (struct SEnemyDamagedEvent*)data;
 			CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 			ret = (enemy != nullptr) ? this->EnemyDamaged(enemy) : ERROR_ENEMY_DAMAGED;
-			break;
-		}
+		} break;
 		case EVENT_ENEMY_DESTROYED: {
 			PRINT_TOPIC("EVENT_ENEMY_DESTROYED", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_DESTROYED");
@@ -371,13 +355,11 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			} else {
 				ret = ERROR_ENEMY_DESTROYED;
 			}
-			break;
-		}
+		} break;
 		case EVENT_WEAPON_FIRED: {
 			PRINT_TOPIC("EVENT_WEAPON_FIRED", topic);
 			ret = 0;
-			break;
-		}
+		} break;
 		case EVENT_PLAYER_COMMAND: {
 			PRINT_TOPIC("EVENT_PLAYER_COMMAND", topic);
 			struct SPlayerCommandEvent* evt = (struct SPlayerCommandEvent*)data;
@@ -387,13 +369,11 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 				units.push_back(GetTeamUnit(evt->unitIds[i]));
 			}
 			ret = this->PlayerCommand(units);
-			break;
-		}
+		} break;
 		case EVENT_SEISMIC_PING: {
 			PRINT_TOPIC("EVENT_SEISMIC_PING", topic);
 			ret = 0;
-			break;
-		}
+		} break;
 		case EVENT_COMMAND_FINISHED: {
 //			PRINT_TOPIC("EVENT_COMMAND_FINISHED", topic);
 			// FIXME: commandId always == -1, no use
@@ -403,8 +383,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 //			this->CommandFinished(unit, evt->commandTopicId, command);
 //			delete command;
 			ret = 0;
-			break;
-		}
+		} break;
 		case EVENT_LOAD: {
 			PRINT_TOPIC("EVENT_LOAD", topic);
 			struct SLoadEvent* evt = (struct SLoadEvent*)data;
@@ -412,8 +391,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			loadFileStream.open(evt->file, std::ios::binary);
 			ret = loadFileStream.is_open() ? this->Load(loadFileStream) : ERROR_LOAD;
 			loadFileStream.close();
-			break;
-		}
+		} break;
 		case EVENT_SAVE: {
 			PRINT_TOPIC("EVENT_SAVE", topic);
 			struct SSaveEvent* evt = (struct SSaveEvent*)data;
@@ -421,8 +399,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			saveFileStream.open(evt->file, std::ios::binary);
 			ret = saveFileStream.is_open() ? this->Save(saveFileStream) : ERROR_SAVE;
 			saveFileStream.close();
-			break;
-		}
+		} break;
 		case EVENT_ENEMY_CREATED: {
 			PRINT_TOPIC("EVENT_ENEMY_CREATED", topic);
 			// @see Cheats::SetEventsEnabled
@@ -435,26 +412,22 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			ret = isReal
 					? (unit != nullptr) ? this->EnemyEnterLOS(unit) : EVENT_ENEMY_CREATED
 					: 0;
-			break;
-		}
+		} break;
 		case EVENT_ENEMY_FINISHED: {
 			PRINT_TOPIC("EVENT_ENEMY_FINISHED", topic);
 			// @see Cheats::SetEventsEnabled
 			ret = 0;
-			break;
-		}
+		} break;
 		case EVENT_LUA_MESSAGE: {
 			PRINT_TOPIC("EVENT_LUA_MESSAGE", topic);
 			SCOPED_TIME(this, "EVENT_LUA_MESSAGE");
 			struct SLuaMessageEvent* evt = (struct SLuaMessageEvent*)data;
 			ret = this->LuaMessage(evt->inData);
-			break;
-		}
+		} break;
 		default: {
 			LOG("%i WARNING unrecognized event: %i", skirmishAIId, topic);
 			ret = 0;
-			break;
-		}
+		} break;
 	}
 
 #ifndef DEBUG_LOG
@@ -1267,6 +1240,13 @@ int CCircuitAI::Load(std::istream& is)
 		}
 	}
 
+	uint32_t versionLoad;
+	utils::binary_read(is, versionLoad);
+	if (versionLoad != VERSION_SAVE) {
+		return ERROR_LOAD;
+	}
+	utils::binary_read(is, lastFrame);
+
 	for (auto& module : modules) {
 		is >> *module;
 	}
@@ -1276,6 +1256,9 @@ int CCircuitAI::Load(std::istream& is)
 
 int CCircuitAI::Save(std::ostream& os)
 {
+	utils::binary_write(os, VERSION_SAVE);
+	utils::binary_write(os, lastFrame);
+
 	for (auto& module : modules) {
 		os << *module;
 	}

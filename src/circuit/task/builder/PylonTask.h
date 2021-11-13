@@ -19,6 +19,7 @@ public:
 	CBPylonTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
 				IGridLink* link, float cost, int timeout);
+	CBPylonTask(ITaskManager* mgr);  // Load
 	virtual ~CBPylonTask();
 
 	IGridLink* GetLink() { return link; }

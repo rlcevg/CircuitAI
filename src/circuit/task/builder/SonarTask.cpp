@@ -21,6 +21,11 @@ CBSonarTask::CBSonarTask(ITaskManager* mgr, Priority priority,
 {
 }
 
+CBSonarTask::CBSonarTask(ITaskManager* mgr)
+		: ISensorTask(mgr, [](CCircuitDef* cdef) { return cdef->IsSonar(); }, BuildType::SONAR)
+{
+}
+
 CBSonarTask::~CBSonarTask()
 {
 }

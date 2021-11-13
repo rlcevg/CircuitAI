@@ -17,6 +17,7 @@ public:
 	CBDefenceTask(ITaskManager* mgr, Priority priority,
 				  CCircuitDef* buildDef, const springai::AIFloat3& position,
 				  float cost, float shake, int timeout);
+	CBDefenceTask(ITaskManager* mgr);  // Load
 	virtual ~CBDefenceTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
@@ -25,6 +26,9 @@ public:
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
+
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
 
 	bool isUrgent;
 	float normalCost;

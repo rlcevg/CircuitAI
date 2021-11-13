@@ -17,6 +17,7 @@ public:
 	CBMexUpTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, int spotId, const springai::AIFloat3& position,
 				float cost, int timeout);
+	CBMexUpTask(ITaskManager* mgr);  // Load
 	virtual ~CBMexUpTask();
 
 protected:
@@ -29,6 +30,9 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 private:
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
+
 	int spotId;
 	CCircuitUnit* reclaimMex;  // NOTE: never use it as unit, it's a mark (void*)
 };

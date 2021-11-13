@@ -24,7 +24,7 @@ namespace circuit {
 
 using namespace springai;
 
-CResurrectTask::CResurrectTask(ITaskManager* mgr, Priority priority,
+CBResurrectTask::CBResurrectTask(ITaskManager* mgr, Priority priority,
 							   const AIFloat3& position,
 							   float cost, int timeout, float radius)
 		: IBuilderTask(mgr, priority, nullptr, position, Type::BUILDER, BuildType::RESURRECT, cost, 0.f, timeout)
@@ -32,23 +32,29 @@ CResurrectTask::CResurrectTask(ITaskManager* mgr, Priority priority,
 {
 }
 
-CResurrectTask::~CResurrectTask()
+CBResurrectTask::CBResurrectTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::RESURRECT)
+		, radius(0.f)
 {
 }
 
-bool CResurrectTask::CanAssignTo(CCircuitUnit* unit) const
+CBResurrectTask::~CBResurrectTask()
+{
+}
+
+bool CBResurrectTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	return unit->GetCircuitDef()->IsAbleToResurrect();
 }
 
-void CResurrectTask::AssignTo(CCircuitUnit* unit)
+void CBResurrectTask::AssignTo(CCircuitUnit* unit)
 {
 	IBuilderTask::AssignTo(unit);
 
 	lastTouched = manager->GetCircuit()->GetLastFrame();
 }
 
-void CResurrectTask::RemoveAssignee(CCircuitUnit* unit)
+void CBResurrectTask::RemoveAssignee(CCircuitUnit* unit)
 {
 	IBuilderTask::RemoveAssignee(unit);
 	if (units.empty()) {
@@ -56,15 +62,15 @@ void CResurrectTask::RemoveAssignee(CCircuitUnit* unit)
 	}
 }
 
-void CResurrectTask::Finish()
+void CBResurrectTask::Finish()
 {
 }
 
-void CResurrectTask::Cancel()
+void CBResurrectTask::Cancel()
 {
 }
 
-void CResurrectTask::Execute(CCircuitUnit* unit)
+void CBResurrectTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -88,7 +94,7 @@ void CResurrectTask::Execute(CCircuitUnit* unit)
 	)
 }
 
-bool CResurrectTask::Reevaluate(CCircuitUnit* unit)
+bool CBResurrectTask::Reevaluate(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (units.empty()) {
@@ -151,14 +157,29 @@ bool CResurrectTask::Reevaluate(CCircuitUnit* unit)
 	return true;
 }
 
-void CResurrectTask::OnUnitIdle(CCircuitUnit* unit)
+void CBResurrectTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	manager->AbortTask(this);
 }
 
-bool CResurrectTask::IsInRange(const AIFloat3& pos, float range) const
+bool CBResurrectTask::IsInRange(const AIFloat3& pos, float range) const
 {
 	return position.SqDistance2D(pos) <= SQUARE(radius + range);
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, radius);
+
+void CBResurrectTask::Load(std::istream& is)
+{
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+}
+
+void CBResurrectTask::Save(std::ostream& os) const
+{
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

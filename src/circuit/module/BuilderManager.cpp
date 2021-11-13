@@ -533,7 +533,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 			circuit->LOG("%s | bp = %f, %f | up = %f, %f", unit->GetCircuitDef()->GetDef()->GetName(), bp.x, bp.z, up.x, up.z);
 #endif
 			taskB->UpdateTarget(unit);
-			unfinishedUnits[unit] = taskB;
+			MarkUnfinishedUnit(unit, taskB);
 		} else {
 			// reclaim lost unit
 			AssignTask(builder, EnqueueReclaim(IBuilderTask::Priority::HIGH, unit));
@@ -636,12 +636,6 @@ const std::set<IBuilderTask*>& CBuilderManager::GetTasks(IBuilderTask::BuildType
 void CBuilderManager::ActivateTask(IBuilderTask* task)
 {
 	if ((task->GetType() == IUnitTask::Type::BUILDER) && (task->GetBuildType() < IBuilderTask::BuildType::_SIZE_)) {
-		switch (task->GetBuildType()) {
-			case IBuilderTask::BuildType::FACTORY: {
-				circuit->GetFactoryManager()->ApplySwitchFrame();
-			} break;
-			default: break;
-		}
 		buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())].insert(task);
 		buildTasksCount++;
 	}
@@ -686,20 +680,16 @@ IBuilderTask* CBuilderManager::EnqueueSpot(IBuilderTask::Priority priority,
 	switch (type) {
 		case IBuilderTask::BuildType::GEO: {
 			task = new CBGeoTask(this, priority, buildDef, spotId, position, cost, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::MEX: {
 			task = new CBMexTask(this, priority, buildDef, spotId, position, cost, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::MEXUP: {
 			task = new CBMexUpTask(this, priority, buildDef, spotId, position, cost, timeout);
-			break;
-		}
+		} break;
 		default: {
 			task = new CBGenericTask(this, type, priority, buildDef, position, cost, 0.f, timeout);
-			break;
-		}
+		} break;
 	}
 
 	if (isActive) {
@@ -728,7 +718,7 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::FACTORY)].insert(task);
 		buildTasksCount++;
 		buildUpdates.push_back(task);
-		circuit->GetFactoryManager()->ApplySwitchFrame();
+		task->Activate();  // circuit->GetFactoryManager()->ApplySwitchFrame();
 	} else {
 		task->Deactivate();
 	}
@@ -768,7 +758,6 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::REPAIR)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
-	repairUnits[target->GetId()] = task;
 	TaskCreated(task);
 	return task;
 }
@@ -800,7 +789,6 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
-	reclaimUnits[target] = task;
 	TaskCreated(task);
 	return task;
 }
@@ -811,7 +799,7 @@ IBuilderTask* CBuilderManager::EnqueueResurrect(IBuilderTask::Priority priority,
 												int timeout,
 												float radius)
 {
-	CResurrectTask* task = new CResurrectTask(this, priority, position, cost, timeout, radius);
+	CBResurrectTask* task = new CBResurrectTask(this, priority, position, cost, timeout, radius);
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RESURRECT)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
@@ -902,44 +890,34 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	switch (type) {
 		case IBuilderTask::BuildType::NANO: {
 			task = new CBNanoTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::STORE: {
 			task = new CBStoreTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::ENERGY: {
 			task = new CBEnergyTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::DEFENCE: {
 			task = new CBDefenceTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::BUNKER: {
 			task = new CBBunkerTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::BIG_GUN: {
 			task = new CBBigGunTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::RADAR: {
 			task = new CBRadarTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::SONAR: {
 			task = new CBSonarTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 		case IBuilderTask::BuildType::CONVERT: {
 			task = new CBConvertTask(this, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 		default: {
 			task = new CBGenericTask(this, type, priority, buildDef, position, cost, shake, timeout);
-			break;
-		}
+		} break;
 	}
 
 	if (isActive) {
@@ -1043,7 +1021,7 @@ IBuilderTask* CBuilderManager::GetReclaimFeatureTask(const AIFloat3& pos, float 
 IBuilderTask* CBuilderManager::GetResurrectTask(const AIFloat3& pos, float radius) const
 {
 	for (IBuilderTask* t : GetTasks(IBuilderTask::BuildType::RESURRECT)) {
-		CResurrectTask* rt = static_cast<CResurrectTask*>(t);
+		CBResurrectTask* rt = static_cast<CBResurrectTask*>(t);
 		if (rt->IsInRange(pos, radius)) {
 			return rt;
 		}
@@ -1792,16 +1770,78 @@ void CBuilderManager::Load(std::istream& is)
 	/*
 	 * Restore data
 	 */
-//	for (IUnitTask* task : buildUpdates) {
-//		if (task->GetType() != IUnitTask::Type::BUILDER) {
-//			continue;
-//		}
-//		IBuilderTask* bt = static_cast<IBuilderTask*>(task);
-//		if (bt->GetBuildType() < IBuilderTask::BuildType::_SIZE_) {
-//			buildTasks[static_cast<IBuilderTask::BT>(bt->GetBuildType())].insert(bt);
-//			buildTasksCount++;
-//		}
-//	}
+	for (size_t i = 0; i < buildTasks.size(); ++i) {
+		int size;
+		is.read(reinterpret_cast<char*>(&size), sizeof(size));
+		for (int j = 0; j < size; ++j) {
+			IBuilderTask::BuildType buildType;
+			utils::binary_read(is, buildType);
+			IBuilderTask* task = nullptr;
+			switch (buildType) {
+				case IBuilderTask::BuildType::FACTORY: {
+					task = new CBFactoryTask(this);
+				} break;
+				case IBuilderTask::BuildType::NANO: {
+					task = new CBNanoTask(this);
+				} break;
+				case IBuilderTask::BuildType::STORE: {
+					task = new CBStoreTask(this);
+				} break;
+				case IBuilderTask::BuildType::PYLON: {
+					task = new CBPylonTask(this);
+				} break;
+				case IBuilderTask::BuildType::ENERGY: {
+					task = new CBEnergyTask(this);
+				} break;
+				case IBuilderTask::BuildType::GEO: {
+					task = new CBGeoTask(this);
+				} break;
+				case IBuilderTask::BuildType::DEFENCE: {
+					task = new CBDefenceTask(this);
+				} break;
+				case IBuilderTask::BuildType::BUNKER: {
+					task = new CBBunkerTask(this);
+				} break;
+				case IBuilderTask::BuildType::BIG_GUN: {
+					task = new CBBigGunTask(this);
+				} break;
+				case IBuilderTask::BuildType::RADAR: {
+					task = new CBRadarTask(this);
+				} break;
+				case IBuilderTask::BuildType::SONAR: {
+					task = new CBSonarTask(this);
+				} break;
+				case IBuilderTask::BuildType::CONVERT: {
+					task = new CBConvertTask(this);
+				} break;
+				case IBuilderTask::BuildType::MEX: {
+					task = new CBMexTask(this);
+				} break;
+				case IBuilderTask::BuildType::MEXUP: {
+					task = new CBMexUpTask(this);
+				} break;
+				case IBuilderTask::BuildType::REPAIR: {
+					task = new CBRepairTask(this);
+				} break;
+				case IBuilderTask::BuildType::RECLAIM: {
+					task = new CBReclaimTask(this);
+				} break;
+				case IBuilderTask::BuildType::RESURRECT: {
+					task = new CBResurrectTask(this);
+				} break;
+				case IBuilderTask::BuildType::TERRAFORM: {
+					task = new CBTerraformTask(this);
+				} break;
+				default: break;
+			}
+			if (task != nullptr) {
+				is >> *task;
+				buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())].insert(task);
+				buildTasksCount++;
+				buildUpdates.push_back(task);
+			}
+		}
+	}
 }
 
 void CBuilderManager::Save(std::ostream& os) const
@@ -1816,12 +1856,20 @@ void CBuilderManager::Save(std::ostream& os) const
 	/*
 	 * Save tasks
 	 */
-//	int size = buildUpdates.size();
-//	os.write(reinterpret_cast<const char*>(&size), sizeof(size));
-//	for (IUnitTask* task : buildUpdates) {
-//		os << *task;
-//	}
-//	os.write(reinterpret_cast<const char*>(&buildIterator), sizeof(buildIterator));
+	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
+		int size = tasks.size();
+		if ((size > 0) && ((*tasks.begin())->GetBuildType() == IBuilderTask::BuildType::PYLON)) {
+			// FIXME: Get pylon's link
+			size = 0;
+			os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+			continue;
+		}
+
+		os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+		for (const IBuilderTask* task : tasks) {
+			os << *task;
+		}
+	}
 }
 
 #ifdef DEBUG_VIS

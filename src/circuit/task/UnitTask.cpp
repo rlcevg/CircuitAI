@@ -20,14 +20,26 @@ using namespace springai;
 
 IUnitTask::IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout)
 		: manager(mgr)
-		, priority(priority)
 		, type(type)
+		, priority(priority)
 		, state(State::ROAM)
 		, timeout(timeout)
 		, updCount(0)
 		, isDead(false)
 {
 	lastTouched = manager->GetCircuit()->GetLastFrame();
+}
+
+IUnitTask::IUnitTask(ITaskManager* mgr, Type type)
+		: manager(mgr)
+		, type(type)
+		, priority(Priority::LOW)
+		, state(State::ROAM)
+		, lastTouched(-1)
+		, timeout(-1)
+		, updCount(0)
+		, isDead(false)
+{
 }
 
 IUnitTask::~IUnitTask()
@@ -129,7 +141,6 @@ bool IUnitTask::IsQueryReady(CCircuitUnit* unit) const
 
 #define SERIALIZE(stream, func)	\
 	utils::binary_##func(stream, priority);		\
-	utils::binary_##func(stream, type);			\
 	utils::binary_##func(stream, state);		\
 	utils::binary_##func(stream, lastTouched);	\
 	utils::binary_##func(stream, timeout);		\

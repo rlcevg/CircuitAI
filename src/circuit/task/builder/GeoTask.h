@@ -17,6 +17,7 @@ public:
 	CBGeoTask(ITaskManager* mgr, Priority priority,
 			  CCircuitDef* buildDef, int spotId, const springai::AIFloat3& position,
 			  float cost, int timeout);
+	CBGeoTask(ITaskManager* mgr);  // Load
 	virtual ~CBGeoTask();
 
 protected:
@@ -28,6 +29,9 @@ public:
 	virtual void SetBuildPos(const springai::AIFloat3& pos) override;
 
 private:
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
+
 	int spotId;
 };
 

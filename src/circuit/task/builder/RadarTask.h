@@ -17,6 +17,7 @@ public:
 	CBRadarTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
 				float cost, float shake, int timeout);
+	CBRadarTask(ITaskManager* mgr);  // Load
 	virtual ~CBRadarTask();
 };
 

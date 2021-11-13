@@ -33,6 +33,12 @@ CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
 	}
 }
 
+CBPylonTask::CBPylonTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::PYLON)
+		, link(nullptr)
+{
+}
+
 CBPylonTask::~CBPylonTask()
 {
 }

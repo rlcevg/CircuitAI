@@ -19,6 +19,11 @@ CBStoreTask::CBStoreTask(ITaskManager* mgr, Priority priority,
 {
 }
 
+CBStoreTask::CBStoreTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::STORE)
+{
+}
+
 CBStoreTask::~CBStoreTask()
 {
 }

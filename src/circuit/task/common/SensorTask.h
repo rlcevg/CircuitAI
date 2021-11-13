@@ -19,6 +19,7 @@ public:
 	ISensorTask(ITaskManager* mgr, Priority priority, std::function<bool (CCircuitDef*)> isSensor,
 				CCircuitDef* buildDef, const springai::AIFloat3& position, BuildType buildType,
 				float cost, float shake, int timeout);
+	ISensorTask(ITaskManager* mgr, std::function<bool (CCircuitDef*)> isSensor, BuildType buildType);  // Load
 	virtual ~ISensorTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

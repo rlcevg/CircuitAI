@@ -20,6 +20,7 @@ public:
 	CBReclaimTask(ITaskManager* mgr, Priority priority,
 				  CCircuitUnit* target,
 				  int timeout);
+	CBReclaimTask(ITaskManager* mgr);  // Load
 	virtual ~CBReclaimTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
@@ -27,6 +28,8 @@ public:
 
 private:
 	virtual bool Reevaluate(CCircuitUnit* unit) override;
+
+	virtual void Load(std::istream& is) override;
 };
 
 } // namespace circuit

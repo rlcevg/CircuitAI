@@ -569,50 +569,40 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 //			CEconomyManager* economyMgr = circuit->GetEconomyManager();
 //			float power = economyMgr->GetAvgMetalIncome() * economyMgr->GetEcoFactor() * 32.0f;
 			task = new CRallyTask(this, /*power*/1);  // TODO: pass enemy's threat
-			break;
-		}
+		} break;
 		case IFighterTask::FightType::SCOUT: {
 			const float mod = (float)rand() / RAND_MAX * attackMod.len + attackMod.min;
 			task = new CScoutTask(this, 0.75f / mod);
-			break;
-		}
+		} break;
 		case IFighterTask::FightType::RAID: {
 			const float mod = (float)rand() / RAND_MAX * attackMod.len + attackMod.min;
 			task = new CRaidTask(this, raid.avg, 0.75f / mod);
-			break;
-		}
+		} break;
 		case IFighterTask::FightType::ATTACK: {
 			const float mod = (float)rand() / RAND_MAX * attackMod.len + attackMod.min;
 			task = new CAttackTask(this, minAttackers, 0.8f / mod);
-			break;
-		}
+		} break;
 		case IFighterTask::FightType::BOMB: {
 			const float mod = (float)rand() / RAND_MAX * attackMod.len + attackMod.min;
 			task = new CBombTask(this, 2.0f / mod);
-			break;
-		}
+		} break;
 		case IFighterTask::FightType::ARTY: {
 			task = new CArtilleryTask(this);
-			break;
-		}
+		} break;
 		case IFighterTask::FightType::AA: {
 			const float mod = (float)rand() / RAND_MAX * attackMod.len + attackMod.min;
 			task = new CAntiAirTask(this, 1.0f / mod);
-			break;
-		}
+		} break;
 		case IFighterTask::FightType::AH: {
 			const float mod = (float)rand() / RAND_MAX * attackMod.len + attackMod.min;
 			task = new CAntiHeavyTask(this, 2.0f / mod);
-			break;
-		}
+		} break;
 		case IFighterTask::FightType::SUPPORT: {
 			task = new CSupportTask(this);
-			break;
-		}
+		} break;
 		case IFighterTask::FightType::SUPER: {
 			task = new CSuperTask(this);
-			break;
-		}
+		} break;
 	}
 
 	fightTasks[static_cast<IFighterTask::FT>(type)].insert(task);

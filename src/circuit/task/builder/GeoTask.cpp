@@ -32,6 +32,12 @@ CBGeoTask::CBGeoTask(ITaskManager* mgr, Priority priority,
 	manager->GetCircuit()->GetEconomyManager()->SetOpenGeoSpot(spotId, false);
 }
 
+CBGeoTask::CBGeoTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::GEO)
+		, spotId(-1)
+{
+}
+
 CBGeoTask::~CBGeoTask()
 {
 }
@@ -74,10 +80,25 @@ void CBGeoTask::Execute(CCircuitUnit* unit)
 void CBGeoTask::SetBuildPos(const AIFloat3& pos)
 {
 	FindFacing(pos);
-	AIFloat3 snap = pos;
-	snap.x = (int)snap.x / (SQUARE_SIZE * 2) * (SQUARE_SIZE * 2);
-	snap.z = (int)snap.z / (SQUARE_SIZE * 2) * (SQUARE_SIZE * 2);
-	IBuilderTask::SetBuildPos(snap);
+	IBuilderTask::SetBuildPos(pos);
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, spotId);
+
+void CBGeoTask::Load(std::istream& is)
+{
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->GetEconomyManager()->SetOpenGeoSpot(spotId, false);
+}
+
+void CBGeoTask::Save(std::ostream& os) const
+{
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

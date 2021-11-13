@@ -36,6 +36,13 @@ IReclaimTask::IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
 	SetTarget(target);
 }
 
+IReclaimTask::IReclaimTask(ITaskManager* mgr, Type type)
+		: IBuilderTask(mgr, type, BuildType::RECLAIM)
+		, radius(0.f)
+		, isMetal(false)
+{
+}
+
 IReclaimTask::~IReclaimTask()
 {
 }
@@ -106,6 +113,22 @@ void IReclaimTask::SetTarget(CCircuitUnit* unit)
 bool IReclaimTask::IsInRange(const AIFloat3& pos, float range) const
 {
 	return position.SqDistance2D(pos) <= SQUARE(radius + range);
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, radius);		\
+	utils::binary_##func(stream, isMetal);
+
+void IReclaimTask::Load(std::istream& is)
+{
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+}
+
+void IReclaimTask::Save(std::ostream& os) const
+{
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

@@ -238,18 +238,15 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 //			}
 
 			random(box, x, z);
-			break;
-		}
+		} break;
 		case StartPosType::MIDDLE: {
 			x = (box.left + box.right) / 2;
 			z = (box.top + box.bottom) / 2;
-			break;
-		}
+		} break;
 		case StartPosType::RANDOM:
 		default: {
 			random(box, x, z);
-			break;
-		}
+		} break;
 	}
 
 	AIFloat3 pos = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);

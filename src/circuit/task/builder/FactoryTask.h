@@ -17,6 +17,7 @@ public:
 	CBFactoryTask(ITaskManager* mgr, Priority priority,
 				  CCircuitDef* buildDef, CCircuitDef* reprDef, const springai::AIFloat3& position,
 				  float cost, float shake, bool isPlop, int timeout);
+	CBFactoryTask(ITaskManager* mgr);  // Load
 	virtual ~CBFactoryTask();
 
 	CCircuitDef* GetReprDef() const { return reprDef; }
@@ -28,8 +29,14 @@ public:
 protected:
 	virtual void Cancel() override;
 
+public:
+	virtual void Activate() override;
+
 private:
 	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius) override;
+
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
 
 	CCircuitDef* reprDef;
 	bool isPlop;

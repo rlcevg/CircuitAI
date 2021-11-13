@@ -24,6 +24,12 @@ ISensorTask::ISensorTask(ITaskManager* mgr, Priority priority, std::function<boo
 {
 }
 
+ISensorTask::ISensorTask(ITaskManager* mgr, std::function<bool (CCircuitDef*)> isSensor, BuildType buildType)
+		: IBuilderTask(mgr, Type::BUILDER, buildType)
+		, isSensorTest(isSensor)
+{
+}
+
 ISensorTask::~ISensorTask()
 {
 }

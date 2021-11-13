@@ -17,6 +17,7 @@ public:
 	CBMexTask(ITaskManager* mgr, Priority priority,
 			  CCircuitDef* buildDef, int spotId, const springai::AIFloat3& position,
 			  float cost, int timeout);
+	CBMexTask(ITaskManager* mgr);  // Load
 	virtual ~CBMexTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
@@ -34,6 +35,9 @@ public:
 private:
 	bool CheckLandBlock(CCircuitUnit* unit);
 	bool CheckWaterBlock(CCircuitUnit* unit);
+
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
 
 	int spotId;
 	int blockCount;

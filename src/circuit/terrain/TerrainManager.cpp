@@ -747,16 +747,14 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 		case UNIT_FACING_NORTH: {
 			xssize = unitDef->GetXSize() / 2;
 			zssize = unitDef->GetZSize() / 2;
-			break;
-		}
+		} break;
 		case UNIT_FACING_EAST:
 		case UNIT_FACING_WEST: {
 			xmsize = mask->GetZSize();
 			zmsize = mask->GetXSize();
 			xssize = unitDef->GetZSize() / 2;
 			zssize = unitDef->GetXSize() / 2;
-			break;
-		}
+		} break;
 	}
 
 #define DECLARE_TEST(testName, facingType)																	\
@@ -768,15 +766,14 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 						if (blockingMap.IsStructed(x, z, structMask)) {										\
 							return false;																	\
 						}																					\
-						break;																				\
-					}																						\
+					} break;																				\
 					case IBlockMask::BlockType::STRUCT: {													\
 						if (blockingMap.IsBlocked(x, z, notIgnore)) {										\
 							return false;																	\
 						}																					\
-						break;																				\
-					}																						\
-					case IBlockMask::BlockType::OPEN: { break; }											\
+					} break;																				\
+					case IBlockMask::BlockType::OPEN: {														\
+					} break;																				\
 				}																							\
 			}																								\
 		}																									\
@@ -835,23 +832,19 @@ AIFloat3 CTerrainManager::FindBuildSiteByMask(CCircuitDef* cdef, const AIFloat3&
 		case UNIT_FACING_SOUTH: {
 			DECLARE_TEST(isOpenSouth, GetTypeSouth);
 			DO_TEST(isOpenSouth);
-			break;
-		}
+		} break;
 		case UNIT_FACING_EAST: {
 			DECLARE_TEST(isOpenEast, GetTypeEast);
 			DO_TEST(isOpenEast);
-			break;
-		}
+		} break;
 		case UNIT_FACING_NORTH: {
 			DECLARE_TEST(isOpenNorth, GetTypeNorth);
 			DO_TEST(isOpenNorth);
-			break;
-		}
+		} break;
 		case UNIT_FACING_WEST: {
 			DECLARE_TEST(isOpenWest, GetTypeWest);
 			DO_TEST(isOpenWest);
-			break;
-		}
+		} break;
 	}
 #undef DO_TEST
 #undef DECLARE_TEST
@@ -871,16 +864,14 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 			zmsize = mask->GetZSize();
 			xssize = unitDef->GetXSize() / 2;
 			zssize = unitDef->GetZSize() / 2;
-			break;
-		}
+		} break;
 		case UNIT_FACING_EAST:
 		case UNIT_FACING_WEST: {
 			xmsize = mask->GetZSize();
 			zmsize = mask->GetXSize();
 			xssize = unitDef->GetZSize() / 2;
 			zssize = unitDef->GetXSize() / 2;
-			break;
-		}
+		} break;
 	}
 
 #define DECLARE_TEST_LOW(testName, facingType)																\
@@ -900,7 +891,8 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 						}																					\
 						break;																				\
 					}																						\
-					case IBlockMask::BlockType::OPEN: { break; }											\
+					case IBlockMask::BlockType::OPEN: {														\
+					} break;																				\
 				}																							\
 			}																								\
 		}																									\
@@ -978,23 +970,19 @@ AIFloat3 CTerrainManager::FindBuildSiteByMaskLow(CCircuitDef* cdef, const AIFloa
 		case UNIT_FACING_SOUTH: {
 			DECLARE_TEST_LOW(isOpenSouth, GetTypeSouth);
 			DO_TEST_LOW(isOpenSouth);
-			break;
-		}
+		} break;
 		case UNIT_FACING_EAST: {
 			DECLARE_TEST_LOW(isOpenEast, GetTypeEast);
 			DO_TEST_LOW(isOpenEast);
-			break;
-		}
+		} break;
 		case UNIT_FACING_NORTH: {
 			DECLARE_TEST_LOW(isOpenNorth, GetTypeNorth);
 			DO_TEST_LOW(isOpenNorth);
-			break;
-		}
+		} break;
 		case UNIT_FACING_WEST: {
 			DECLARE_TEST_LOW(isOpenWest, GetTypeWest);
 			DO_TEST_LOW(isOpenWest);
-			break;
-		}
+		} break;
 	}
 #undef DO_TEST_LOW
 #undef DECLARE_TEST_LOW
@@ -1017,16 +1005,14 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 			zmsize = mask->GetZSize();
 			xssize = unitDef->GetXSize() / 2;
 			zssize = unitDef->GetZSize() / 2;
-			break;
-		}
+		} break;
 		case UNIT_FACING_EAST:
 		case UNIT_FACING_WEST: {
 			xmsize = mask->GetZSize();
 			zmsize = mask->GetXSize();
 			xssize = unitDef->GetZSize() / 2;
 			zssize = unitDef->GetXSize() / 2;
-			break;
-		}
+		} break;
 	}
 
 #define DECLARE_MARKER(typeName, blockerOp, structOp)					\
@@ -1035,13 +1021,12 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 			switch (mask->typeName(xm, zm)) {							\
 				case IBlockMask::BlockType::BLOCK: {					\
 					blockingMap.blockerOp(x, z, structType);			\
-					break;												\
-				}														\
+				} break;												\
 				case IBlockMask::BlockType::STRUCT: {					\
 					blockingMap.structOp(x, z, structType, notIgnore);	\
-					break;												\
-				}														\
-				case IBlockMask::BlockType::OPEN: { break; }			\
+				} break;												\
+				case IBlockMask::BlockType::OPEN: {						\
+				} break;												\
 			}															\
 		}																\
 	}
@@ -1070,20 +1055,16 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 		default:
 		case UNIT_FACING_SOUTH: {
 			DO_MARK(GetTypeSouth);
-			break;
-		}
+		} break;
 		case UNIT_FACING_EAST: {
 			DO_MARK(GetTypeEast);
-			break;
-		}
+		} break;
 		case UNIT_FACING_NORTH: {
 			DO_MARK(GetTypeNorth);
-			break;
-		}
+		} break;
 		case UNIT_FACING_WEST: {
 			DO_MARK(GetTypeWest);
-			break;
-		}
+		} break;
 	}
 }
 

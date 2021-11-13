@@ -39,6 +39,13 @@ CBFactoryTask::CBFactoryTask(ITaskManager* mgr, Priority priority,
 	manager->GetCircuit()->GetFactoryManager()->AddFactory(buildDef);
 }
 
+CBFactoryTask::CBFactoryTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::FACTORY)
+		, reprDef(nullptr)
+		, isPlop(false)
+{
+}
+
 CBFactoryTask::~CBFactoryTask()
 {
 }
@@ -66,6 +73,12 @@ void CBFactoryTask::Cancel()
 	if (target == nullptr) {
 		manager->GetCircuit()->GetFactoryManager()->DelFactory(buildDef);
 	}
+}
+
+void CBFactoryTask::Activate()
+{
+	manager->GetCircuit()->GetFactoryManager()->ApplySwitchFrame();
+	IBuilderTask::Activate();
 }
 
 void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)
@@ -131,6 +144,32 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 	}
 	facing = opposite[facing];
 	checkFacing();
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, reprDefId);		\
+	utils::binary_##func(stream, isPlop);
+
+void CBFactoryTask::Load(std::istream& is)
+{
+	CCircuitDef::Id reprDefId;
+
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	reprDef = circuit->GetCircuitDefSafe(reprDefId);
+
+	circuit->GetFactoryManager()->AddFactory(buildDef);
+	Activate();  // circuit->GetFactoryManager()->ApplySwitchFrame();
+}
+
+void CBFactoryTask::Save(std::ostream& os) const
+{
+	CCircuitDef::Id reprDefId = (reprDef != nullptr) ? reprDef->GetId() : -1;
+
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

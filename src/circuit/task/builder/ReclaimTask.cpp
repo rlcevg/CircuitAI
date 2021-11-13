@@ -40,6 +40,12 @@ CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 							 int timeout)
 		: IReclaimTask(mgr, priority, Type::BUILDER, target, timeout)
 {
+	static_cast<CBuilderManager*>(mgr)->MarkReclaimUnit(target, this);
+}
+
+CBReclaimTask::CBReclaimTask(ITaskManager* mgr)
+		: IReclaimTask(mgr, Type::BUILDER)
+{
 }
 
 CBReclaimTask::~CBReclaimTask()
@@ -144,6 +150,15 @@ bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 	}
 
 	return true;
+}
+
+void CBReclaimTask::Load(std::istream& is)
+{
+	IReclaimTask::Load(is);
+
+	if (target != nullptr) {
+		static_cast<CBuilderManager*>(manager)->MarkReclaimUnit(target, this);
+	}
 }
 
 } // namespace circuit

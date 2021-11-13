@@ -17,6 +17,7 @@ class CEconomyManager;
 class CBRepairTask: public IRepairTask {
 public:
 	CBRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout = 0);
+	CBRepairTask(ITaskManager* mgr);  // Load
 	virtual ~CBRepairTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
@@ -28,6 +29,8 @@ public:
 
 private:
 	virtual bool Reevaluate(CCircuitUnit* unit) override;
+
+	virtual void Load(std::istream& is) override;
 };
 
 } // namespace circuit

@@ -21,6 +21,12 @@ using namespace springai;
 CBRepairTask::CBRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout)
 		: IRepairTask(mgr, priority, Type::BUILDER, target, timeout)
 {
+	static_cast<CBuilderManager*>(mgr)->MarkRepairUnit(target->GetId(), this);
+}
+
+CBRepairTask::CBRepairTask(ITaskManager* mgr)
+		: IRepairTask(mgr, Type::BUILDER)
+{
 }
 
 CBRepairTask::~CBRepairTask()
@@ -90,6 +96,15 @@ bool CBRepairTask::Reevaluate(CCircuitUnit* unit)
 		return false;
 	}
 	return true;
+}
+
+void CBRepairTask::Load(std::istream& is)
+{
+	IRepairTask::Load(is);
+
+	if (target != nullptr) {
+		static_cast<CBuilderManager*>(manager)->MarkRepairUnit(target->GetId(), this);
+	}
 }
 
 } // namespace circuit

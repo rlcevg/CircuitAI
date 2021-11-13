@@ -21,6 +21,7 @@ public:
 	IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
 				 CCircuitUnit* target,
 				 int timeout);
+	IReclaimTask(ITaskManager* mgr, Type type);  // Load
 	virtual ~IReclaimTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
@@ -40,6 +41,9 @@ public:
 	bool IsInRange(const springai::AIFloat3& pos, float range) const;
 
 protected:
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
+
 	float radius;
 	bool isMetal;
 };

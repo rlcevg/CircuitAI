@@ -24,6 +24,12 @@ CBEnergyTask::CBEnergyTask(ITaskManager* mgr, Priority priority,
 {
 }
 
+CBEnergyTask::CBEnergyTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::ENERGY)
+		, isStalling(false)
+{
+}
+
 CBEnergyTask::~CBEnergyTask()
 {
 }
@@ -59,6 +65,21 @@ void CBEnergyTask::Cancel()
 	manager->GetCircuit()->GetEconomyManager()->ClearEnergyRequired();
 
 	IBuilderTask::Cancel();
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, isStalling);
+
+void CBEnergyTask::Load(std::istream& is)
+{
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+}
+
+void CBEnergyTask::Save(std::ostream& os) const
+{
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

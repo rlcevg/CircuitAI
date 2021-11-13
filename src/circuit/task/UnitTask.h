@@ -37,6 +37,7 @@ public:
 
 protected:
 	IUnitTask(ITaskManager* mgr, Priority priority, Type type, int timeout);
+	IUnitTask(ITaskManager* mgr, Type type);  // Load
 	virtual ~IUnitTask();
 public:
 	virtual void ClearRelease();
@@ -84,8 +85,8 @@ protected:
 
 	ITaskManager* manager;
 	std::set<CCircuitUnit*> units;
-	Priority priority;
 	Type type;
+	Priority priority;
 	State state;
 	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> pathQueries;  // IPathQuery owner
 

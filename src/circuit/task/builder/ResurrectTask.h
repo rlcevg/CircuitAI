@@ -12,11 +12,12 @@
 
 namespace circuit {
 
-class CResurrectTask: public IBuilderTask {
+class CBResurrectTask: public IBuilderTask {
 public:
-	CResurrectTask(ITaskManager* mgr, Priority priority, const springai::AIFloat3& position,
+	CBResurrectTask(ITaskManager* mgr, Priority priority, const springai::AIFloat3& position,
 				   float cost, int timeout, float radius = .0f);
-	virtual ~CResurrectTask();
+	CBResurrectTask(ITaskManager* mgr);  // Load
+	virtual ~CBResurrectTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 	virtual void AssignTo(CCircuitUnit* unit) override;
@@ -36,6 +37,9 @@ public:
 	bool IsInRange(const springai::AIFloat3& pos, float range) const;
 
 private:
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
+
 	float radius;
 };
 

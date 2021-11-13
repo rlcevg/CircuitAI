@@ -56,10 +56,10 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
 						   Type type, BuildType buildType, float cost, float shake, int timeout)
 		: IUnitTask(mgr, priority, type, timeout)
+		, buildType(buildType)
 		, position(position)
 		, shake(shake)
 		, buildDef(buildDef)
-		, buildType(buildType)
 		, buildPower(.0f)
 		, cost(cost)
 		, target(nullptr)
@@ -73,6 +73,26 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
 	savedIncomeM = economyMgr->GetAvgMetalIncome();
 	savedIncomeE = economyMgr->GetAvgEnergyIncome();
+}
+
+IBuilderTask::IBuilderTask(ITaskManager* mgr, Type type, BuildType buildType)
+		: IUnitTask(mgr, type)
+		, buildType(buildType)
+		, position(-RgtVector)
+		, shake(.0f)
+		, buildDef(nullptr)
+		, buildPower(.0f)
+		, cost(.0f)
+		, target(nullptr)
+		, buildPos(-RgtVector)
+		, facing(UNIT_NO_FACING)
+		, nextTask(nullptr)
+		, initiator(nullptr)
+		, savedIncomeM(.0f)
+		, savedIncomeE(.0f)
+		, buildFails(0)
+		, unitIt(units.end())
+{
 }
 
 IBuilderTask::~IBuilderTask()
@@ -791,26 +811,48 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 }
 
 #define SERIALIZE(stream, func)	\
-	utils::binary_##func(stream, position);		\
+	utils::binary_##func(stream, positionF3);	\
 	utils::binary_##func(stream, shake);		\
 	utils::binary_##func(stream, bdefId);		\
-	utils::binary_##func(stream, buildType);
+	utils::binary_##func(stream, cost);			\
+	utils::binary_##func(stream, targetId);		\
+	utils::binary_##func(stream, buildPosF3);	\
+	utils::binary_##func(stream, facing);		\
+	utils::binary_##func(stream, savedIncomeM);	\
+	utils::binary_##func(stream, savedIncomeE);	\
+	utils::binary_##func(stream, buildFails);
 
 void IBuilderTask::Load(std::istream& is)
 {
 	CCircuitDef::Id bdefId;
+	CCircuitUnit::Id targetId;
+	float positionF3[3];
+	float buildPosF3[3];
 
 	IUnitTask::Load(is);
 	SERIALIZE(is, read)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	buildDef = circuit->GetCircuitDefSafe(bdefId);
+	target = circuit->GetTeamUnit(targetId);
+	position = AIFloat3(positionF3);
+	buildPos = AIFloat3(buildPosF3);
+
+	if ((target != nullptr) && (buildType != BuildType::REPAIR) && (buildType != BuildType::RECLAIM)) {
+		circuit->GetBuilderManager()->MarkUnfinishedUnit(target, this);
+	}
 }
 
 void IBuilderTask::Save(std::ostream& os) const
 {
 	CCircuitDef::Id bdefId = (buildDef != nullptr) ? buildDef->GetId() : -1;
+	CCircuitUnit::Id targetId = (target != nullptr) ? target->GetId() : -1;
+	float positionF3[3];
+	float buildPosF3[3];
+	position.LoadInto(positionF3);
+	buildPos.LoadInto(buildPosF3);
 
+	utils::binary_write(os, buildType);
 	IUnitTask::Save(os);
 	SERIALIZE(os, write)
 }

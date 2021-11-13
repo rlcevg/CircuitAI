@@ -17,6 +17,7 @@ public:
 	CBStoreTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
 				float cost, float shake, int timeout);
+	CBStoreTask(ITaskManager* mgr);  // Load
 	virtual ~CBStoreTask();
 };
 

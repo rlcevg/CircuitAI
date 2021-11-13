@@ -32,6 +32,12 @@ CBTerraformTask::CBTerraformTask(ITaskManager* mgr, Priority priority, const AIF
 {
 }
 
+CBTerraformTask::CBTerraformTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::TERRAFORM)
+		, targetId(-1)
+{
+}
+
 CBTerraformTask::~CBTerraformTask()
 {
 }
@@ -154,6 +160,23 @@ void CBTerraformTask::OnUnitIdle(CCircuitUnit* unit)
 	} else {
 		IBuilderTask::OnUnitIdle(unit);
 	}
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, targetId);
+
+void CBTerraformTask::Load(std::istream& is)
+{
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+
+	state = State::ROAM;  // reset attempt
+}
+
+void CBTerraformTask::Save(std::ostream& os) const
+{
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

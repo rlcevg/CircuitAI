@@ -17,6 +17,7 @@ class CBTerraformTask: public IBuilderTask {
 public:
 	CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, float cost = 1.0f, int timeout = 0);
 	CBTerraformTask(ITaskManager* mgr, Priority priority, const springai::AIFloat3& position, float cost = 1.0f, int timeout = 0);
+	CBTerraformTask(ITaskManager* mgr);  // Load
 	virtual ~CBTerraformTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;
@@ -30,6 +31,9 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 protected:
+	virtual void Load(std::istream& is) override;
+	virtual void Save(std::ostream& os) const override;
+
 	ICoreUnit::Id targetId;  // Ignore "target" as it could be destroyed
 };
 

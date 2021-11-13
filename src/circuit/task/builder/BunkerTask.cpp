@@ -19,6 +19,11 @@ CBBunkerTask::CBBunkerTask(ITaskManager* mgr, Priority priority,
 {
 }
 
+CBBunkerTask::CBBunkerTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::BUNKER)
+{
+}
+
 CBBunkerTask::~CBBunkerTask()
 {
 }

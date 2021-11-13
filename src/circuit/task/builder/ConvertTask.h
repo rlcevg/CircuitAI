@@ -17,6 +17,7 @@ public:
 	CBConvertTask(ITaskManager* mgr, Priority priority,
 				  CCircuitDef* buildDef, const springai::AIFloat3& position,
 				  float cost, float shake, int timeout);
+	CBConvertTask(ITaskManager* mgr);  // Load
 	virtual ~CBConvertTask();
 
 	virtual void Update() override;

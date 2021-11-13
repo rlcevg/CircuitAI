@@ -17,6 +17,7 @@ public:
 	CBSonarTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
 				float cost, float shake, int timeout);
+	CBSonarTask(ITaskManager* mgr);  // Load
 	virtual ~CBSonarTask();
 };
 

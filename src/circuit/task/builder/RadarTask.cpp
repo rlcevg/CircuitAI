@@ -21,6 +21,11 @@ CBRadarTask::CBRadarTask(ITaskManager* mgr, Priority priority,
 {
 }
 
+CBRadarTask::CBRadarTask(ITaskManager* mgr)
+		: ISensorTask(mgr, [](CCircuitDef* cdef) { return cdef->IsRadar(); }, BuildType::RADAR)
+{
+}
+
 CBRadarTask::~CBRadarTask()
 {
 }

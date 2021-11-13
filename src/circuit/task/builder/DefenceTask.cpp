@@ -31,6 +31,13 @@ CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 {
 }
 
+CBDefenceTask::CBDefenceTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::DEFENCE)
+		, isUrgent(false)
+		, normalCost(.0f)
+{
+}
+
 CBDefenceTask::~CBDefenceTask()
 {
 }
@@ -85,6 +92,22 @@ void CBDefenceTask::Cancel()
 	manager->GetCircuit()->GetMilitaryManager()->AbortDefence(this);
 
 	IBuilderTask::Cancel();
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, isUrgent);		\
+	utils::binary_##func(stream, normalCost);
+
+void CBDefenceTask::Load(std::istream& is)
+{
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+}
+
+void CBDefenceTask::Save(std::ostream& os) const
+{
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

@@ -22,6 +22,11 @@ CBConvertTask::CBConvertTask(ITaskManager* mgr, Priority priority,
 {
 }
 
+CBConvertTask::CBConvertTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::CONVERT)
+{
+}
+
 CBConvertTask::~CBConvertTask()
 {
 }

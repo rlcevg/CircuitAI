@@ -148,6 +148,16 @@ private:
 public:
 	virtual void FallbackTask(CCircuitUnit* unit) override;
 
+	void MarkUnfinishedUnit(CAllyUnit* target, IBuilderTask* task) {
+		unfinishedUnits[target] = task;
+	}
+	void MarkRepairUnit(ICoreUnit::Id targetId, CBRepairTask* task) {
+		repairUnits[targetId] = task;
+	}
+	void MarkReclaimUnit(CAllyUnit* target, CBReclaimTask* task) {
+		reclaimUnits[target] = task;
+	}
+
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position) const;  // Check if build-area has proper builder
 
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);

@@ -59,6 +59,7 @@ protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 Type type, BuildType buildType, float cost, float shake = SQUARE_SIZE * 32, int timeout = ASSIGN_TIMEOUT);
+	IBuilderTask(ITaskManager* mgr, Type type, BuildType buildType);  // Load
 public:
 	virtual ~IBuilderTask();
 
@@ -82,7 +83,7 @@ public:
 
 	virtual void OnTravelEnd(CCircuitUnit* unit) override;
 
-	void Activate();
+	virtual void Activate();
 	void Deactivate();
 
 	const springai::AIFloat3& GetTaskPos() const { return position; }
@@ -127,11 +128,11 @@ protected:
 	virtual void Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 
+	BuildType buildType;
 	springai::AIFloat3 position;
 	float shake;  // Alter/randomize position by offset
 	CCircuitDef* buildDef;
 
-	BuildType buildType;
 	float buildPower;  // task's metal per second expenditure
 	float cost;
 	CCircuitUnit* target;  // FIXME: Replace target with unitId

@@ -35,6 +35,13 @@ CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 	manager->GetCircuit()->GetEconomyManager()->SetOpenSpot(spotId, false);
 }
 
+CBMexTask::CBMexTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::MEX)
+		, spotId(-1)
+		, blockCount(0)
+{
+}
+
 CBMexTask::~CBMexTask()
 {
 }
@@ -271,6 +278,24 @@ bool CBMexTask::CheckWaterBlock(CCircuitUnit* unit)
 	}
 	manager->AssignTask(unit, task);
 	return true;
+}
+
+#define SERIALIZE(stream, func)	\
+	utils::binary_##func(stream, spotId);
+
+void CBMexTask::Load(std::istream& is)
+{
+	IBuilderTask::Load(is);
+	SERIALIZE(is, read)
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	circuit->GetEconomyManager()->SetOpenSpot(spotId, false);
+}
+
+void CBMexTask::Save(std::ostream& os) const
+{
+	IBuilderTask::Save(os);
+	SERIALIZE(os, write)
 }
 
 } // namespace circuit

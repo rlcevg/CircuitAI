@@ -23,6 +23,11 @@ CBBigGunTask::CBBigGunTask(ITaskManager* mgr, Priority priority,
 {
 }
 
+CBBigGunTask::CBBigGunTask(ITaskManager* mgr)
+		: IBuilderTask(mgr, Type::BUILDER, BuildType::BIG_GUN)
+{
+}
+
 CBBigGunTask::~CBBigGunTask()
 {
 }
