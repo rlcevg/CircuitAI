@@ -126,7 +126,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		if (index < 0) {
 			return;
 		}
-		const float income = metalMgr->GetSpots()[index].income;
+		const float income = metalMgr->GetSpots()[index].income * unit->GetCircuitDef()->GetExtractsM();
 		for (int i = 0; i < INCOME_SAMPLES; ++i) {
 			metalIncomes[i] += income;
 		}
@@ -238,7 +238,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 //				cdef.SetIsMex(true);
 //			}
 			// FIXME: BA
-			if (cdef.GetDef()->GetExtractsResource(metalRes) > 0.f) {
+			if (cdef.GetExtractsM() > 0.f) {
 				finishedHandler[cdef.GetId()] = mexFinishedHandler;
 				metalDefs.AddDef(&cdef);
 				cdef.SetIsMex(true);
@@ -564,7 +564,7 @@ CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos, float& outMake, 
 void CEconomyManager::AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 {
 	metalDefs.AddDefs(buildDefs, [this](CCircuitDef* cdef, SMetalExt& data) -> float {
-		data.speed = cdef->GetDef()->GetExtractsResource(metalRes);
+		data.speed = cdef->GetExtractsM();
 		return data.speed * 1e+6f - cdef->GetCostM();
 	});
 	convertDefs.AddDefs(buildDefs, [this](CCircuitDef* cdef, SConvertExt& data) -> float {
@@ -927,8 +927,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			float maxRange = 0.f;
 			for (CCircuitDef* mDef : mexDefOptions) {
 				if (mDef->IsAvailable(frame)) {
-					mexDefs.push_back(std::make_pair(mDef, mDef->GetDef()->GetExtractsResource(metalRes)));
-					const float range = mDef->GetDef()->GetResourceExtractorRange(metalRes);
+					mexDefs.push_back(std::make_pair(mDef, mDef->GetExtractsM()));
+					const float range = mDef->GetExtrRangeM();
 					if (maxRange < range) {
 						maxRange = range;
 					}
@@ -951,7 +951,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 							if (curMex == nullptr) {
 								continue;
 							}
-							const float extract = curMex->GetCircuitDef()->GetDef()->GetExtractsResource(metalRes);
+							const float extract = curMex->GetCircuitDef()->GetExtractsM();
 							if (curExtract < extract) {
 								curExtract = extract;
 							}
@@ -1338,9 +1338,9 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (reprDef == nullptr) {  // identify area to build by factory representatives
 			return nullptr;
 		}
-		IBuilderTask::Priority priority = (builderMgr->GetWorkerCount() <= 2) ?
-										  IBuilderTask::Priority::NOW :
-										  IBuilderTask::Priority::HIGH;
+		IBuilderTask::Priority priority = (builderMgr->GetWorkerCount() <= 2)
+										  ? IBuilderTask::Priority::NOW
+										  : IBuilderTask::Priority::HIGH;
 		const bool isPlop = (factoryMgr->GetFactoryCount() <= 0);
 		// hold selected facDef - create non-active task
 		factoryTask = static_cast<CBFactoryTask*>(builderMgr->EnqueueFactory(priority,

@@ -181,14 +181,14 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 					unsigned count;
 					float distDivIncome;
 				};
-				const AIFloat3 center = terrainMgr->GetTerrainCenter();
+				const AIFloat3 mapCenter = terrainMgr->GetTerrainCenter();
 				std::vector<std::pair<int, SCluster>> validClusters;
 				for (auto& kv : validPoints) {
 					SCluster c;
 					c.count = allyTeam->GetClusterTeam(kv.first).count;
 					const CMetalData::SCluster& cl = clusters[kv.first];
 					const float income = cl.income + (float)rand() / RAND_MAX - 0.5f;
-					c.distDivIncome = center.distance(cl.position) / income;
+					c.distDivIncome = mapCenter.distance(cl.position) / income;
 					validClusters.push_back(std::make_pair(kv.first, c));
 				}
 				std::random_shuffle(validClusters.begin(), validClusters.end());
@@ -664,6 +664,12 @@ void CSetupManager::CalcLanePos()
 
 	// NOTE: #include "module/MilitaryManager.h"
 	circuit->GetMilitaryManager()->SetBaseDefRange(lanePos.distance2D(basePos));
+
+	const AIFloat3 mapCenter = CTerrainManager::GetTerrainCenter();
+	CAllyTeam* allyTeam = circuit->GetAllyTeam();
+	if (mapCenter.SqDistance2D(lanePos) < mapCenter.SqDistance2D(allyTeam->GetAuthority()->GetSetupManager()->GetLanePos())) {
+		allyTeam->SetAuthority(circuit);
+	}
 }
 
 bool CSetupManager::LocatePath(std::string& filename)

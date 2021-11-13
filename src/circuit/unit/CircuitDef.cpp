@@ -186,6 +186,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	costE        = def->GetCost(resE);
 	upkeepM      = def->GetUpkeep(resM);
 	upkeepE      = def->GetUpkeep(resE);
+	extractsM    = def->GetExtractsResource(resM);  // FIXME: ZK = 0.001f
+	extrRangeM   = def->GetResourceExtractorRange(resM);
 	cloakCost    = std::max(def->GetCloakCost(), def->GetCloakCostMoving());
 	buildTime    = def->GetBuildTime();
 	captureSpeed = def->IsAbleToCapture() ? def->GetCaptureSpeed() / TEAM_SLOWUPDATE_RATE : 0.f;

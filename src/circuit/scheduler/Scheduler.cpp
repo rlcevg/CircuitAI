@@ -170,6 +170,11 @@ void CScheduler::RemoveJob(const std::shared_ptr<IMainJob>& task)
 	}
 }
 
+void CScheduler::RemoveReleaseJob(const std::shared_ptr<IMainJob>& task)
+{
+	std::remove(releaseTasks.begin(), releaseTasks.end(), task);
+}
+
 void CScheduler::WorkerThread(int num)
 {
 	while (workerRunning.load()) {

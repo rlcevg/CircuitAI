@@ -118,10 +118,14 @@ public:
 	void OccupyArea(STerrainMapArea* area, int teamId);
 	SAreaTeam GetAreaTeam(STerrainMapArea* area);
 
+	CCircuitAI* GetAuthority() const { return circuit; }
+	void SetAuthority(CCircuitAI* authority);
 private:
-	void DelegateAuthority(CCircuitAI* curOwner);
+	void DelegateAuthority();
+	void ApplyAuthority(CCircuitAI* newOwner);
 
 	CCircuitAI* circuit;  // authority
+	std::shared_ptr<IMainJob> releaseTask;
 	TeamIds teamIds;
 	SBox startBox;
 

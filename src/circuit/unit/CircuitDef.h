@@ -293,6 +293,8 @@ public:
 	float GetCostE()        const { return costE; }
 	float GetUpkeepM()      const { return upkeepM; }
 	float GetUpkeepE()      const { return upkeepE; }
+	float GetExtractsM()    const { return extractsM; }
+	float GetExtrRangeM()   const { return extrRangeM; }
 	float GetCloakCost()    const { return cloakCost; }
 	float GetBuildTime()    const { return buildTime; }
 	float GetCaptureSpeed() const { return captureSpeed; }
@@ -423,6 +425,8 @@ private:
 	float costE;
 	float upkeepM;
 	float upkeepE;
+	float extractsM;
+	float extrRangeM;
 	float cloakCost;
 	float buildTime;
 	float captureSpeed;

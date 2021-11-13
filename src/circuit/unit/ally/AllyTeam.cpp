@@ -93,7 +93,8 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 	pathfinder = std::make_shared<CPathFinder>(circuit->GetScheduler(), &circuit->GetGameAttribute()->GetTerrainData());
 	factoryData = std::make_shared<CFactoryData>(circuit);
 
-	circuit->GetScheduler()->RunOnRelease(CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this, circuit));
+	releaseTask = CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this);
+	circuit->GetScheduler()->RunOnRelease(releaseTask);
 }
 
 void CAllyTeam::NonDefaultThreats(std::set<CCircuitDef::RoleT>&& modRoles, CCircuitAI* ai)
@@ -390,19 +391,34 @@ CAllyTeam::SAreaTeam CAllyTeam::GetAreaTeam(STerrainMapArea* area)
 	return SAreaTeam(-1);
 }
 
-void CAllyTeam::DelegateAuthority(CCircuitAI* curOwner)
+void CAllyTeam::SetAuthority(CCircuitAI* authority)
 {
-	for (CCircuitAI* circuit : curOwner->GetGameAttribute()->GetCircuits()) {
-		if (circuit->IsInitialized() && (circuit != curOwner) && (circuit->GetAllyTeamId() == curOwner->GetAllyTeamId())) {
-			this->circuit = circuit;
-			mapManager->SetAuthority(circuit);
-			metalManager->SetAuthority(circuit);
-			energyManager->SetAuthority(circuit);
-			energyGrid->SetAuthority(circuit);
-			circuit->GetScheduler()->RunOnRelease(CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this, circuit));
+	if (circuit == authority) {
+		return;
+	}
+	circuit->GetScheduler()->RemoveReleaseJob(releaseTask);
+	ApplyAuthority(authority);
+}
+
+void CAllyTeam::DelegateAuthority()
+{
+	for (CCircuitAI* newOwner : circuit->GetGameAttribute()->GetCircuits()) {
+		if (newOwner->IsInitialized() && (newOwner != circuit) && (newOwner->GetAllyTeamId() == circuit->GetAllyTeamId())) {
+			ApplyAuthority(newOwner);
 			break;
 		}
 	}
+}
+
+void CAllyTeam::ApplyAuthority(CCircuitAI* newOwner)
+{
+	this->circuit = newOwner;
+	mapManager->SetAuthority(newOwner);
+	metalManager->SetAuthority(newOwner);
+	energyManager->SetAuthority(newOwner);
+	energyGrid->SetAuthority(newOwner);
+	releaseTask = CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this);
+	newOwner->GetScheduler()->RunOnRelease(releaseTask);
 }
 
 } // namespace circuit

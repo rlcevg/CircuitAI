@@ -631,7 +631,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 			bool isValid = (circuit->GetEconomyManager()->GetAvgEnergyIncome() < chain->energy);
 			if (isValid && chain->isMexEngy) {
 				int index = circuit->GetMetalManager()->FindNearestSpot(buildPos);
-				isValid = (index >= 0) && (circuit->GetMetalManager()->GetSpots()[index].income > energyMake * 0.8f);
+				isValid = (index >= 0) && (circuit->GetMetalManager()->GetSpots()[index].income * buildDef->GetExtractsM() > energyMake * 0.8f);
 			}
 			if (isValid) {
 				circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, energyDef, buildPos,

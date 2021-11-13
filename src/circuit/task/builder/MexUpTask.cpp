@@ -48,17 +48,16 @@ void CBMexUpTask::Finish()
 	IBuilderTask::Finish();
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
-	const float maxRange = buildDef->GetDef()->GetResourceExtractorRange(metalRes);
+	const float maxRange = buildDef->GetExtrRangeM();
 	CCircuitUnit* oldMex = nullptr;
 	const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(buildPos, maxRange, false);
-	float curExtract = buildDef->GetDef()->GetExtractsResource(metalRes);
+	float curExtract = buildDef->GetExtractsM();
 	for (ICoreUnit::Id unitId : unitIds) {
 		CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
 		if ((curMex == nullptr) || !curMex->GetCircuitDef()->IsMex()) {
 			continue;
 		}
-		const float extract = curMex->GetCircuitDef()->GetDef()->GetExtractsResource(metalRes);
+		const float extract = curMex->GetCircuitDef()->GetExtractsM();
 		if (curExtract > extract) {
 			oldMex = curMex;
 			break;
@@ -109,7 +108,6 @@ void CBMexUpTask::Execute(CCircuitUnit* unit)
 
 	circuit->GetThreatMap()->SetThreatType(unit);
 
-	Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 	// FIXME: short on purpose, won't work with EnqueueReclaim() in Finish()
 	const float searchRadius = /*buildDef->GetDef()->GetResourceExtractorRange(metalRes) + */SQUARE_SIZE * 4;
 	FindBuildSite(unit, position, searchRadius);
@@ -126,7 +124,7 @@ void CBMexUpTask::Execute(CCircuitUnit* unit)
 			if (curMex == nullptr) {
 				continue;
 			}
-			if (curMex->GetCircuitDef()->GetDef()->GetExtractsResource(metalRes) > 0.f) {
+			if (curMex->GetCircuitDef()->GetExtractsM() > 0.f) {
 				oldMex = curMex;
 				break;
 			}

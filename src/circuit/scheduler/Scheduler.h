@@ -90,18 +90,23 @@ public:
 	void RemoveJob(const std::shared_ptr<IMainJob>& task);
 
 	/*
-	 * Run task on init. Not affected by RemoveTask
+	 * Run task on init. Not affected by RemoveJob
 	 */
 	void RunOnInit(std::shared_ptr<IMainJob>&& task) {
 		initTasks.push_back(task);
 	}
 
 	/*
-	 * Run task on release. Not affected by RemoveTask
+	 * Run task on release
 	 */
-	void RunOnRelease(std::shared_ptr<IMainJob>&& task) {
+	void RunOnRelease(const std::shared_ptr<IMainJob>& task) {
 		releaseTasks.push_back(task);
 	}
+
+	/*
+	 * Remove task from on-release queue
+	 */
+	void RemoveReleaseJob(const std::shared_ptr<IMainJob>& task);
 
 	int GetMaxWorkThreads() const { return maxWorkThreads; }
 
