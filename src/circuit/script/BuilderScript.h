@@ -19,7 +19,7 @@ public:
 	CBuilderScript(CScriptManager* scr, CBuilderManager* mgr);
 	virtual ~CBuilderScript();
 
-	void Init() override;
+	bool Init() override;
 
 public:
 	void WorkerCreated(CCircuitUnit* unit);

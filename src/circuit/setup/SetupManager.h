@@ -91,9 +91,9 @@ private:
 	void FindStart();
 	void CalcStartPos();
 	void CalcLanePos();
-	bool LocatePath(std::string& filename);
 	bool LoadConfig(const std::string& profile, const std::vector<std::string>& parts);
-	Json::Value* ReadConfig(const std::string& dirName, const std::string& profile, const std::vector<std::string>& parts);
+	Json::Value* ReadConfig(const std::string& dirName, const std::string& profile,
+							const std::vector<std::string>& parts, const bool isVFS);
 	Json::Value* ParseConfig(const std::string& cfgStr, const std::string& cfgName, Json::Value* cfg = nullptr);
 	void UpdateJson(Json::Value& a, Json::Value& b);
 	void OverrideConfig();

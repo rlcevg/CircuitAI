@@ -30,13 +30,14 @@ CMilitaryScript::~CMilitaryScript()
 {
 }
 
-void CMilitaryScript::Init()
+bool CMilitaryScript::Init()
 {
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Military"); ASSERT(r >= 0);
 	InitModule(mod);
 	militaryInfo.makeDefence = script->GetFunc(mod, "void AiMakeDefence(int, const AIFloat3& in)");
 	militaryInfo.isAirValid = script->GetFunc(mod, "bool AiIsAirValid()");
+	return true;
 }
 
 void CMilitaryScript::MakeDefence(int cluster, const AIFloat3& pos)

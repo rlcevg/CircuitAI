@@ -13,9 +13,6 @@
 #include "util/FileSystem.h"
 #include "util/Utils.h"
 
-#include "spring/SpringCallback.h"
-
-#include "DataDirs.h"
 #include "Log.h"
 
 //#define AS_USE_STLNAMES		1
@@ -125,7 +122,7 @@ void CScriptManager::Release()
 	delete jit;
 }
 
-bool CScriptManager::Load(const char* modname, const std::string& filename)
+bool CScriptManager::Load(const char* modname, const std::string& subdir, const std::string& filename)
 {
 	// The CScriptBuilder helper is an add-on that loads the file,
 	// performs a pre-processing pass if necessary, and then tells
@@ -139,11 +136,21 @@ bool CScriptManager::Load(const char* modname, const std::string& filename)
 		return false;
 	}
 
-	std::string dirname = "script" SLASH;
-	if (!LocatePath(dirname)) {
-		return false;
+	std::string dirname = utils::GetAIDataGameDir(circuit->GetSkirmishAI(), "script") + subdir + SLASH;
+	if (utils::FileExists(circuit->GetCallback(), dirname + filename)) {  // Locate game-side script
+		builder.SetReadFunc([this](const std::string& filename) {
+			return utils::ReadFile(circuit->GetCallback(), filename);
+		});
+	} else {
+		circuit->LOG("Game-side script: '%s' is missing!", (dirname + filename).c_str());
+		dirname = "script" SLASH + subdir + SLASH;
+		if (!utils::LocatePath(circuit->GetCallback(), dirname)) {  // Locate AI script
+			circuit->LOG("AI script: '%s' is missing!", (dirname + filename).c_str());
+			return false;
+		}
 	}
 
+	circuit->LOG("Load script: %s", (dirname + filename).c_str());
 	r = builder.AddSectionFromFile((dirname + filename).c_str());
 	if (r < 0) {
 		// The builder wasn't able to load the string. Maybe some
@@ -238,17 +245,6 @@ void CScriptManager::MessageCallback(const asSMessageInfo* msg, void* param)
 		type = "INFO";
 	}
 	circuit->LOG("%s (%d, %d) : %s : %s", msg->section, msg->row, msg->col, type, msg->message);
-}
-
-bool CScriptManager::LocatePath(std::string& dirname)
-{
-	DataDirs* datadirs = circuit->GetCallback()->GetDataDirs();
-	const bool located = utils::LocatePath(datadirs, dirname);
-	delete datadirs;
-	if (!located) {
-		circuit->LOG("Script: '%s' is missing!", dirname.c_str());
-	}
-	return located;
 }
 
 #ifdef DEBUG_VIS

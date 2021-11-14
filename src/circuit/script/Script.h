@@ -17,7 +17,7 @@ public:
 	IScript(CScriptManager* scr);
 	virtual ~IScript();
 
-	virtual void Init() = 0;
+	virtual bool Init() = 0;
 
 protected:
 	CScriptManager* script;

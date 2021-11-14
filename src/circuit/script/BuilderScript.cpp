@@ -29,13 +29,14 @@ CBuilderScript::~CBuilderScript()
 {
 }
 
-void CBuilderScript::Init()
+bool CBuilderScript::Init()
 {
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Builder"); ASSERT(r >= 0);
 	InitModule(mod);
 	info.workerCreated = script->GetFunc(mod, "void AiWorkerCreated(CCircuitUnit@)");
 	info.workerDestroyed = script->GetFunc(mod, "void AiWorkerDestroyed(CCircuitUnit@)");
+	return true;
 }
 
 void CBuilderScript::WorkerCreated(CCircuitUnit* unit)

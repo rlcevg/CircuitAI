@@ -241,7 +241,7 @@ CInitScript::~CInitScript()
 {
 }
 
-void CInitScript::InitConfig(const std::string& profile,
+bool CInitScript::InitConfig(const std::string& profile,
 		std::vector<std::string>& outCfgParts, CCircuitDef::SArmorInfo& outArmor)
 {
 	asIScriptEngine* engine = script->GetEngine();
@@ -273,9 +273,9 @@ void CInitScript::InitConfig(const std::string& profile,
 	r = engine->RegisterObjectProperty("SInitInfo", "array<string>@ profile", asOFFSET(SInitInfo, profile)); ASSERT(r >= 0);
 	r = engine->EndConfigGroup(); ASSERT(r >= 0);
 
-	folderName = profile + SLASH;
-	if (!script->Load("init", folderName + "init.as")) {
-		return;
+	folderName = profile;
+	if (!script->Load("init", folderName, "init.as")) {
+		return false;
 	}
 	asIScriptModule* mod = script->GetEngine()->GetModule("init");
 	r = mod->SetDefaultNamespace("Init"); ASSERT(r >= 0);
@@ -315,19 +315,20 @@ void CInitScript::InitConfig(const std::string& profile,
 
 	mod->Discard();
 	r = script->GetEngine()->RemoveConfigGroup("init"); ASSERT(r >= 0);
+	return true;
 }
 
-void CInitScript::Init()
+bool CInitScript::Init()
 {
-	if (!script->Load(CScriptManager::mainName.c_str(), folderName + CScriptManager::mainName + ".as")) {
-		return;
+	if (!script->Load(CScriptManager::mainName.c_str(), folderName, CScriptManager::mainName + ".as")) {
+		return false;
 	}
 
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Main"); ASSERT(r >= 0);
 	asIScriptFunction* initDef = script->GetFunc(mod, "void AiInitDef(CCircuitDef@)");
 	if (initDef == nullptr) {
-		return;
+		return false;
 	}
 
 	asIScriptContext* ctx = script->PrepareContext(initDef);
@@ -337,6 +338,7 @@ void CInitScript::Init()
 		script->Exec(ctx);
 	}
 	script->ReturnContext(ctx);
+	return true;
 }
 
 void CInitScript::RegisterMgr()

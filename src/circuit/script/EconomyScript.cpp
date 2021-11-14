@@ -40,12 +40,13 @@ CEconomyScript::~CEconomyScript()
 {
 }
 
-void CEconomyScript::Init()
+bool CEconomyScript::Init()
 {
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Economy"); ASSERT(r >= 0);
 	info.openStrategy = script->GetFunc(mod, "void AiOpenStrategy(const CCircuitDef@, const AIFloat3& in)");
 	info.updateEconomy = script->GetFunc(mod, "void AiUpdateEconomy()");
+	return true;
 }
 
 void CEconomyScript::OpenStrategy(const CCircuitDef* facDef, const AIFloat3& pos)

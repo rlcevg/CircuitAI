@@ -22,12 +22,10 @@
 
 #include "OptionValues.h"
 #include "SkirmishAI.h"
+#include "Info.h"
 #include "Game.h"
-#include "DataDirs.h"
-#include "File.h"
 #include "Log.h"
 #include "Lua.h"
-#include "Info.h"
 
 #include <regex>
 
@@ -672,78 +670,53 @@ void CSetupManager::CalcLanePos()
 	}
 }
 
-bool CSetupManager::LocatePath(std::string& filename)
-{
-	DataDirs* datadirs = circuit->GetCallback()->GetDataDirs();
-	const bool located = utils::LocatePath(datadirs, filename);
-	delete datadirs;
-	return located;
-}
-
 bool CSetupManager::LoadConfig(const std::string& profile, const std::vector<std::string>& parts)
 {
-	Info* info = circuit->GetSkirmishAI()->GetInfo();
-	const char* version = info->GetValueByKey("version");
-	const char* name = info->GetValueByKey("shortName");
-	delete info;
-
-	std::string dirname;
+	configName = profile;
 
 	/*
-	 * Try map specific config
+	 * Locate game-side config
 	 */
-	CMap* map = circuit->GetMap();
-	dirname = std::string("LuaRules/Configs/") + name + "/" + version + "/";
-	configName = utils::MakeFileSystemCompatible(map->GetName());
-
-	config = ReadConfig(dirname, profile, {configName});
+	std::string dirname = utils::GetAIDataGameDir(circuit->GetSkirmishAI(), "config");
+	config = ReadConfig(dirname, profile, parts, true);
 	if (config != nullptr) {
 		return true;
-	}
-
-	/*
-	 * Locate default config
-	 */
-	configName = "config";
-	dirname = configName + SLASH;
-	if (LocatePath(dirname)) {
-		config = ReadConfig(dirname, profile, parts);
-		if (config != nullptr) {
-			return true;
-		}
 	} else {
-		circuit->LOG("Default config is missing! (%s)", configName.c_str());
+		circuit->LOG("Game-side config: '%s' is missing!", (dirname + profile + SLASH).c_str());
 	}
 
 	/*
-	 * Locate develop config: to run ./spring from source dir
+	 * Locate AI config
 	 */
-	dirname = std::string("AI/Skirmish/") + name + "/data/" + configName + "/";
-	config = ReadConfig(dirname, profile, parts);
+	dirname = "config" SLASH;
+	if (utils::LocatePath(circuit->GetCallback(), dirname)) {
+		config = ReadConfig(dirname, profile, parts, false);
+	} else {
+		circuit->LOG("AI config: '%s' is missing!", (dirname + profile + SLASH).c_str());
+	}
 	return (config != nullptr);
 }
 
-Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::string& profile, const std::vector<std::string>& parts)
+Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::string& profile,
+		const std::vector<std::string>& parts, const bool isVFS)
 {
 	Json::Value* cfg = nullptr;
-	File* file = circuit->GetCallback()->GetFile();
-
 	for (const std::string& name : parts) {
-		std::string filename = dirname + profile + "/" + name + ".json";
-		auto cfgStr = utils::ReadFile(file, filename);
+		std::string filename = dirname + profile + SLASH + name + ".json";
+		auto cfgStr = utils::ReadFile(circuit->GetCallback(), filename);
 		if (cfgStr.empty()) {
 			filename = dirname + name + ".json";
-			cfgStr = utils::ReadFile(file, filename);
+			cfgStr = utils::ReadFile(circuit->GetCallback(), filename);
 			if (cfgStr.empty()) {
-				circuit->LOG("No config file! (%s)", filename.c_str());
+				if (!isVFS) {
+					circuit->LOG("No config file! (%s)", filename.c_str());
+				}
 				continue;
 			}
 		}
-		circuit->LOG("Load: %s", filename.c_str());
+		circuit->LOG("Load config: %s", filename.c_str());
 		cfg = ParseConfig(cfgStr, name, cfg);
 	}
-
-	delete file;
 	return cfg;
 }
 

@@ -20,7 +20,7 @@ public:
 	CFactoryScript(CScriptManager* scr, CFactoryManager* mgr);
 	virtual ~CFactoryScript();
 
-	void Init() override;
+	bool Init() override;
 
 public:
 	bool IsSwitchTime(int lastSwitchFrame);

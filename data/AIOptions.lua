@@ -79,6 +79,11 @@ local options = {
 				name = 'Hard | Balanced',
 				desc = 'Difficulty: Hard |Playstyle: Balanced |Made by Flaka',
 			},
+			{
+				key  = 'easy',
+				name = 'Easy | Slowpoke',
+				desc = 'Difficulty: Easy |Playstyle: Podpivas',
+			},
 		},
 	},
 }

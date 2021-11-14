@@ -63,8 +63,9 @@ using namespace springai;
 #define RELEASE_RESIGN		100
 #define RELEASE_SIDE		200
 #define RELEASE_CONFIG		201
-#define RELEASE_COMMANDER	202
-#define RELEASE_CORRUPTED	203
+#define RELEASE_SCRIPT		202
+#define RELEASE_COMMANDER	203
+#define RELEASE_CORRUPTED	204
 #ifdef DEBUG
 	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
 #else
@@ -77,7 +78,7 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.4.5"};
+constexpr char version[]{"1.5.0"};
 constexpr uint32_t VERSION_SAVE = 0;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -538,7 +539,10 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	script = new CInitScript(GetScriptManager(), this);
 	std::vector<std::string> cfgParts;
 	CCircuitDef::SArmorInfo armor;
-	script->InitConfig(profile, cfgParts, armor);
+	if (!script->InitConfig(profile, cfgParts, armor)) {
+		Release(RELEASE_SCRIPT);
+		return ERROR_INIT;
+	}
 
 	if (!InitSide()) {
 		Release(RELEASE_SIDE);
@@ -594,9 +598,15 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	terrainManager->Init();
 
 	script->RegisterMgr();
-	script->Init();
+	if (!script->Init()) {
+		Release(RELEASE_SCRIPT);
+		return ERROR_INIT;
+	}
 	for (auto& module : modules) {
-		module->InitScript();
+		if (!module->InitScript()) {
+			Release(RELEASE_SCRIPT);
+			return ERROR_INIT;
+		}
 	}
 
 	if (isCheating) {
@@ -665,7 +675,7 @@ int CCircuitAI::Release(int reason)
 	delete script;
 	script = nullptr;
 
-	if (!isInitialized) {
+	if (!isInitialized && (reason < RELEASE_SIDE)) {
 		return 0;
 	}
 

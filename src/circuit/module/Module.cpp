@@ -22,9 +22,9 @@ IModule::~IModule()
 	delete script;
 }
 
-void IModule::InitScript()
+bool IModule::InitScript()
 {
-	script->Init();
+	return script->Init();
 }
 
 int IModule::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)

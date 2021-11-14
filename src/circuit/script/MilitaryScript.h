@@ -23,7 +23,7 @@ public:
 	CMilitaryScript(CScriptManager* scr, CMilitaryManager* mgr);
 	virtual ~CMilitaryScript();
 
-	void Init() override;
+	bool Init() override;
 
 public:
 	void MakeDefence(int cluster, const springai::AIFloat3& pos);

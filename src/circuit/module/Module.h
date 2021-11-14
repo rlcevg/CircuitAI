@@ -26,7 +26,7 @@ protected:
 public:
 	virtual ~IModule();
 
-	void InitScript();
+	bool InitScript();
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);
 	virtual int UnitFinished(CCircuitUnit* unit);

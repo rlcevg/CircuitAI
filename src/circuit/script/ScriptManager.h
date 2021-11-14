@@ -36,7 +36,7 @@ private:
 	void Init();
 	void Release();
 public:
-	bool Load(const char* modname, const std::string& filename);
+	bool Load(const char* modname, const std::string& subdir, const std::string& filename);
 	asIScriptEngine* GetEngine() const { return engine; }
 	asIScriptFunction* GetFunc(asIScriptModule* mod, const char* decl);
 	asIScriptContext* PrepareContext(asIScriptFunction* func);
@@ -56,8 +56,6 @@ private:
 	static void StoreContext(asIScriptEngine*, asIScriptContext*, void*);
 
 	void MessageCallback(const asSMessageInfo *msg, void *param);
-
-	bool LocatePath(std::string& filename);
 
 #ifdef DEBUG_VIS
 public:

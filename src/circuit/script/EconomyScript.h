@@ -26,7 +26,7 @@ public:
 	CEconomyScript(CScriptManager* scr, CEconomyManager* mgr);
 	virtual ~CEconomyScript();
 
-	void Init() override;
+	bool Init() override;
 
 public:
 	void OpenStrategy(const CCircuitDef* facDef, const springai::AIFloat3& pos);

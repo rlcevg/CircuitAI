@@ -29,13 +29,14 @@ CFactoryScript::~CFactoryScript()
 {
 }
 
-void CFactoryScript::Init()
+bool CFactoryScript::Init()
 {
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Factory"); ASSERT(r >= 0);
 	InitModule(mod);
 	factoryInfo.isSwitchTime = script->GetFunc(mod, "bool AiIsSwitchTime(int)");
 	factoryInfo.isSwitchAllowed = script->GetFunc(mod, "bool AiIsSwitchAllowed(CCircuitDef@)");
+	return true;
 }
 
 bool CFactoryScript::IsSwitchTime(int lastSwitchFrame)

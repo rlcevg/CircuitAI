@@ -48,9 +48,9 @@ public:
 	CInitScript(CScriptManager* scr, CCircuitAI* circuit);
 	virtual ~CInitScript();
 
-	void InitConfig(const std::string& profile,
+	bool InitConfig(const std::string& profile,
 			std::vector<std::string>& outCfgParts, CCircuitDef::SArmorInfo& outArmor);
-	void Init() override;
+	bool Init() override;
 
 	void RegisterMgr();
 
