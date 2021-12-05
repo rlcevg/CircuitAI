@@ -32,7 +32,7 @@ CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 		, blockCount(0)
 {
 	SetBuildPos(position);
-	manager->GetCircuit()->GetEconomyManager()->SetOpenSpot(spotId, false);
+	manager->GetCircuit()->GetEconomyManager()->SetOpenMexSpot(spotId, false);
 }
 
 CBMexTask::CBMexTask(ITaskManager* mgr)
@@ -75,7 +75,7 @@ void CBMexTask::Cancel()
 	if ((target == nullptr) && utils::is_valid(buildPos)) {
 		CCircuitAI* circuit = manager->GetCircuit();
 		circuit->GetMetalManager()->SetOpenSpot(spotId, true);
-		circuit->GetEconomyManager()->SetOpenSpot(spotId, true);
+		circuit->GetEconomyManager()->SetOpenMexSpot(spotId, true);
 		IBuilderTask::SetBuildPos(-RgtVector);
 	}
 }
@@ -107,11 +107,11 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 			)
 			return;
 		} else {
-			economyMgr->SetOpenSpot(spotId, true);
+			economyMgr->SetOpenMexSpot(spotId, true);
 		}
 	} else {
 		metalMgr->SetOpenSpot(spotId, true);
-		economyMgr->SetOpenSpot(spotId, true);
+		economyMgr->SetOpenMexSpot(spotId, true);
 		if (!CheckLandBlock(unit)) {
 			// Fallback to Guard/Assist/Patrol
 			manager->FallbackTask(unit);
@@ -289,7 +289,7 @@ void CBMexTask::Load(std::istream& is)
 	SERIALIZE(is, read)
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->GetEconomyManager()->SetOpenSpot(spotId, false);
+	circuit->GetEconomyManager()->SetOpenMexSpot(spotId, false);
 }
 
 void CBMexTask::Save(std::ostream& os) const

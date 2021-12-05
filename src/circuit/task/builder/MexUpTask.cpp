@@ -29,7 +29,7 @@ CBMexUpTask::CBMexUpTask(ITaskManager* mgr, Priority priority,
 		, spotId(spotId)
 		, reclaimMex(nullptr)
 {
-	manager->GetCircuit()->GetEconomyManager()->SetUpgradingSpot(spotId, true);
+	manager->GetCircuit()->GetEconomyManager()->SetUpgradingMexSpot(spotId, true);
 }
 
 CBMexUpTask::CBMexUpTask(ITaskManager* mgr)
@@ -68,7 +68,7 @@ void CBMexUpTask::Finish()
 	}
 
 	// FIXME: Won't work with EnqueueReclaim
-	circuit->GetEconomyManager()->SetUpgradingSpot(spotId, false);
+	circuit->GetEconomyManager()->SetUpgradingMexSpot(spotId, false);
 	circuit->GetBuilderManager()->UnregisterReclaim(reclaimMex);
 }
 
@@ -77,7 +77,7 @@ void CBMexUpTask::Cancel()
 	IBuilderTask::Cancel();
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->GetEconomyManager()->SetUpgradingSpot(spotId, false);
+	circuit->GetEconomyManager()->SetUpgradingMexSpot(spotId, false);
 	circuit->GetBuilderManager()->UnregisterReclaim(reclaimMex);
 }
 
@@ -168,7 +168,7 @@ void CBMexUpTask::Load(std::istream& is)
 	CCircuitAI* circuit = manager->GetCircuit();
 	reclaimMex = circuit->GetTeamUnit(reclaimMexId);
 
-	circuit->GetEconomyManager()->SetUpgradingSpot(spotId, true);
+	circuit->GetEconomyManager()->SetUpgradingMexSpot(spotId, true);
 }
 
 void CBMexUpTask::Save(std::ostream& os) const

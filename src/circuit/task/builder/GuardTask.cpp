@@ -77,11 +77,12 @@ void CBGuardTask::Execute(CCircuitUnit* unit)
 	if (vip != nullptr) {
 		TRY_UNIT(circuit, unit,
 			unit->CmdPriority(ClampPriority());
-			const bool isRestore = unit->GetCircuitDef()->IsAbleToRestore();
-			if (isRestore) {
-				unit->GetUnit()->RestoreArea(vip->GetPos(circuit->GetLastFrame()), 128.f);
-			}
-			unit->GetUnit()->Guard(vip->GetUnit(), isRestore ? UNIT_COMMAND_OPTION_SHIFT_KEY : 0);
+			// FIXME: it's not "Smooth area" and is broken when waterlevel is changed
+//			const bool isRestore = unit->GetCircuitDef()->IsAbleToRestore();
+//			if (isRestore) {
+//				unit->GetUnit()->RestoreArea(vip->GetPos(circuit->GetLastFrame()), 128.f);
+//			}
+			unit->GetUnit()->Guard(vip->GetUnit(), /*isRestore ? UNIT_COMMAND_OPTION_SHIFT_KEY : */0);
 		)
 	} else {
 		manager->AbortTask(this);

@@ -655,7 +655,7 @@ void CSetupManager::CalcLanePos()
 
 	SetLanePos(bestPos);
 #ifdef DEBUG_VIS
-	circuit->GetDrawer()->AddPoint(lanePos, utils::int_to_string(circuit->GetSkirmishAIId()).c_str());
+	circuit->GetDrawer()->AddPoint((basePos + lanePos) / 2, utils::int_to_string(circuit->GetTeamId()).c_str());
 	circuit->GetDrawer()->AddLine((basePos + lanePos) / 2, lanePos);
 	circuit->LOG("baseRange: %f", lanePos.distance2D(basePos));
 #endif  // DEBUG_VIS
@@ -663,11 +663,12 @@ void CSetupManager::CalcLanePos()
 	// NOTE: #include "module/MilitaryManager.h"
 	circuit->GetMilitaryManager()->SetBaseDefRange(lanePos.distance2D(basePos));
 
-	const AIFloat3 mapCenter = CTerrainManager::GetTerrainCenter();
-	CAllyTeam* allyTeam = circuit->GetAllyTeam();
-	if (mapCenter.SqDistance2D(lanePos) < mapCenter.SqDistance2D(allyTeam->GetAuthority()->GetSetupManager()->GetLanePos())) {
-		allyTeam->SetAuthority(circuit);
-	}
+	// FIXME: Influence map gets broken
+//	const AIFloat3 mapCenter = CTerrainManager::GetTerrainCenter();
+//	CAllyTeam* allyTeam = circuit->GetAllyTeam();
+//	if (mapCenter.SqDistance2D(lanePos) < mapCenter.SqDistance2D(allyTeam->GetAuthority()->GetSetupManager()->GetLanePos())) {
+//		allyTeam->SetAuthority(circuit);
+//	}
 }
 
 bool CSetupManager::LoadConfig(const std::string& profile, const std::vector<std::string>& parts)

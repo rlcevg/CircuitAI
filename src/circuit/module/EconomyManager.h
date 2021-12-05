@@ -106,11 +106,11 @@ public:
 	bool IsExcessed() const { return metalProduced > metalUsed; }
 	int GetBuildDelay() const { return buildDelay; }
 
-	bool IsAllyOpenSpot(int spotId) const;
-	bool IsOpenSpot(int spotId) const { return mexSpots[spotId].isOpen && (mexCount < mexMax); }
-	void SetOpenSpot(int spotId, bool value);
-	bool IsUpgradingSpot(int spotId) const { return mexSpots[spotId].isUp; }
-	void SetUpgradingSpot(int spotId, bool value) { mexSpots[spotId].isUp = value; }
+	bool IsAllyOpenMexSpot(int spotId) const;
+	bool IsOpenMexSpot(int spotId) const { return mexSpots[spotId].isOpen && (mexCount < mexMax); }
+	void SetOpenMexSpot(int spotId, bool value);
+	bool IsUpgradingMexSpot(int spotId) const { return mexSpots[spotId].isUp; }
+	void SetUpgradingMexSpot(int spotId, bool value) { mexSpots[spotId].isUp = value; }
 	bool IsOpenGeoSpot(int spotId) const { return geoSpots[spotId]; }
 	void SetOpenGeoSpot(int spotId, bool value) { geoSpots[spotId] = value; }
 	bool IsIgnorePull(const IBuilderTask* task) const;

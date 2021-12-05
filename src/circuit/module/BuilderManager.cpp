@@ -214,13 +214,13 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			return;
 		}
 		this->circuit->GetMetalManager()->SetOpenSpot(index, true);
-		this->circuit->GetEconomyManager()->SetOpenSpot(index, true);
+		this->circuit->GetEconomyManager()->SetOpenMexSpot(index, true);
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
 		// Check mex position in 20 seconds
 		this->circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([this, mexDef, pos, index]() {
-			if (this->circuit->GetEconomyManager()->IsAllyOpenSpot(index) &&
+			if (this->circuit->GetEconomyManager()->IsAllyOpenMexSpot(index) &&
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
 				this->circuit->GetTerrainManager()->CanBeBuiltAtSafe(mexDef, pos))  // hostile environment
 			{

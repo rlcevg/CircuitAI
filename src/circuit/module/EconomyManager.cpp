@@ -845,12 +845,12 @@ bool CEconomyManager::IsEnergyFull()
 	return isEnergyFull;
 }
 
-bool CEconomyManager::IsAllyOpenSpot(int spotId) const
+bool CEconomyManager::IsAllyOpenMexSpot(int spotId) const
 {
-	return IsOpenSpot(spotId) && circuit->GetMetalManager()->IsOpenSpot(spotId);
+	return IsOpenMexSpot(spotId) && circuit->GetMetalManager()->IsOpenSpot(spotId);
 }
 
-void CEconomyManager::SetOpenSpot(int spotId, bool value)
+void CEconomyManager::SetOpenMexSpot(int spotId, bool value)
 {
 	if (mexSpots[spotId].isOpen == value) {
 		return;
@@ -940,8 +940,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				CCircuitDef* mexDef = nullptr;
 				CMetalData::PointPredicate predicate = [this, &spots, &mexDefs, maxRange, terrainMgr, unit, &mexDef](int index) {
 					const AIFloat3& pos = spots[index].position;
-					if (!IsOpenSpot(index)
-						&& !IsUpgradingSpot(index)
+					if (!IsOpenMexSpot(index)
+						&& !IsUpgradingMexSpot(index)
 						&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
 					{
 						const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(pos, maxRange, false);
@@ -995,7 +995,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				// NOTE: threatmap type is set outside
 				CMetalData::PointPredicate predicate = [this, &spots, map, &mexDefs, terrainMgr, unit, &mexDef](int index) {
 					const AIFloat3& pos = spots[index].position;
-					if (IsAllyOpenSpot(index)
+					if (IsAllyOpenMexSpot(index)
 						&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
 					{
 						for (CCircuitDef* mDef : mexDefs) {
