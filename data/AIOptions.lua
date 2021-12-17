@@ -70,9 +70,14 @@ local options = {
 		def     = 'flaka',
 		items   = {
 			{
-				key  = 'dev',
-				name = 'Bleeding edge testing AI',
-				desc = 'Bleeding edge testing config',
+				key  = 'easy',
+				name = 'Easy | Slowpoke',
+				desc = 'Difficulty: Easy |Playstyle: Podpivas',
+			},
+			{
+				key  = 'medium',
+				name = 'Medium | Lazy',
+				desc = 'Difficulty: Medium |Playstyle: Learning mechanics',
 			},
 			{
 				key  = 'flaka',
@@ -80,9 +85,9 @@ local options = {
 				desc = 'Difficulty: Hard |Playstyle: Balanced |Made by Flaka',
 			},
 			{
-				key  = 'easy',
-				name = 'Easy | Slowpoke',
-				desc = 'Difficulty: Easy |Playstyle: Podpivas',
+				key  = 'dev',
+				name = 'Bleeding edge testing AI',
+				desc = 'Bleeding edge testing config',
 			},
 		},
 	},

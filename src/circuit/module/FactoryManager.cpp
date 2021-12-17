@@ -220,6 +220,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		const bool isBuilder = cdef.GetDef()->IsBuilder();
 		if (!cdef.IsMobile() && isBuilder) {
 			CCircuitDef::Id unitDefId = cdef.GetId();
+			// FIXME: Caretaker can be factory. Make attributes?
 			if (!cdef.GetBuildOptions().empty()) {
 				createdHandler[unitDefId] = factoryCreatedHandler;
 				finishedHandler[unitDefId] = factoryFinishedHandler;

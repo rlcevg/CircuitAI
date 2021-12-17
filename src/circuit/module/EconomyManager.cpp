@@ -251,6 +251,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 
 			// factory and assist
 			if (cdef.GetDef()->IsBuilder()) {
+				// FIXME: Caretaker can be factory. Make attributes?
 				if (!cdef.GetBuildOptions().empty()) {
 					finishedHandler[cdef.GetId()] = factoryFinishedHandler;
 					destroyedHandler[cdef.GetId()] = factoryDestroyedHandler;
@@ -345,18 +346,34 @@ void CEconomyManager::ReadConfig()
 	ecoStep = econ.get("eps_step", 0.25f).asFloat();
 	ecoFactor = (circuit->GetAllyTeam()->GetSize() - 1.0f) * ecoStep + 1.0f;
 	metalMod = (1.f - econ.get("excess", -1.f).asFloat());
-	const float bd = econ.get("build_delay", -1.f).asFloat();
-	buildDelay = (bd > 0.f) ? (bd * FRAMES_PER_SEC) : 0;
 	numMexUp = econ.get("mex_up", 2).asUInt();
 
+	{
+		const Json::Value& bd = econ["build_delay"];
+		float value = bd[0].get((unsigned)0, -1.f).asFloat();
+		bdInfo.startDelay = (value > 0.f) ? (value * FRAMES_PER_SEC) : 0;
+		bdInfo.startFrame = bd[0].get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
+		value = bd[1].get((unsigned)0, -1.f).asFloat();
+		bdInfo.endDelay = (value > 0.f) ? (value * FRAMES_PER_SEC) : 0;
+		bdInfo.endFrame = bd[1].get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
+		bdInfo.fraction = (bdInfo.endFrame != bdInfo.startFrame)
+				? float(bdInfo.endDelay - bdInfo.startDelay) / (bdInfo.endFrame - bdInfo.startFrame)
+				: 0.f;
+		buildDelay = bdInfo.startDelay;
+	}
+
 	const Json::Value& energy = econ["energy"];
-	const Json::Value& factor = energy["factor"];
-	efInfo.startFactor = factor[0].get((unsigned)0, 0.5f).asFloat();
-	efInfo.startFrame = factor[0].get((unsigned)1, 300 ).asInt() * FRAMES_PER_SEC;
-	efInfo.endFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
-	efInfo.endFrame = factor[1].get((unsigned)1, 3600).asInt() * FRAMES_PER_SEC;
-	efInfo.fraction = (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
-	energyFactor = efInfo.startFactor;
+	{
+		const Json::Value& factor = energy["factor"];
+		efInfo.startFactor = factor[0].get((unsigned)0, 0.5f).asFloat();
+		efInfo.startFrame = factor[0].get((unsigned)1, 300 ).asInt() * FRAMES_PER_SEC;
+		efInfo.endFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
+		efInfo.endFrame = factor[1].get((unsigned)1, 3600).asInt() * FRAMES_PER_SEC;
+		efInfo.fraction = (efInfo.endFrame != efInfo.startFrame)
+				? (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame)
+				: 0.f;
+		energyFactor = efInfo.startFactor;
+	}
 
 	costRatio = energy.get("cost_ratio", 0.05f).asFloat();
 	ecoEMRatio = energy.get("em_ratio", 0.08f).asFloat();
@@ -1772,6 +1789,14 @@ void CEconomyManager::UpdateEconomy()
 		energyFactor = efInfo.endFactor;
 	} else {
 		energyFactor = efInfo.fraction * (ecoFrame - efInfo.startFrame) + efInfo.startFactor;
+	}
+
+	if (ecoFrame <= bdInfo.startFrame) {
+		buildDelay = bdInfo.startDelay;
+	} else if (ecoFrame >= bdInfo.endFrame) {
+		buildDelay = bdInfo.endDelay;
+	} else {
+		buildDelay = int(bdInfo.fraction * (ecoFrame - bdInfo.startFrame)) + bdInfo.startDelay;
 	}
 
 	if (mexCount <= mspInfos.front().mex) {
