@@ -78,7 +78,7 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.5.1"};
+constexpr char version[]{"1.5.2"};
 constexpr uint32_t VERSION_SAVE = 0;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);

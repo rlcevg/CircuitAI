@@ -335,6 +335,10 @@ void CEnemyManager::DeleteEnemyUnit(CEnemyUnit* data)
 
 void CEnemyManager::AddEnemyCost(const CEnemyUnit* e)
 {
+	if (e->IsIgnore()) {
+		return;
+	}
+
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
@@ -356,6 +360,10 @@ void CEnemyManager::AddEnemyCost(const CEnemyUnit* e)
 
 void CEnemyManager::DelEnemyCost(const CEnemyUnit* e)
 {
+	if (e->IsIgnore()) {
+		return;
+	}
+
 	CCircuitDef* cdef = e->GetCircuitDef();
 	assert(cdef != nullptr);
 
