@@ -150,6 +150,15 @@ private:
 	} efInfo;
 	float energyFactor;
 
+	struct SBuildDelayInfo {
+		int startDelay;
+		int endDelay;
+		int startFrame;
+		int endFrame;
+		float fraction;
+	} bdInfo;
+	int buildDelay;  // frames
+
 	std::vector<float> metalIncomes;
 	std::vector<float> energyIncomes;
 	int indexRes;
@@ -159,7 +168,6 @@ private:
 	float metalUsed;
 	float metalMod;
 	int mexMax;
-	int buildDelay;
 
 	struct SPullMtoS {
 		float pull;

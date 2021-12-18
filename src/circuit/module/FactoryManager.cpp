@@ -836,7 +836,7 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit)
 		if (!terrainMgr->CanBeBuiltAt(buildDef, pos, unit->GetCircuitDef()->GetBuildDistance())) {
 			return nullptr;
 		}
-		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, pos, CRecruitTask::RecruitType::BUILDPOWER, 128.f);
+		return EnqueueTask(CRecruitTask::Priority::NORMAL, buildDef, pos, CRecruitTask::RecruitType::BUILDPOWER, 64.f);
 	}
 	return nullptr;
 }
@@ -953,7 +953,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 
 	if ((buildDef != nullptr) && buildDef->IsAvailable(frame)) {
 		UnitDef* def = unit->GetCircuitDef()->GetDef();
-		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE * 4;
+		float radius = std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE / 2;
 		// FIXME CCircuitDef::RoleType <-> CRecruitTask::RecruitType relations
 		return EnqueueTask(isResponse ? CRecruitTask::Priority::HIGH : CRecruitTask::Priority::NORMAL,
 						   buildDef, pos, CRecruitTask::RecruitType::FIREPOWER, radius);

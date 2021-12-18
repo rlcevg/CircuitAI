@@ -98,7 +98,7 @@
 //		},
 		"strider": {
 			"type": ["rectangle", "special"],
-			"yard": [4, 4],
+			"yard": [2, 2],
 			"ignore": ["all"]
 		},
 		"_default_": {

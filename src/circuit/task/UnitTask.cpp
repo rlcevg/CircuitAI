@@ -144,7 +144,7 @@ void IUnitTask::Save(std::ostream& os) const
 void IUnitTask::Log()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->LOG("type: %i | state: %i | this: %i", type, state, this);
+	circuit->LOG("type: %i | state: %i | this: %lx", type, state, this);
 }
 #endif
 

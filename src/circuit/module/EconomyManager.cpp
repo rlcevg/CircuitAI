@@ -277,17 +277,33 @@ void CEconomyManager::ReadConfig()
 	const int minSwitch = swch.get((unsigned)0, 800).asInt();
 	const int maxSwitch = swch.get((unsigned)1, 900).asInt();
 	switchTime = (minSwitch + rand() % (maxSwitch - minSwitch + 1)) * FRAMES_PER_SEC;
-	const float bd = econ.get("build_delay", -1.f).asFloat();
-	buildDelay = (bd > 0.f) ? (bd * FRAMES_PER_SEC) : 0;
+
+	{
+		const Json::Value& bd = econ["build_delay"];
+		float value = bd[0].get((unsigned)0, -1.f).asFloat();
+		bdInfo.startDelay = (value > 0.f) ? (value * FRAMES_PER_SEC) : 0;
+		bdInfo.startFrame = bd[0].get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
+		value = bd[1].get((unsigned)0, -1.f).asFloat();
+		bdInfo.endDelay = (value > 0.f) ? (value * FRAMES_PER_SEC) : 0;
+		bdInfo.endFrame = bd[1].get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
+		bdInfo.fraction = (bdInfo.endFrame != bdInfo.startFrame)
+				? float(bdInfo.endDelay - bdInfo.startDelay) / (bdInfo.endFrame - bdInfo.startFrame)
+				: 0.f;
+		buildDelay = bdInfo.startDelay;
+	}
 
 	const Json::Value& energy = econ["energy"];
-	const Json::Value& factor = energy["factor"];
-	efInfo.startFactor = factor[0].get((unsigned)0, 0.5f).asFloat();
-	efInfo.startFrame = factor[0].get((unsigned)1, 300 ).asInt() * FRAMES_PER_SEC;
-	efInfo.endFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
-	efInfo.endFrame = factor[1].get((unsigned)1, 3600).asInt() * FRAMES_PER_SEC;
-	efInfo.fraction = (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame);
-	energyFactor = efInfo.startFactor;
+	{
+		const Json::Value& factor = energy["factor"];
+		efInfo.startFactor = factor[0].get((unsigned)0, 0.5f).asFloat();
+		efInfo.startFrame = factor[0].get((unsigned)1, 300 ).asInt() * FRAMES_PER_SEC;
+		efInfo.endFactor = factor[1].get((unsigned)0, 2.0f).asFloat();
+		efInfo.endFrame = factor[1].get((unsigned)1, 3600).asInt() * FRAMES_PER_SEC;
+		efInfo.fraction = (efInfo.endFrame != efInfo.startFrame)
+				? (efInfo.endFactor - efInfo.startFactor) / (efInfo.endFrame - efInfo.startFrame)
+				: 0.f;
+		energyFactor = efInfo.startFactor;
+	}
 
 	std::vector<std::pair<std::string, int>> engies;
 	std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
@@ -460,7 +476,7 @@ void CEconomyManager::AddEnergyDefs(const std::set<CCircuitDef*>& buildDefs)
 		auto lit = engyLimits.find(cdef);
 		data.limit = (lit != engyLimits.end()) ? lit->second : 0;
 		// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
-		return (cdef->GetCostM()/* + cdef->GetCostE() * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize() / SQUARE(data.make);
+		return SQUARE(data.make) / ((cdef->GetCostM()/* + cdef->GetCostE() * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize());
 	});
 
 	// DEBUG
@@ -1223,6 +1239,14 @@ void CEconomyManager::UpdateEconomy()
 		energyFactor = efInfo.endFactor;
 	} else {
 		energyFactor = efInfo.fraction * (ecoFrame - efInfo.startFrame) + efInfo.startFactor;
+	}
+
+	if (ecoFrame <= bdInfo.startFrame) {
+		buildDelay = bdInfo.startDelay;
+	} else if (ecoFrame >= bdInfo.endFrame) {
+		buildDelay = bdInfo.endDelay;
+	} else {
+		buildDelay = int(bdInfo.fraction * (ecoFrame - bdInfo.startFrame)) + bdInfo.startDelay;
 	}
 
 	if (mexCount <= mspInfos.front().mex) {

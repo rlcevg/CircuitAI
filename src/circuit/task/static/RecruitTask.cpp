@@ -109,6 +109,10 @@ void CRecruitTask::Finish()
 
 void CRecruitTask::Cancel()
 {
+	if (target != nullptr) {
+		SetTarget(nullptr);
+	}
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	for (CCircuitUnit* unit : units) {
 		// Clear build-queue

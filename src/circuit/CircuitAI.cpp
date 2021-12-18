@@ -77,7 +77,7 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.2.4"};
+constexpr char version[]{"1.2.5"};
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -186,6 +186,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			} catch (...) {
 				ret = ERROR_INIT;
 			}
+			return ret;
 			break;
 		}
 		case EVENT_RELEASE: {
@@ -392,6 +393,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			loadFileStream.open(evt->file, std::ios::binary);
 			ret = loadFileStream.is_open() ? this->Load(loadFileStream) : ERROR_LOAD;
 			loadFileStream.close();
+			return ret;
 			break;
 		}
 		case EVENT_SAVE: {
@@ -401,6 +403,7 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			saveFileStream.open(evt->file, std::ios::binary);
 			ret = saveFileStream.is_open() ? this->Save(saveFileStream) : ERROR_SAVE;
 			saveFileStream.close();
+			return ret;
 			break;
 		}
 		case EVENT_ENEMY_CREATED: {
