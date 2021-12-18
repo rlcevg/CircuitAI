@@ -477,7 +477,7 @@ void CCircuitUnit::Log()
 		task->Log();
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->LOG("unit: %i | id: %i | %s", this, id, circuitDef->GetDef()->GetName());
+	circuit->LOG("unit: %lx | id: %i | %s", this, id, circuitDef->GetDef()->GetName());
 	auto commands = unit->GetCurrentCommands();
 	for (springai::Command* c : commands) {
 		circuit->LOG("command: %i | type: %i | id: %i", c->GetCommandId(), c->GetType(), c->GetId());

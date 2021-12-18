@@ -681,6 +681,7 @@ Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::st
 				continue;
 			}
 		}
+		circuit->LOG("Load config: %s", filename.c_str());
 		cfg = ParseConfig(cfgStr, name, cfg);
 	}
 
