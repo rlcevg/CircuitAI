@@ -77,7 +77,7 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.2.5"};
+constexpr char version[]{"1.2.6"};
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -1245,9 +1245,11 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 	teamUnits[unitId] = unit;
 	cdef->Inc();
 
-	if (!isValid) {
-		Garbage(unit, "useless");
-	}
+	// FIXME: Sometimes area where factory is placed is not suitable for its units.
+	//        There Garbage() can cause infinite start-cancel loop.
+//	if (!isValid) {
+//		Garbage(unit, "useless");
+//	}
 	return unit;
 }
 
