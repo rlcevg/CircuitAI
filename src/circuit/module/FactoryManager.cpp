@@ -884,18 +884,16 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 	const float range = unit->GetCircuitDef()->GetBuildDistance();
 	const AIFloat3& pos = unit->GetPos(frame);
 
-	const int iS = terrainMgr->GetSectorIndex(pos);
-	auto isEnemyInArea = [iS, terrainMgr](int frame, CCircuitDef* bd) {
-		if (frame < FRAMES_PER_SEC * 60 * 10) {
-			return true;
-		}
-		STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(bd->GetMobileId());
-		if (mobileType != nullptr) {
-			STerrainMapArea* area = mobileType->sector[iS].area;
-			return terrainMgr->IsEnemyInArea(area);
-		}
-		return true;
-	};
+//	const int iS = terrainMgr->GetSectorIndex(pos);
+//	auto isEnemyInArea = [iS, terrainMgr](int frame, CCircuitDef* bd) {
+//		if (frame < FRAMES_PER_SEC * 60 * 10) {
+//			return true;
+//		}
+//		STerrainMapArea* area;
+//		bool isValid;
+//		std::tie(area, isValid) = terrainMgr->GetCurrentMapArea(bd, iS);
+//		return isValid && ((area == nullptr) || terrainMgr->IsEnemyInArea(area));
+//	};
 
 	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {
@@ -904,7 +902,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			|| (bd->GetCostM() > maxCost)
 			|| !bd->IsAvailable(frame)
 			|| !terrainMgr->CanBeBuiltAt(bd, pos, range)
-			|| !isEnemyInArea(frame, bd))
+			/*|| !isEnemyInArea(frame, bd)*/)
 		{
 			continue;
 		}
@@ -925,7 +923,7 @@ CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* unit)
 			if (((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost()))
 				|| !bd->IsAvailable(frame)
 				|| !terrainMgr->CanBeBuiltAt(bd, pos, range)
-				|| !isEnemyInArea(frame, bd))
+				/*|| !isEnemyInArea(frame, bd)*/)
 			{
 				continue;
 			}

@@ -1081,6 +1081,26 @@ std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef
 	return std::make_pair(area, area != nullptr);
 }
 
+std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const int iS)
+{
+	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
+	if (mobileType == nullptr) {  // flying units & buildings
+		return std::make_pair(nullptr, true);
+	}
+
+	// other mobile units & their factories
+	STerrainMapArea* area = mobileType->sector[iS].area;
+	if (area == nullptr) {
+		// Case: 1) unit spawned/pushed/transported outside of valid area
+		//       2) factory terraformed height around and became non-valid area
+		STerrainMapAreaSector* sector = GetAlternativeSector(nullptr, iS, mobileType);
+		if (sector != nullptr) {
+			area = sector->area;
+		}
+	}
+	return std::make_pair(area, area != nullptr);
+}
+
 bool CTerrainManager::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destination)
 {
 	const int iS = GetSectorIndex(destination);

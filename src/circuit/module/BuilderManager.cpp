@@ -1315,7 +1315,7 @@ void CBuilderManager::UpdateAreaUsers()
 	for (auto& tasks : buildTasks) {
 		for (IBuilderTask* task : tasks) {
 			CCircuitDef* cdef = task->GetBuildDef();
-			if ((cdef != nullptr) && !IsBuilderInArea(cdef, task->GetPosition())) {
+			if ((cdef != nullptr) && (task->GetTarget() == nullptr) && !IsBuilderInArea(cdef, task->GetPosition())) {
 				removeTasks.insert(task);
 			}
 		}
