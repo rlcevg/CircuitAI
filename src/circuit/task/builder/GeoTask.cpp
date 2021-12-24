@@ -8,6 +8,7 @@
 #include "task/builder/GeoTask.h"
 #include "task/TaskManager.h"
 #include "module/EconomyManager.h"
+#include "resource/EnergyManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
@@ -45,7 +46,9 @@ CBGeoTask::~CBGeoTask()
 void CBGeoTask::Cancel()
 {
 	if ((target == nullptr) && utils::is_valid(buildPos)) {
-		manager->GetCircuit()->GetEconomyManager()->SetOpenGeoSpot(spotId, true);
+		if (spotId >= 0) {  // for broken Load
+			manager->GetCircuit()->GetEconomyManager()->SetOpenGeoSpot(spotId, true);
+		}
 		IBuilderTask::SetBuildPos(-RgtVector);
 	}
 }
@@ -86,13 +89,18 @@ void CBGeoTask::SetBuildPos(const AIFloat3& pos)
 #define SERIALIZE(stream, func)	\
 	utils::binary_##func(stream, spotId);
 
-void CBGeoTask::Load(std::istream& is)
+bool CBGeoTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	if ((spotId < 0) || ((size_t)spotId >= circuit->GetEnergyManager()->GetSpots().size())) {
+		spotId = -1;
+		return false;
+	}
 	circuit->GetEconomyManager()->SetOpenGeoSpot(spotId, false);
+	return true;
 }
 
 void CBGeoTask::Save(std::ostream& os) const

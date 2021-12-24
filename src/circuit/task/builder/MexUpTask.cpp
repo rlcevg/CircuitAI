@@ -10,6 +10,7 @@
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
+#include "resource/MetalManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -77,7 +78,9 @@ void CBMexUpTask::Cancel()
 	IBuilderTask::Cancel();
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	circuit->GetEconomyManager()->SetUpgradingMexSpot(spotId, false);
+	if (spotId >= 0) {  // for broken Load
+		circuit->GetEconomyManager()->SetUpgradingMexSpot(spotId, false);
+	}
 	circuit->GetBuilderManager()->UnregisterReclaim(reclaimMex);
 }
 
@@ -158,7 +161,7 @@ void CBMexUpTask::OnUnitIdle(CCircuitUnit* unit)
 	utils::binary_##func(stream, spotId);		\
 	utils::binary_##func(stream, reclaimMexId);
 
-void CBMexUpTask::Load(std::istream& is)
+bool CBMexUpTask::Load(std::istream& is)
 {
 	CCircuitUnit::Id reclaimMexId;
 
@@ -168,7 +171,12 @@ void CBMexUpTask::Load(std::istream& is)
 	CCircuitAI* circuit = manager->GetCircuit();
 	reclaimMex = circuit->GetTeamUnit(reclaimMexId);
 
+	if ((spotId < 0) || ((size_t)spotId >= circuit->GetMetalManager()->GetSpots().size())) {
+		spotId = -1;
+		return false;
+	}
 	circuit->GetEconomyManager()->SetUpgradingMexSpot(spotId, true);
+	return true;
 }
 
 void CBMexUpTask::Save(std::ostream& os) const

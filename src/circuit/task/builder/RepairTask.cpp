@@ -98,13 +98,14 @@ bool CBRepairTask::Reevaluate(CCircuitUnit* unit)
 	return true;
 }
 
-void CBRepairTask::Load(std::istream& is)
+bool CBRepairTask::Load(std::istream& is)
 {
 	IRepairTask::Load(is);
 
 	if (target != nullptr) {
 		static_cast<CBuilderManager*>(manager)->MarkRepairUnit(target->GetId(), this);
 	}
+	return true;
 }
 
 } // namespace circuit

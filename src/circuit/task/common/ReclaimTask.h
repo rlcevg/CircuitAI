@@ -41,7 +41,7 @@ public:
 	bool IsInRange(const springai::AIFloat3& pos, float range) const;
 
 protected:
-	virtual void Load(std::istream& is) override;
+	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 
 	float radius;

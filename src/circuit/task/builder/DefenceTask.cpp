@@ -98,10 +98,11 @@ void CBDefenceTask::Cancel()
 	utils::binary_##func(stream, isUrgent);		\
 	utils::binary_##func(stream, normalCost);
 
-void CBDefenceTask::Load(std::istream& is)
+bool CBDefenceTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+	return true;
 }
 
 void CBDefenceTask::Save(std::ostream& os) const

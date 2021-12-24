@@ -150,7 +150,7 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 	utils::binary_##func(stream, reprDefId);		\
 	utils::binary_##func(stream, isPlop);
 
-void CBFactoryTask::Load(std::istream& is)
+bool CBFactoryTask::Load(std::istream& is)
 {
 	CCircuitDef::Id reprDefId;
 
@@ -162,6 +162,7 @@ void CBFactoryTask::Load(std::istream& is)
 
 	circuit->GetFactoryManager()->AddFactory(buildDef);
 	Activate();  // circuit->GetFactoryManager()->ApplySwitchFrame();
+	return true;
 }
 
 void CBFactoryTask::Save(std::ostream& os) const

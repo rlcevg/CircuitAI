@@ -119,10 +119,11 @@ bool IReclaimTask::IsInRange(const AIFloat3& pos, float range) const
 	utils::binary_##func(stream, radius);		\
 	utils::binary_##func(stream, isMetal);
 
-void IReclaimTask::Load(std::istream& is)
+bool IReclaimTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+	return true;
 }
 
 void IReclaimTask::Save(std::ostream& os) const

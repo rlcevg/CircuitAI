@@ -125,7 +125,7 @@ protected:
 
 	void ExecuteChain(SBuildChain* chain);
 
-	virtual void Load(std::istream& is) override;
+	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 
 	BuildType buildType;

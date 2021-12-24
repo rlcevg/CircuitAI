@@ -170,10 +170,11 @@ bool CBResurrectTask::IsInRange(const AIFloat3& pos, float range) const
 #define SERIALIZE(stream, func)	\
 	utils::binary_##func(stream, radius);
 
-void CBResurrectTask::Load(std::istream& is)
+bool CBResurrectTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+	return true;
 }
 
 void CBResurrectTask::Save(std::ostream& os) const

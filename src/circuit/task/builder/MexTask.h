@@ -36,7 +36,7 @@ private:
 	bool CheckLandBlock(CCircuitUnit* unit);
 	bool CheckWaterBlock(CCircuitUnit* unit);
 
-	virtual void Load(std::istream& is) override;
+	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 
 	int spotId;

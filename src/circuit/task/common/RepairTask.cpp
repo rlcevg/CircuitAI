@@ -192,10 +192,11 @@ CAllyUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 #define SERIALIZE(stream, func)	\
 	utils::binary_##func(stream, targetId);
 
-void IRepairTask::Load(std::istream& is)
+bool IRepairTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+	return true;
 }
 
 void IRepairTask::Save(std::ostream& os) const

@@ -29,7 +29,7 @@ public:
 private:
 	virtual bool Reevaluate(CCircuitUnit* unit) override;
 
-	virtual void Load(std::istream& is) override;
+	virtual bool Load(std::istream& is) override;
 };
 
 } // namespace circuit

@@ -39,7 +39,7 @@ public:
 	CAllyUnit* FindUnitToAssist(CCircuitUnit* unit);
 
 protected:
-	virtual void Load(std::istream& is) override;
+	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 
 	ICoreUnit::Id targetId;  // Ignore "target" variable because ally units are vague

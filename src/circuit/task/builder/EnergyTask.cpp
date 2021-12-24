@@ -70,10 +70,11 @@ void CBEnergyTask::Cancel()
 #define SERIALIZE(stream, func)	\
 	utils::binary_##func(stream, isStalling);
 
-void CBEnergyTask::Load(std::istream& is)
+bool CBEnergyTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+	return true;
 }
 
 void CBEnergyTask::Save(std::ostream& os) const

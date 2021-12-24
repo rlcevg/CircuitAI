@@ -152,13 +152,14 @@ bool CBReclaimTask::Reevaluate(CCircuitUnit* unit)
 	return true;
 }
 
-void CBReclaimTask::Load(std::istream& is)
+bool CBReclaimTask::Load(std::istream& is)
 {
 	IReclaimTask::Load(is);
 
 	if (target != nullptr) {
 		static_cast<CBuilderManager*>(manager)->MarkReclaimUnit(target, this);
 	}
+	return true;
 }
 
 } // namespace circuit

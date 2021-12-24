@@ -165,12 +165,13 @@ void CBTerraformTask::OnUnitIdle(CCircuitUnit* unit)
 #define SERIALIZE(stream, func)	\
 	utils::binary_##func(stream, targetId);
 
-void CBTerraformTask::Load(std::istream& is)
+bool CBTerraformTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
 
 	state = State::ROAM;  // reset attempt
+	return true;
 }
 
 void CBTerraformTask::Save(std::ostream& os) const

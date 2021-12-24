@@ -147,9 +147,10 @@ bool IUnitTask::IsQueryReady(CCircuitUnit* unit) const
 	utils::binary_##func(stream, updCount);		\
 	utils::binary_##func(stream, isDead);
 
-void IUnitTask::Load(std::istream& is)
+bool IUnitTask::Load(std::istream& is)
 {
 	SERIALIZE(is, read)
+	return true;
 }
 
 void IUnitTask::Save(std::ostream& os) const

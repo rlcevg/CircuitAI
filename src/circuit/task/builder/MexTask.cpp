@@ -74,8 +74,10 @@ void CBMexTask::Cancel()
 {
 	if ((target == nullptr) && utils::is_valid(buildPos)) {
 		CCircuitAI* circuit = manager->GetCircuit();
-		circuit->GetMetalManager()->SetOpenSpot(spotId, true);
-		circuit->GetEconomyManager()->SetOpenMexSpot(spotId, true);
+		if (spotId >= 0) {  // for broken Load
+			circuit->GetMetalManager()->SetOpenSpot(spotId, true);
+			circuit->GetEconomyManager()->SetOpenMexSpot(spotId, true);
+		}
 		IBuilderTask::SetBuildPos(-RgtVector);
 	}
 }
@@ -283,13 +285,18 @@ bool CBMexTask::CheckWaterBlock(CCircuitUnit* unit)
 #define SERIALIZE(stream, func)	\
 	utils::binary_##func(stream, spotId);
 
-void CBMexTask::Load(std::istream& is)
+bool CBMexTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	if ((spotId < 0) || ((size_t)spotId >= circuit->GetMetalManager()->GetSpots().size())) {
+		spotId = -1;
+		return false;
+	}
 	circuit->GetEconomyManager()->SetOpenMexSpot(spotId, false);
+	return true;
 }
 
 void CBMexTask::Save(std::ostream& os) const

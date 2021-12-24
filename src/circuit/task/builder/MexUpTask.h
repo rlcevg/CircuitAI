@@ -30,7 +30,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 private:
-	virtual void Load(std::istream& is) override;
+	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 
 	int spotId;

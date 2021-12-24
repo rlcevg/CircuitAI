@@ -822,7 +822,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 	utils::binary_##func(stream, savedIncomeE);	\
 	utils::binary_##func(stream, buildFails);
 
-void IBuilderTask::Load(std::istream& is)
+bool IBuilderTask::Load(std::istream& is)
 {
 	CCircuitDef::Id bdefId;
 	CCircuitUnit::Id targetId;
@@ -841,6 +841,7 @@ void IBuilderTask::Load(std::istream& is)
 	if ((target != nullptr) && (buildType != BuildType::REPAIR) && (buildType != BuildType::RECLAIM)) {
 		circuit->GetBuilderManager()->MarkUnfinishedUnit(target, this);
 	}
+	return true;
 }
 
 void IBuilderTask::Save(std::ostream& os) const

@@ -77,10 +77,10 @@ protected:
 	bool IsQueryReady(CCircuitUnit* unit) const;
 
 public:
+	friend bool operator>>(std::istream& is, IUnitTask& data);
 	friend std::ostream& operator<<(std::ostream& os, const IUnitTask& data);
-	friend std::istream& operator>>(std::istream& is, IUnitTask& data);
 protected:
-	virtual void Load(std::istream& is);
+	virtual bool Load(std::istream& is);
 	virtual void Save(std::ostream& os) const;
 
 	ITaskManager* manager;
@@ -102,16 +102,15 @@ public:
 #endif
 };
 
+inline bool operator>>(std::istream& is, IUnitTask& data)
+{
+	return data.Load(is);
+}
+
 inline std::ostream& operator<<(std::ostream& os, const IUnitTask& data)
 {
 	data.Save(os);
 	return os;
-}
-
-inline std::istream& operator>>(std::istream& is, IUnitTask& data)
-{
-	data.Load(is);
-	return is;
 }
 
 } // namespace circuit

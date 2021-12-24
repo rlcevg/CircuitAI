@@ -31,7 +31,7 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 protected:
-	virtual void Load(std::istream& is) override;
+	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 
 	ICoreUnit::Id targetId;  // Ignore "target" as it could be destroyed

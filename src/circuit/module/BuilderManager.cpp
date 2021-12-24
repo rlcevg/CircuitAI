@@ -1835,10 +1835,13 @@ void CBuilderManager::Load(std::istream& is)
 				default: break;
 			}
 			if (task != nullptr) {
-				is >> *task;
+				const bool isValid = is >> *task;
 				buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())].insert(task);
 				buildTasksCount++;
 				buildUpdates.push_back(task);
+				if (!isValid) {
+					AbortTask(task);
+				}
 			}
 		}
 	}

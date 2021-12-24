@@ -27,7 +27,7 @@ protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
-	virtual void Load(std::istream& is) override;
+	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 
 	bool isUrgent;

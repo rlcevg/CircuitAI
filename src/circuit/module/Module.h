@@ -36,8 +36,8 @@ public:
 	virtual int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);
 	virtual int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);
 
-	friend std::ostream& operator<<(std::ostream& os, const IModule& data);
 	friend std::istream& operator>>(std::istream& is, IModule& data);
+	friend std::ostream& operator<<(std::ostream& os, const IModule& data);
 protected:
 	virtual void Load(std::istream& is) {}
 	virtual void Save(std::ostream& os) const {}
@@ -50,16 +50,16 @@ protected:
 	IScript* script;  // owner
 };
 
-inline std::ostream& operator<<(std::ostream& os, const IModule& data)
-{
-	data.Save(os);
-	return os;
-}
-
 inline std::istream& operator>>(std::istream& is, IModule& data)
 {
 	data.Load(is);
 	return is;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const IModule& data)
+{
+	data.Save(os);
+	return os;
 }
 
 } // namespace circuit
