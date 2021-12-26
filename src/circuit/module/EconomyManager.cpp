@@ -470,7 +470,9 @@ void CEconomyManager::Init()
 		mspInfoEnd.fraction = 0.f;
 		mspInfos.push_back(mspInfoEnd);
 		SPullMtoS& mspInfoBegin = mspInfos[i - 1];
-		mspInfoBegin.fraction = (mspInfoEnd.pull - mspInfoBegin.pull) / (mspInfoEnd.mex - mspInfoBegin.mex);
+		mspInfoBegin.fraction = (mspInfoEnd.mex != mspInfoBegin.mex)
+				? (mspInfoEnd.pull - mspInfoBegin.pull) / (mspInfoEnd.mex - mspInfoBegin.mex)
+				: 0.f;
 	}
 	std::sort(mspInfos.begin(), mspInfos.end());
 	pullMtoS = mspInfos.front().pull;
@@ -1533,7 +1535,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	const float energyIncome = GetAvgEnergyIncome();
 	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if (metalIncome < 30) {
+	if (metalIncome < 16) {
 		return nullptr;
 	}
 

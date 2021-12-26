@@ -316,7 +316,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 		for (; it != candDefs.rend(); ++it) {
 			defId = it->second;
 			range = it->first;
-			const float dist = pylon0.range + pylon1.range + range * 1.2f;
+			const float dist = pylon0.range + pylon1.range + range/* * 1.2f*/;
 			if (pylon0.pos.SqDistance2D(pylon1.pos) > SQUARE(dist)) {
 				break;
 			}
@@ -324,7 +324,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 
 		outDef = circuit->GetCircuitDef(defId);
 		if ((outDef == nullptr) || !outDef->IsAvailable(frame)
-			|| ((metalIncome < outDef->GetCostM() * 0.2f) && (outDef->GetCostM() > 100.f)))
+			|| ((metalIncome < outDef->GetCostM() * 0.1f) && (outDef->GetCostM() > 100.f)))
 		{
 			candDefs.erase(range);
 			continue;

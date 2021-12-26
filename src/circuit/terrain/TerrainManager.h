@@ -134,6 +134,7 @@ public:
 	}
 	static void SnapPosition(springai::AIFloat3& position);
 	std::pair<STerrainMapArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
+	std::pair<STerrainMapArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const int indexSector);
 	int GetSectorIndex(const springai::AIFloat3& position) const { return terrainData->GetSectorIndex(position); }
 	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
 	springai::AIFloat3 GetBuildPosition(CCircuitDef* cdef, const springai::AIFloat3& position);

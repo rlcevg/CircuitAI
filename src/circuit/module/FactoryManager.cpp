@@ -36,7 +36,7 @@ namespace circuit {
 
 using namespace springai;
 
-//#define FACTORY_CHOICE 1
+#define FACTORY_CHOICE 1
 #ifdef FACTORY_CHOICE
 static int tierDbg;
 static std::string unitTypeDbg;
@@ -1531,15 +1531,13 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 
 	const int iS = terrainMgr->GetSectorIndex(pos);
 	auto isEnemyInArea = [iS, terrainMgr](int frame, CCircuitDef* bd) {
-		if (frame < FRAMES_PER_SEC * 60 * 10) {
+		if (frame < FRAMES_PER_SEC * 60 * 10) {  // TODO: Change to minimum required army power
 			return true;
 		}
-		STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(bd->GetMobileId());
-		if (mobileType != nullptr) {
-			STerrainMapArea* area = mobileType->sector[iS].area;
-			return terrainMgr->IsEnemyInArea(area);
-		}
-		return true;
+		STerrainMapArea* area;
+		bool isValid;
+		std::tie(area, isValid) = terrainMgr->GetCurrentMapArea(bd, iS);
+		return isValid && ((area == nullptr) || terrainMgr->IsEnemyInArea(area));
 	};
 
 #ifdef FACTORY_CHOICE
