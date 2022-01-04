@@ -43,10 +43,10 @@ public:
 	float GetCurWind() const { return map->GetCurWind(); }
 	float GetTidalStrength() const { return map->GetTidalStrength(); }
 
-	springai::AIFloat3 GetMousePos() const { return map->GetMousePos(); }
-
+	float GetExtractorRadius(springai::Resource* resource) { return map->GetExtractorRadius(resource); }
 	void GetResourceMapSpotsPositions(springai::Resource* resource, F3Vec& spots) const;
 
+	springai::AIFloat3 GetMousePos() const { return map->GetMousePos(); }
 	springai::Drawer* GetDrawer() const { return map->GetDrawer(); }
 
 private:

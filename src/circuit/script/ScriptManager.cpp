@@ -14,6 +14,7 @@
 #include "util/Utils.h"
 
 #include "Log.h"
+#include "OptionValues.h"
 
 //#define AS_USE_STLNAMES		1
 
@@ -136,13 +137,23 @@ bool CScriptManager::Load(const char* modname, const std::string& subdir, const 
 		return false;
 	}
 
-	std::string dirname = utils::GetAIDataGameDir(circuit->GetSkirmishAI(), "script") + subdir + SLASH;
-	if (utils::FileExists(circuit->GetCallback(), dirname + filename)) {  // Locate game-side script
-		builder.SetReadFunc([this](const std::string& filename) {
-			return utils::ReadFile(circuit->GetCallback(), filename);
-		});
-	} else {
-		circuit->LOG("Game-side script: '%s' is missing!", (dirname + filename).c_str());
+	std::string dirname;
+	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
+	const char* value = options->GetValueByKey("game_config");
+	delete options;
+	bool isGameCfg = (value != nullptr) && StringToBool(value);
+	if (isGameCfg) {
+		dirname = utils::GetAIDataGameDir(circuit->GetSkirmishAI(), "script") + subdir + SLASH;
+		isGameCfg = utils::FileExists(circuit->GetCallback(), dirname + filename);  // Locate game-side script
+		if (isGameCfg) {
+			builder.SetReadFunc([this](const std::string& filename) {
+				return utils::ReadFile(circuit->GetCallback(), filename);
+			});
+		} else {
+			circuit->LOG("Game-side script: '%s' is missing!", (dirname + filename).c_str());
+		}
+	}
+	if (!isGameCfg) {
 		dirname = "script" SLASH + subdir + SLASH;
 		if (!utils::LocatePath(circuit->GetCallback(), dirname)) {  // Locate AI script
 			circuit->LOG("AI script: '%s' is missing!", (dirname + filename).c_str());

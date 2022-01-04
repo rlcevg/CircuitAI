@@ -57,13 +57,15 @@ namespace circuit {
 
 using namespace springai;
 
+//#define BUILDER_CHOICE 1
+#ifdef BUILDER_CHOICE
+#endif
+
 CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CBuilderScript(circuit->GetScriptManager(), this))
 		, buildTasksCount(0)
 		, buildPower(.0f)
 		, buildIterator(0)
-		, energizer1(nullptr)
-		, energizer2(nullptr)
 {
 	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CBuilderManager::Init, this));
 
@@ -94,28 +96,11 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		AddBuildPower(unit);
 		workers.insert(unit);
 
-		CMilitaryManager* militaryMgr = this->circuit->GetMilitaryManager();
-		if (isBaseBuilderOn && !unit->GetCircuitDef()->IsRoleComm()) {
-			if (unit->GetCircuitDef()->GetCostM() < 200.f) {
-				if ((energizer1 == nullptr)
-					&& (((unsigned)unit->GetCircuitDef()->GetCount() > militaryMgr->GetGuardTaskNum())
-						|| unit->GetCircuitDef()->IsAbleToFly()))
-				{
-					energizer1 = unit;
-					unit->AddAttribute(CCircuitDef::AttrType::BASE);
-				}
-			} else {
-				if (energizer2 == nullptr) {
-					energizer2 = unit;
-					unit->AddAttribute(CCircuitDef::AttrType::BASE);
-				}
-			}
-		}
-
 		AddBuildList(unit, 0);
 
 		static_cast<CBuilderScript*>(script)->WorkerCreated(unit);
 
+		CMilitaryManager* militaryMgr = this->circuit->GetMilitaryManager();
 		if (!unit->GetCircuitDef()->IsAttacker()
 			&& !unit->GetCircuitDef()->IsAbleToFly()
 			&& (militaryMgr->GetTasks(IFighterTask::FightType::GUARD).size() < militaryMgr->GetGuardTaskNum()))
@@ -147,14 +132,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		DelBuildPower(unit);
 		workers.erase(unit);
 		costQueries.erase(unit);
-
-		if (isBaseBuilderOn) {
-			if (energizer1 == unit) {
-				energizer1 = nullptr;
-			} else if (energizer2 == unit) {
-				energizer2 = nullptr;
-			}
-		}
 
 		RemoveBuildList(unit, 0);
 
@@ -330,7 +307,6 @@ void CBuilderManager::ReadConfig()
 		terraDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
 	}
 	goalExecTime = econ.get("goal_exec", 16.f).asFloat();
-	isBaseBuilderOn = econ.get("base_builder", true).asBool();
 
 	const Json::Value& cond = root["porcupine"]["superweapon"]["condition"];
 	super.minIncome = cond.get((unsigned)0, 50.f).asFloat();
@@ -1035,7 +1011,13 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	const AIFloat3& pos = unit->GetPos(frame);
 
 	const CCircuitDef* cdef = unit->GetCircuitDef();
+#ifdef BUILDER_CHOICE
+	circuit->LOG("---- BUILDER AI = %i | %s ----", circuit->GetSkirmishAIId(), cdef->GetDef()->GetName());
+#endif
 	if ((cdef->GetPower() > THREAT_MIN) && circuit->GetMilitaryManager()->IsCombatTargetExists(unit, pos, 1.5f)) {
+#ifdef BUILDER_CHOICE
+		circuit->LOG("choice = combat | power = %f", cdef->GetPower());
+#endif
 		return EnqueueCombat(1.5f);
 	}
 
@@ -1550,7 +1532,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	const float energyIncome = ecoMgr->GetAvgEnergyIncome() * ecoMgr->GetEcoFactor();
 	const float metalIncome = std::min(ecoMgr->GetAvgMetalIncome() * ecoMgr->GetEcoFactor(), energyIncome);
-	if ((metalIncome >= super.minIncome) && (energyIncome * 0.02f >= super.minIncome)) {
+	if ((metalIncome >= super.minIncome) && (energyIncome * ecoMgr->GetEcoEM() >= super.minIncome)) {
 		CCircuitDef* buildDef = militaryMgr->GetBigGunDef();
 		if ((buildDef != nullptr) && (buildDef->GetCostM() < super.maxTime * metalIncome)
 			&& ((buildDef->GetWeaponDef() == nullptr) || (energyIncome > buildDef->GetWeaponDef()->GetCostE() * 2)))
@@ -1759,14 +1741,6 @@ void CBuilderManager::UpdateAreaUsers()
 
 void CBuilderManager::Load(std::istream& is)
 {
-//	std::streamsize y;
-//	int yo, yoyo;
-//	is >> y;
-//	is.seekg(is.tellg() + std::streampos(sizeof('\n')));
-//	is.read(reinterpret_cast<char*>(&yo), sizeof(yo));
-//	is.read(reinterpret_cast<char*>(&yoyo), sizeof(yoyo));
-//	circuit->LOG("LOAD ID: %i | %i | %i", y, yo, yoyo);
-
 	/*
 	 * Restore data
 	 */
@@ -1849,13 +1823,6 @@ void CBuilderManager::Load(std::istream& is)
 
 void CBuilderManager::Save(std::ostream& os) const
 {
-//	std::stringstream tmp;
-//	int i = circuit->GetSkirmishAIId();
-//	tmp.write(reinterpret_cast<const char*>(&i), sizeof(i));
-//	i = 42;
-//	tmp.write(reinterpret_cast<const char*>(&i), sizeof(i));
-//	os << std::streamsize(1024) << '\n' << tmp.rdbuf();
-
 	/*
 	 * Save tasks
 	 */

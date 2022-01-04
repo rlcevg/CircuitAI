@@ -62,6 +62,13 @@ local options = {
 --		def     = '',
 --	},
 
+	{ -- bool
+		key     = 'game_config',
+		name    = 'Load game config',
+		desc    = 'Enable loading of game-side config',
+		type    = 'bool',
+		def     = false,
+	},
 	{ -- list
 		key     = 'profile',
 		name    = 'Difficulty profile',

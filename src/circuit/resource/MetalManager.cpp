@@ -133,7 +133,7 @@ void CMetalManager::ParseMetalSpots()
 	Game* game = circuit->GetGame();
 	std::vector<CMetalData::SMetal> spots;
 
-	int mexCount = game->GetRulesParamFloat("mex_count", -1);
+	int mexCount = -1;  // game->GetRulesParamFloat("mex_count", -1);
 	if (mexCount <= 0) {
 		// FIXME: Replace metal-map workaround by own grid-spot generator
 		CMap* map = circuit->GetMap();
@@ -156,14 +156,15 @@ void CMetalManager::ParseMetalSpots()
 			spots.reserve(spotsPos.size());
 		}
 		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetSideInfo().mexDef;
+		const float extrRange = map->GetExtractorRadius(metalRes) / 2;  // mexDef->GetExtrRangeM();
 		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 		const int xsize = mexDef->GetDef()->GetXSize();
 		const int zsize = mexDef->GetDef()->GetZSize();
 		for (unsigned i = 0; i < spotsPos.size(); i += inc) {
 			AIFloat3& pos = spotsPos[i];
 			// move position closer to center
-			pos.x += xsize * SQUARE_SIZE / 2;
-			pos.z += zsize * SQUARE_SIZE / 2;
+			pos.x += extrRange;  // xsize * SQUARE_SIZE / 2;
+			pos.z += extrRange;  // zsize * SQUARE_SIZE / 2;
 			CTerrainManager::SnapPosition(pos);
 			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
 			const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;

@@ -997,6 +997,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			}
 		}
 
+		CMetalManager* metalMgr = circuit->GetMetalManager();
+		CCircuitDef* mexDef = nullptr;
 		const unsigned int mexTaskSize = builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size();
 		if (mexTaskSize < (unsigned)mexMax/*builderMgr->GetWorkerCount() * 2 + 1*/) {
 			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
@@ -1007,10 +1009,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				}
 			}
 			if (!mexDefs.empty()) {
-				CMetalManager* metalMgr = circuit->GetMetalManager();
 				const CMetalData::Metals& spots = metalMgr->GetSpots();
 				CMap* map = circuit->GetMap();
-				CCircuitDef* mexDef = nullptr;
 				// NOTE: threatmap type is set outside
 				CMetalData::PointPredicate predicate = [this, &spots, map, &mexDefs, terrainMgr, unit, &mexDef](int index) {
 					const AIFloat3& pos = spots[index].position;
@@ -1046,8 +1046,11 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, pos);
 			});
 			if (convertDef != nullptr) {
-				task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT, 0.f, true);
-				return task;
+				const SConvertExt* convertExt = convertDefs.GetAvailInfo(convertDef);
+				if ((mexDef == nullptr) || (convertExt->make / convertDef->GetCostM() >= metalMgr->GetAvgIncome() * mexDef->GetExtractsM() / mexDef->GetCostM())) {
+					task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT, 0.f, true);
+					return task;
+				}
 			}
 		}
 

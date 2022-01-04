@@ -3,7 +3,10 @@
 
 namespace Builder {
 
-//AIFloat3 lastPos;
+CCircuitUnit@ energizer1 = null;
+CCircuitUnit@ energizer2 = null;
+
+// AIFloat3 lastPos;
 // int gPauseCnt = 0;
 
 IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
@@ -73,10 +76,33 @@ void AiTaskClosed(IUnitTask@ task, bool done)
 
 void AiWorkerCreated(CCircuitUnit@ unit)
 {
+	const CCircuitDef@ cdef = unit.circuitDef;
+	if (cdef.IsRoleAny(Unit::Role::COMM.mask))
+		return;
+
+	// constructor with BASE attribute is assigned to tasks near base
+	if (cdef.costM < 200.f) {
+		if (energizer1 is null
+			&& (uint(cdef.count) > aiMilitaryMgr.GetGuardTaskNum() || cdef.IsAbleToFly()))
+		{
+			@energizer1 = @unit;
+			unit.AddAttribute(Unit::Attr::BASE.type);
+		}
+	} else {
+		if (energizer2 is null) {
+			@energizer2 = @unit;
+			unit.AddAttribute(Unit::Attr::BASE.type);
+		}
+	}
 }
 
 void AiWorkerDestroyed(CCircuitUnit@ unit)
 {
+	if (energizer1 is unit) {
+		@energizer1 = null;
+	} else if (energizer2 is unit) {
+		@energizer2 = null;
+	}
 }
 
 }  // namespace Builder

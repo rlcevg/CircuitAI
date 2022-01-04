@@ -36,7 +36,7 @@ namespace circuit {
 
 using namespace springai;
 
-#define FACTORY_CHOICE 1
+//#define FACTORY_CHOICE 1
 #ifdef FACTORY_CHOICE
 static int tierDbg;
 static std::string unitTypeDbg;
@@ -1541,7 +1541,7 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 	};
 
 #ifdef FACTORY_CHOICE
-	circuit->LOG("---- AI = %i | %s | %s | tier%i ----", circuit->GetSkirmishAIId(), builder->GetCircuitDef()->GetDef()->GetName(), unitTypeDbg.c_str(), tierDbg);
+	circuit->LOG("---- FACTORY AI = %i | %s | %s | tier%i ----", circuit->GetSkirmishAIId(), builder->GetCircuitDef()->GetDef()->GetName(), unitTypeDbg.c_str(), tierDbg);
 #endif
 	float magnitude = 0.f;
 	for (unsigned i = 0; i < facDef.buildDefs.size(); ++i) {

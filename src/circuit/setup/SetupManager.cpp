@@ -674,16 +674,22 @@ void CSetupManager::CalcLanePos()
 bool CSetupManager::LoadConfig(const std::string& profile, const std::vector<std::string>& parts)
 {
 	configName = profile;
+	std::string dirname;
 
 	/*
 	 * Locate game-side config
 	 */
-	std::string dirname = utils::GetAIDataGameDir(circuit->GetSkirmishAI(), "config");
-	config = ReadConfig(dirname, profile, parts, true);
-	if (config != nullptr) {
-		return true;
-	} else {
-		circuit->LOG("Game-side config: '%s' is missing!", (dirname + profile + SLASH).c_str());
+	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
+	const char* value = options->GetValueByKey("game_config");
+	delete options;
+	if ((value != nullptr) && StringToBool(value)) {
+		dirname = utils::GetAIDataGameDir(circuit->GetSkirmishAI(), "config");
+		config = ReadConfig(dirname, profile, parts, true);
+		if (config != nullptr) {
+			return true;
+		} else {
+			circuit->LOG("Game-side config: '%s' is missing!", (dirname + profile + SLASH).c_str());
+		}
 	}
 
 	/*

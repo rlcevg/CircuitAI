@@ -205,9 +205,6 @@ private:
 	unsigned int buildIterator;
 
 	float goalExecTime;  // seconds
-	bool isBaseBuilderOn;
-	CCircuitUnit* energizer1;
-	CCircuitUnit* energizer2;
 	std::set<CCircuitUnit*> workers;
 	std::map<CCircuitUnit*, std::shared_ptr<IPathQuery>> costQueries;  // IPathQuery owner
 
