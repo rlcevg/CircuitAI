@@ -187,14 +187,11 @@ void asCConfigGroup::RemoveConfiguration(asCScriptEngine *engine, bool notUsed)
 			}
 			else
 			{
-				asCObjectType *ot = CastToObjectType(t);
-				if (engine->generatedTemplateTypes.Exists(ot))
-					continue;
-
-				int idx = engine->templateInstanceTypes.IndexOf(ot);
+				int idx = engine->templateInstanceTypes.IndexOf(CastToObjectType(t));
 				if( idx >= 0 )
 				{
 					engine->templateInstanceTypes.RemoveIndexUnordered(idx);
+					asCObjectType *ot = CastToObjectType(t);
 					ot->DestroyInternal();
 					ot->ReleaseInternal();
 				}

@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2019 Andreas Jonsson
+   Copyright (c) 2003-2022 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -215,6 +215,7 @@ public:
 	void SetProtected(bool set) { traits.SetTrait(asTRAIT_PROTECTED, set); }
 	void SetPrivate(bool set) { traits.SetTrait(asTRAIT_PRIVATE, set); }
 	void SetProperty(bool set) { traits.SetTrait(asTRAIT_PROPERTY, set); }
+	bool IsFactory() const;
 
 	asCScriptFunction(asCScriptEngine *engine, asCModule *mod, asEFuncType funcType);
 	~asCScriptFunction();
@@ -236,7 +237,7 @@ public:
 
 	void      DestroyInternal();
 
-	void      AddVariable(asCString &name, asCDataType &type, int stackOffset);
+	void      AddVariable(const asCString &name, asCDataType &type, int stackOffset);
 
 	int       GetSpaceNeededForArguments();
 	int       GetSpaceNeededForReturnValue();
@@ -329,11 +330,13 @@ public:
 
 		// These hold information on objects and function pointers, including temporary
 		// variables used by exception handler and when saving bytecode
+		// TODO: These two are not needed anymore, since the variables array contain the same information
 		asCArray<asCTypeInfo*>          objVariableTypes;
 		asCArray<int>                   objVariablePos; // offset on stackframe
 
 		// The first variables in above array are allocated on the heap, the rest on the stack.
 		// This variable shows how many are on the heap.
+		// TODO: This one needs to be stored in a different way when objVariableTypes & objVariablePos are removed, unless the variables array is rearranged in the same way as above arrays
 		asUINT                          objVariablesOnHeap;
 
 		// Holds information on scope for object variables on the stack
@@ -348,7 +351,7 @@ public:
 		// JIT compiled code of this function
 		asJITFunction                   jitFunction;
 
-		// Holds debug information on explicitly declared variables
+		// Holds type information on both explicitly declared variables and temporary variables
 		asCArray<asSScriptVariable*>    variables;
 		// Store position, line number pairs for debug information
 		asCArray<int>                   lineNumbers;

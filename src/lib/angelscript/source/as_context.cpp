@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2021 Andreas Jonsson
+   Copyright (c) 2003-2022 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -192,15 +192,16 @@ asCContext::asCContext(asCScriptEngine *engine, bool holdRef)
 	m_needToCleanupArgs         = false;
 	m_currentFunction           = 0;
 	m_callingSystemFunction     = 0;
-	m_regs.objectRegister       = 0;
 	m_initialFunction           = 0;
 	m_lineCallback              = false;
 	m_exceptionCallback         = false;
 	m_regs.doProcessSuspend     = false;
 	m_doSuspend                 = false;
 	m_userData                  = 0;
-	m_regs.ctx                  = this;
 	m_exceptionWillBeCaught     = false;
+	m_regs.ctx                  = this;
+	m_regs.objectRegister       = 0;
+	m_regs.objectType           = 0;
 }
 
 asCContext::~asCContext()
@@ -1217,7 +1218,7 @@ int asCContext::Execute()
 
 	asCThreadLocalData *tld = asPushActiveContext((asIScriptContext *)this);
 
-	// Make sure there are not too many nested calls, as it could crash the application 
+	// Make sure there are not too many nested calls, as it could crash the application
 	// by filling up the thread call stack
 	if (tld->activeContexts.GetLength() > m_engine->ep.maxNestedCalls)
 		SetInternalException(TXT_TOO_MANY_NESTED_CALLS);
@@ -1452,6 +1453,7 @@ int asCContext::PushState()
 	return asSUCCESS;
 }
 
+// interface
 int asCContext::PopState()
 {
 	if( !IsNested() )
@@ -1492,6 +1494,7 @@ int asCContext::PopState()
 	return asSUCCESS;
 }
 
+// internal
 int asCContext::PushCallState()
 {
 	if( m_callStack.GetLength() == m_callStack.GetCapacity() )
@@ -1532,6 +1535,7 @@ int asCContext::PushCallState()
 	return asSUCCESS;
 }
 
+// internal
 void asCContext::PopCallState()
 {
 	// See comments in PushCallState about pointer aliasing and data cache trashing
@@ -1723,7 +1727,7 @@ bool asCContext::ReserveStackSpace(asUINT size)
 			                  (m_currentFunction->DoesReturnOnStack() ? AS_PTR_SIZE : 0);
 
 #ifdef WIP_16BYTE_ALIGN
-		// Align the stack pointer 
+		// Align the stack pointer
 		(asPWORD&)m_regs.stackPointer &= ~(MAX_TYPE_ALIGNMENT-1);
 
 		asASSERT( isAligned(m_regs.stackPointer, MAX_TYPE_ALIGNMENT) );
@@ -1763,8 +1767,8 @@ void asCContext::PrepareScriptFunction()
 	// over the function arguments to the new block.
 	if( m_regs.stackPointer != oldStackPointer )
 	{
-		int numDwords = m_currentFunction->GetSpaceNeededForArguments() + 
-		                (m_currentFunction->objectType ? AS_PTR_SIZE : 0) + 
+		int numDwords = m_currentFunction->GetSpaceNeededForArguments() +
+		                (m_currentFunction->objectType ? AS_PTR_SIZE : 0) +
 		                (m_currentFunction->DoesReturnOnStack() ? AS_PTR_SIZE : 0);
 		memcpy(m_regs.stackPointer, oldStackPointer, sizeof(asDWORD)*numDwords);
 	}
@@ -3913,21 +3917,21 @@ void asCContext::ExecuteNext()
 			}
 			else
 			{
-				if( func->funcType == asFUNC_SCRIPT )
+				if (func->funcType == asFUNC_SCRIPT)
 				{
 					m_regs.programPointer++;
 					CallScriptFunction(func);
 				}
-				else if( func->funcType == asFUNC_DELEGATE )
+				else if (func->funcType == asFUNC_DELEGATE)
 				{
 					// Push the object pointer on the stack. There is always a reserved space for this so
 					// we don't don't need to worry about overflowing the allocated memory buffer
-					asASSERT( m_regs.stackPointer - AS_PTR_SIZE >= m_stackBlocks[m_stackIndex] );
+					asASSERT(m_regs.stackPointer - AS_PTR_SIZE >= m_stackBlocks[m_stackIndex]);
 					m_regs.stackPointer -= AS_PTR_SIZE;
 					*(asPWORD*)m_regs.stackPointer = asPWORD(func->objForDelegate);
 
 					// Call the delegated method
-					if( func->funcForDelegate->funcType == asFUNC_SYSTEM )
+					if (func->funcForDelegate->funcType == asFUNC_SYSTEM)
 					{
 						m_regs.stackPointer += CallSystemFunction(func->funcForDelegate->id, this);
 
@@ -3943,15 +3947,32 @@ void asCContext::ExecuteNext()
 						CallInterfaceMethod(func->funcForDelegate);
 					}
 				}
-				else
+				else if (func->funcType == asFUNC_SYSTEM)
 				{
-					asASSERT( func->funcType == asFUNC_SYSTEM );
-
 					m_regs.stackPointer += CallSystemFunction(func->id, this);
 
 					// Update program position after the call so the line number
 					// is correct in case the system function queries it
 					m_regs.programPointer++;
+				}
+				else if (func->funcType == asFUNC_IMPORTED)
+				{
+					m_regs.programPointer++;
+					int funcId = m_engine->importedFunctions[func->id & ~FUNC_IMPORTED]->boundFunctionId;
+					if (funcId > 0)
+						CallScriptFunction(m_engine->scriptFunctions[funcId]);
+					else
+					{
+						// Tell the exception handler to clean up the arguments to this method
+						m_needToCleanupArgs = true;
+
+						SetInternalException(TXT_UNBOUND_FUNCTION);
+					}
+				}
+				else
+				{
+					// Should not get here
+					asASSERT(false);
 				}
 			}
 
@@ -4372,7 +4393,7 @@ void asCContext::ExecuteNext()
 		break;
 	case asBC_Thiscall1:
 		// This instruction is a faster version of asBC_CALLSYS. It is faster because
-		// it has much less runtime overhead with determining the calling convention 
+		// it has much less runtime overhead with determining the calling convention
 		// and no dynamic code for loading the parameters. The instruction can only
 		// be used to call functions with the following signatures:
 		//
@@ -4396,7 +4417,7 @@ void asCContext::ExecuteNext()
 				SetInternalException(TXT_NULL_POINTER_ACCESS);
 			else
 			{
-				// Only update the stack pointer if all is OK so the 
+				// Only update the stack pointer if all is OK so the
 				// exception handler can properly clean up the stack
 				l_sp += AS_PTR_SIZE;
 
@@ -4410,15 +4431,15 @@ void asCContext::ExecuteNext()
 #ifdef AS_NO_EXCEPTIONS
 				ptr = m_engine->CallObjectMethodRetPtr(obj, arg, m_callingSystemFunction);
 #else
-				// This try/catch block is to catch potential exception that may 
-				// be thrown by the registered function. 
+				// This try/catch block is to catch potential exception that may
+				// be thrown by the registered function.
 				try
 				{
 					ptr = m_engine->CallObjectMethodRetPtr(obj, arg, m_callingSystemFunction);
 				}
 				catch (...)
 				{
-					// Convert the exception to a script exception so the VM can 
+					// Convert the exception to a script exception so the VM can
 					// properly report the error to the application and then clean up
 					HandleAppException();
 				}
@@ -4666,7 +4687,7 @@ void asCContext::CleanStack(bool catchException)
 		}
 	}
 
-	// If the exception was caught, then move the status to 
+	// If the exception was caught, then move the status to
 	// active as is now possible to resume the execution
 	if (caught)
 		m_status = asEXECUTION_ACTIVE;
@@ -4707,7 +4728,7 @@ bool asCContext::IsVarInScope(asUINT varIndex, asUINT stackLevel)
 
 	// If the program position is after the variable declaration it is necessary
 	// determine if the program position is still inside the statement block where
-	// the variable was delcared.
+	// the variable was declared.
 	for( int n = 0; n < (int)func->scriptData->objVariableInfo.GetLength(); n++ )
 	{
 		if( func->scriptData->objVariableInfo[n].programPos >= declaredAt )
@@ -4884,6 +4905,7 @@ void asCContext::CleanArgsOnStack()
 		for( v = 0; v < m_currentFunction->scriptData->objVariablePos.GetLength(); v++ )
 			if( m_currentFunction->scriptData->objVariablePos[v] == var )
 			{
+				asASSERT(m_currentFunction->scriptData->objVariableTypes[v]);
 				func = CastToFuncdefType(m_currentFunction->scriptData->objVariableTypes[v])->funcdef;
 				break;
 			}
@@ -4959,7 +4981,7 @@ void asCContext::CleanArgsOnStack()
 
 bool asCContext::FindExceptionTryCatch()
 {
-	// Check each of the script functions on the callstack to see if 
+	// Check each of the script functions on the callstack to see if
 	// the current program position is within a try/catch block
 	if (m_currentFunction && m_currentFunction->scriptData)
 	{
@@ -5012,7 +5034,7 @@ bool asCContext::CleanStackFrame(bool catchException)
 		if (catchException && m_currentFunction->scriptData)
 		{
 			asUINT currPos = asUINT(m_regs.programPointer - m_currentFunction->scriptData->byteCode.AddressOf());
-			
+
 			for (asUINT n = 0; n < m_currentFunction->scriptData->tryCatchInfo.GetLength(); n++)
 			{
 				if (currPos >= m_currentFunction->scriptData->tryCatchInfo[n].tryPos &&
@@ -5043,7 +5065,7 @@ bool asCContext::CleanStackFrame(bool catchException)
 			{
 				// Find out where the variable was declared, and skip cleaning of those that were declared before the try catch
 				// Multiple variables in different scopes may occupy the same slot on the stack so it is necessary to search
-				// the entire list to determine which variable occupies the slot now. 
+				// the entire list to determine which variable occupies the slot now.
 				int skipClean = 0;
 				for( asUINT p = 0; p < m_currentFunction->scriptData->objVariableInfo.GetLength(); p++ )
 				{
@@ -5065,8 +5087,8 @@ bool asCContext::CleanStackFrame(bool catchException)
 						}
 					}
 				}
-				
-				// Skip only variables that have been declared before the try block. Variables declared 
+
+				// Skip only variables that have been declared before the try block. Variables declared
 				// within the try block and variables whose declaration was not identified (temporary objects)
 				// will not be skipped.
 				// TODO: What if a temporary variable reuses a slot from a declared variable that is no longer in scope?
@@ -5079,35 +5101,39 @@ bool asCContext::CleanStackFrame(bool catchException)
 				// Check if the pointer is initialized
 				if( *(asPWORD*)&m_regs.stackFramePointer[-pos] )
 				{
-					// Call the object's destructor
-					if (m_currentFunction->scriptData->objVariableTypes[n]->flags & asOBJ_FUNCDEF)
+					// Skip pointers with unknown types, as this is either a null pointer or just a reference that is not owned by function
+					if (m_currentFunction->scriptData->objVariableTypes[n])
 					{
-						(*(asCScriptFunction**)&m_regs.stackFramePointer[-pos])->Release();
-					}
-					else if( m_currentFunction->scriptData->objVariableTypes[n]->flags & asOBJ_REF )
-					{
-						asSTypeBehaviour *beh = &CastToObjectType(m_currentFunction->scriptData->objVariableTypes[n])->beh;
-						asASSERT( (m_currentFunction->scriptData->objVariableTypes[n]->flags & asOBJ_NOCOUNT) || beh->release );
-						if( beh->release )
-							m_engine->CallObjectMethod((void*)*(asPWORD*)&m_regs.stackFramePointer[-pos], beh->release);
-					}
-					else
-					{
-						asSTypeBehaviour *beh = &CastToObjectType(m_currentFunction->scriptData->objVariableTypes[n])->beh;
-						if( beh->destruct )
-							m_engine->CallObjectMethod((void*)*(asPWORD*)&m_regs.stackFramePointer[-pos], beh->destruct);
-						else if( m_currentFunction->scriptData->objVariableTypes[n]->flags & asOBJ_LIST_PATTERN )
-							m_engine->DestroyList((asBYTE*)*(asPWORD*)&m_regs.stackFramePointer[-pos], CastToObjectType(m_currentFunction->scriptData->objVariableTypes[n]));
+						// Call the object's destructor
+						if (m_currentFunction->scriptData->objVariableTypes[n]->flags & asOBJ_FUNCDEF)
+						{
+							(*(asCScriptFunction**)&m_regs.stackFramePointer[-pos])->Release();
+						}
+						else if( m_currentFunction->scriptData->objVariableTypes[n]->flags & asOBJ_REF )
+						{
+							asSTypeBehaviour *beh = &CastToObjectType(m_currentFunction->scriptData->objVariableTypes[n])->beh;
+							asASSERT( (m_currentFunction->scriptData->objVariableTypes[n]->flags & asOBJ_NOCOUNT) || beh->release );
+							if( beh->release )
+								m_engine->CallObjectMethod((void*)*(asPWORD*)&m_regs.stackFramePointer[-pos], beh->release);
+						}
+						else
+						{
+							asSTypeBehaviour *beh = &CastToObjectType(m_currentFunction->scriptData->objVariableTypes[n])->beh;
+							if( beh->destruct )
+								m_engine->CallObjectMethod((void*)*(asPWORD*)&m_regs.stackFramePointer[-pos], beh->destruct);
+							else if( m_currentFunction->scriptData->objVariableTypes[n]->flags & asOBJ_LIST_PATTERN )
+								m_engine->DestroyList((asBYTE*)*(asPWORD*)&m_regs.stackFramePointer[-pos], CastToObjectType(m_currentFunction->scriptData->objVariableTypes[n]));
 
-						// Free the memory
-						m_engine->CallFree((void*)*(asPWORD*)&m_regs.stackFramePointer[-pos]);
+							// Free the memory
+							m_engine->CallFree((void*)*(asPWORD*)&m_regs.stackFramePointer[-pos]);
+						}
 					}
 					*(asPWORD*)&m_regs.stackFramePointer[-pos] = 0;
 				}
 			}
 			else
 			{
-				asASSERT( m_currentFunction->scriptData->objVariableTypes[n]->GetFlags() & asOBJ_VALUE );
+				asASSERT( m_currentFunction->scriptData->objVariableTypes[n] && m_currentFunction->scriptData->objVariableTypes[n]->GetFlags() & asOBJ_VALUE );
 
 				// Only destroy the object if it is truly alive
 				if( liveObjects[n] > 0 )
@@ -5130,7 +5156,7 @@ bool asCContext::CleanStackFrame(bool catchException)
 	}
 
 	// Functions that do not own the object and parameters shouldn't do any clean up
-	if( m_currentFunction->dontCleanUpOnException )
+	if( m_currentFunction == 0 || m_currentFunction->dontCleanUpOnException )
 		return exceptionCaught;
 
 	// Clean object and parameters
@@ -5223,7 +5249,7 @@ asEContextState asCContext::GetState() const
 // interface
 int asCContext::SetLineCallback(asSFuncPtr callback, void *obj, int callConv)
 {
-	// First turn off the line callback to avoid a second thread 
+	// First turn off the line callback to avoid a second thread
 	// attempting to call it while the new one is still being set
 	m_lineCallback = false;
 
@@ -5245,11 +5271,11 @@ int asCContext::SetLineCallback(asSFuncPtr callback, void *obj, int callConv)
 	}
 
 	int r = DetectCallingConvention(isObj, callback, callConv, 0, &m_lineCallbackFunc);
-	
+
 	// Turn on the line callback after setting both the function pointer and object pointer
 	if( r >= 0 ) m_lineCallback = true;
 
-	// The BC_SUSPEND instruction should be processed if either line 
+	// The BC_SUSPEND instruction should be processed if either line
 	// callback is set or if the application has requested a suspension
 	m_regs.doProcessSuspend = m_doSuspend || m_lineCallback;
 
@@ -5369,15 +5395,15 @@ int asCContext::CallGeneric(asCScriptFunction *descr)
 #ifdef AS_NO_EXCEPTIONS
 	func(&gen);
 #else
-	// This try/catch block is to catch potential exception that may 
-	// be thrown by the registered function. 
+	// This try/catch block is to catch potential exception that may
+	// be thrown by the registered function.
 	try
 	{
 		func(&gen);
 	}
 	catch (...)
 	{
-		// Convert the exception to a script exception so the VM can 
+		// Convert the exception to a script exception so the VM can
 		// properly report the error to the application and then clean up
 		HandleAppException();
 	}
@@ -5412,14 +5438,14 @@ int asCContext::CallGeneric(asCScriptFunction *descr)
 					*addr = 0;
 				}
 			}
-			else 
+			else
 			{
 				asASSERT( clean->op == 1 || clean->op == 2 );
 				asASSERT( *addr );
 
 				if( clean->op == 2 )
 					m_engine->CallObjectMethod(*addr, clean->ot->beh.destruct);
-				
+
 				m_engine->CallFree(*addr);
 			}
 		}
@@ -5459,18 +5485,53 @@ const char *asCContext::GetVarDeclaration(asUINT varIndex, asUINT stackLevel, bo
 }
 
 // interface
-int asCContext::GetVarTypeId(asUINT varIndex, asUINT stackLevel)
+int asCContext::GetVarTypeId(asUINT varIndex, asUINT stackLevel, asETypeModifiers *typeModifiers)
 {
-	asIScriptFunction *func = GetFunction(stackLevel);
+	asCScriptFunction *func = reinterpret_cast<asCScriptFunction*>(GetFunction(stackLevel));
 	if( func == 0 ) return asINVALID_ARG;
 
 	int typeId;
 	int r = func->GetVar(varIndex, 0, &typeId);
-	return r < 0 ? r : typeId;
+	if (r < 0)
+		return r;
+
+	if (typeModifiers)
+	{
+		*typeModifiers = asTM_NONE;
+		if (func->scriptData && func->scriptData->variables[varIndex]->type.IsReference())
+		{
+			// Find the function argument if it is not a local variable
+			int pos = func->scriptData->variables[varIndex]->stackOffset;
+			if (pos <= 0)
+			{
+				int stackPos = 0;
+				if (func->objectType)
+					stackPos -= AS_PTR_SIZE;
+
+				if (func->DoesReturnOnStack())
+					stackPos -= AS_PTR_SIZE;
+
+				for (asUINT n = 0; n < func->parameterTypes.GetLength(); n++)
+				{
+					if (stackPos == pos)
+					{
+						// The right argument was found. Is this a reference parameter?
+						*typeModifiers = func->inOutFlags[n];
+						break;
+					}
+					stackPos -= func->parameterTypes[n].GetSizeOnStackDWords();
+				}
+			}
+			else
+				*typeModifiers = asTM_INOUTREF;
+		}
+	}
+
+	return typeId;
 }
 
 // interface
-void *asCContext::GetAddressOfVar(asUINT varIndex, asUINT stackLevel)
+void *asCContext::GetAddressOfVar(asUINT varIndex, asUINT stackLevel, bool dontDereference)
 {
 	// Don't return anything if there is no bytecode, e.g. before calling Execute()
 	if( m_regs.programPointer == 0 ) return 0;
@@ -5536,7 +5597,8 @@ void *asCContext::GetAddressOfVar(asUINT varIndex, asUINT stackLevel)
 		}
 
 		// If it wasn't an object on the heap, then check if it is a reference parameter
-		if( !onHeap && pos <= 0 )
+		// If dontDereference is true then the application wants the address of the reference, rather than the value it refers to
+		if( !onHeap && pos <= 0 && !dontDereference )
 		{
 			// Determine what function argument this position matches
 			int stackPos = 0;
