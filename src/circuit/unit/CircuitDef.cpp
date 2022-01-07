@@ -27,6 +27,7 @@ namespace circuit {
 using namespace springai;
 
 #define THREAT_MOD		(1.0f / 128.0f)
+//#define DEBUG_THREAT 1
 
 CCircuitDef::RoleName* CCircuitDef::roleNames;
 CCircuitDef::AttrName* CCircuitDef::attrNames;
@@ -570,12 +571,12 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	airThrDmg = sqrtf(airDps) * std::pow(airDmg, 0.25f) * THREAT_MOD;
 	surfThrDmg = sqrtf(surfDps) * std::pow(surfDmg, 0.25f) * THREAT_MOD;
 	waterThrDmg = sqrtf(waterDps) * std::pow(waterDmg, 0.25f) * THREAT_MOD;
-	// FIXME: DEBUG
-//	circuit->LOG("%s | def=%f air=%f surf=%f water=%f", def->GetName(), defThreat,
-//			airThrDmg * sqrtf(health + maxShield * SHIELD_MOD),
-//			surfThrDmg * sqrtf(health + maxShield * SHIELD_MOD),
-//			waterThrDmg * sqrtf(health + maxShield * SHIELD_MOD));
-	// FIXME: DEBUG
+#ifdef DEBUG_THREAT
+	circuit->LOG("THREAT %s | def=%f air=%f surf=%f water=%f", def->GetName(), defThreat,
+			airThrDmg * sqrtf(health + maxShield * SHIELD_MOD),
+			surfThrDmg * sqrtf(health + maxShield * SHIELD_MOD),
+			waterThrDmg * sqrtf(health + maxShield * SHIELD_MOD));
+#endif
 }
 
 CCircuitDef::~CCircuitDef()

@@ -80,6 +80,8 @@ public:
 	int GetSpotToBuild(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate);
 	int GetSpotToUpgrade(const springai::AIFloat3& pos, CMetalData::PointPredicate& predicate);
 
+	bool IsSpotValid(int index, const springai::AIFloat3& pos) const;
+
 	float GetMinIncome() const { return metalData->GetMinIncome(); }
 	float GetAvgIncome() const { return metalData->GetAvgIncome(); }
 	float GetMaxIncome() const { return metalData->GetMaxIncome(); }

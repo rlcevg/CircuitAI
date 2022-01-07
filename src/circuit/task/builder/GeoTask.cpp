@@ -95,7 +95,7 @@ bool CBGeoTask::Load(std::istream& is)
 	SERIALIZE(is, read)
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	if ((spotId < 0) || ((size_t)spotId >= circuit->GetEnergyManager()->GetSpots().size())) {
+	if (circuit->GetEnergyManager()->IsSpotValid(spotId, GetPosition())) {
 		spotId = -1;
 		return false;
 	}

@@ -28,6 +28,8 @@ public:
 
 	const CEnergyData::Geos& GetSpots() const { return energyData->GetSpots(); }
 
+	bool IsSpotValid(int index, const springai::AIFloat3& pos) const;
+
 private:
 	CCircuitAI* circuit;
 	CEnergyData* energyData;

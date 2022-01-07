@@ -359,6 +359,14 @@ int CMetalManager::GetSpotToUpgrade(const AIFloat3& pos, CMetalData::PointPredic
 	});
 }
 
+bool CMetalManager::IsSpotValid(int index, const AIFloat3& pos) const
+{
+	if ((index < 0) || ((size_t)index >= GetSpots().size())) {
+		return false;
+	}
+	return utils::is_equal_pos(GetSpots()[index].position, pos);
+}
+
 int CMetalManager::GetSpotToDo(const AIFloat3& pos, CMetalData::PointPredicate& predicate,
 		std::function<CMetalData::ClusterGraph::Node (ShortPath* shortPath)>&& doGoal)
 {

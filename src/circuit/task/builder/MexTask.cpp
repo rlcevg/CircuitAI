@@ -291,7 +291,7 @@ bool CBMexTask::Load(std::istream& is)
 	SERIALIZE(is, read)
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	if ((spotId < 0) || ((size_t)spotId >= circuit->GetMetalManager()->GetSpots().size())) {
+	if (!circuit->GetMetalManager()->IsSpotValid(spotId, GetPosition())) {
 		spotId = -1;
 		return false;
 	}

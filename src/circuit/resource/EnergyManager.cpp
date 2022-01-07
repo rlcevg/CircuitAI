@@ -68,4 +68,12 @@ void CEnergyManager::ParseGeoSpots()
 	energyData->Init(std::move(spots));
 }
 
+bool CEnergyManager::IsSpotValid(int index, const AIFloat3& pos) const
+{
+	if ((index < 0) || ((size_t)index >= GetSpots().size())) {
+		return false;
+	}
+	return utils::is_equal_pos(GetSpots()[index], pos);
+}
+
 } // namespace circuit

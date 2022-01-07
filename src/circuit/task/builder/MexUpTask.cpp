@@ -171,7 +171,7 @@ bool CBMexUpTask::Load(std::istream& is)
 	CCircuitAI* circuit = manager->GetCircuit();
 	reclaimMex = circuit->GetTeamUnit(reclaimMexId);
 
-	if ((spotId < 0) || ((size_t)spotId >= circuit->GetMetalManager()->GetSpots().size())) {
+	if (!circuit->GetMetalManager()->IsSpotValid(spotId, GetPosition())) {
 		spotId = -1;
 		return false;
 	}

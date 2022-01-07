@@ -17,7 +17,7 @@ namespace circuit {
 class CMaskHandler {
 public:
 	using Type = int;
-	using Mask = uint32_t;
+	using Mask = uint64_t;
 	struct TypeMask {
 		TypeMask() : TypeMask(-1, 0) {}
 		TypeMask(Type t, Mask m) : type(t), mask(m) {}

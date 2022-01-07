@@ -57,10 +57,6 @@ namespace circuit {
 
 using namespace springai;
 
-//#define BUILDER_CHOICE 1
-#ifdef BUILDER_CHOICE
-#endif
-
 CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CBuilderScript(circuit->GetScriptManager(), this))
 		, buildTasksCount(0)
@@ -1011,13 +1007,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	const AIFloat3& pos = unit->GetPos(frame);
 
 	const CCircuitDef* cdef = unit->GetCircuitDef();
-#ifdef BUILDER_CHOICE
-	circuit->LOG("---- BUILDER AI = %i | %s ----", circuit->GetSkirmishAIId(), cdef->GetDef()->GetName());
-#endif
 	if ((cdef->GetPower() > THREAT_MIN) && circuit->GetMilitaryManager()->IsCombatTargetExists(unit, pos, 1.5f)) {
-#ifdef BUILDER_CHOICE
-		circuit->LOG("choice = combat | power = %f", cdef->GetPower());
-#endif
 		return EnqueueCombat(1.5f);
 	}
 

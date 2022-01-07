@@ -1037,9 +1037,9 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			}
 		}
 
-		if ((builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2)
-			&& ((mexTaskSize == 0) || (builderMgr->GetWorkerCount() > circuit->GetMilitaryManager()->GetGuardTaskNum() + 2))
-			&& convertDefs.HasAvail() && IsEnergyFull())
+		if (convertDefs.HasAvail() && IsEnergyFull()
+			&& (builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2)
+			&& ((mexTaskSize == 0) || (builderMgr->GetWorkerCount() > circuit->GetMilitaryManager()->GetGuardTaskNum() + 2)))
 		{
 			const AIFloat3& pos = circuit->GetSetupManager()->GetMetalBase();
 			CCircuitDef* convertDef = convertDefs.GetBestDef([frame, terrainMgr, &pos](CCircuitDef* cdef, const SConvertExt& data) {

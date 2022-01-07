@@ -67,7 +67,7 @@ local options = {
 		name    = 'Load game config',
 		desc    = 'Enable loading of game-side config',
 		type    = 'bool',
-		def     = false,
+		def     = true,
 	},
 	{ -- list
 		key     = 'profile',
