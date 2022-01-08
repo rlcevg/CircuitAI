@@ -56,7 +56,7 @@ public:
 	virtual ~CEconomyManager();
 
 private:
-	void ReadConfig();
+	void ReadConfig(float& outMinEInc);
 	void Init();
 
 public:

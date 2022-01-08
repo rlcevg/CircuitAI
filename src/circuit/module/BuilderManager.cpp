@@ -723,7 +723,7 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 											 int timeout)
 {
 	auto it = repairUnits.find(target->GetId());
-	if (it != repairUnits.end()) {
+	if ((it != repairUnits.end()) && (it->second != nullptr)) {
 		return it->second;
 	}
 	CBRepairTask* task = new CBRepairTask(this, priority, target, timeout);
@@ -754,7 +754,7 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 											  int timeout)
 {
 	auto it = reclaimUnits.find(target);
-	if (it != reclaimUnits.end()) {
+	if ((it != reclaimUnits.end()) && (it->second != nullptr)) {  // TODO: Rework RegisterReclaim() that puts nullptr into reclaimUnits
 		return it->second;
 	}
 	CBReclaimTask* task = new CBReclaimTask(this, priority, target, timeout);

@@ -198,7 +198,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	};
 
-	ReadConfig();
+	float minEInc;
+	ReadConfig(minEInc);
 
 	float maxAreaDivCost = .0f;
 	const float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
@@ -267,10 +268,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			// energy
 			// BA: float netEnergy = unitDef->GetResourceMake(energyRes) - unitDef->GetUpkeep(energyRes);
 			it = customParams.find("income_energy");
-			if (((it != customParams.end()) && (utils::string_to_float(it->second) > 5))
-				|| (cdef.GetDef()->GetResourceMake(energyRes) - cdef.GetUpkeepE() > 5)
-				|| ((cdef.GetDef()->GetWindResourceGenerator(energyRes) > 5) && (avgWind > 5))
-				|| (cdef.GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength() > 5))
+			if (((it != customParams.end()) && (utils::string_to_float(it->second) > minEInc))
+				|| (cdef.GetDef()->GetResourceMake(energyRes) - cdef.GetUpkeepE() > minEInc)
+				|| ((cdef.GetDef()->GetWindResourceGenerator(energyRes) > minEInc) && (avgWind > minEInc))
+				|| (cdef.GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength() > minEInc))
 			{
 				if (cdef.GetDef()->IsNeedGeo()) {
 					finishedHandler[cdef.GetId()] = geoFinishedHandler;
@@ -338,7 +339,7 @@ CEconomyManager::~CEconomyManager()
 	delete factoryTask;
 }
 
-void CEconomyManager::ReadConfig()
+void CEconomyManager::ReadConfig(float& outMinEInc)
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const std::string& cfgName = circuit->GetSetupManager()->GetConfigName();
@@ -375,6 +376,7 @@ void CEconomyManager::ReadConfig()
 		energyFactor = efInfo.startFactor;
 	}
 
+	outMinEInc = energy.get("min_income", 5.f).asFloat();
 	costRatio = energy.get("cost_ratio", 0.05f).asFloat();
 	ecoEMRatio = energy.get("em_ratio", 0.08f).asFloat();
 	clusterRange = econ.get("cluster_range", 950.f).asFloat();
