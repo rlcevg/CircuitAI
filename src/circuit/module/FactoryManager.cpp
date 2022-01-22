@@ -64,6 +64,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			nilTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		}
+
+		// Mark path from factory to lanePos as blocked
+		CSetupManager* setupMgr = this->circuit->GetSetupManager();
+		this->circuit->GetTerrainManager()->AddBlockerPath(unit, setupMgr->GetLanePos(), setupMgr->GetCommChoice());
 	};
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
@@ -97,6 +101,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		// NOTE: Do not del if factory rotation wanted
 		DelFactory(unit->GetCircuitDef());
 		DisableFactory(unit);
+
+		// Remove blocked path from factory to lanePos
+		this->circuit->GetTerrainManager()->DelBlockerPath(unit);
 	};
 
 	/*
@@ -1187,12 +1194,6 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
 		validAir.insert(unit);
 	}
-
-	/*
-	 * Mark path from factory to lanePos as blocked
-	 */
-	CSetupManager* setupMgr = circuit->GetSetupManager();
-	circuit->GetTerrainManager()->AddBlockerPath(unit, setupMgr->GetLanePos(), setupMgr->GetCommChoice()->GetMobileId());
 }
 
 void CFactoryManager::DisableFactory(CCircuitUnit* unit)
@@ -1524,14 +1525,15 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 	static std::vector<SCandidate> candidates;  // NOTE: micro-opt
 //	candidates.reserve(facDef.buildDefs.size());
 	const int frame = circuit->GetLastFrame();
+	const bool isMetalFull = economyMgr->IsMetalFull();
 	const float energyNet = economyMgr->GetAvgEnergyIncome() - economyMgr->GetEnergyUse();
 	const float maxCost = militaryMgr->GetArmyCost();
 	const float range = builder->GetCircuitDef()->GetBuildDistance();
 	const AIFloat3& pos = builder->GetPos(frame);
 
 	const int iS = terrainMgr->GetSectorIndex(pos);
-	auto isEnemyInArea = [iS, terrainMgr](int frame, CCircuitDef* bd) {
-		if (frame < FRAMES_PER_SEC * 60 * 10) {  // TODO: Change to minimum required army power
+	auto isEnemyInArea = [iS, terrainMgr, isMetalFull](int frame, CCircuitDef* bd) {
+		if (isMetalFull || (frame < FRAMES_PER_SEC * 60 * 10)) {  // TODO: Change to minimum required army power
 			return true;
 		}
 		STerrainMapArea* area;

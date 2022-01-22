@@ -91,7 +91,7 @@ namespace circuit {
 
 namespace NSMicroPather {
 	using CostFunc = std::function<float (int index)>;  // without +2 edges
-	using TestFunc = std::function<bool (int2 start, int2 end)>;  // without +2 edges
+	using HitFunc = std::function<bool (int2 start, int2 end)>;  // without +2 edges
 
 	class PathNode {
 		// trashy trick to get rid of compiler warning because this class has a private constructor and destructor
@@ -240,7 +240,9 @@ namespace NSMicroPather {
 					const CostFunc& moveFun, const CostFunc& threatFun, const circuit::SAreaData* areaData);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
 					IndexVec* path, float* cost);
-			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat, TestFunc hitTest,
+			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat, HitFunc hitTest,
+					IndexVec* path, float* cost);
+			int FindWidePathToPath(void* startNode, VoidVec& endNodes, const bool isWide,
 					IndexVec* path, float* cost);
 			void MakeCostMap(void* startNode, float maxThreat, std::vector<float>& costMap);
 

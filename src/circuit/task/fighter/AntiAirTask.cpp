@@ -247,7 +247,7 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	});
 }
 
-NSMicroPather::TestFunc CAntiAirTask::GetHitTest() const
+NSMicroPather::HitFunc CAntiAirTask::GetHitTest() const
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();

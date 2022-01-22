@@ -708,21 +708,31 @@ Json::Value* CSetupManager::ReadConfig(const std::string& dirname, const std::st
 		const std::vector<std::string>& parts, const bool isVFS)
 {
 	Json::Value* cfg = nullptr;
-	for (const std::string& name : parts) {
-		std::string filename = dirname + profile + SLASH + name + ".json";
-		auto cfgStr = utils::ReadFile(circuit->GetCallback(), filename);
-		if (cfgStr.empty()) {
-			filename = dirname + name + ".json";
-			cfgStr = utils::ReadFile(circuit->GetCallback(), filename);
-			if (cfgStr.empty()) {
-				if (!isVFS) {
-					circuit->LOG("No config file! (%s)", filename.c_str());
-				}
-				continue;
+	bool isForceLoad = !isVFS;
+	if (!isForceLoad) {
+		for (const std::string& name : parts) {
+			std::string filename = dirname + profile + SLASH + name + ".json";
+			if (utils::FileExists(circuit->GetCallback(), filename)) {
+				isForceLoad = true;
+				break;
 			}
 		}
-		circuit->LOG("Load config: %s", filename.c_str());
-		cfg = ParseConfig(cfgStr, name, cfg);
+	}
+	if (isForceLoad) {
+		for (const std::string& name : parts) {
+			std::string filename = dirname + profile + SLASH + name + ".json";
+			auto cfgStr = utils::ReadFile(circuit->GetCallback(), filename);
+			if (cfgStr.empty()) {
+				filename = dirname + name + ".json";
+				cfgStr = utils::ReadFile(circuit->GetCallback(), filename);
+				if (cfgStr.empty()) {
+					circuit->LOG("No config file! (%s)", filename.c_str());
+					continue;
+				}
+			}
+			circuit->LOG("Load config: %s", filename.c_str());
+			cfg = ParseConfig(cfgStr, name, cfg);
+		}
 	}
 	return cfg;
 }

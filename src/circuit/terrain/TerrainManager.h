@@ -22,7 +22,7 @@ namespace circuit {
 
 class CCircuitAI;
 class IBlockMask;
-//class IPathQuery;
+class IPathQuery;
 class CCircuitUnit;
 struct STerrainMapArea;
 struct STerrainMapMobileType;
@@ -55,7 +55,8 @@ public:
 	void Init();
 	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
 	void DelBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
-	void AddBlockerPath(CCircuitUnit* unit, const springai::AIFloat3& pos, const STerrainMapMobileType::Id mobileId);
+	void AddBlockerPath(CCircuitUnit* unit, const springai::AIFloat3& pos, const CCircuitDef* mobileDef);
+	void DelBlockerPath(CCircuitUnit* unit);
 	void ResetBuildFrame() { markFrame = -FRAMES_PER_SEC; }
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	// TODO: Based on map complexity use BFS or circle to calculate build offset
@@ -122,7 +123,11 @@ private:
 	void MarkBlockerByMask(const SStructure& building, bool block, IBlockMask* mask);
 	void MarkBlocker(const SStructure& building, bool block);
 
-//	std::shared_ptr<IPathQuery> blockerPathQuery;
+	struct FactoryPathInfo {
+		std::shared_ptr<IPathQuery> query;
+		std::shared_ptr<PathInfo> path;
+	};
+	std::map<CCircuitUnit*, FactoryPathInfo> blockPath;
 
 public:
 	int GetConvertStoP() const { return terrainData->convertStoP; }

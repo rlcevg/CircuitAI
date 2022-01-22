@@ -21,7 +21,7 @@ CQueryPathMulti::~CQueryPathMulti()
 }
 
 void CQueryPathMulti::InitQuery(const AIFloat3& startPos, float maxRange,
-		const F3Vec& targets, NSMicroPather::TestFunc&& hitTest, bool withGoal,
+		const F3Vec& targets, NSMicroPather::HitFunc&& hitTest, bool withGoal,
 		float maxThreat, bool endPosOnly)
 {
 	this->startPos = startPos;

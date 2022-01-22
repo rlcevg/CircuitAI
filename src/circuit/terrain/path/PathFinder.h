@@ -58,10 +58,12 @@ public:
 
 	std::shared_ptr<IPathQuery> CreatePathSingleQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos, const springai::AIFloat3& endPos, float maxRange,
-			NSMicroPather::TestFunc&& hitTest = nullptr, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
+			NSMicroPather::HitFunc&& hitTest = nullptr, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
 	std::shared_ptr<IPathQuery> CreatePathMultiQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets,
-			NSMicroPather::TestFunc&& hitTest = nullptr, bool withGoal = false, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
+			NSMicroPather::HitFunc&& hitTest = nullptr, bool withGoal = false, float maxThreat = std::numeric_limits<float>::max(), bool endPosOnly = false);
+	std::shared_ptr<IPathQuery> CreatePathWideQuery(CCircuitUnit* unit, int frame,
+			const springai::AIFloat3& startPos, const springai::AIFloat3& endPos, const IndexVec& targets);
 	std::shared_ptr<IPathQuery> CreateCostMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame,
 			const springai::AIFloat3& startPos, float maxThreat = std::numeric_limits<float>::max());
 	std::shared_ptr<IPathQuery> CreateLineMapQuery(CCircuitUnit* unit, CThreatMap* threatMap, int frame);
@@ -86,14 +88,21 @@ private:
 	}
 
 	int MakeQueryId() { return queryId++; }
+	enum class MoveType { UNDERWATER, CLOAK, AIR, SWIM, DIVE, SURF };
+	MoveType GetMoveType(CCircuitUnit* unit, int frame) const;
+	NSMicroPather::CostFunc GetMoveFun(MoveType mt, CCircuitUnit* unit, bool*& outMoveArray) const;
+	NSMicroPather::CostFunc GetThreatFun(MoveType mt, CCircuitUnit* unit, CThreatMap* threatMap, float*& outThreatArray) const;
+	void FillMapData(IPathQuery* query, CCircuitUnit* unit, int frame);
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
 
 	void RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
 	void RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
+	void RunPathWide(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
 	void RunCostMap(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
 
 	void MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 	void FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
+	void MakePathWide(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 	void MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 
 	CTerrainData* terrainData;

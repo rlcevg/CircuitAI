@@ -316,7 +316,7 @@ void ISquadTask::ActivePath(float speed)
 	}
 }
 
-NSMicroPather::TestFunc ISquadTask::GetHitTest() const
+NSMicroPather::HitFunc ISquadTask::GetHitTest() const
 {
 	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
 	const std::vector<STerrainMapSector>& sectors = terrainMgr->GetAreaData()->sector;

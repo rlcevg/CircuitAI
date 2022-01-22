@@ -51,7 +51,6 @@ CTerrainData::CTerrainData()
 		, gameAttribute(nullptr)
 		, isUpdating(false)
 		, aiToUpdate(0)
-//		, isClusterizing(false)
 		, isInitialized(false)
 #ifdef DEBUG_VIS
 		, toggleFrame(-1)

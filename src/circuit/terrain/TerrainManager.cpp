@@ -9,7 +9,7 @@
 #include "terrain/BlockRectangle.h"
 #include "terrain/BlockCircle.h"
 #include "terrain/path/PathFinder.h"
-//#include "terrain/path/QueryPathSingle.h"
+#include "terrain/path/QueryPathWide.h"
 #include "map/ThreatMap.h"
 #include "map/InfluenceMap.h"
 #include "module/EconomyManager.h"
@@ -376,48 +376,96 @@ void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 #endif
 }
 
-void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, const STerrainMapMobileType::Id mobileId)
+void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, const CCircuitDef* mobileDef)
 {
-//	const int iS = GetSectorIndex(pos);
-//	STerrainMapMobileType* mobyleType = GetMobileType(mobileId);
-//	STerrainMapAreaSector* AS = GetAlternativeSector(unit->GetArea(), iS, mobyleType);
-//	if (AS == nullptr) {
-//		return;
-//	}
-//
-//	const int frame = circuit->GetLastFrame();
-//	const AIFloat3 startPos = unit->GetPos(frame);// + AIFloat3(0, 0, 128);
-//	const AIFloat3& endPos = AS->S->position;
-//
+	const STerrainMapMobileType::Id mobileId = mobileDef->GetMobileId();
+	const int iS = GetSectorIndex(pos);
+	STerrainMapMobileType* mobyleType = GetMobileType(mobileId);
+	STerrainMapAreaSector* AS = GetAlternativeSector(unit->GetArea(), iS, mobyleType);
+	if (AS == nullptr) {
+		return;
+	}
+
+	IndexVec targets;
+	for (const auto& kv : blockPath) {
+		if (kv.second.path != nullptr) {
+			for (int index : kv.second.path->path) {
+				targets.push_back(index);
+			}
+		}
+	}
+
+	const int frame = circuit->GetLastFrame();
+	AIFloat3 startPos = unit->GetPos(frame);
+	switch (unit->GetUnit()->GetBuildingFacing()) {
+		default:
+		case UNIT_FACING_SOUTH:
+			startPos += AIFloat3(0.f, 0.f, 128.f);
+			break;
+		case UNIT_FACING_EAST:
+			startPos += AIFloat3(128.f, 0.f, 0.f);
+			break;
+		case UNIT_FACING_NORTH:
+			startPos += AIFloat3(0.f, 0.f, -128.f);
+			break;
+		case UNIT_FACING_WEST:
+			startPos += AIFloat3(-128.f, 0.f, 0.f);
+			break;
+	}
+	const AIFloat3& endPos = AS->S->position;
+	FactoryPathInfo& fpi = blockPath[unit];
+
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	fpi.query = pathfinder->CreatePathWideQuery(unit, frame, startPos, endPos, targets);
+
+	pathfinder->RunQuery(fpi.query, [this, &fpi](const IPathQuery* query) {
+		const CQueryPathWide* q = static_cast<const CQueryPathWide*>(query);
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
+		for (int index : q->GetPathInfo()->path) {
+			int ix, iz;
+			pathfinder->PathIndex2PathXY(index, &ix, &iz);
+
+			ix = ix * granularity + granularity / 2;
+			iz = iz * granularity + granularity / 2;
+			int2 m1(ix - 4, iz - 4);
+			int2 m2(ix + 4, iz + 4);
+			blockingMap.Bound(m1, m2);
+			for (int z = m1.y; z < m2.y; ++z) {
+				for (int x = m1.x; x < m2.x; ++x) {
+					blockingMap.AddBlocker(x, z, SBlockingMap::StructType::TERRA);
+				}
+			}
+		}
+		fpi.path = q->GetPathInfo();
+		fpi.query = nullptr;
+	});
+}
+
+void CTerrainManager::DelBlockerPath(CCircuitUnit* unit)
+{
+	auto it = blockPath.find(unit);
+	if (it == blockPath.end()) {
+		return;
+	}
 //	CPathFinder* pathfinder = circuit->GetPathfinder();
-//	blockerPathQuery = pathfinder->CreatePathSingleQuery(
-//			unit, circuit->GetThreatMap(), frame,
-//			startPos, endPos, pathfinder->GetSquareSize());
+//	const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
+//	for (int index : it->second.path->path) {
+//		int ix, iz;
+//		pathfinder->PathIndex2PathXY(index, &ix, &iz);
 //
-//	// TODO: Store separate map for factory un-blocking.
-//	//       Merge paths as soon as they have common cell.
-//	// FIXME: granularity of 1 level path-map is too low
-//	pathfinder->RunQuery(blockerPathQuery, [this](const IPathQuery* query) {
-//		const CQueryPathSingle* q = static_cast<const CQueryPathSingle*>(query);
-//		CPathFinder* pathfinder = circuit->GetPathfinder();
-//		const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
-//		for (int index : q->GetPathInfo()->path) {
-//			int ix, iz;
-//			pathfinder->PathIndex2PathXY(index, &ix, &iz);
-//
-//			ix *= granularity;
-//			iz *= granularity;
-//			int2 m1(ix - granularity, iz - granularity);
-//			int2 m2(ix + granularity, iz + granularity);
-//			blockingMap.Bound(m1, m2);
-//			for (int z = m1.y; z < m2.y; ++z) {
-//				for (int x = m1.x; x < m2.x; ++x) {
-//					blockingMap.AddBlocker(x, z, SBlockingMap::StructType::TERRA);
-//				}
+//		ix = ix * granularity + granularity / 2;
+//		iz = iz * granularity + granularity / 2;
+//		int2 m1(ix - 4, iz - 4);
+//		int2 m2(ix + 4, iz + 4);
+//		blockingMap.Bound(m1, m2);
+//		for (int z = m1.y; z < m2.y; ++z) {
+//			for (int x = m1.x; x < m2.x; ++x) {
+//				blockingMap.DelBlocker(x, z, SBlockingMap::StructType::TERRA);
 //			}
 //		}
-//		blockerPathQuery = nullptr;
-//	});
+//	}
+	blockPath.erase(it);
 }
 
 AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing)
@@ -1032,8 +1080,8 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 	}
 
 	int2 corner;
-	corner.x = int(pos.x/* + 0.5f*/) / (SQUARE_SIZE * 2) - (xssize / 2);
-	corner.y = int(pos.z/* + 0.5f*/) / (SQUARE_SIZE * 2) - (zssize / 2);
+	corner.x = int(pos.x + 0.5f) / (SQUARE_SIZE * 2) - (xssize / 2);
+	corner.y = int(pos.z + 0.5f) / (SQUARE_SIZE * 2) - (zssize / 2);
 
 	int2 m1 = corner - mask->GetStructOffset(facing);	// top-left mask corner
 	int2 m2(m1.x + xmsize, m1.y + zmsize);				// bottom-right mask corner
@@ -1087,8 +1135,8 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
-	const int x1 = int(pos.x/* + 0.5f*/) / (SQUARE_SIZE * 2) - (xsize / 2), x2 = x1 + xsize;
-	const int z1 = int(pos.z/* + 0.5f*/) / (SQUARE_SIZE * 2) - (zsize / 2), z2 = z1 + zsize;
+	const int x1 = int(pos.x + 0.5f) / (SQUARE_SIZE * 2) - (xsize / 2), x2 = x1 + xsize;
+	const int z1 = int(pos.z + 0.5f) / (SQUARE_SIZE * 2) - (zsize / 2), z2 = z1 + zsize;
 
 	int2 m1(x1, z1);
 	int2 m2(x2, z2);

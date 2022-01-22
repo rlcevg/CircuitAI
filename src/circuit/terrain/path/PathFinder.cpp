@@ -9,6 +9,7 @@
 #include "terrain/path/PathFinder.h"
 #include "terrain/path/QueryPathSingle.h"
 #include "terrain/path/QueryPathMulti.h"
+#include "terrain/path/QueryPathWide.h"
 #include "terrain/path/QueryCostMap.h"
 #include "terrain/path/QueryLineMap.h"
 #include "terrain/TerrainData.h"
@@ -252,7 +253,7 @@ AIFloat3 CPathFinder::PathIndex2Pos(int index) const
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathSingleQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
 		const AIFloat3& startPos, const AIFloat3& endPos, float maxRange,
-		NSMicroPather::TestFunc&& hitTest, float maxThreat, bool endPosOnly)
+		NSMicroPather::HitFunc&& hitTest, float maxThreat, bool endPosOnly)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathSingle>(*this, MakeQueryId());
 	CQueryPathSingle* query = static_cast<CQueryPathSingle*>(pQuery.get());
@@ -266,13 +267,26 @@ std::shared_ptr<IPathQuery> CPathFinder::CreatePathSingleQuery(
 std::shared_ptr<IPathQuery> CPathFinder::CreatePathMultiQuery(
 		CCircuitUnit* unit, CThreatMap* threatMap, int frame,  // SetMapData
 		const AIFloat3& startPos, float maxRange, const F3Vec& possibleTargets,
-		NSMicroPather::TestFunc&& hitTest, bool withGoal, float maxThreat, bool endPosOnly)
+		NSMicroPather::HitFunc&& hitTest, bool withGoal, float maxThreat, bool endPosOnly)
 {
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathMulti>(*this, MakeQueryId());
 	CQueryPathMulti* query = static_cast<CQueryPathMulti*>(pQuery.get());
 
 	FillMapData(query, unit, threatMap, frame);
 	query->InitQuery(startPos, maxRange, possibleTargets, std::move(hitTest), withGoal, maxThreat, endPosOnly);
+
+	return pQuery;
+}
+
+std::shared_ptr<IPathQuery> CPathFinder::CreatePathWideQuery(
+		CCircuitUnit* unit, int frame,  // SetMapData
+		const AIFloat3& startPos, const AIFloat3& endPos, const IndexVec& targets)
+{
+	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathWide>(*this, MakeQueryId());
+	CQueryPathWide* query = static_cast<CQueryPathWide*>(pQuery.get());
+
+	FillMapData(query, unit, frame);
+	query->InitQuery(startPos, endPos, targets);
 
 	return pQuery;
 }
@@ -314,6 +328,9 @@ void CPathFinder::RunQuery(const std::shared_ptr<IPathQuery>& query, PathCallbac
 		case IPathQuery::Type::MULTI: {
 			RunPathMulti(query, std::move(onComplete));
 		} break;
+		case IPathQuery::Type::WIDE: {
+			RunPathWide(query, std::move(onComplete));
+		} break;
 		case IPathQuery::Type::COST: {
 			RunCostMap(query, std::move(onComplete));
 		} break;
@@ -321,7 +338,27 @@ void CPathFinder::RunQuery(const std::shared_ptr<IPathQuery>& query, PathCallbac
 	}
 }
 
-void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame)
+CPathFinder::MoveType CPathFinder::GetMoveType(CCircuitUnit* unit, int frame) const
+{
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
+		return MoveType::UNDERWATER;
+	} else if (unit->GetUnit()->IsCloaked()) {
+		return MoveType::CLOAK;
+	} else if (cdef->IsAbleToFly()) {
+		return MoveType::AIR;
+	} else {
+		if (cdef->IsAbleToSwim()) {
+			return MoveType::SWIM;
+		} else if (cdef->IsAbleToDive()) {
+			return MoveType::DIVE;
+		} else {
+			return MoveType::SURF;
+		}
+	}
+}
+
+CostFunc CPathFinder::GetMoveFun(MoveType mt, CCircuitUnit* unit, bool*& outMoveArray) const
 {
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
@@ -337,42 +374,24 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 		maxSlope = std::max(areaData->mobileType[mobileTypeId].maxSlope, 1e-3f);
 	}
 
-	float* threatArray;
 	CostFunc moveFun;
-	CostFunc threatFun;
-	// TODO: Re-organize and pre-calculate moveFun for each move-type
-	if ((unit->GetPos(frame).y < .0f) && !cdef->IsSonarStealth()) {
-		threatArray = cdef->IsAbleToSwim()  // cloak doesn't work under water
-				? threatMap->GetSwimThreatArray(cdef->GetMainRole())
-				: threatMap->GetAmphThreatArray(cdef->GetMainRole());
-		moveFun = [&sectors, maxSlope](int index) {
-			return (sectors[index].isWater ? 2.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
-		};
-		threatFun = [threatArray](int index) {
-			return 2.f * threatArray[index];
-		};
-
-	} else if (unit->GetUnit()->IsCloaked()) {
-		threatArray = threatMap->GetCloakThreatArray();
-		moveFun = [&sectors, maxSlope](int index) {
-			return sectors[index].maxSlope / maxSlope;
-		};
-		threatFun = [threatArray](int index) {
-			return threatArray[index];
-		};
-
-	} else if (cdef->IsAbleToFly()) {
-		threatArray = threatMap->GetAirThreatArray(cdef->GetMainRole());
-		moveFun = [](int index) {
-			return 0.f;
-		};
-		threatFun = [threatArray](int index) {
-			return 2.f * threatArray[index];
-		};
-
-	} else {
-		if (cdef->IsAbleToSwim()) {
-			threatArray = threatMap->GetSwimThreatArray(cdef->GetMainRole());
+	switch (mt) {
+		case MoveType::UNDERWATER: {
+			moveFun = [&sectors, maxSlope](int index) {
+				return (sectors[index].isWater ? 2.f : 0.f) + 2.f * sectors[index].maxSlope / maxSlope;
+			};
+		} break;
+		case MoveType::CLOAK: {
+			moveFun = [&sectors, maxSlope](int index) {
+				return sectors[index].maxSlope / maxSlope;
+			};
+		} break;
+		case MoveType::AIR: {
+			moveFun = [](int index) {
+				return 0.f;
+			};
+		} break;
+		case MoveType::SWIM: {
 			if (maxSlope > SPIDER_SLOPE) {
 				const float minElev = areaData->minElevation;
 				float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
@@ -384,8 +403,8 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 					return sectors[index].isWater ? 1.f : (2.f * sectors[index].maxSlope / maxSlope);
 				};
 			}
-		} else if (cdef->IsAbleToDive()) {
-			threatArray = threatMap->GetAmphThreatArray(cdef->GetMainRole());
+		} break;
+		case MoveType::DIVE: {
 			if (maxSlope > SPIDER_SLOPE) {
 				const float minElev = areaData->minElevation;
 				float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
@@ -399,8 +418,9 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 							(sectors[index].isWater ? 2.f : 0.f);
 				};
 			}
-		} else {
-			threatArray = threatMap->GetSurfThreatArray(cdef->GetMainRole());
+		} break;
+		default:
+		case MoveType::SURF: {
 			if (maxSlope > SPIDER_SLOPE) {
 				const float minElev = areaData->minElevation;
 				float elevLen = std::max(areaData->maxElevation - areaData->minElevation, 1e-3f);
@@ -412,11 +432,78 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 					return sectors[index].isWater ? 0.f : (2.f * sectors[index].maxSlope / maxSlope);
 				};
 			}
-		}
-		threatFun = [threatArray](int index) {
-			return 2.f * threatArray[index];
-		};
+		} break;
 	}
+	outMoveArray = moveArray;
+	return moveFun;
+}
+
+CostFunc CPathFinder::GetThreatFun(MoveType mt, CCircuitUnit* unit, CThreatMap* threatMap, float*& outThreatArray) const
+{
+	CCircuitDef* cdef = unit->GetCircuitDef();
+
+	float* threatArray;
+	CostFunc threatFun;
+	switch (mt) {
+		case MoveType::UNDERWATER: {
+			threatArray = cdef->IsAbleToSwim()  // cloak doesn't work under water
+					? threatMap->GetSwimThreatArray(cdef->GetMainRole())
+					: threatMap->GetAmphThreatArray(cdef->GetMainRole());
+			threatFun = [threatArray](int index) {
+				return 2.f * threatArray[index];
+			};
+		} break;
+		case MoveType::CLOAK: {
+			threatArray = threatMap->GetCloakThreatArray();
+			threatFun = [threatArray](int index) {
+				return threatArray[index];
+			};
+		} break;
+		case MoveType::AIR: {
+			threatArray = threatMap->GetAirThreatArray(cdef->GetMainRole());
+			threatFun = [threatArray](int index) {
+				return 2.f * threatArray[index];
+			};
+		} break;
+		case MoveType::SWIM: {
+			threatArray = threatMap->GetSwimThreatArray(cdef->GetMainRole());
+			threatFun = [threatArray](int index) {
+				return 2.f * threatArray[index];
+			};
+		} break;
+		case MoveType::DIVE: {
+			threatArray = threatMap->GetAmphThreatArray(cdef->GetMainRole());
+			threatFun = [threatArray](int index) {
+				return 2.f * threatArray[index];
+			};
+		} break;
+		default:
+		case MoveType::SURF: {
+			threatArray = threatMap->GetSurfThreatArray(cdef->GetMainRole());
+			threatFun = [threatArray](int index) {
+				return 2.f * threatArray[index];
+			};
+		} break;
+	}
+	outThreatArray = threatArray;
+	return threatFun;
+}
+
+void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, int frame)
+{
+	bool* moveArray;
+	CostFunc moveFun = GetMoveFun(GetMoveType(unit, frame), unit, moveArray);
+
+	query->Init(moveArray, nullptr, std::move(moveFun), nullptr, unit);
+}
+
+void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame)
+{
+	MoveType mt = GetMoveType(unit, frame);
+	bool* moveArray;
+	float* threatArray;
+	CostFunc moveFun = GetMoveFun(mt, unit, moveArray);
+	CostFunc threatFun = GetThreatFun(mt, unit, threatMap, threatArray);
 
 	query->Init(moveArray, threatArray, std::move(moveFun), std::move(threatFun), unit);
 }
@@ -463,6 +550,27 @@ void CPathFinder::RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCal
 	}));
 }
 
+void CPathFinder::RunPathWide(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
+{
+	query->SetState(IPathQuery::State::PROCESS);
+	std::shared_ptr<IMainJob> finish = CScheduler::PathedJob(query,
+#ifdef DEBUG_VIS
+	[this, onComplete](IPathQuery* query) {
+		this->UpdateVis(static_cast<CQueryPathWide*>(query)->GetPathInfo()->path);
+#else
+	[onComplete](IPathQuery* query) {
+#endif
+		query->SetState(IPathQuery::State::READY);
+		if (onComplete != nullptr) {
+			onComplete(query);
+		}
+	});
+	scheduler->RunParallelJob(CScheduler::PathJob(query, [this, finish](int threadNum, IPathQuery* query) {
+		this->MakePathWide(query, micropathers[threadNum]);
+		return finish;
+	}));
+}
+
 void CPathFinder::RunCostMap(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
@@ -492,7 +600,7 @@ void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micro
 	AIFloat3& startPos = q->GetStartPosRef();
 	AIFloat3& endPos = q->GetEndPosRef();
 	const int radius = q->GetMaxRange() / squareSize;
-	const NSMicroPather::TestFunc& hitTest = q->GetHitTest();
+	const NSMicroPather::HitFunc& hitTest = q->GetHitTest();
 	const float maxThreat = q->GetMaxThreat();
 
 	PathInfo& iPath = q->GetPathInfoRef();
@@ -525,7 +633,7 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 	AIFloat3& startPos = q->GetStartPosRef();
 	F3Vec& possibleTargets = q->GetTargetsRef();
 	const float maxRange = q->GetMaxRange();
-	const NSMicroPather::TestFunc& hitTest = q->GetHitTest();
+	const NSMicroPather::HitFunc& hitTest = q->GetHitTest();
 	const bool isWithGoal = q->IsWithGoal();
 	const float maxThreat = q->GetMaxThreat();
 
@@ -660,6 +768,55 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 
 	endNodes.clear();
 	nodeTargets.clear();
+}
+
+void CPathFinder::MakePathWide(IPathQuery* query, NSMicroPather::CMicroPather* micropather)
+{
+	CQueryPathWide* q = static_cast<CQueryPathWide*>(query);
+	q->Prepare();
+
+	const bool* canMoveArray = q->GetCanMoveArray();
+	const NSMicroPather::CostFunc& moveFun = q->GetMoveFun();
+	const SAreaData* areaData = q->GetAreaData();
+
+	AIFloat3& startPos = q->GetStartPosRef();
+	AIFloat3& endPos = q->GetEndPosRef();
+	IndexVec& targets = q->GetTargetsRef();
+	const bool isWide = squareSize <= 64;
+
+	PathInfo& iPath = q->GetPathInfoRef();
+	float& pathCost = q->GetPathCostRef();
+
+	iPath.Clear();
+
+	CTerrainData::CorrectPosition(startPos);
+	CTerrainData::CorrectPosition(endPos);
+
+	std::vector<void*>& endNodes = micropather->endNodes;
+	for (int i : targets) {
+		int x, y;
+		PathIndex2MoveXY(i, &x, &y);
+		void* node = MoveXY2MoveNode(x, y);
+		NSMicroPather::PathNode* pn = micropather->GetNode(node);
+		if (pn->isEndNode == 0) {
+			pn->isEndNode = 1;  // target node, avoid duplicates
+			endNodes.push_back(node);
+		}
+	}
+	void* node = Pos2MoveNode(endPos);
+	NSMicroPather::PathNode* pn = micropather->GetNode(node);
+	if (pn->isEndNode == 0) {
+		pn->isEndNode = 1;  // target node, avoid duplicates
+		endNodes.push_back(node);
+	}
+
+	micropather->SetMapData(canMoveArray, nullptr, moveFun, nullptr, areaData);
+	micropather->FindWidePathToPath(Pos2MoveNode(startPos), endNodes, isWide, &iPath.path, &pathCost);
+
+	for (void* node : endNodes) {
+		micropather->GetNode(node)->isEndNode = 0;
+	}
+	endNodes.clear();
 }
 
 void CPathFinder::MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* micropather)
