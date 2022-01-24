@@ -1004,7 +1004,7 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 	TRY_UNIT(this, unit,
 		unit->CmdFireAtRadar(true);
 		unit->GetUnit()->SetAutoRepairLevel(0);
-		unit->GetUnit()->SetOn(true);
+		unit->GetUnit()->SetOn(unit->GetCircuitDef()->IsOn());
 		if (unit->GetCircuitDef()->IsAbleToCloak()
 			&& unit->GetCircuitDef()->GetCloakCost() < economyManager->GetAvgEnergyIncome() * 0.1f)
 		{

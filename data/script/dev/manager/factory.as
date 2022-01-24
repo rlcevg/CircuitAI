@@ -42,7 +42,11 @@ bool AiIsSwitchTime(int lastSwitchFrame)
 
 bool AiIsSwitchAllowed(CCircuitDef@ facDef)
 {
-	return aiMilitaryMgr.armyCost > 3000.f;
+	const bool isOK = aiMilitaryMgr.armyCost > 3000.f;
+	if (!isOK) {
+		aiFactoryMgr.isAssistRequired = true;
+	}
+	return isOK;
 }
 
 /* --- Utils --- */

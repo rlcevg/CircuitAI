@@ -115,8 +115,6 @@ public:
 	void SetOpenGeoSpot(int spotId, bool value) { geoSpots[spotId] = value; }
 	bool IsIgnorePull(const IBuilderTask* task) const;
 	bool IsIgnoreStallingPull(const IBuilderTask* task) const;
-	bool IsAssistRequired() const { return isAssistRequired; }
-	void ClearAssistRequired() { isAssistRequired = false; }
 
 	IBuilderTask* MakeEconomyTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
@@ -270,7 +268,6 @@ private:
 
 	std::shared_ptr<IMainJob> startFactory;
 	CBFactoryTask* factoryTask;
-	bool isAssistRequired;
 
 	std::shared_ptr<IMainJob> morph;
 	std::set<CCircuitUnit*> morphees;

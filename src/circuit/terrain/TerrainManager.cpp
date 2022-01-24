@@ -106,6 +106,7 @@ void CTerrainManager::ReadConfig()
 	enum {RECTANGLE = 0, CIRCLE};
 	const std::array<std::string, 2> radNames = {"explosion", "expl_ally"};
 	enum {EXPLOSION = 0, EXPL_ALLY};
+	minLandPercent = root["select"].get("min_land", 40.0f).asFloat();
 	const bool isWaterMap = IsWaterMap();
 
 	const Json::Value& clLand = block["class_land"];

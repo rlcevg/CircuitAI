@@ -47,6 +47,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		, updateIterator(0)
 		, metalRequire(0.f)
 		, energyRequire(0.f)
+		, isAssistRequired(false)
 		, isSwitchTime(false)
 		, lastSwitchFrame(-1)
 		, noT1FacCount(0)
@@ -408,6 +409,7 @@ void CFactoryManager::ReadConfig()
 			cdef->AddAttribute(ATTR_TYPE(ONOFF));
 			cdef->SetOnSlow(slowOnOff.asBool());
 		}
+		cdef->SetOn(behaviour.get("on", true).asBool());
 
 		const Json::Value& reload = behaviour["reload"];
 		if (!reload.isNull()) {
@@ -1090,9 +1092,10 @@ CCircuitDef* CFactoryManager::GetRepresenter(const CCircuitDef* facDef) const
 		if (landDef->GetMobileId() < 0) {
 			return landDef;
 		} else {
-			STerrainMapArea* area = circuit->GetTerrainManager()->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
+			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+			STerrainMapArea* area = terrainMgr->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
 			// FIXME: area->percentOfMap < 40.0 doesn't seem right as water identifier
-			return ((area == nullptr) || (area->percentOfMap < 40.0)) ? GetWaterDef(facDef) : landDef;
+			return ((area == nullptr) || (area->percentOfMap < terrainMgr->GetMinLandPercent())) ? GetWaterDef(facDef) : landDef;
 		}
 	} else {
 		return GetWaterDef(facDef);

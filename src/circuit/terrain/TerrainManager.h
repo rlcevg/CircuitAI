@@ -189,7 +189,8 @@ public:
 	bool CanMobileReachAtSafe(STerrainMapArea* area, const springai::AIFloat3& destination, const float range, const float threat = THREAT_MIN);
 
 	float GetPercentLand() const { return areaData->percentLand; }
-	bool IsWaterMap() const { return areaData->percentLand < 40.0; }
+	float GetMinLandPercent() const { return minLandPercent; }
+	bool IsWaterMap() const { return areaData->percentLand < minLandPercent; }
 	bool IsWaterSector(const springai::AIFloat3& position) const {
 		return areaData->sector[GetSectorIndex(position)].isWater;
 	}
@@ -197,15 +198,17 @@ public:
 	SAreaData* GetAreaData() const { return areaData; }
 	void UpdateAreaUsers(int interval);
 	void OnAreaUsersUpdated() { terrainData->OnAreaUsersUpdated(); }
+
+	bool IsEnemyInArea(STerrainMapArea* area) const {
+		return enemyAreas.find(area) != enemyAreas.end();
+	}
+
 private:
 	SAreaData* areaData;
 	CTerrainData* terrainData;
 
-public:
-	bool IsEnemyInArea(STerrainMapArea* area) const {
-		return enemyAreas.find(area) != enemyAreas.end();
-	}
-private:
+	float minLandPercent;
+
 	std::unordered_set<const STerrainMapArea*> enemyAreas;
 
 #ifdef DEBUG_VIS

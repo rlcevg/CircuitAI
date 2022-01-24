@@ -70,6 +70,8 @@ public:
 	float GetFacModE() const { return facModE; }
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
 	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
+	bool IsAssistRequired() const { return isAssistRequired; }
+	void ClearAssistRequired() { isAssistRequired = false; }
 	void ApplySwitchFrame();
 	bool IsSwitchTime();
 	void RaiseSwitchTime() { isSwitchTime = true; }
@@ -165,6 +167,7 @@ private:
 	};
 	std::vector<SFactory> factories;  // factory 1:n nano
 	std::set<CCircuitUnit*> validAir;
+	bool isAssistRequired;
 	bool isSwitchTime;
 	int lastSwitchFrame;
 	int noT1FacCount;

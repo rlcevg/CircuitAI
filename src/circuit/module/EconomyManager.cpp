@@ -61,7 +61,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, energy(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energyUse(.0f)
 		, factoryTask(nullptr)
-		, isAssistRequired(false)
 {
 	metalRes = circuit->GetCallback()->GetResourceByName(RES_NAME_METAL);
 	energyRes = circuit->GetCallback()->GetResourceByName(RES_NAME_ENERGY);
@@ -1404,7 +1403,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 	if (!isStart && !circuit->IsSlave() && !factoryMgr->IsSwitchAllowed(facDef)) {
-		isAssistRequired = true;
 		return nullptr;
 	}
 

@@ -69,6 +69,8 @@
 		// true = on
 		// false = off
 //		"slow_target": false,
+		// Initial on/off state on UnitFinished
+//		"on": true,
 
 		// Overrides reloadTime in seconds
 //		"reload": 1.0,

@@ -284,6 +284,8 @@ public:
 	bool IsDecoy() const { return isDecoy; }
 	void SetOnSlow(bool value) { isOnSlow = value; }
 	bool IsOnSlow() const { return isOnSlow; }
+	void SetOn(bool value) { isOn = value; }
+	bool IsOn() const { return isOn; }
 
 	float GetHealth()       const { return health; }
 	float GetSpeed()        const { return speed; }
@@ -415,6 +417,7 @@ private:
 	bool isSonar : 1;
 	bool isDecoy : 1;
 	bool isOnSlow : 1;
+	bool isOn : 1;
 	// ---- Bit fields ---- END
 
 	float health;

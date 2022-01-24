@@ -152,6 +152,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isSonar(false)
 		, isDecoy(false)
 		, isOnSlow(false)
+		, isOn(true)
 		, jumpRange(.0f)
 		, retreat(-1.f)
 		, radius(-1.f)
