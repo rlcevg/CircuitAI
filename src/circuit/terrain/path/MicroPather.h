@@ -75,6 +75,10 @@
 
 #define FLT_BIG (FLT_MAX / 2.0)
 #define COST_BASE		1.0f
+#define COST_RESERVE	10.0f
+#define COST_STRUCT		100.f
+#define COST_BLOCKED	1000.f
+#define COST_BLOCK		(COST_BLOCKED + 1.f)
 
 /*
  * USE_LIST and USE_BINARY_HASH change the some of details the pather algorithms. They
@@ -221,7 +225,7 @@ namespace NSMicroPather {
 			  */
 			unsigned Checksum() const { return checksum; }
 
-			const bool* canMoveArray;
+			const float* canMoveArray;
 			const float* threatArray;
 			CostFunc moveFun;
 			CostFunc threatFun;
@@ -236,7 +240,7 @@ namespace NSMicroPather {
 			std::vector<void*> endNodes;  // helper vector
 			std::vector<void*> nodeTargets;  // helper vector
 
-			void SetMapData(const bool* canMoveArray, const float* threatArray,
+			void SetMapData(const float* canMoveArray, const float* threatArray,
 					const CostFunc& moveFun, const CostFunc& threatFun, const circuit::SAreaData* areaData);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
 					IndexVec* path, float* cost);
@@ -253,7 +257,7 @@ namespace NSMicroPather {
 
 		private:
 			int CanMoveNode2Index(void* node) const {
-				return canMoveArray[(size_t)node] ? pathNodeMem[(size_t)node].index2 : -1;
+				return (canMoveArray[(size_t)node] > COST_BLOCKED) ? -1 : pathNodeMem[(size_t)node].index2;
 			}
 
 			void GoalReached(PathNode* node, void* start, void* end, IndexVec *path);

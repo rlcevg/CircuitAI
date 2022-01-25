@@ -239,7 +239,7 @@ CMicroPather::~CMicroPather()
  * Old: make sure that costArray doesn't contain values below 1.0 (for speed), and below 0.0 (for eternal loop)
  * New: make sure that moveThreatFun doesn't return values below 0.0
  */
-void CMicroPather::SetMapData(const bool* canMoveArray, const float* threatArray,
+void CMicroPather::SetMapData(const float* canMoveArray, const float* threatArray,
 		const CostFunc& moveFun, const CostFunc& threatFun, const circuit::SAreaData* areaData)
 {
 	this->canMoveArray = canMoveArray;
@@ -607,7 +607,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 		}
 		FixStartEndNode(&startNode, &endNode);
 
-		if (!canMoveArray[(size_t)startNode]) {
+		if (canMoveArray[(size_t)startNode] > COST_BLOCKED) {
 			// L("Pather: trying to move from a blocked start pos");
 		}
 	}
@@ -672,7 +672,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 			for (int i = 0; i < 8; ++i) {
 				const int indexEnd = offsets[i] + indexStart;
 
-				if (!canMoveArray[indexEnd]) {
+				if (canMoveArray[indexEnd] > COST_BLOCKED) {
 					continue;
 				}
 
@@ -700,7 +700,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 				#endif
 
 				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + moveFun(index2) + threatFun(index2);
+				const float nodeCost = canMoveArray[indexEnd] + moveFun(index2) + threatFun(index2);
 
 				#ifdef USE_ASSERTIONS
 				assert(nodeCost > 0.f);  // > 1.f for speed
@@ -760,7 +760,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 	{
 		FixStartEndNode(&startNode, &endNode);
 
-		if (!canMoveArray[(size_t)startNode]) {
+		if (canMoveArray[(size_t)startNode] > COST_BLOCKED) {
 			// L("Pather: trying to move from a blocked start pos");
 		}
 	}
@@ -841,7 +841,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 			for (int i = 0; i < 8; ++i) {
 				const int indexEnd = offsets[i] + indexStart;
 
-				if (!canMoveArray[indexEnd]) {
+				if (canMoveArray[indexEnd] > COST_BLOCKED) {
 					continue;
 				}
 
@@ -869,7 +869,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 				#endif
 
 				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + moveFun(index2) + threatFun(index2);
+				const float nodeCost = canMoveArray[indexEnd] + moveFun(index2) + threatFun(index2);
 
 				#ifdef USE_ASSERTIONS
 				assert(nodeCost > 0.f);  // > 1.f for speed
@@ -923,7 +923,7 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 	{
 		FixStartEndNode(&startNode, &endNodes.back());
 
-		if (!canMoveArray[(size_t)startNode]) {
+		if (canMoveArray[(size_t)startNode] > COST_BLOCKED) {
 			// L("Pather: trying to move from a blocked start pos");
 		}
 	}
@@ -982,11 +982,11 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 			for (int i = 0; i < 4; ++i) {
 				const int indexEnd = offsets[i] + indexStart;
 
-				if (!canMoveArray[indexEnd]) {
+				if (canMoveArray[indexEnd] > COST_BLOCKED) {
 					continue;
 				}
-				if (isWide && !(canMoveArray[indexEnd - 1] && canMoveArray[indexEnd + 1]
-						&& canMoveArray[indexEnd - mapSizeX] && canMoveArray[indexEnd + mapSizeX]))  // offsets[0..3]
+				if (isWide && ((canMoveArray[indexEnd - 1] > COST_BLOCKED) || (canMoveArray[indexEnd + 1] > COST_BLOCKED)
+						|| (canMoveArray[indexEnd - mapSizeX] > COST_BLOCKED) || (canMoveArray[indexEnd + mapSizeX] > COST_BLOCKED)))  // offsets[0..3]
 				{
 					continue;
 				}
@@ -1010,7 +1010,10 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 				#endif
 
 				float newCost = nodeCostFromStart;
-				const float nodeCost = COST_BASE + moveFun(directNode->index2);
+				float nodeCost = canMoveArray[indexEnd] + moveFun(directNode->index2);
+				if (isWide) {
+					nodeCost += canMoveArray[indexEnd - 1] + canMoveArray[indexEnd + 1] + canMoveArray[indexEnd - mapSizeX] + canMoveArray[indexEnd + mapSizeX];
+				}
 
 				#ifdef USE_ASSERTIONS
 				assert(nodeCost > 0.f);  // > 1.f for speed
@@ -1056,7 +1059,7 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 	{
 		FixNode(&startNode);
 
-		if (!canMoveArray[(size_t) startNode]) {
+		if (canMoveArray[(size_t) startNode] > COST_BLOCKED) {
 			// L("Pather: trying to move from a blocked start pos");
 		}
 	}
@@ -1100,7 +1103,7 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 		for (int i = 0; i < 8; ++i) {
 			const int indexEnd = offsets[i] + indexStart;
 
-			if (!canMoveArray[indexEnd]) {
+			if (canMoveArray[indexEnd] > COST_BLOCKED) {
 				continue;
 			}
 
@@ -1128,7 +1131,7 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 			#endif
 
 			float newCost = nodeCostFromStart;
-			const float nodeCost = COST_BASE + threat;
+			const float nodeCost = canMoveArray[indexEnd] + threat;
 
 			#ifdef USE_ASSERTIONS
 			assert(nodeCost > 0.f);  // > 1.f for speed

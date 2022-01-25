@@ -156,9 +156,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 	)
 	const int frame = circuit->GetLastFrame();
 
-	const float buildDistance = unit->GetCircuitDef()->GetBuildDistance();
-	if (unit->GetCircuitDef()->IsAbleToAssist() && (buildDistance > 200.0f)) {
-		// striderhub
+	if (unit->GetCircuitDef()->IsHub()) {
 		AIFloat3 pos = unit->GetPos(frame);
 		const float size = DEFAULT_SLACK / 2;
 		switch (unit->GetUnit()->GetBuildingFacing()) {
@@ -176,7 +174,7 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 				pos.x -= size;
 			} break;
 		}
-		buildPos = circuit->GetTerrainManager()->FindBuildSite(buildDef, pos, buildDistance, UNIT_NO_FACING);
+		buildPos = circuit->GetTerrainManager()->FindBuildSite(buildDef, pos, unit->GetCircuitDef()->GetBuildDistance(), UNIT_NO_FACING);
 	} else {
 		// factory
 		buildPos = unit->GetPos(frame);
@@ -204,6 +202,17 @@ void CRecruitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 void CRecruitTask::OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
 	RemoveAssignee(unit);
+}
+
+void CRecruitTask::SetTarget(CCircuitUnit* unit)
+{
+	for (CCircuitUnit* worker : units) {
+		if (!worker->GetCircuitDef()->IsHub()) {  // do not replace or remove blocker
+			buildPos = -RgtVector;
+			break;
+		}
+	}
+	IBuilderTask::SetTarget(unit);
 }
 
 } // namespace circuit

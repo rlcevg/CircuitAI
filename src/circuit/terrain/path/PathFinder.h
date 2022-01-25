@@ -33,7 +33,7 @@ class CCircuitDef;
 class CPathFinder {
 public:
 	struct SMoveData {
-		std::vector<bool*> moveArrays;
+		std::vector<float*> moveArrays;
 	};
 	using PathCallback = std::function<void (const IPathQuery* query)>;
 
@@ -90,7 +90,7 @@ private:
 	int MakeQueryId() { return queryId++; }
 	enum class MoveType { UNDERWATER, CLOAK, AIR, SWIM, DIVE, SURF };
 	MoveType GetMoveType(CCircuitUnit* unit, int frame) const;
-	NSMicroPather::CostFunc GetMoveFun(MoveType mt, CCircuitUnit* unit, bool*& outMoveArray) const;
+	NSMicroPather::CostFunc GetMoveFun(MoveType mt, CCircuitUnit* unit, float*& outMoveArray) const;
 	NSMicroPather::CostFunc GetThreatFun(MoveType mt, CCircuitUnit* unit, CThreatMap* threatMap, float*& outThreatArray) const;
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, int frame);
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame);
@@ -111,8 +111,13 @@ private:
 	std::vector<NSMicroPather::CMicroPather*> micropathers;
 	SMoveData moveData0, moveData1;
 	std::atomic<SMoveData*> pMoveData;
-	bool* airMoveArray;
-	static std::vector<int> blockArray;  // temporary array for moveArray construction
+	float* airMoveArray;
+	struct SBlockCount {
+		SBlockCount(int s, int r) : structs(s), reserve(r) {}
+		int structs;
+		int reserve;
+	};
+	static std::vector<SBlockCount> blockArray;  // temporary array for moveArray construction
 	bool isAreaUpdated;
 
 	int squareSize;

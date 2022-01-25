@@ -148,6 +148,7 @@
 	"armguard": {
 		"role": ["static"],
 		"attribute": ["artillery"],
+		"on": false,
 		"threat": 0.3
 	},
 	"armclaw": {
@@ -181,7 +182,8 @@
 	},
 	"armamb": {
 		"role": ["static"],
-		"attribute": ["artillery"]
+		"attribute": ["artillery"],
+		"on": false
 	},
 	"armanni": {
 		"role": ["static"],
@@ -205,6 +207,7 @@
 	"corpun": {
 		"role": ["static"],
 		"attribute": ["artillery"],
+		"on": false,
 		"threat": 0.3
 	},
 	"corrl": {
@@ -234,7 +237,8 @@
 	},
 	"cortoast": {
 		"role": ["static"],
-		"attribute": ["artillery"]
+		"attribute": ["artillery"],
+		"on": false
 	},
 	"cordoom": {
 		"role": ["static"],

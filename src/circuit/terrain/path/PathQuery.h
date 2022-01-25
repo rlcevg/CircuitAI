@@ -30,11 +30,11 @@ public:
 	void SetState(State value) { state.store(value); }
 	State GetState() const { return state.load(); }
 
-	void Init(const bool* canMoveArray, const float* threatArray,
+	void Init(const float* canMoveArray, const float* threatArray,
 			  NSMicroPather::CostFunc&& moveFun, NSMicroPather::CostFunc&& threatFun,
 			  CCircuitUnit* unit = nullptr);
 
-	const bool* GetCanMoveArray() const { return canMoveArray; }
+	const float* GetCanMoveArray() const { return canMoveArray; }
 	const float* GetThreatArray() const { return threatArray; }
 	const NSMicroPather::CostFunc& GetMoveFun() const { return moveFun; }
 	const NSMicroPather::CostFunc& GetThreatFun() const { return threatFun; }
@@ -49,7 +49,7 @@ protected:
 	Type type;
 	std::atomic<State> state;
 
-	const bool* canMoveArray;  // outdate after AREA_UPDATE_RATE
+	const float* canMoveArray;  // outdate after AREA_UPDATE_RATE
 	const float* threatArray;  // outdate after THREAT_UPDATE_RATE
 	NSMicroPather::CostFunc moveFun;  // AREA_UPDATE_RATE
 	NSMicroPather::CostFunc threatFun;  // THREAT_UPDATE_RATE

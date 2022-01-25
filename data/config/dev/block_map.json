@@ -10,13 +10,13 @@
 
 			// Unit of measurement: 1 size/yard/radius = SQUARE_SIZE * 2 = 16 elmos, integer.
 			// Offset in South facing
-			"offset": [0, 7],  // default: [0, 0]
+			"offset": [0, 4],  // default: [0, 0]
 
 			// Size of a blocker without yard
 //			"size": [7, 7],  // default: size of a unit
 
 			// Spacer, blocker_size = size + yard
-			"yard": [8, 20],  // default: [0, 0]
+			"yard": [2, 8],  // default: [0, 0]
 
 			// Integer radius of a blocker or description string.
 			// Available string values: explosion, expl_ally = [radius ~ 1 player .. radius/2 ~ 4+ players]
@@ -44,8 +44,8 @@
 		},
 		"fac_strider": {
 			"type": ["rectangle", "special"],
-			"offset": [0, 12],
-			"yard": [16, 20]
+			"offset": [0, 8],
+			"yard": [2, 8]
 		},
 		"solar": {
 			"type": ["rectangle", "engy_low"],

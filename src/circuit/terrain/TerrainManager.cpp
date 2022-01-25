@@ -301,7 +301,7 @@ void CTerrainManager::Init()
 		blockingMap.Bound(m1, m2);
 		for (int z = m1.y; z < m2.y; ++z) {
 			for (int x = m1.x; x < m2.x; ++x) {
-				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::TERRA, notIgnoreMask);
+				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::MEX, notIgnoreMask);
 			}
 		}
 	}
@@ -325,7 +325,7 @@ void CTerrainManager::Init()
 		blockingMap.Bound(m1, m2);
 		for (int z = m1.y; z < m2.y; ++z) {
 			for (int x = m1.x; x < m2.x; ++x) {
-				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::TERRA, notIgnoreMask);
+				blockingMap.MarkBlocker(x, z, SBlockingMap::StructType::GEO, notIgnoreMask);
 			}
 		}
 	}
@@ -379,6 +379,10 @@ void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 
 void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, const CCircuitDef* mobileDef)
 {
+	if (unit->GetCircuitDef()->GetMobileId() < 0) {  // air factory
+		return;
+	}
+
 	const STerrainMapMobileType::Id mobileId = mobileDef->GetMobileId();
 	const int iS = GetSectorIndex(pos);
 	STerrainMapMobileType* mobyleType = GetMobileType(mobileId);
@@ -449,6 +453,9 @@ void CTerrainManager::DelBlockerPath(CCircuitUnit* unit)
 	if (it == blockPath.end()) {
 		return;
 	}
+	// TODO: Path for new factories contains only part that connects to 1st built path.
+	//       Hence removing it leaves others with short leftover.
+	//       Place it to AllyTeam and count or copy common path nodes.
 //	CPathFinder* pathfinder = circuit->GetPathfinder();
 //	const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
 //	for (int index : it->second.path->path) {

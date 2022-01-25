@@ -33,7 +33,7 @@ using namespace NSMicroPather;
 
 #define SPIDER_SLOPE		0.99f
 
-std::vector<int> CPathFinder::blockArray;
+std::vector<CPathFinder::SBlockCount> CPathFinder::blockArray;
 
 CPathFinder::CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainData* terrainData)
 		: terrainData(terrainData)
@@ -72,8 +72,8 @@ CPathFinder::CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainD
 
 	const int totalcells = moveMapXSize * moveMapYSize;
 	for (const STerrainMapMobileType& mt : moveTypes) {
-		bool* moveArray0 = new bool[totalcells];
-		bool* moveArray1 = new bool[totalcells];
+		float* moveArray0 = new float[totalcells];
+		float* moveArray1 = new float[totalcells];
 		moveData0.moveArrays.push_back(moveArray0);
 		moveData1.moveArrays.push_back(moveArray1);
 
@@ -82,51 +82,51 @@ CPathFinder::CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainD
 			for (int x = 1; x < moveMapXSize - 1; ++x) {
 				int index = z * moveMapXSize + x;
 				// NOTE: Not all passable sectors have area
-				moveArray1[index] = moveArray0[index] = (mt.sector[k].area != nullptr);
+				moveArray1[index] = moveArray0[index] = (mt.sector[k].area != nullptr) ? COST_BASE : COST_BLOCK;
 				++k;
 			}
 		}
 
 		// make sure that the edges are no-go
 		for (int i = 0; i < moveMapXSize; ++i) {
-			moveArray1[i] = moveArray0[i] = false;
+			moveArray1[i] = moveArray0[i] = COST_BLOCK;
 			int k = moveMapXSize * (moveMapYSize - 1) + i;
-			moveArray1[k] = moveArray0[k] = false;
+			moveArray1[k] = moveArray0[k] = COST_BLOCK;
 		}
 		for (int i = 0; i < moveMapYSize; ++i) {
 			int k = i * moveMapXSize;
-			moveArray1[k] = moveArray0[k] = false;
+			moveArray1[k] = moveArray0[k] = COST_BLOCK;
 			k = i * moveMapXSize + moveMapXSize - 1;
-			moveArray1[k] = moveArray0[k] = false;
+			moveArray1[k] = moveArray0[k] = COST_BLOCK;
 		}
 	}
 
-	airMoveArray = new bool[totalcells];
+	airMoveArray = new float[totalcells];
 	for (int i = 0; i < totalcells; ++i) {
-		airMoveArray[i] = true;
+		airMoveArray[i] = COST_BASE;
 	}
 	// make sure that the edges are no-go
 	for (int i = 0; i < moveMapXSize; ++i) {
-		airMoveArray[i] = false;
+		airMoveArray[i] = COST_BLOCK;
 		int k = moveMapXSize * (moveMapYSize - 1) + i;
-		airMoveArray[k] = false;
+		airMoveArray[k] = COST_BLOCK;
 	}
 	for (int i = 0; i < moveMapYSize; ++i) {
 		int k = i * moveMapXSize;
-		airMoveArray[k] = false;
+		airMoveArray[k] = COST_BLOCK;
 		k = i * moveMapXSize + moveMapXSize - 1;
-		airMoveArray[k] = false;
+		airMoveArray[k] = COST_BLOCK;
 	}
 
-	blockArray.resize(terrainData->sectorXSize * terrainData->sectorZSize, 0);
+	blockArray.resize(terrainData->sectorXSize * terrainData->sectorZSize, {0, 0});
 }
 
 CPathFinder::~CPathFinder()
 {
-	for (bool* ma : moveData0.moveArrays) {
+	for (float* ma : moveData0.moveArrays) {
 		delete[] ma;
 	}
-	for (bool* ma : moveData1.moveArrays) {
+	for (float* ma : moveData1.moveArrays) {
 		delete[] ma;
 	}
 	delete[] airMoveArray;
@@ -142,33 +142,38 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	}
 	isAreaUpdated = true;
 
-	std::fill(blockArray.begin(), blockArray.end(), 0);
+	std::fill(blockArray.begin(), blockArray.end(), SBlockCount(0, 0));
 	const int granularity = squareSize / (SQUARE_SIZE * 2);
+	const SBlockingMap::SM notIgnore = STRUCT_BIT(MEX) | STRUCT_BIT(GEO);
 	const SBlockingMap& blockMap = terrainManager->GetBlockingMap();
 	for (int z = 0; z < blockMap.rows; ++z) {
 		for (int x = 0; x < blockMap.columns; ++x) {
+			const int moveX = x / granularity;
+			const int moveY = z / granularity;
 			if (blockMap.IsStruct(x, z)) {
-				const int moveX = x / granularity;
-				const int moveY = z / granularity;
-				++blockArray[moveY * terrainData->sectorXSize + moveX];
+				++blockArray[moveY * terrainData->sectorXSize + moveX].structs;
+			} else if (blockMap.IsBlocked(x, z, notIgnore)) {
+				++blockArray[moveY * terrainData->sectorXSize + moveX].reserve;
 			}
 		}
 	}
 
-	std::vector<bool*>& moveArrays = GetNextMoveData()->moveArrays;
+	std::vector<float*>& moveArrays = GetNextMoveData()->moveArrays;
 	areaData = terrainData->GetNextAreaData();
 	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
 	const int blockThreshold = granularity * granularity / 4;  // 25% - blocked tile
 	for (unsigned j = 0; j < moveTypes.size(); ++j) {
 		const STerrainMapMobileType& mt = moveTypes[j];
-		bool* moveArray = moveArrays[j];
+		float* moveArray = moveArrays[j];
 
 		int k = 0;
 		for (int z = 1; z < moveMapYSize - 1; ++z) {
 			for (int x = 1; x < moveMapXSize - 1; ++x) {
 				int index = z * moveMapXSize + x;
 				// NOTE: Not all passable sectors have area
-				moveArray[index] = (mt.sector[k].area != nullptr) && (blockArray[k] < blockThreshold);
+				moveArray[index] = (mt.sector[k].area == nullptr) ? COST_BLOCK
+						: (blockArray[k].structs >= blockThreshold) ? COST_STRUCT
+								: (blockArray[k].reserve >= blockThreshold) ? COST_RESERVE : COST_BASE;
 				++k;
 			}
 		}
@@ -358,13 +363,13 @@ CPathFinder::MoveType CPathFinder::GetMoveType(CCircuitUnit* unit, int frame) co
 	}
 }
 
-CostFunc CPathFinder::GetMoveFun(MoveType mt, CCircuitUnit* unit, bool*& outMoveArray) const
+CostFunc CPathFinder::GetMoveFun(MoveType mt, CCircuitUnit* unit, float*& outMoveArray) const
 {
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
 
 	const std::vector<STerrainMapSector>& sectors = areaData->sector;
-	bool* moveArray;
+	float* moveArray;
 	float maxSlope;
 	if (mobileTypeId < 0) {
 		moveArray = airMoveArray;
@@ -491,7 +496,7 @@ CostFunc CPathFinder::GetThreatFun(MoveType mt, CCircuitUnit* unit, CThreatMap* 
 
 void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, int frame)
 {
-	bool* moveArray;
+	float* moveArray;
 	CostFunc moveFun = GetMoveFun(GetMoveType(unit, frame), unit, moveArray);
 
 	query->Init(moveArray, nullptr, std::move(moveFun), nullptr, unit);
@@ -500,7 +505,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, int frame)
 void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, int frame)
 {
 	MoveType mt = GetMoveType(unit, frame);
-	bool* moveArray;
+	float* moveArray;
 	float* threatArray;
 	CostFunc moveFun = GetMoveFun(mt, unit, moveArray);
 	CostFunc threatFun = GetThreatFun(mt, unit, threatMap, threatArray);
@@ -591,7 +596,7 @@ void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micro
 	CQueryPathSingle* q = static_cast<CQueryPathSingle*>(query);
 	q->Prepare();
 
-	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* canMoveArray = q->GetCanMoveArray();
 	const float* threatArray = q->GetThreatArray();
 	const NSMicroPather::CostFunc& moveFun = q->GetMoveFun();
 	const NSMicroPather::CostFunc& threatFun = q->GetThreatFun();
@@ -624,7 +629,7 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 	CQueryPathMulti* q = static_cast<CQueryPathMulti*>(query);
 	q->Prepare();
 
-	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* canMoveArray = q->GetCanMoveArray();
 	const float* threatArray = q->GetThreatArray();
 	const NSMicroPather::CostFunc& moveFun = q->GetMoveFun();
 	const NSMicroPather::CostFunc& threatFun = q->GetThreatFun();
@@ -775,7 +780,7 @@ void CPathFinder::MakePathWide(IPathQuery* query, NSMicroPather::CMicroPather* m
 	CQueryPathWide* q = static_cast<CQueryPathWide*>(query);
 	q->Prepare();
 
-	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* canMoveArray = q->GetCanMoveArray();
 	const NSMicroPather::CostFunc& moveFun = q->GetMoveFun();
 	const SAreaData* areaData = q->GetAreaData();
 
@@ -824,7 +829,7 @@ void CPathFinder::MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* mi
 	CQueryCostMap* q = static_cast<CQueryCostMap*>(query);
 	q->Prepare();
 
-	const bool* canMoveArray = q->GetCanMoveArray();
+	const float* canMoveArray = q->GetCanMoveArray();
 	const float* threatArray = q->GetThreatArray();
 	NSMicroPather::CostFunc moveFun = q->GetMoveFun();
 	NSMicroPather::CostFunc threatFun = q->GetThreatFun();
@@ -851,7 +856,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateDbgPathQuery(CThreatMap* threatMa
 
 	STerrainMapMobileType::Id mobileTypeId = dbgDef->GetMobileId();
 	const float maxSlope = (mobileTypeId < 0) ? 1.f : areaData->mobileType[mobileTypeId].maxSlope;
-	const bool* moveArray = (mobileTypeId < 0) ? airMoveArray : pMoveData.load()->moveArrays[mobileTypeId];
+	const float* moveArray = (mobileTypeId < 0) ? airMoveArray : pMoveData.load()->moveArrays[mobileTypeId];
 	const float* costArray[] = {
 			threatMap->GetAirThreatArray(dbgDef->GetMainRole()),
 			threatMap->GetSurfThreatArray(dbgDef->GetMainRole()),

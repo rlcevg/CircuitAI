@@ -40,6 +40,8 @@ public:
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 	virtual void OnUnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
+	virtual void SetTarget(CCircuitUnit* unit) override;
+
 	RecruitType GetRecruitType() const { return recruitType; }
 
 private:

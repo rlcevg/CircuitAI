@@ -310,6 +310,7 @@ public:
 	float GetHeight();
 	bool IsInWater(float elevation, float posY);
 	bool IsPredictInWater(float elevation);
+	bool IsHub() const { return isAbleToAssist && (buildDistance > 200.0f); }
 
 	void SetMidPosOffset(float x, float y, float z) { midPosOffset = springai::AIFloat3(x, y, z); }
 	springai::AIFloat3 GetMidPosOffset(int facing) const;
