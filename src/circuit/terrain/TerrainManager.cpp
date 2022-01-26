@@ -379,10 +379,6 @@ void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 
 void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, const CCircuitDef* mobileDef)
 {
-	if (unit->GetCircuitDef()->GetMobileId() < 0) {  // air factory
-		return;
-	}
-
 	const STerrainMapMobileType::Id mobileId = mobileDef->GetMobileId();
 	const int iS = GetSectorIndex(pos);
 	STerrainMapMobileType* mobyleType = GetMobileType(mobileId);
@@ -394,9 +390,7 @@ void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, co
 	IndexVec targets;
 	for (const auto& kv : blockPath) {
 		if (kv.second.path != nullptr) {
-			for (int index : kv.second.path->path) {
-				targets.push_back(index);
-			}
+			targets.insert(targets.end(), kv.second.path->path.begin(), kv.second.path->path.end());
 		}
 	}
 
@@ -419,32 +413,8 @@ void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, co
 	}
 	const AIFloat3& endPos = AS->S->position;
 	FactoryPathInfo& fpi = blockPath[unit];
-
-	CPathFinder* pathfinder = circuit->GetPathfinder();
-	fpi.query = pathfinder->CreatePathWideQuery(unit, frame, startPos, endPos, targets);
-
-	pathfinder->RunQuery(fpi.query, [this, &fpi](const IPathQuery* query) {
-		const CQueryPathWide* q = static_cast<const CQueryPathWide*>(query);
-		CPathFinder* pathfinder = circuit->GetPathfinder();
-		const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
-		for (int index : q->GetPathInfo()->path) {
-			int ix, iz;
-			pathfinder->PathIndex2PathXY(index, &ix, &iz);
-
-			ix = ix * granularity + granularity / 2;
-			iz = iz * granularity + granularity / 2;
-			int2 m1(ix - 4, iz - 4);
-			int2 m2(ix + 4, iz + 4);
-			blockingMap.Bound(m1, m2);
-			for (int z = m1.y; z < m2.y; ++z) {
-				for (int x = m1.x; x < m2.x; ++x) {
-					blockingMap.AddBlocker(x, z, SBlockingMap::StructType::TERRA);
-				}
-			}
-		}
-		fpi.path = q->GetPathInfo();
-		fpi.query = nullptr;
-	});
+	fpi.query = circuit->GetPathfinder()->CreatePathWideQuery(unit, frame, startPos, endPos, targets);
+	blockQueries.push_back(fpi.query);
 }
 
 void CTerrainManager::DelBlockerPath(CCircuitUnit* unit)
@@ -1170,6 +1140,39 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	}
 }
 
+void CTerrainManager::MarkBlockerPath()
+{
+	for (std::shared_ptr<IPathQuery>& pQuery : blockQueries) {
+		circuit->GetPathfinder()->RunQuery(pQuery, [this](const IPathQuery* query) {
+			auto it = blockPath.find(query->GetUnit());
+			if (it == blockPath.end()) {
+				return;
+			}
+			const CQueryPathWide* q = static_cast<const CQueryPathWide*>(query);
+			CPathFinder* pathfinder = circuit->GetPathfinder();
+			const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
+			for (int index : q->GetPathInfo()->path) {
+				int ix, iz;
+				pathfinder->PathIndex2PathXY(index, &ix, &iz);
+
+				ix = ix * granularity + granularity / 2;
+				iz = iz * granularity + granularity / 2;
+				int2 m1(ix - 4, iz - 4);
+				int2 m2(ix + 4, iz + 4);
+				blockingMap.Bound(m1, m2);
+				for (int z = m1.y; z < m2.y; ++z) {
+					for (int x = m1.x; x < m2.x; ++x) {
+						blockingMap.AddBlocker(x, z, SBlockingMap::StructType::TERRA);
+					}
+				}
+			}
+			it->second.path = q->GetPathInfo();
+			it->second.query = nullptr;
+		});
+	}
+	blockQueries.clear();
+}
+
 void CTerrainManager::SnapPosition(AIFloat3& position)
 {
 	// NOTE: Build-cells have size of (SQURE_SIZE * 2)=16 elmos.
@@ -1572,6 +1575,7 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 	// stagger area update
 	circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([this]() {
 		circuit->GetPathfinder()->UpdateAreaUsers(this);
+		MarkBlockerPath();
 
 		OnAreaUsersUpdated();
 	}), interval);

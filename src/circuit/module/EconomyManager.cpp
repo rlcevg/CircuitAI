@@ -100,13 +100,15 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	 */
 	auto energyFinishedHandler = [this](CCircuitUnit* unit) {
 		const SEnergyExt* energyExt = energyDefs.GetAvailInfo(unit->GetCircuitDef());
-		if (energyExt != nullptr) {
-			const float income = energyExt->make;
-			for (int i = 0; i < INCOME_SAMPLES; ++i) {
-				energyIncomes[i] += income;
-			}
-			energy.income += income;
+		if (energyExt == nullptr) {
+			return;
 		}
+		const float income = energyExt->make;
+		for (int i = 0; i < INCOME_SAMPLES; ++i) {
+			energyIncomes[i] += income;
+		}
+		energy.income += income;
+		ReclaimOldEnergy(energyExt);
 	};
 	auto geoFinishedHandler = [this](CCircuitUnit* unit) {
 		const SGeoExt* geoExt = geoDefs.GetAvailInfo(unit->GetCircuitDef());
@@ -1814,6 +1816,24 @@ void CEconomyManager::UpdateEconomy()
 		pullMtoS = mspInfo.fraction * (mexCount - mspInfo.mex) + mspInfo.pull;
 	}
 	pullMtoS *= circuit->GetMilitaryManager()->ClampMobileCostRatio();
+}
+
+void CEconomyManager::ReclaimOldEnergy(const SEnergyExt* energyExt)
+{
+	auto ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(circuit->GetSetupManager()->GetBasePos(), 1000.f, false);
+	for (int id : ids) {
+		CCircuitUnit* unit = circuit->GetTeamUnit(id);
+		if (unit == nullptr || (GetAvgEnergyIncome() < energyExt->cond.energyIncome) || !energyDefs.IsAvail(unit->GetCircuitDef())) {
+			continue;
+		}
+		auto info = energyDefs.GetAvailInfo(unit->GetCircuitDef());
+		if (energyExt->cond.score > info->cond.score * 20.f) {
+			circuit->GetBuilderManager()->EnqueueReclaim(IUnitTask::Priority::HIGH, unit, FRAMES_PER_SEC * 1200);
+			unit->GetCircuitDef()->SetMaxThisUnit(0);
+		} else {
+			unit->GetCircuitDef()->SetMaxThisUnit(info->cond.limit);
+		}
+	}
 }
 
 } // namespace circuit

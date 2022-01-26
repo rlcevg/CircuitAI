@@ -256,6 +256,7 @@
 		"role": ["static"],
 		"attribute": ["support"],
 		"limit": 1,
+		"midposoffset": [0, 0, -4],
 		"build_speed": 10.0
 	},
 	"armavp": {
@@ -580,6 +581,10 @@
 		"role": ["raider", "air"],
 		"attribute": ["siege"],
 		"retreat": 0.6
+	},
+	"armasp": {
+		"role": ["static"],
+		"limit": 1
 	},
 
 	// adv aircraft - armaap
@@ -988,6 +993,10 @@
 		"role": ["assault", "air"],
 		"attribute": ["siege"],
 		"retreat": 0.3
+	},
+	"corasp": {
+		"role": ["static"],
+		"limit": 1
 	},
 
 	// adv aircraft - coraap

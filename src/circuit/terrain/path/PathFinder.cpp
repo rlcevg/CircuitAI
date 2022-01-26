@@ -135,7 +135,7 @@ CPathFinder::~CPathFinder()
 	}
 }
 
-void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
+void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainMgr)
 {
 	if (isAreaUpdated) {
 		return;
@@ -145,7 +145,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainManager)
 	std::fill(blockArray.begin(), blockArray.end(), SBlockCount(0, 0));
 	const int granularity = squareSize / (SQUARE_SIZE * 2);
 	const SBlockingMap::SM notIgnore = STRUCT_BIT(MEX) | STRUCT_BIT(GEO);
-	const SBlockingMap& blockMap = terrainManager->GetBlockingMap();
+	const SBlockingMap& blockMap = terrainMgr->GetBlockingMap();
 	for (int z = 0; z < blockMap.rows; ++z) {
 		for (int x = 0; x < blockMap.columns; ++x) {
 			const int moveX = x / granularity;

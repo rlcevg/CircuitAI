@@ -67,8 +67,14 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 
 		// Mark path from factory to lanePos as blocked
-		CSetupManager* setupMgr = this->circuit->GetSetupManager();
-		this->circuit->GetTerrainManager()->AddBlockerPath(unit, setupMgr->GetLanePos(), setupMgr->GetCommChoice());
+		if (unit->GetCircuitDef()->GetMobileId() >= 0) {  // no air factory
+			CSetupManager* setupMgr = this->circuit->GetSetupManager();
+			CCircuitDef* reprDef = GetRepresenter(unit->GetCircuitDef());
+			if (reprDef == nullptr) {
+				reprDef = setupMgr->GetCommChoice();
+			}
+			this->circuit->GetTerrainManager()->AddBlockerPath(unit, setupMgr->GetLanePos(), reprDef);
+		}
 	};
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
@@ -1108,7 +1114,7 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	std::map<CCircuitDef*, SAssistant> nanos;
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	COOAICallback* clb = circuit->GetCallback();
-	auto& units = clb->GetFriendlyUnitsIn(pos, GetAssistRange());
+	auto& units = clb->GetFriendlyUnitsIn(pos, GetAssistRange() * 0.9f);
 	int teamId = circuit->GetTeamId();
 	for (Unit* nano : units) {
 		if (nano == nullptr) {

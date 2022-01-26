@@ -197,6 +197,7 @@ private:
 		SEnergyCond cond;  // condition
 	};
 	CAvailList<SEnergyExt> energyDefs;
+	void ReclaimOldEnergy(const SEnergyExt* energyExt);
 
 	float ecoStep;
 	float ecoFactor;

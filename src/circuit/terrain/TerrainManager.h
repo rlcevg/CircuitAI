@@ -128,6 +128,8 @@ private:
 		std::shared_ptr<PathInfo> path;
 	};
 	std::map<CCircuitUnit*, FactoryPathInfo> blockPath;
+	std::vector<std::shared_ptr<IPathQuery>> blockQueries;
+	void MarkBlockerPath();
 
 public:
 	int GetConvertStoP() const { return terrainData->convertStoP; }
