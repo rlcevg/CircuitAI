@@ -1,12 +1,12 @@
 /*
- * DefenceMatrix.h
+ * DefenceData.h
  *
  *  Created on: Sep 20, 2015
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_SETUP_DEFENCEMATRIX_H_
-#define SRC_CIRCUIT_SETUP_DEFENCEMATRIX_H_
+#ifndef SRC_CIRCUIT_SETUP_DEFENCEDATA_H_
+#define SRC_CIRCUIT_SETUP_DEFENCEDATA_H_
 
 #include "AIFloat3.h"
 
@@ -17,7 +17,7 @@ namespace circuit {
 class CCircuitAI;
 class CMetalManager;
 
-class CDefenceMatrix {
+class CDefenceData {
 public:
 	struct SDefPoint {
 		springai::AIFloat3 position;
@@ -29,8 +29,8 @@ public:
 	};
 
 public:
-	CDefenceMatrix(CCircuitAI* circuit);
-	virtual ~CDefenceMatrix();
+	CDefenceData(CCircuitAI* circuit);
+	virtual ~CDefenceData();
 
 private:
 	void ReadConfig(CCircuitAI* circuit);
@@ -69,4 +69,4 @@ private:
 
 } // namespace circuit
 
-#endif // SRC_CIRCUIT_SETUP_DEFENCEMATRIX_H_
+#endif // SRC_CIRCUIT_SETUP_DEFENCEDATA_H_

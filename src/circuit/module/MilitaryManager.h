@@ -9,7 +9,7 @@
 #define SRC_CIRCUIT_MODULE_MILITARYMANAGER_H_
 
 #include "module/UnitModule.h"
-#include "setup/DefenceMatrix.h"
+#include "setup/DefenceData.h"
 #include "task/fighter/FighterTask.h"
 #include "unit/CircuitDef.h"
 #include "util/AvailList.h"
@@ -146,7 +146,7 @@ private:
 	std::vector<IUnitTask*> fightUpdates;  // owner
 	unsigned int fightIterator;
 
-	CDefenceMatrix* defence;
+	CDefenceData* defence;
 	unsigned int defenceIdx;
 
 	std::vector<unsigned int> scoutPath;  // list of spot ids

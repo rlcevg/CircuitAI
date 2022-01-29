@@ -28,7 +28,7 @@ class CMapManager;
 class CMetalManager;
 class CEnergyManager;
 class CEnergyGrid;
-class CDefenceMatrix;
+class CDefenceData;
 class CPathFinder;
 class CFactoryData;
 struct STerrainMapArea;
@@ -109,7 +109,7 @@ public:
 	const std::shared_ptr<CMetalManager>&  GetMetalManager()  const { return metalManager; }
 	const std::shared_ptr<CEnergyManager>& GetEnergyManager() const { return energyManager; }
 	const std::shared_ptr<CEnergyGrid>&    GetEnergyGrid()    const { return energyGrid; }
-	const std::shared_ptr<CDefenceMatrix>& GetDefenceMatrix() const { return defence; }
+	const std::shared_ptr<CDefenceData>&   GetDefenceData()   const { return defence; }
 	const std::shared_ptr<CPathFinder>&    GetPathfinder()    const { return pathfinder; }
 	const std::shared_ptr<CFactoryData>&   GetFactoryData()   const { return factoryData; }
 
@@ -142,7 +142,7 @@ private:
 	std::shared_ptr<CMetalManager> metalManager;
 	std::shared_ptr<CEnergyManager> energyManager;
 	std::shared_ptr<CEnergyGrid> energyGrid;
-	std::shared_ptr<CDefenceMatrix> defence;
+	std::shared_ptr<CDefenceData> defence;
 	std::shared_ptr<CPathFinder> pathfinder;
 	std::shared_ptr<CFactoryData> factoryData;
 

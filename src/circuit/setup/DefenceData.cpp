@@ -1,11 +1,11 @@
 /*
- * DefenceMatrix.cpp
+ * DefenceData.cpp
  *
  *  Created on: Sep 20, 2015
  *      Author: rlcevg
  */
 
-#include "setup/DefenceMatrix.h"
+#include "setup/DefenceData.h"
 #include "resource/MetalManager.h"
 #include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
@@ -23,19 +23,19 @@ namespace circuit {
 
 using namespace springai;
 
-CDefenceMatrix::CDefenceMatrix(CCircuitAI* circuit)
+CDefenceData::CDefenceData(CCircuitAI* circuit)
 		: metalManager(nullptr)
 {
-	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CDefenceMatrix::Init, this, circuit));
+	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CDefenceData::Init, this, circuit));
 
 	ReadConfig(circuit);
 }
 
-CDefenceMatrix::~CDefenceMatrix()
+CDefenceData::~CDefenceData()
 {
 }
 
-void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
+void CDefenceData::ReadConfig(CCircuitAI* circuit)
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& defence = root["defence"];
@@ -56,7 +56,7 @@ void CDefenceMatrix::ReadConfig(CCircuitAI* circuit)
 	pointRange = root["porcupine"].get("point_range", 600.f).asFloat();
 }
 
-void CDefenceMatrix::Init(CCircuitAI* circuit)
+void CDefenceData::Init(CCircuitAI* circuit)
 {
 	metalManager = circuit->GetMetalManager();
 	const CMetalData::Metals& spots = metalManager->GetSpots();
@@ -97,7 +97,7 @@ void CDefenceMatrix::Init(CCircuitAI* circuit)
 	}
 }
 
-CDefenceMatrix::SDefPoint* CDefenceMatrix::GetDefPoint(const AIFloat3& pos, float defCost)
+CDefenceData::SDefPoint* CDefenceData::GetDefPoint(const AIFloat3& pos, float defCost)
 {
 	int index = metalManager->FindNearestCluster(pos);
 	if (index < 0) {
@@ -119,7 +119,7 @@ CDefenceMatrix::SDefPoint* CDefenceMatrix::GetDefPoint(const AIFloat3& pos, floa
 	return &defPoints[idx];
 }
 
-void CDefenceMatrix::SetBaseRange(float range)
+void CDefenceData::SetBaseRange(float range)
 {
 	baseRange = utils::clamp(range, baseRadMin, baseRadMax);
 }

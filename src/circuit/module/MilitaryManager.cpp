@@ -15,7 +15,7 @@
 #include "scheduler/Scheduler.h"
 #include "script/MilitaryScript.h"
 #include "setup/SetupManager.h"
-#include "setup/DefenceMatrix.h"
+#include "setup/DefenceData.h"
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
@@ -75,7 +75,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
 		float defCost = unit->GetCircuitDef()->GetCostM();
-		CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(unit->GetPos(frame), defCost);
+		CDefenceData::SDefPoint* point = defence->GetDefPoint(unit->GetPos(frame), defCost);
 		if (point != nullptr) {
 			point->cost -= defCost;
 		}
@@ -303,7 +303,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 	}
 
-	defence = circuit->GetAllyTeam()->GetDefenceMatrix().get();
+	defence = circuit->GetAllyTeam()->GetDefenceData().get();
 
 	fightTasks.resize(static_cast<IFighterTask::FT>(IFighterTask::FightType::_SIZE_));
 }
@@ -688,10 +688,10 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
 	float maxCost = amountFactor * metalIncome;
-	CDefenceMatrix::SDefPoint* closestPoint = nullptr;
+	CDefenceData::SDefPoint* closestPoint = nullptr;
 	float minDist = std::numeric_limits<float>::max();
-	std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
-	for (CDefenceMatrix::SDefPoint& defPoint : points) {
+	std::vector<CDefenceData::SDefPoint>& points = defence->GetDefPoints(cluster);
+	for (CDefenceData::SDefPoint& defPoint : points) {
 		if (defPoint.cost < maxCost) {
 			float dist = defPoint.position.SqDistance2D(pos);
 			if ((closestPoint == nullptr) || (dist < minDist)) {
@@ -853,7 +853,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
 {
 	float defCost = task->GetBuildDef()->GetCostM();
-	CDefenceMatrix::SDefPoint* point = defence->GetDefPoint(task->GetPosition(), defCost);
+	CDefenceData::SDefPoint* point = defence->GetDefPoint(task->GetPosition(), defCost);
 	if (point != nullptr) {
 		if ((task->GetTarget() == nullptr) && (point->cost >= defCost)) {
 			point->cost -= defCost;
@@ -875,8 +875,8 @@ void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
 
 bool CMilitaryManager::HasDefence(int cluster)
 {
-	const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(cluster);
-	for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+	const std::vector<CDefenceData::SDefPoint>& points = defence->GetDefPoints(cluster);
+	for (const CDefenceData::SDefPoint& defPoint : points) {
 		if (defPoint.cost > .5f) {
 			return true;
 		}
@@ -969,8 +969,8 @@ void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)
 	int index = metalMgr->FindNearestCluster(setupMgr->GetLanePos(), predicate);
 
 	if (index >= 0) {
-		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
-		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+		const std::vector<CDefenceData::SDefPoint>& points = defence->GetDefPoints(index);
+		for (const CDefenceData::SDefPoint& defPoint : points) {
 			outPositions.push_back(defPoint.position);
 		}
 	}
@@ -1007,10 +1007,10 @@ void CMilitaryManager::FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions
 	const AIFloat3& startPos = unit->GetPos(frame);
 	STerrainMapArea* area = unit->GetArea();
 
-	CDefenceMatrix* defMat = defence;
+	CDefenceData* defMat = defence;
 	CMetalData::PointPredicate predicate = [defMat, terrainMgr, area](const int index) {
-		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
-		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+		const std::vector<CDefenceData::SDefPoint>& points = defMat->GetDefPoints(index);
+		for (const CDefenceData::SDefPoint& defPoint : points) {
 			if ((defPoint.cost > 100.0f) && terrainMgr->CanMoveToPos(area, defPoint.position)) {
 				return true;
 			}
@@ -1022,8 +1022,8 @@ void CMilitaryManager::FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions
 	int index = metalMgr->FindNearestCluster(startPos, predicate);
 
 	if (index >= 0) {
-		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
-		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+		const std::vector<CDefenceData::SDefPoint>& points = defence->GetDefPoints(index);
+		for (const CDefenceData::SDefPoint& defPoint : points) {
 			outPositions.push_back(defPoint.position);
 		}
 	}
@@ -1053,10 +1053,10 @@ void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 		}
 	}
 
-	CDefenceMatrix* defMat = defence;
+	CDefenceData* defMat = defence;
 	CMetalData::PointPredicate predicate = [defMat, terrainMgr, area](const int index) {
-		const std::vector<CDefenceMatrix::SDefPoint>& points = defMat->GetDefPoints(index);
-		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+		const std::vector<CDefenceData::SDefPoint>& points = defMat->GetDefPoints(index);
+		for (const CDefenceData::SDefPoint& defPoint : points) {
 			if ((defPoint.cost > 100.0f) && terrainMgr->CanMoveToPos(area, defPoint.position)) {
 				return true;
 			}
@@ -1066,8 +1066,8 @@ void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	int index = metalMgr->FindNearestCluster(pos, predicate);
 	if (index >= 0) {
-		const std::vector<CDefenceMatrix::SDefPoint>& points = defence->GetDefPoints(index);
-		for (const CDefenceMatrix::SDefPoint& defPoint : points) {
+		const std::vector<CDefenceData::SDefPoint>& points = defence->GetDefPoints(index);
+		for (const CDefenceData::SDefPoint& defPoint : points) {
 			outPositions.push_back(defPoint.position);
 		}
 	}

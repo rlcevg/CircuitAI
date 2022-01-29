@@ -13,7 +13,7 @@
 #include "resource/EnergyManager.h"
 #include "resource/EnergyGrid.h"
 #include "scheduler/Scheduler.h"
-#include "setup/DefenceMatrix.h"
+#include "setup/DefenceData.h"
 #include "setup/SetupManager.h"
 #include "terrain/path/PathFinder.h"
 #include "terrain/TerrainData.h"
@@ -89,7 +89,7 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 
 	energyManager = std::make_shared<CEnergyManager>(circuit, &circuit->GetGameAttribute()->GetEnergyData());
 	energyGrid = std::make_shared<CEnergyGrid>(circuit);
-	defence = std::make_shared<CDefenceMatrix>(circuit);
+	defence = std::make_shared<CDefenceData>(circuit);
 	pathfinder = std::make_shared<CPathFinder>(circuit->GetScheduler(), &circuit->GetGameAttribute()->GetTerrainData());
 	factoryData = std::make_shared<CFactoryData>(circuit);
 

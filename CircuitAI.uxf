@@ -204,7 +204,7 @@ TerrainData</panel_attributes>
 -- friendly units
 MetalManager
 EnergyGrid
-DefenceMatrix
+DefenceData
 Pathfinder
 FactoryData</panel_attributes>
     <additional_attributes/>
@@ -228,7 +228,7 @@ FactoryData</panel_attributes>
       <w>160</w>
       <h>80</h>
     </coordinates>
-    <panel_attributes>DefenceMatrix
+    <panel_attributes>DefenceData
 --
 Static defence clusters</panel_attributes>
     <additional_attributes/>
