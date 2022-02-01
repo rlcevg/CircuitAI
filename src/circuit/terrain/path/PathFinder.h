@@ -113,7 +113,6 @@ private:
 	std::atomic<SMoveData*> pMoveData;
 	float* airMoveArray;
 	struct SBlockCount {
-		SBlockCount(int s, int r) : structs(s), reserve(r) {}
 		int structs;
 		int reserve;
 	};

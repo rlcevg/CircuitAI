@@ -45,6 +45,7 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 {
 	if (!terrainData->IsInitialized()) {
 		terrainData->Init(circuit);
+		terrainData->ComputeGeography(circuit, circuit->GetCircuitDef("armcom")->GetId());
 	}
 	areaData = terrainData->pAreaData.load();
 

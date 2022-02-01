@@ -41,6 +41,7 @@ float CTerrainData::boundX(0.f);
 float CTerrainData::boundZ(0.f);
 int CTerrainData::convertStoP(1);
 CMap* CTerrainData::map(nullptr);
+int drawMTID = 0;  // FIXME: DEBUG
 
 CTerrainData::CTerrainData()
 		: pAreaData(&areaData0)
@@ -48,6 +49,7 @@ CTerrainData::CTerrainData()
 		, waterIsAVoid(false)
 		, sectorXSize(0)
 		, sectorZSize(0)
+, m_maxAltitude(1.f)
 		, gameAttribute(nullptr)
 		, isUpdating(false)
 		, aiToUpdate(0)
@@ -635,6 +637,492 @@ AIFloat3 CTerrainData::CorrectPosition(const AIFloat3& pos, const AIFloat3& dir,
 //	return 0;
 //}
 
+void CTerrainData::ComputeGeography(CCircuitAI* circuit, int unitDefId)
+{
+	ComputeAltitude(circuit, unitDefId);
+
+	ComputeAreas();
+
+	Graph_CreateChokePoints();
+
+	circuit->GetScheduler()->RunJobAt(CScheduler::GameJob([this, circuit]() {
+		for (Area::id a = 1; a <= AreasCount(); ++a) {
+			for (Area::id b = 1; b < a; ++b) {
+				const auto& chokes = m_ChokePointsMatrix[a][b];
+				for (const ChokePoint& cp : chokes) {
+					WalkPosition p = cp.Center();
+					AIFloat3 pos = AIFloat3(p.x * convertStoP + convertStoP / 2, 0, p.y * convertStoP + convertStoP / 2);
+					std::string cmd("ai_mrk_add:");
+					cmd += utils::int_to_string(pos.x) + " " + utils::int_to_string(pos.z) + " 16 0.2 0.2 0.9 9";
+					circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+					circuit->GetDrawer()->AddPoint(pos, "choke");
+				}
+			}
+		}
+		{
+			std::string cmd("ai_thr_draw:");
+			circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+
+			cmd = utils::int_to_string(convertStoP, "ai_thr_size:%i");
+			cmd += utils::float_to_string(0, " %f");
+			circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
+		}
+		{
+			std::ostringstream cmd;
+			cmd << "ai_blk_data:";
+			char tmp[sectorXSize * sectorZSize] = {0};
+			for (auto& f : m_RawFrontier) {
+				tmp[f.second.x + sectorXSize * f.second.y] = 255;
+			}
+			cmd.write(&tmp[0], sectorXSize * sectorZSize);
+			std::string s = cmd.str();
+			circuit->GetLua()->CallRules(s.c_str(), s.size());
+		}
+	}), FRAMES_PER_SEC * 1);
+}
+
+void CTerrainData::ComputeAltitude(CCircuitAI* circuit, int unitDefId)
+{
+	STerrainMapMobileType::Id mobileId = udMobileType[unitDefId];
+	STerrainMapMobileType& mt = pAreaData.load()->mobileType[mobileId];
+//	const int altitude_scale = 8;	// 8 provides a pixel definition for altitude_t, since altitudes are computed from miniTiles which are 8x8 pixels
+
+	// 1) Fill in and sort DeltasByAscendingAltitude
+	const int range = std::max(sectorXSize, sectorZSize) / 2 + 3;  // TODO: Re-evaluate
+
+	std::vector<std::pair<int2, altitude_t>> DeltasByAscendingAltitude;
+
+	for (int dy = 0; dy <= range; ++dy) {
+		for (int dx = dy; dx <= range; ++dx) {  // Only consider 1/8 of possible deltas. Other ones obtained by symmetry.
+			if (dx || dy) {
+				DeltasByAscendingAltitude.emplace_back(int2(dx, dy), altitude_t(0.5f + AIFloat3(dx, 0, dy).Length2D()/* * altitude_scale*/));
+			}
+		}
+	}
+
+	std::sort(DeltasByAscendingAltitude.begin(), DeltasByAscendingAltitude.end(),
+		[](const std::pair<int2, altitude_t>& a, const std::pair<int2, altitude_t>& b) { return a.second < b.second; });
+
+	// 2) Fill in ActiveSeaSideList, which basically contains all the seaside miniTiles (from which altitudes are to be computed)
+	//    It also includes extra border-miniTiles which are considered as seaside miniTiles too.
+	struct ActiveSeaSide {
+		int2 origin;
+		altitude_t lastAltitudeGenerated;
+	};
+	std::vector<ActiveSeaSide> ActiveSeaSideList;
+
+	auto seaSide = [this, &mt](const int2 p) {
+		if (mt.sector[p.x + sectorXSize * p.y].area != nullptr) {
+			return false;
+		}
+
+		for (const int2 delta : {int2(0, -1), int2(-1, 0), int2(+1, 0), int2(0, +1)}) {
+			const int2 np = p + delta;
+			if (IsValid(np) && (mt.sector[np.x + sectorXSize * np.y].area != nullptr)) {
+				return true;
+			}
+		}
+
+		return false;
+	};
+	for (int z = -1; z <= sectorZSize; ++z) {
+		for (int x = -1 ; x <= sectorXSize; ++x) {
+			const int2 w(x, z);
+			if (!IsValid(w) || seaSide(w)) {
+				ActiveSeaSideList.push_back(ActiveSeaSide{w, 0});
+			}
+		}
+	}
+
+	// 3) Dijkstra's algorithm
+	for (const auto& delta_altitude : DeltasByAscendingAltitude) {
+		const int2 d = delta_altitude.first;
+		const altitude_t altitude = delta_altitude.second;
+		for (int i = 0 ; i < (int)ActiveSeaSideList.size() ; ++i) {
+			ActiveSeaSide& Current = ActiveSeaSideList[i];
+			if (altitude - Current.lastAltitudeGenerated >= 2/* * altitude_scale*/) {  // optimization : once a seaside miniTile verifies this condition,
+				// we can throw it away as it will not generate min altitudes anymore
+				std::swap(ActiveSeaSideList[i--], ActiveSeaSideList.back());
+				ActiveSeaSideList.pop_back();
+			} else {
+				for (auto delta : { int2(d.x, d.y), int2(-d.x, d.y), int2(d.x, -d.y), int2(-d.x, -d.y),
+									int2(d.y, d.x), int2(-d.y, d.x), int2(d.y, -d.x), int2(-d.y, -d.x) })
+				{
+					const int2 w = Current.origin + delta;
+					if (IsValid(w)) {
+						STerrainMapAreaSector& s = mt.sector[w.x + sectorXSize * w.y];
+						if (s.S->altitude <= 0 && s.area != nullptr) {
+							s.S->altitude = m_maxAltitude = Current.lastAltitudeGenerated = altitude;
+						}
+					}
+				}
+			}
+		}
+	}
+
+printf("m_maxAltitude: %f\n", m_maxAltitude);
+	drawMTID = mobileId;
+	SAreaData& area2 = *GetNextAreaData();
+	for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
+		area2.sector[i].altitude = pAreaData.load()->sector[i].altitude;
+	}
+}
+
+using MiniTile = STerrainMapSector;
+// Helper class for void Map::ComputeAreas()
+// Maintains some information about an area being computed
+// A TempAreaInfo is not Valid() in two cases:
+//   - a default-constructed TempAreaInfo instance is never Valid (used as a dummy value to simplify the algorithm).
+//   - any other instance becomes invalid when absorbed (see Merge)
+class TempAreaInfo
+{
+public:
+						TempAreaInfo() : m_valid(false), m_id(0), m_top(0, 0), m_highestAltitude(0), m_size(0) { bwem_assert(!Valid());}
+						TempAreaInfo(Area::id id, MiniTile* pMiniTile, WalkPosition pos)
+							: m_valid(true), m_id(id), m_top(pos), m_highestAltitude(pMiniTile->Altitude()), m_size(0)
+														{ Add(pMiniTile); bwem_assert(Valid()); }
+
+	bool				Valid() const					{ return m_valid; }
+	Area::id			Id() const						{ bwem_assert(Valid()); return m_id; }
+	WalkPosition		Top() const						{ bwem_assert(Valid()); return m_top; }
+	int					Size() const					{ bwem_assert(Valid()); return m_size; }
+	altitude_t			HighestAltitude() const			{ bwem_assert(Valid()); return m_highestAltitude; }
+
+	void				Add(MiniTile* pMiniTile)		{ bwem_assert(Valid()); ++m_size; pMiniTile->SetAreaId(m_id); }
+
+	// Left to caller : m.SetAreaId(this->Id()) for each MiniTile m in Absorbed
+	void				Merge(TempAreaInfo & Absorbed)	{
+															bwem_assert(Valid() && Absorbed.Valid());
+															bwem_assert(m_size >= Absorbed.m_size);
+															m_size += Absorbed.m_size;
+															Absorbed.m_valid = false;
+														}
+
+	TempAreaInfo &		operator=(const TempAreaInfo&) = delete;
+
+private:
+	bool				m_valid;
+	const Area::id		m_id;
+	const WalkPosition	m_top;
+	const altitude_t	m_highestAltitude;
+	int					m_size;
+};
+
+// Assigns MiniTile::m_areaId for each miniTile having AreaIdMissing()
+// Areas are computed using MiniTile::Altitude() information only.
+// The miniTiles are considered successively in descending order of their Altitude().
+// Each of them either:
+//   - involves the creation of a new area.
+//   - is added to some existing neighbouring area.
+//   - makes two neighbouring areas merge together.
+void CTerrainData::ComputeAreas()
+{
+	std::vector<std::pair<WalkPosition, MiniTile*>> MiniTilesByDescendingAltitude = SortMiniTiles();
+
+	std::vector<TempAreaInfo> TempAreaList = ComputeTempAreas(MiniTilesByDescendingAltitude);
+
+	CreateAreas(TempAreaList);
+
+//	SetAreaIdInTiles();
+}
+
+std::vector<std::pair<WalkPosition, MiniTile*>> CTerrainData::SortMiniTiles()
+{
+	std::vector<std::pair<WalkPosition, MiniTile*>> MiniTilesByDescendingAltitude;
+	for (int y = 0; y < sectorZSize; ++y) {
+		for (int x = 0; x < sectorXSize; ++x) {
+			WalkPosition w = WalkPosition(x, y);
+			MiniTile& miniTile = GetMiniTile(w);
+			if (miniTile.area_id <= 0 && miniTile.altitude > 0) {
+				MiniTilesByDescendingAltitude.emplace_back(w, &miniTile);
+			}
+		}
+	}
+
+	std::sort(MiniTilesByDescendingAltitude.begin(), MiniTilesByDescendingAltitude.end(),
+		[](const std::pair<WalkPosition, MiniTile*>& a, const std::pair<WalkPosition, MiniTile*>& b) { return a.second->Altitude() > b.second->Altitude(); });
+
+	return MiniTilesByDescendingAltitude;
+}
+
+static std::pair<Area::id, Area::id> findNeighboringAreas(WalkPosition p, const CTerrainData* pMap)
+{
+	std::pair<Area::id, Area::id> result(0, 0);
+
+	for (WalkPosition delta : {WalkPosition(0, -1), WalkPosition(-1, 0), WalkPosition(+1, 0), WalkPosition(0, +1)}) {
+		if (pMap->IsValid(p + delta)) {
+			Area::id areaId = pMap->GetMiniTile(p + delta).AreaId();
+			if (areaId > 0) {
+				if (!result.first) result.first = areaId;
+				else if (result.first != areaId)
+					if (!result.second || ((areaId < result.second)))
+						result.second = areaId;
+			}
+		}
+	}
+
+	return result;
+}
+
+static Area::id chooseNeighboringArea(Area::id a, Area::id b)
+{
+	static std::map<std::pair<Area::id, Area::id>, int> map_AreaPair_counter;
+
+	if (a > b) std::swap(a, b);
+	return (map_AreaPair_counter[std::make_pair(a, b)]++ % 2 == 0) ? a : b;
+}
+
+std::vector<TempAreaInfo> CTerrainData::ComputeTempAreas(const std::vector<std::pair<WalkPosition, MiniTile*>>& MiniTilesByDescendingAltitude)
+{
+	std::vector<TempAreaInfo> TempAreaList(1);  // TempAreaList[0] left unused, as AreaIds are > 0
+	for (const auto& Current : MiniTilesByDescendingAltitude) {
+		const WalkPosition pos = Current.first;
+		MiniTile* cur = Current.second;
+
+		std::pair<Area::id, Area::id> neighboringAreas = findNeighboringAreas(pos, this);
+		if (!neighboringAreas.first) {  // no neighboring area : creates of a new area
+			TempAreaList.emplace_back((Area::id)TempAreaList.size(), cur, pos);
+		} else if (!neighboringAreas.second) {  // one neighboring area : adds cur to the existing area
+			TempAreaList[neighboringAreas.first].Add(cur);
+		} else {  // two neighboring areas : adds cur to one of them  &  possible merging
+			Area::id smaller = neighboringAreas.first;
+			Area::id bigger = neighboringAreas.second;
+			if (TempAreaList[smaller].Size() > TempAreaList[bigger].Size()) std::swap(smaller, bigger);
+
+			// Condition for the neighboring areas to merge:
+			if ((TempAreaList[smaller].Size() < 20) ||  // was 80
+				(TempAreaList[smaller].HighestAltitude() < 2.5) ||  // was 80 == 10*altitude_scale, using Tiles = 4x4 MiniTiles
+				(cur->Altitude() / (float)TempAreaList[bigger].HighestAltitude() >= 0.90) ||
+				(cur->Altitude() / (float)TempAreaList[smaller].HighestAltitude() >= 0.90) ||
+//				any_of(StartingLocations().begin(), StartingLocations().end(), [&pos](const TilePosition & startingLoc)
+//					{ return dist(TilePosition(pos), startingLoc + TilePosition(2, 1)) <= 3;}) ||
+				false
+				)
+			{
+				// adds cur to the absorbing area:
+				TempAreaList[bigger].Add(cur);
+
+				// merges the two neighboring areas:
+				ReplaceAreaIds(TempAreaList[smaller].Top(), bigger);
+				TempAreaList[bigger].Merge(TempAreaList[smaller]);
+			}
+			else	// no merge : cur starts or continues the frontier between the two neighboring areas
+			{
+				// adds cur to the chosen Area:
+				TempAreaList[chooseNeighboringArea(smaller, bigger)].Add(cur);
+				m_RawFrontier.emplace_back(neighboringAreas, pos);
+			}
+		}
+	}
+
+	// Remove from the frontier obsolete positions
+	m_RawFrontier.erase(std::remove_if(m_RawFrontier.begin(), m_RawFrontier.end(),
+			[](const std::pair<std::pair<Area::id, Area::id>, WalkPosition>& f) { return f.first.first == f.first.second; }
+	), m_RawFrontier.end());
+
+	return TempAreaList;
+}
+
+void CTerrainData::ReplaceAreaIds(WalkPosition p, Area::id newAreaId)
+{
+	MiniTile& Origin = GetMiniTile(p);
+	Area::id oldAreaId = Origin.AreaId();
+	Origin.ReplaceAreaId(newAreaId);
+
+	std::vector<WalkPosition> ToSearch{p};
+	while (!ToSearch.empty()) {
+		WalkPosition current = ToSearch.back();
+
+		ToSearch.pop_back();
+		for (WalkPosition delta : {WalkPosition(0, -1), WalkPosition(-1, 0), WalkPosition(+1, 0), WalkPosition(0, +1)}) {
+			WalkPosition next = current + delta;
+			if (IsValid(next)) {
+				MiniTile& Next = GetMiniTile(next);
+				if (Next.AreaId() == oldAreaId) {
+					ToSearch.push_back(next);
+					Next.ReplaceAreaId(newAreaId);
+				}
+			}
+		}
+	}
+
+	// also replaces references of oldAreaId by newAreaId in m_RawFrontier:
+	if (newAreaId > 0) {
+		for (auto& f : m_RawFrontier) {
+			if (f.first.first == oldAreaId) f.first.first = newAreaId;
+			if (f.first.second == oldAreaId) f.first.second = newAreaId;
+		}
+	}
+}
+
+// Initializes m_Graph with the valid and big enough areas in TempAreaList.
+void CTerrainData::CreateAreas(const std::vector<TempAreaInfo>& TempAreaList)
+{
+	constexpr int area_min_miniTiles = 32;  // was 64
+
+	typedef std::pair<WalkPosition, int> pair_top_size_t;
+	std::vector<pair_top_size_t> AreasList;
+
+	Area::id newAreaId = 1;
+	Area::id newTinyAreaId = -2;
+
+	for (auto & TempArea : TempAreaList) {
+		if (TempArea.Valid()) {
+			if (TempArea.Size() >= area_min_miniTiles) {
+				bwem_assert(newAreaId <= TempArea.Id());
+				if (newAreaId != TempArea.Id()) {
+					ReplaceAreaIds(TempArea.Top(), newAreaId);
+				}
+
+				AreasList.emplace_back(TempArea.Top(), TempArea.Size());
+				newAreaId++;
+			} else {
+				ReplaceAreaIds(TempArea.Top(), newTinyAreaId);
+				newTinyAreaId--;
+			}
+		}
+	}
+
+	Graph_CreateAreas(AreasList);
+}
+
+void CTerrainData::Graph_CreateAreas(const std::vector<std::pair<WalkPosition, int>>& AreasList)
+{
+	m_Areas.reserve(AreasList.size());
+	for (Area::id id = 1; id <= (Area::id)AreasList.size(); ++id) {
+		WalkPosition top = AreasList[id - 1].first;
+		int miniTiles = AreasList[id - 1].second;
+		m_Areas.emplace_back(this, id, top, miniTiles);
+	}
+}
+
+inline int queenWiseNorm(int dx, int dy) { return std::max(abs(dx), abs(dy)); }
+
+//template<typename T, int Scale = 1>
+//inline int queenWiseDist(BWAPI::Point<T, Scale> A, BWAPI::Point<T, Scale> B){ A -= B; return utils::queenWiseNorm(A.x, A.y); }
+inline int queenWiseDist(WalkPosition A, WalkPosition B){ A -= B; return queenWiseNorm(A.x, A.y); }
+
+/*const */std::vector<ChokePoint>& CTerrainData::GetChokePoints(Area::id a, Area::id b)/* const*/
+{
+	bwem_assert(Valid(a));
+	bwem_assert(Valid(b));
+	bwem_assert(a != b);
+
+	if (a > b) std::swap(a, b);
+
+	return m_ChokePointsMatrix[b][a];
+}
+
+void CTerrainData::Graph_CreateChokePoints()
+{
+	constexpr int lake_max_miniTiles = 8;  // was 64
+
+	ChokePoint::index newIndex = 0;
+
+//	vector<Neutral *> BlockingNeutrals;
+//	for (auto & s : GetMap()->StaticBuildings())		if (s->Blocking()) BlockingNeutrals.push_back(s.get());
+//	for (auto & m : GetMap()->Minerals())			if (m->Blocking()) BlockingNeutrals.push_back(m.get());
+//
+//	const int pseudoChokePointsToCreate = count_if(BlockingNeutrals.begin(), BlockingNeutrals.end(),
+//											[](const Neutral * n){ return !n->NextStacked(); });
+
+	// 1) Size the matrix
+	m_ChokePointsMatrix.resize(AreasCount() + 1);
+	for (Area::id id = 1 ; id <= AreasCount() ; ++id) {
+		m_ChokePointsMatrix[id].resize(id);			// triangular matrix
+	}
+
+	// 2) Dispatch the global raw frontier between all the relevant pairs of Areas:
+	std::map<std::pair<Area::id, Area::id>, std::vector<WalkPosition>> RawFrontierByAreaPair;
+	for (const auto& raw : m_RawFrontier) {
+		Area::id a = raw.first.first;
+		Area::id b = raw.first.second;
+		if (a > b) std::swap(a, b);
+		bwem_assert(a <= b);
+		bwem_assert((a >= 1) && (b <= AreasCount()));
+
+		RawFrontierByAreaPair[std::make_pair(a, b)].push_back(raw.second);
+	}
+
+	// 3) For each pair of Areas (A, B):
+	for (auto& raw : RawFrontierByAreaPair) {
+		Area::id a = raw.first.first;
+		Area::id b = raw.first.second;
+
+		const std::vector<WalkPosition>& RawFrontierAB = raw.second;
+
+		// Because our dispatching preserved order,
+		// and because Map::m_RawFrontier was populated in descending order of the altitude (see Map::ComputeAreas),
+		// we know that RawFrontierAB is also ordered the same way, but let's check it:
+		{
+			std::vector<altitude_t> Altitudes;
+			for (auto w : RawFrontierAB) {
+				Altitudes.push_back(GetMiniTile(w).Altitude());
+			}
+
+			bwem_assert(is_sorted(Altitudes.rbegin(), Altitudes.rend()));
+		}
+
+		// 3.1) Use that information to efficiently cluster RawFrontierAB in one or several chokepoints.
+		//    Each cluster will be populated starting with the center of a chokepoint (max altitude)
+		//    and finishing with the ends (min altitude).
+		const int cluster_min_dist = (int)sqrt(lake_max_miniTiles);
+		std::vector<std::deque<WalkPosition>> Clusters;
+		for (auto w : RawFrontierAB) {
+			bool added = false;
+			for (auto & Cluster : Clusters) {
+				int distToFront = queenWiseDist(Cluster.front(), w);
+				int distToBack = queenWiseDist(Cluster.back(), w);
+				if (std::min(distToFront, distToBack) <= cluster_min_dist) {
+					if (distToFront < distToBack)	Cluster.push_front(w);
+					else							Cluster.push_back(w);
+
+					added = true;
+					break;
+				}
+			}
+
+			if (!added) Clusters.push_back(std::deque<WalkPosition>(1, w));
+		}
+
+		// 3.2) Create one Chokepoint for each cluster:
+		GetChokePoints(a, b).reserve(Clusters.size()/* + pseudoChokePointsToCreate*/);
+		for (const auto & Cluster : Clusters)
+			GetChokePoints(a, b).emplace_back(this, newIndex++, /*GetArea(a)*/a, /*GetArea(b)*/b, Cluster);
+	}
+
+	// 4) Create one Chokepoint for each pair of blocked areas, for each blocking Neutral:
+//	for (Neutral * pNeutral : BlockingNeutrals)
+//		if (!pNeutral->NextStacked())		// in the case where several neutrals are stacked, we only consider the top
+//		{
+//			vector<const Area *> BlockedAreas = pNeutral->BlockedAreas();
+//			for (const Area * pA : BlockedAreas)
+//			for (const Area * pB : BlockedAreas)
+//			{
+//				if (pB == pA) break;	// breaks symmetry
+//
+//				auto center = GetMap()->BreadthFirstSearch(WalkPosition(pNeutral->Pos()),
+//						[](const MiniTile & miniTile, WalkPosition) { return miniTile.Walkable(); },	// findCond
+//						[](const MiniTile &,          WalkPosition) { return true; });					// visitCond
+//
+//				GetChokePoints(pA, pB).reserve(pseudoChokePointsToCreate);
+//				GetChokePoints(pA, pB).emplace_back(this, newIndex++, pA, pB, deque<WalkPosition>(1, center), pNeutral);
+//			}
+//		}
+
+	// 5) Set the references to the freshly created Chokepoints:
+//	for (Area::id a = 1 ; a <= AreasCount() ; ++a)
+//	for (Area::id b = 1 ; b < a ; ++b)
+//		if (!GetChokePoints(a, b).empty())
+//		{
+//			GetArea(a)->AddChokePoints(GetArea(b), &GetChokePoints(a, b));
+//			GetArea(b)->AddChokePoints(GetArea(a), &GetChokePoints(a, b));
+//
+//			for (auto & cp : GetChokePoints(a, b))
+//				m_ChokePointList.push_back(&cp);
+//		}
+}
+
 void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 {
 	for (CCircuitAI* circuit : gameAttribute->GetCircuits()) {
@@ -1130,27 +1618,74 @@ void CTerrainData::UpdateVis()
 	}
 	debugDrawer->DrawTex(win.first, win.second);
 
+//	for (const STerrainMapMobileType& mt : areaData.mobileType) {
+//		std::pair<Uint32, float*> win = sdlWindows[winNum++];
+//		for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
+//			if (mt.sector[i].area != nullptr) LAND(win.second, i)
+//			else if (sector[i].maxElevation < 0.0) WATER(win.second, i)
+//			else if (sector[i].maxSlope > 0.5) HILL(win.second, i)
+//			else BLOCK(win.second, i)
+//		}
+//		debugDrawer->DrawTex(win.first, win.second);
+//	}
+	int id = 0;
 	for (const STerrainMapMobileType& mt : areaData.mobileType) {
-		std::pair<Uint32, float*> win = sdlWindows[winNum++];
-		for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
-			if (mt.sector[i].area != nullptr) LAND(win.second, i)
-			else if (sector[i].maxElevation < 0.0) WATER(win.second, i)
-			else if (sector[i].maxSlope > 0.5) HILL(win.second, i)
-			else BLOCK(win.second, i)
+		if (id++ == drawMTID) {
+			std::pair<Uint32, float*> win = sdlWindows[winNum++];
+			for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
+//				win.second[i * 3 + 0] = (1.f - areaData.sector[i].altitude / m_maxAltitude) * 0.2f;
+//				win.second[i * 3 + 1] = (1.f - areaData.sector[i].altitude / m_maxAltitude) * 0.8f;
+//				win.second[i * 3 + 2] = (1.f - areaData.sector[i].altitude / m_maxAltitude) * 0.2f;
+				if (areaData.sector[i].altitude >= 0) {
+					win.second[i * 3 + 0] = areaData.sector[i].altitude / m_maxAltitude * 0.2f;
+					win.second[i * 3 + 1] = areaData.sector[i].altitude / m_maxAltitude * 1.0f;
+					win.second[i * 3 + 2] = areaData.sector[i].altitude / m_maxAltitude * 0.2f;
+				} else {
+					win.second[i * 3 + 0] = 0.5f;
+					win.second[i * 3 + 1] = 0.5f;
+					win.second[i * 3 + 2] = 0.5f;
+				}
+			}
+			for (auto& f : m_RawFrontier) {
+				int i = f.second.x + sectorXSize * f.second.y;
+				win.second[i * 3 + 0] = 0.9f;
+				win.second[i * 3 + 1] = 0.9f;
+				win.second[i * 3 + 2] = 0.2f;
+			}
+			for (Area::id a = 1; a <= AreasCount(); ++a) {
+				for (Area::id b = 1; b < a; ++b) {
+					const auto& chokes = m_ChokePointsMatrix[a][b];
+					for (const ChokePoint& cp : chokes) {
+						WalkPosition p = cp.Center();
+						int i = p.x + sectorXSize * p.y;
+						win.second[i * 3 + 0] = 0.2f;
+						win.second[i * 3 + 1] = 0.2f;
+						win.second[i * 3 + 2] = 0.9f;
+//						const std::deque<WalkPosition>& g = cp.Geometry();
+//						for (WalkPosition gp : g) {
+//							int i = gp.x + sectorXSize * gp.y;
+//							win.second[i * 3 + 0] = 0.9f;
+//							win.second[i * 3 + 1] = 0.9f;
+//							win.second[i * 3 + 2] = 0.9f;
+//						}
+					}
+				}
+			}
+			debugDrawer->DrawTex(win.first, win.second);
+			break;
 		}
-		debugDrawer->DrawTex(win.first, win.second);
 	}
 
-	for (const STerrainMapImmobileType& mt : areaData.immobileType) {
-		std::pair<Uint32, float*> win = sdlWindows[winNum++];
-		for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
-			if (mt.sector.find(i) != mt.sector.end()) LAND(win.second, i)
-			else if (sector[i].maxElevation < 0.0) WATER(win.second, i)
-			else if (sector[i].maxSlope > 0.5) HILL(win.second, i)
-			else BLOCK(win.second, i)
-		}
-		debugDrawer->DrawTex(win.first, win.second);
-	}
+//	for (const STerrainMapImmobileType& mt : areaData.immobileType) {
+//		std::pair<Uint32, float*> win = sdlWindows[winNum++];
+//		for (int i = 0; i < sectorXSize * sectorZSize; ++i) {
+//			if (mt.sector.find(i) != mt.sector.end()) LAND(win.second, i)
+//			else if (sector[i].maxElevation < 0.0) WATER(win.second, i)
+//			else if (sector[i].maxSlope > 0.5) HILL(win.second, i)
+//			else BLOCK(win.second, i)
+//		}
+//		debugDrawer->DrawTex(win.first, win.second);
+//	}
 }
 
 void CTerrainData::ToggleVis(int frame)
@@ -1169,24 +1704,35 @@ void CTerrainData::ToggleVis(int frame)
 		win.first = debugDrawer->AddSDLWindow(sectorXSize, sectorZSize, "Circuit AI :: Terrain");
 		sdlWindows.push_back(win);
 
+//		for (const STerrainMapMobileType& mt : areaData.mobileType) {
+//			std::pair<Uint32, float*> win;
+//			win.second = new float [sectorXSize * sectorZSize * 3];
+//			std::ostringstream label;
+//			label << "Circuit AI :: Terrain :: Mobile [" << mt.moveData->GetName() << "] h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.area.size();
+//			win.first = debugDrawer->AddSDLWindow(sectorXSize, sectorZSize, label.str().c_str());
+//			sdlWindows.push_back(win);
+//		}
+		int id = 0;
 		for (const STerrainMapMobileType& mt : areaData.mobileType) {
-			std::pair<Uint32, float*> win;
-			win.second = new float [sectorXSize * sectorZSize * 3];
-			std::ostringstream label;
-			label << "Circuit AI :: Terrain :: Mobile [" << mt.moveData->GetName() << "] h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.area.size();
-			win.first = debugDrawer->AddSDLWindow(sectorXSize, sectorZSize, label.str().c_str());
-			sdlWindows.push_back(win);
+			if (id++ == drawMTID) {
+				std::pair<Uint32, float*> win;
+				win.second = new float [sectorXSize * sectorZSize * 3];
+				std::ostringstream label;
+				label << "Circuit AI :: Terrain :: Mobile [" << mt.moveData->GetName() << "] h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.area.size();
+				win.first = debugDrawer->AddSDLWindow(sectorXSize, sectorZSize, label.str().c_str());
+				sdlWindows.push_back(win);
+			}
 		}
 
-		int itId = 0;
-		for (const STerrainMapImmobileType& mt : areaData.immobileType) {
-			std::pair<Uint32, float*> win;
-			win.second = new float [sectorXSize * sectorZSize * 3];
-			std::ostringstream label;
-			label << "Circuit AI :: Terrain :: Immobile [" << itId++ << "] h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.sector.size();
-			win.first = debugDrawer->AddSDLWindow(sectorXSize, sectorZSize, label.str().c_str());
-			sdlWindows.push_back(win);
-		}
+//		int itId = 0;
+//		for (const STerrainMapImmobileType& mt : areaData.immobileType) {
+//			std::pair<Uint32, float*> win;
+//			win.second = new float [sectorXSize * sectorZSize * 3];
+//			std::ostringstream label;
+//			label << "Circuit AI :: Terrain :: Immobile [" << itId++ << "] h=" << mt.canHover << " f=" << mt.canFloat << " mb=" << mt.sector.size();
+//			win.first = debugDrawer->AddSDLWindow(sectorXSize, sectorZSize, label.str().c_str());
+//			sdlWindows.push_back(win);
+//		}
 
 		UpdateVis();
 	} else {

@@ -52,8 +52,9 @@
  			"ignore": ["engy_low", "def_low", "nano"]
 		},
 		"wind": {
-			"type": ["circle", "engy_low"],
-			"radius": 4,  // default: "explosion"
+			"type": ["rectangle", "engy_low"],
+//			"type": ["circle", "engy_low"],
+//			"radius": 4,  // default: "explosion"
 			"not_ignore": ["factory", "engy_low", "convert", "terra"]
 		},
 		"geo": {

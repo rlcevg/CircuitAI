@@ -142,7 +142,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainMgr)
 	}
 	isAreaUpdated = true;
 
-	std::fill(blockArray.begin(), blockArray.end(), SBlockCount(0, 0));
+	std::fill(blockArray.begin(), blockArray.end(), SBlockCount{0, 0});
 	const int granularity = squareSize / (SQUARE_SIZE * 2);
 	const SBlockingMap::SM notIgnore = STRUCT_BIT(MEX) | STRUCT_BIT(GEO);
 	const SBlockingMap& blockMap = terrainMgr->GetBlockingMap();

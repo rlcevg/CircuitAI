@@ -19,6 +19,7 @@
 #ifndef SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 #define SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 
+#include "terrain/cp.h"
 #include "util/Defines.h"
 
 #include "AIFloat3.h"
@@ -52,11 +53,10 @@ struct STerrainMapMobileType;
 struct STerrainMapImmobileType;
 struct STerrainMapSector;
 
+using altitude_t = float;
+
 struct STerrainMapAreaSector {
-	STerrainMapAreaSector() :
-		S(nullptr),
-		area(nullptr)
-	{};
+	STerrainMapAreaSector() : S(nullptr), area(nullptr) {}
 
 	// NOTE: some of these values are loaded as they become needed, use GlobalTerrainMap functions
 	STerrainMapSector* S;  // always valid
@@ -119,6 +119,8 @@ struct STerrainMapSector {
 		minElevation(.0f),
 		maxElevation(.0f),
 		maxSlope(.0f)
+		, altitude(-1.f)
+		, area_id(-1)
 	{};
 
 	bool isWater;  // (Water = true) (Land = false)
@@ -129,6 +131,13 @@ struct STerrainMapSector {
 	float minElevation;  // 0 or less for water
 	float maxElevation;
 	float maxSlope;      // 0 or higher
+
+	altitude_t altitude;
+	altitude_t Altitude() const { return altitude; }
+	int area_id;
+	void SetAreaId(int id) { area_id = id; }
+	void ReplaceAreaId(int id) { bwem_assert((area_id > 0) && ((id >= 1) || (id <= -2)) && (id != area_id)); area_id = id; }
+	int AreaId() const { return area_id; }
 };
 
 struct STerrainMapImmobileType {
@@ -180,6 +189,7 @@ struct SAreaData {
 
 #define BOUND_EXT	3e3f
 
+class TempAreaInfo;  // FIXME: DEBUG
 class CTerrainData {
 public:
 	CTerrainData();
@@ -219,6 +229,29 @@ public:
 private:
 //	int GetFileValue(int& fileSize, char*& file, std::string entry);
 // ---- RAI's GlobalTerrainMap ---- END
+
+public:
+	void ComputeGeography(CCircuitAI* circuit, int unitDefId);
+private:
+	void ComputeAltitude(CCircuitAI* circuit, int unitDefId);  // Depth of passable tile from edge of outer contour
+	void ComputeAreas();
+	std::vector<std::pair<WalkPosition, STerrainMapSector*>> SortMiniTiles();
+	std::vector<TempAreaInfo> ComputeTempAreas(const std::vector<std::pair<WalkPosition, STerrainMapSector*>>& MiniTilesByDescendingAltitude);
+	void ReplaceAreaIds(WalkPosition p, Area::id newAreaId);
+	void CreateAreas(const std::vector<TempAreaInfo>& TempAreaList);
+	void Graph_CreateAreas(const std::vector<std::pair<WalkPosition, Area::id>>& AreasList);
+	void Graph_CreateChokePoints();
+public:
+	STerrainMapSector& GetMiniTile(const WalkPosition p) const { return pAreaData.load()->sector[p.x + sectorXSize * p.y]; }
+	bool IsValid(const WalkPosition p) const { return (p.x >= 0) && (p.x < sectorXSize) && (p.y >= 0) && (p.y < sectorZSize); }
+private:
+	/*const */std::vector<ChokePoint>& GetChokePoints(Area::id a, Area::id b)/* const*/;
+	int AreasCount() const { return (int)m_Areas.size(); }
+	bool Valid(Area::id id) const { return (1 <= id) && (id <= AreasCount()); }
+	std::vector<std::pair<std::pair<Area::id, Area::id>, WalkPosition>> m_RawFrontier;
+	altitude_t m_maxAltitude;
+	std::vector<Area> m_Areas;
+	std::vector<std::vector<std::vector<ChokePoint>>> m_ChokePointsMatrix;  // index == Area::id x Area::id
 
 	void DelegateAuthority(CCircuitAI* curOwner);
 
