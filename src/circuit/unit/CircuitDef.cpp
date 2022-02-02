@@ -146,6 +146,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isAbleToSwim(false)
 		, isAbleToDive(false)
 		, isMex(false)
+		, isWind(false)
 		, isPylon(false)
 		, isAssist(false)
 		, isRadar(false)

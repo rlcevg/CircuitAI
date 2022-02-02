@@ -134,8 +134,8 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	}
 
 	// Don't start with air
-	if (((choiceNum++ < noAirNum) || (isPosValid && terrainMgr->IsWaterSector(position))) &&
-		(circuit->GetCircuitDef(availFacs.front().id)->GetMobileId() < 0))
+	if (((choiceNum++ < noAirNum)/* || (isPosValid && terrainMgr->IsWaterSector(position))*/)
+		&& (circuit->GetCircuitDef(availFacs.front().id)->GetMobileId() < 0))
 	{
 		for (SFactory& fac : availFacs) {
 			if (circuit->GetCircuitDef(fac.id)->GetMobileId() >= 0) {

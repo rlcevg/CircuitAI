@@ -272,6 +272,8 @@ public:
 
 	void SetIsMex(bool value) { isMex = value; }
 	bool IsMex() const { return isMex; }
+	void SetIsWind(bool value) { isWind = value; }
+	bool IsWind() const { return isWind; }
 	void SetIsPylon(bool value) { isPylon = value; }
 	bool IsPylon() const { return isPylon; }
 	void SetIsAssist(bool value) { isAssist = value; }
@@ -412,6 +414,7 @@ private:
 	bool isAbleToRestore : 1;
 
 	bool isMex : 1;
+	bool isWind : 1;
 	bool isPylon : 1;
 	bool isAssist : 1;
 	bool isRadar : 1;

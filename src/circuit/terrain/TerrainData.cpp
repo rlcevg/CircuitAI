@@ -471,7 +471,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 				iS.second->area = &area;
 			}
 			area.percentOfMap = (100.0 * area.sector.size()) / (sectorXSize * sectorZSize);
-			if (area.percentOfMap >= 20.0 ) {  // A map area occupying 20% of the map
+			if (area.percentOfMap >= 16.0 ) {  // A map area occupying 16% of the map
 				area.areaUsable = true;
 				mt.typeUsable = true;
 			} else {
@@ -1408,7 +1408,7 @@ std::shared_ptr<IMainJob> CTerrainData::UpdateAreas()
 				iS.second->area = &area;
 			}
 			area.percentOfMap = (100.0 * area.sector.size()) / (sectorXSize * sectorZSize);
-			if (area.percentOfMap >= 20.0 ) {  // A map area occupying 20% of the map
+			if (area.percentOfMap >= 16.0 ) {  // A map area occupying 16% of the map
 				area.areaUsable = true;
 				mt.typeUsable = true;
 			} else {

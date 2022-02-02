@@ -88,13 +88,16 @@ int ITravelAction::CalcSpeedStep(float& stepSpeed)
 	} else {
 		stepSpeed = speed;
 	}
+	isForce = false;
 
 	if ((int)sqDistToStep <= minSqDist) {
 		pathIterator = step;
-		state = (pathIterator == pathMaxIndex) ? State::FINISH : state;
+		if (pathIterator == pathMaxIndex) {
+			StateFinish();
+			return -1;
+		}
 	}
 
-	isForce = false;
 	return pathMaxIndex;
 }
 

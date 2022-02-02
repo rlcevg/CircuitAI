@@ -268,10 +268,11 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 
 			// energy
 			// BA: float netEnergy = unitDef->GetResourceMake(energyRes) - unitDef->GetUpkeep(energyRes);
+			cdef.SetIsWind(cdef.GetDef()->GetWindResourceGenerator(energyRes) > minEInc);
 			it = customParams.find("income_energy");
 			if (((it != customParams.end()) && (utils::string_to_float(it->second) > minEInc))
 				|| (cdef.GetDef()->GetResourceMake(energyRes) - cdef.GetUpkeepE() > minEInc)
-				|| ((cdef.GetDef()->GetWindResourceGenerator(energyRes) > minEInc) && (avgWind > minEInc))
+				|| (cdef.IsWind() && (avgWind > minEInc))
 				|| (cdef.GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength() > minEInc))
 			{
 				if (cdef.GetDef()->IsNeedGeo()) {
@@ -611,7 +612,7 @@ void CEconomyManager::AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 				data.make = cdef->GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength();
 			} else {
 				float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
-				data.make = std::min(avgWind, cdef->GetDef()->GetWindResourceGenerator(energyRes));
+				data.make = std::min(avgWind, data.make);
 			}
 		}
 
@@ -1177,7 +1178,21 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	bool isLastHope = isEnergyStalling;
 	const int frame = circuit->GetLastFrame();
 
-	for (const auto& engy : energyDefs.GetInfos()) {  // sorted by high-tech first
+	const auto& infos = energyDefs.GetInfos();
+	const float curWind = circuit->GetMap()->GetCurWind();
+	auto checkWind = [curWind, terrainMgr, position, &infos](unsigned i) {
+		unsigned lowerIdx = -1;
+		for (unsigned j = i + 1; j < infos.size(); ++j) {
+			if (terrainMgr->CanBeBuiltAtSafe(infos[j].cdef, position)) {
+				lowerIdx = j;
+				break;
+			}
+		}
+		return (lowerIdx < 0) || (curWind * infos[i].score > infos[lowerIdx].data.make * infos[lowerIdx].score);
+	};
+
+	for (unsigned i = 0; i < infos.size(); ++i) {  // sorted by high-tech first
+		const auto& engy = infos[i];
 		if (!engy.cdef->IsAvailable(frame)
 			|| !terrainMgr->CanBeBuiltAtSafe(engy.cdef, position))
 		{
@@ -1189,7 +1204,8 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			if (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 4 + 1)) {
 				bestDef = engy.cdef;
 				if ((engy.data.cond.metalIncome < buildTimeMod * metalIncome)
-					&& (engy.data.cond.energyIncome < energyIncome))
+					&& (engy.data.cond.energyIncome < energyIncome)
+					&& (!engy.cdef->IsWind() || checkWind(i)))
 				{
 					break;
 				}
@@ -1223,7 +1239,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// 4) at production base
 	AIFloat3 buildPos = -RgtVector;
 	if (bestDef->GetCostM() < 200.0f) {
-		buildPos = utils::get_radial_pos(position, bestDef->GetRadius() + SQUARE_SIZE * 6);
+		buildPos = position + (position - terrainMgr->GetTerrainCenter()).Normalize2D() * (bestDef->GetRadius() + SQUARE_SIZE * 6);  // utils::get_radial_pos(position, bestDef->GetRadius() + SQUARE_SIZE * 6);
 	} else {
 		buildPos = (bestDef->GetCostM() < 1000.0f) ? circuit->GetSetupManager()->GetEnergyBase() : circuit->GetSetupManager()->GetEnergyBase2();
 		CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
@@ -1739,16 +1755,16 @@ bool CEconomyManager::CheckAssistRequired(const AIFloat3& position, CCircuitUnit
 	switch (factory->GetUnit()->GetBuildingFacing()) {
 		default:
 		case UNIT_FACING_SOUTH:
-			buildPos.z -= 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
+			buildPos.z -= 64.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
 			break;
 		case UNIT_FACING_EAST:
-			buildPos.x -= 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
+			buildPos.x -= 64.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
 			break;
 		case UNIT_FACING_NORTH:
-			buildPos.z += 128.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
+			buildPos.z += 64.0f;  // def->GetZSize() * SQUARE_SIZE * 2;
 			break;
 		case UNIT_FACING_WEST:
-			buildPos.x += 128.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
+			buildPos.x += 64.0f;  // def->GetXSize() * SQUARE_SIZE * 2;
 			break;
 	}
 	CTerrainManager::CorrectPosition(buildPos);
