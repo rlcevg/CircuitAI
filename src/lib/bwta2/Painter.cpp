@@ -23,6 +23,7 @@ namespace BWTA {
 		}
 
 		image = QImage(_width, _height, QImage::Format_ARGB32_Premultiplied);
+		image.fill(0);
 		painter.begin(&image);
 		painter.setRenderHint(QPainter::Antialiasing);
 	}
@@ -43,6 +44,7 @@ namespace BWTA {
 		// restart device
 		painter.end();
 		image = QImage(_width, _height, QImage::Format_ARGB32_Premultiplied);
+		image.fill(0);
 		painter.begin(&image);
 		painter.setRenderHint(QPainter::Antialiasing);
 	}

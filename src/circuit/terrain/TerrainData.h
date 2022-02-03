@@ -54,6 +54,8 @@ struct STerrainMapImmobileType;
 struct STerrainMapSector;
 
 using altitude_t = float;
+extern CTerrainData* g_TerrainData;
+extern CCircuitAI* g_Circuit;
 
 struct STerrainMapAreaSector {
 	STerrainMapAreaSector() : S(nullptr), area(nullptr) {}
@@ -245,6 +247,11 @@ private:
 public:
 	STerrainMapSector& GetMiniTile(const WalkPosition p) const { return pAreaData.load()->sector[p.x + sectorXSize * p.y]; }
 	bool IsValid(const WalkPosition p) const { return (p.x >= 0) && (p.x < sectorXSize) && (p.y >= 0) && (p.y < sectorZSize); }
+	// >> BWTA2
+	bool isBuildable(int x, int y) const { return pAreaData.load()->mobileType[mobileId].sector[x + sectorXSize * y].area != nullptr; }
+	bool isWalkable(int x, int y) const { return pAreaData.load()->mobileType[mobileId].sector[x + sectorXSize * y].area != nullptr; }
+	int mobileId;
+	// BWTA2 <<
 private:
 	/*const */std::vector<ChokePoint>& GetChokePoints(Area::id a, Area::id b)/* const*/;
 	int AreasCount() const { return (int)m_Areas.size(); }
@@ -267,7 +274,7 @@ public:
 		return (pAreaData.load() == &areaData0) ? &areaData1 : &areaData0;
 	}
 
-private:
+public:  // private:
 	static CMap* map;
 	std::shared_ptr<CScheduler> scheduler;
 	CGameAttribute* gameAttribute;

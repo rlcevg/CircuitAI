@@ -2,7 +2,7 @@
 
 #include <BWTA/BaseLocation.h>
 //#include "../../OfflineExtractor/MapFileParser.h"
-#include "terrain/bwta2/MapData.h"
+#include "bwta2/MapData.h"
 
 namespace BWTA
 {

@@ -1,4 +1,5 @@
 #include "LoadData.h"
+#include "terrain/TerrainData.h"
 
 using namespace BWAPI;
 namespace BWTA
@@ -15,69 +16,69 @@ namespace BWTA
 	void loadMapFromBWAPI()
 	{
 		// load map name
-		MapData::hash = BWAPI::Broodwar->mapHash();
-		MapData::mapFileName = BWAPI::Broodwar->mapFileName();
+		MapData::hash = "hash";  // BWAPI::Broodwar->mapHash();
+		MapData::mapFileName = "mapFileName";  // BWAPI::Broodwar->mapFileName();
 		// Clean previous log file
 		std::ofstream logFile(LOG_FILE_PATH);
 		logFile << "Map name: " << MapData::mapFileName << std::endl;
 
 		// load map info
-		MapData::mapWidthTileRes = BWAPI::Broodwar->mapWidth();
-		MapData::mapWidthPixelRes = MapData::mapWidthTileRes * TILE_SIZE;
-		MapData::mapWidthWalkRes = MapData::mapWidthTileRes * 4;
+		MapData::mapWidthTileRes = circuit::g_TerrainData->sectorXSize;  // BWAPI::Broodwar->mapWidth();
+		MapData::mapWidthPixelRes = MapData::mapWidthTileRes;  // * TILE_SIZE;
+		MapData::mapWidthWalkRes = MapData::mapWidthTileRes;  // * 4;
 
-		MapData::mapHeightTileRes = BWAPI::Broodwar->mapHeight();
-		MapData::mapHeightPixelRes = MapData::mapHeightTileRes * TILE_SIZE;
-		MapData::mapHeightWalkRes = MapData::mapHeightTileRes * 4;
+		MapData::mapHeightTileRes = circuit::g_TerrainData->sectorZSize;  // BWAPI::Broodwar->mapHeight();
+		MapData::mapHeightPixelRes = MapData::mapHeightTileRes;  // * TILE_SIZE;
+		MapData::mapHeightWalkRes = MapData::mapHeightTileRes;  // * 4;
 
 		MapData::buildability.resize(MapData::mapWidthTileRes, MapData::mapHeightTileRes);
 		for (int x = 0; x < MapData::mapWidthTileRes; x++) {
 			for (int y = 0; y < MapData::mapHeightTileRes; y++) {
-				MapData::buildability[x][y] = BWAPI::Broodwar->isBuildable(x, y);
+				MapData::buildability[x][y] = circuit::g_TerrainData->isBuildable(x, y);  // BWAPI::Broodwar->isBuildable(x, y);
 			}
 		}
 
 		MapData::rawWalkability.resize(MapData::mapWidthWalkRes, MapData::mapHeightWalkRes);
 		for (int x = 0; x < MapData::mapWidthWalkRes; x++) {
 			for (int y = 0; y < MapData::mapHeightWalkRes; y++) {
-				MapData::rawWalkability[x][y] = BWAPI::Broodwar->isWalkable(x, y);
+				MapData::rawWalkability[x][y] = circuit::g_TerrainData->isWalkable(x, y);  // BWAPI::Broodwar->isWalkable(x, y);
 			}
 		}
 
 		// load static buildings
 		MapData::staticNeutralBuildings.clear();
-		for (auto unit : BWAPI::Broodwar->getStaticNeutralUnits()) {
-			auto unitType = unit->getType();
-			// checks if it is a resource container
-			if (unitType == BWAPI::UnitTypes::Resource_Vespene_Geyser || unitType.isMineralField()) continue;
-
-//			LOG("Doodad " << unitType << " at " << unit->getPosition() << " can move? " << unitType.canMove() <<
-//				" is invincible? " << unitType.isInvincible());
-            // Ignores also the various creature types that can move around
-			// WARNING unitType.isInvincible() returns FALSE with some doodas like Special_Power_Generator
-            if (unitType.canMove())  continue;
-
-			MapData::staticNeutralBuildings.emplace_back(unitType, unit->getPosition());
-		}
+//		for (auto unit : BWAPI::Broodwar->getStaticNeutralUnits()) {
+//			auto unitType = unit->getType();
+//			// checks if it is a resource container
+//			if (unitType == BWAPI::UnitTypes::Resource_Vespene_Geyser || unitType.isMineralField()) continue;
+//
+////			LOG("Doodad " << unitType << " at " << unit->getPosition() << " can move? " << unitType.canMove() <<
+////				" is invincible? " << unitType.isInvincible());
+//            // Ignores also the various creature types that can move around
+//			// WARNING unitType.isInvincible() returns FALSE with some doodas like Special_Power_Generator
+//            if (unitType.canMove())  continue;
+//
+//			MapData::staticNeutralBuildings.emplace_back(unitType, unit->getPosition());
+//		}
 
 		// load resources (minerals, gas) and start locations
 //		MapData::resourcesWalkPositions.clear();
 		MapData::resources.clear();
-		for (auto mineral : BWAPI::Broodwar->getStaticMinerals()) {
-//			if (mineral->getInitialResources() > 200) { //filter out all mineral patches under 200
-//				BWAPI::WalkPosition unitWalkPosition(mineral->getPosition());
-//				MapData::resourcesWalkPositions.push_back(std::make_pair(mineral->getType(), unitWalkPosition));
-				MapData::resources.emplace_back(mineral->getType(), mineral->getTilePosition(),mineral->getInitialResources());
-//			}
-		}
+//		for (auto mineral : BWAPI::Broodwar->getStaticMinerals()) {
+////			if (mineral->getInitialResources() > 200) { //filter out all mineral patches under 200
+////				BWAPI::WalkPosition unitWalkPosition(mineral->getPosition());
+////				MapData::resourcesWalkPositions.push_back(std::make_pair(mineral->getType(), unitWalkPosition));
+//				MapData::resources.emplace_back(mineral->getType(), mineral->getTilePosition(),mineral->getInitialResources());
+////			}
+//		}
 
-		for (auto geyser : BWAPI::Broodwar->getStaticGeysers()) {
-			BWAPI::WalkPosition unitWalkPosition(geyser->getPosition());
-//			MapData::resourcesWalkPositions.push_back(std::make_pair(geyser->getType(), unitWalkPosition));
-			MapData::resources.emplace_back(geyser->getType(), geyser->getTilePosition(), geyser->getInitialResources());
-		}
+//		for (auto geyser : BWAPI::Broodwar->getStaticGeysers()) {
+//			BWAPI::WalkPosition unitWalkPosition(geyser->getPosition());
+////			MapData::resourcesWalkPositions.push_back(std::make_pair(geyser->getType(), unitWalkPosition));
+//			MapData::resources.emplace_back(geyser->getType(), geyser->getTilePosition(), geyser->getInitialResources());
+//		}
 
-		MapData::startLocations = BWAPI::Broodwar->getStartLocations();
+//		MapData::startLocations = BWAPI::Broodwar->getStartLocations();
 	}
 
 	void loadMap()

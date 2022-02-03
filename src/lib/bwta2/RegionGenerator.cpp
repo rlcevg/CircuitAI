@@ -901,7 +901,11 @@ namespace BWTA
 		for (const auto& regionNodeId : graph.regionNodes) {
 			// get node regionLabel
 			int labelId = BWTA_Result::regionLabelMap[graph.nodes[regionNodeId].x][graph.nodes[regionNodeId].y];
-			BoostPolygon* regionPol = labelToPolygon[labelId];
+			auto labelIt = labelToPolygon.find(labelId);
+			if (labelIt == labelToPolygon.end()) {
+				continue;
+			}
+			BoostPolygon* regionPol = labelIt->second;  // labelToPolygon[labelId];
 			RegionImpl* newRegionImpl = new RegionImpl(*regionPol, 8); // 8 => walk to pixel resolution
 			newRegionImpl->_opennessDistance = graph.minDistToObstacle[regionNodeId];
 			newRegionImpl->_opennessPoint = BWAPI::Position(graph.nodes[regionNodeId]);

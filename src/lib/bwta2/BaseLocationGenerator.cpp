@@ -315,28 +315,28 @@ namespace BWTA
 	//attach resource pointers to base locations based on proximity (walk distance)
 	void attachResourcePointersToBaseLocations(std::set<BWTA::BaseLocation*>& baseLocations)
 	{
-		RectangleArray<int> distanceMap(MapData::mapWidthWalkRes, MapData::mapHeightWalkRes);
-		for (auto& b : baseLocations) {
-			BWAPI::Position p(b->getTilePosition().x * 4, b->getTilePosition().y * 4);
-			calculate_walk_distances_area(p, 16, 12, 10 * 4 * 10, distanceMap);
-			BWTA::BaseLocationImpl* ii = static_cast<BWTA::BaseLocationImpl*>(b);
-			
-			for (auto geyser : BWAPI::Broodwar->getStaticGeysers()) {
-				int x = geyser->getInitialTilePosition().x * 4 + 8;
-				int y = geyser->getInitialTilePosition().y * 4 + 4;
-				if (distanceMap[x][y] >= 0 && distanceMap[x][y] <= 4 * 10 * 10) {
-					ii->geysers.insert(geyser);
-				}
-			}
-			
-			for (auto mineral : BWAPI::Broodwar->getStaticMinerals()) {
-				int x = mineral->getInitialTilePosition().x * 4 + 4;
-				int y = mineral->getInitialTilePosition().y * 4 + 2;
-				if (distanceMap[x][y] >= 0 && distanceMap[x][y] <= 4 * 10 * 10) {
-					ii->staticMinerals.insert(mineral);
-				}
-			}
-		}
+//		RectangleArray<int> distanceMap(MapData::mapWidthWalkRes, MapData::mapHeightWalkRes);
+//		for (auto& b : baseLocations) {
+//			BWAPI::Position p(b->getTilePosition().x * 4, b->getTilePosition().y * 4);
+//			calculate_walk_distances_area(p, 16, 12, 10 * 4 * 10, distanceMap);
+//			BWTA::BaseLocationImpl* ii = static_cast<BWTA::BaseLocationImpl*>(b);
+//
+//			for (auto geyser : BWAPI::Broodwar->getStaticGeysers()) {
+//				int x = geyser->getInitialTilePosition().x * 4 + 8;
+//				int y = geyser->getInitialTilePosition().y * 4 + 4;
+//				if (distanceMap[x][y] >= 0 && distanceMap[x][y] <= 4 * 10 * 10) {
+//					ii->geysers.insert(geyser);
+//				}
+//			}
+//
+//			for (auto mineral : BWAPI::Broodwar->getStaticMinerals()) {
+//				int x = mineral->getInitialTilePosition().x * 4 + 4;
+//				int y = mineral->getInitialTilePosition().y * 4 + 2;
+//				if (distanceMap[x][y] >= 0 && distanceMap[x][y] <= 4 * 10 * 10) {
+//					ii->staticMinerals.insert(mineral);
+//				}
+//			}
+//		}
 	}
 
 	void calculateBaseLocationProperties()

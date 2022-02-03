@@ -11,13 +11,13 @@ elseif (APPLE)
 else ()
 	set(additionalSources  ${additionalSources} ${CMAKE_SOURCE_DIR}/rts/System/Platform/Linux/Futex.cpp)
 endif ()
-set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
+set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils "-lQt5Core -lQt5Gui -lQt5Concurrent -lQt5Xml -lQt5XcbQpa -lQt5Widgets -lQt5OpenGL")
 #set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils ${SDL2_LIBRARY})
 
 
 #set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS -DDEBUG_LOG -Wall -Wextra -D_GLIBCXX_USE_CXX11_ABI=0")
 if (CIRCUIT_DEBUG)
-	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
+	set(additionalCompileFlags "-DDEBUG_VIS -DDEBUG_DRAW -Wall")
 #	set(additionalCompileFlags "-DDEBUG_LOG -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1 -fno-strict-aliasing")
 else ()
 	set(additionalCompileFlags "-Wall")
@@ -52,6 +52,7 @@ if    (BUILD_Cpp_AIWRAPPER)
 		${CMAKE_CURRENT_SOURCE_DIR}/src/lib/angelscript/include/
 		${CMAKE_CURRENT_SOURCE_DIR}/src/lib/bwta2/
 		${CMAKE_CURRENT_SOURCE_DIR}/src/circuit/
+		"/usr/include/qt/"
 	)
 	configure_native_skirmish_ai(mySourceDirRel additionalSources additionalCompileFlags additionalLibraries)
 else  (BUILD_Cpp_AIWRAPPER)

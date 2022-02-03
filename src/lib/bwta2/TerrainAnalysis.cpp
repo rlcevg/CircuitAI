@@ -49,9 +49,9 @@ namespace BWTA
 // 			LOG("Saved map data.");
 //		}
 
-#ifndef OFFLINE
-		attachResourcePointersToBaseLocations(BWTA_Result::baselocations);
-#endif
+//#ifndef OFFLINE
+//		attachResourcePointersToBaseLocations(BWTA_Result::baselocations);
+//#endif
 	}
 
 	void analyze_map()
@@ -60,8 +60,7 @@ namespace BWTA
 		int argc = 1;
 		char* argv = "0";
 		QGuiApplication a(argc, &argv); // needed for print text (init fonts)
-		const Painter::Scale imageScale = Painter::Scale::Walk;
-//		const Painter::Scale imageScale = Painter::Scale::Pixel;
+		const Painter::Scale imageScale = Painter::Scale::Walk;  // Pixel, Walk, Build
 		Painter painter(imageScale);
 #endif
 		Timer timer;

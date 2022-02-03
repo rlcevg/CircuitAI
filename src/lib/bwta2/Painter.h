@@ -3,7 +3,7 @@
 #ifdef DEBUG_DRAW
 #include <QtGui/QPainter>
 #include <QtGui/QColor>
-#include <QtGui/QGuiApplication>
+#include <QtWidgets/QApplication>
 
 #include "MapData.h"
 #include "RegionGenerator.h"

@@ -32,7 +32,7 @@ namespace bgi = boost::geometry::index;
 using BoostPoint = boost::geometry::model::d2::point_xy<double>;
 using BoostPolygon = boost::geometry::model::polygon<BoostPoint>;
 
-#define PI 3.1415926
+//#define PI 3.1415926
 
 // Internal utilities
 #include "Timer.h"

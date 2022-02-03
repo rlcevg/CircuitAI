@@ -28,6 +28,7 @@
 #include <set>
 #include <sstream>
 #include <BWTA.h>  // FIXME: DEBUG
+#include <bwta2/Timer.h>
 
 namespace circuit {
 
@@ -43,6 +44,10 @@ float CTerrainData::boundZ(0.f);
 int CTerrainData::convertStoP(1);
 CMap* CTerrainData::map(nullptr);
 int drawMTID = 0;  // FIXME: DEBUG
+// >> BWTA2
+CTerrainData* g_TerrainData;
+CCircuitAI* g_Circuit;
+// BWTA2 <<
 
 CTerrainData::CTerrainData()
 		: pAreaData(&areaData0)
@@ -160,6 +165,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 	} else if ((mapWidth / 64) * (mapHeight / 64) > LARGE_MAP * LARGE_MAP) {
 		convertStoP *= 2; // Larger Sectors, less detailed analysis
 	}
+	convertStoP = 16;  // FIXME: DEBUG
 	sectorXSize = (SQUARE_SIZE * mapWidth) / convertStoP;
 	sectorZSize = (SQUARE_SIZE * mapHeight) / convertStoP;
 
@@ -640,17 +646,23 @@ AIFloat3 CTerrainData::CorrectPosition(const AIFloat3& pos, const AIFloat3& dir,
 
 void CTerrainData::ComputeGeography2(CCircuitAI* circuit, int unitDefId)
 {
-
+	g_TerrainData = this;
+	g_Circuit = circuit;
+	mobileId = udMobileType[unitDefId];
+	BWTA::analyze();
 }
 
 void CTerrainData::ComputeGeography(CCircuitAI* circuit, int unitDefId)
 {
+	Timer timer;
+	timer.start();
 	ComputeAltitude(circuit, unitDefId);
 
 	ComputeAreas();
 
 	Graph_CreateChokePoints();
 
+	circuit->LOG("BWEM Map analyzed in %f seconds", timer.stopAndGetTime());
 	circuit->GetScheduler()->RunJobAt(CScheduler::GameJob([this, circuit]() {
 		for (Area::id a = 1; a <= AreasCount(); ++a) {
 			for (Area::id b = 1; b < a; ++b) {
