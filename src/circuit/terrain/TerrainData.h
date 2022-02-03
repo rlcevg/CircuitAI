@@ -231,6 +231,7 @@ private:
 // ---- RAI's GlobalTerrainMap ---- END
 
 public:
+	void ComputeGeography2(CCircuitAI* circuit, int unitDefId);
 	void ComputeGeography(CCircuitAI* circuit, int unitDefId);
 private:
 	void ComputeAltitude(CCircuitAI* circuit, int unitDefId);  // Depth of passable tile from edge of outer contour

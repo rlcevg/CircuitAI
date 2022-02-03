@@ -1646,6 +1646,7 @@ void CCircuitAI::InitUnitDefs(const CCircuitDef::SArmorInfo& armor, float& outDc
 	for (CCircuitDef& cdef : GetCircuitDefs()) {
 		cdef.Init(this);
 	}
+	gameAttribute->GetTerrainData().ComputeGeography2(this, GetCircuitDef("armcom")->GetId());  // FIXME: DEBUG
 	gameAttribute->GetTerrainData().ComputeGeography(this, GetCircuitDef("armcom")->GetId());  // FIXME: DEBUG
 }
 

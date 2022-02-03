@@ -50,6 +50,7 @@ if    (BUILD_Cpp_AIWRAPPER)
 		${SDL2_INCLUDE_DIR}
 		${CMAKE_CURRENT_SOURCE_DIR}/src/lib/
 		${CMAKE_CURRENT_SOURCE_DIR}/src/lib/angelscript/include/
+		${CMAKE_CURRENT_SOURCE_DIR}/src/lib/bwta2/
 		${CMAKE_CURRENT_SOURCE_DIR}/src/circuit/
 	)
 	configure_native_skirmish_ai(mySourceDirRel additionalSources additionalCompileFlags additionalLibraries)

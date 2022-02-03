@@ -27,6 +27,7 @@
 #include <deque>
 #include <set>
 #include <sstream>
+#include <BWTA.h>  // FIXME: DEBUG
 
 namespace circuit {
 
@@ -636,6 +637,11 @@ AIFloat3 CTerrainData::CorrectPosition(const AIFloat3& pos, const AIFloat3& dir,
 //	}
 //	return 0;
 //}
+
+void CTerrainData::ComputeGeography2(CCircuitAI* circuit, int unitDefId)
+{
+
+}
 
 void CTerrainData::ComputeGeography(CCircuitAI* circuit, int unitDefId)
 {
