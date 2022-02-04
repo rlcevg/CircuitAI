@@ -37,7 +37,9 @@ namespace BWTA
 	void addVerticalBorder(std::vector<VoronoiSegment>& segments, std::vector<BoostSegmentI>& rtreeSegments, size_t& idPoint, 
 		const std::set<int>& border, int x, int maxY, bool verbose = false)
 	{
- 		if (verbose) for (const auto& val : border) LOG(val);
+		if (border.empty()) return;
+
+		if (verbose) for (const auto& val : border) LOG(val);
 
 		auto it = border.begin();
 		if (*it == 0) ++it;
@@ -68,6 +70,8 @@ namespace BWTA
 	void addHorizontalBorder(std::vector<VoronoiSegment>& segments, std::vector<BoostSegmentI>& rtreeSegments, size_t& idPoint, 
 		const std::set<int>& border, int y, int maxX)
 	{
+		if (border.empty()) return;
+
 // 		for (const auto& val : border) LOG(val);
 
 		auto it = border.begin();
@@ -120,7 +124,7 @@ namespace BWTA
 				if (polygon[i].x == 0 && polygon[j].x == 0) {
 					leftBorder.insert(polygon[i].y);
 					leftBorder.insert(polygon[j].y);
-				} else if (polygon[i].x == maxX && polygon[j].x == maxX)  {
+				} else if (polygon[i].x == maxX && polygon[j].x == maxX) {
 					rightBorder.insert(polygon[i].y);
 					rightBorder.insert(polygon[j].y);
 				}
@@ -128,7 +132,7 @@ namespace BWTA
 					topBorder.insert(polygon[i].x);
 					topBorder.insert(polygon[j].x);
 				}
-				
+
 // 				LOG("Segment " << polygon[j] << " to " << polygon[i] );
 				segments.emplace_back(VoronoiPoint(polygon[j].x, polygon[j].y), VoronoiPoint(polygon[i].x, polygon[i].y));
 
@@ -579,6 +583,8 @@ namespace BWTA
 
 	void simplifyGraph(const RegionGraph& graph, RegionGraph& graphSimplified)
 	{
+		if (graph.regionNodes.empty()) return;
+
 		// containers to mark visited nodes, and parent list
 		std::vector<bool> visited;
 		visited.resize(graph.nodes.size());
@@ -858,7 +864,7 @@ namespace BWTA
 		boost::geometry::strategy::buffer::end_round end_strategy;
 		boost::geometry::strategy::buffer::point_square circle_strategy;
 		boost::geometry::strategy::buffer::side_straight side_strategy;
-		
+
 		BoostMultiPoly cutPolygons;
 		boost::geometry::buffer(chokeLines, cutPolygons,
 			distance_strategy, side_strategy,
@@ -868,7 +874,7 @@ namespace BWTA
 		// to get the final polygon regions (polReg)
 		BoostMultiPoly regionsPoly;
 		boost::geometry::difference(output, cutPolygons, regionsPoly);
-		
+
 		polReg.reserve(regionsPoly.size());
 		std::copy(regionsPoly.begin(), regionsPoly.end(), back_inserter(polReg));
 
@@ -898,11 +904,13 @@ namespace BWTA
 		// Create regions from graph nodes
 		// ===========================================================================
 		std::map<nodeID, Region*> node2region;
+		std::set<nodeID> delNodes;  // FIXME: some nodes are not tied to any polygon, leftovers after geometry::difference?
 		for (const auto& regionNodeId : graph.regionNodes) {
 			// get node regionLabel
 			int labelId = BWTA_Result::regionLabelMap[graph.nodes[regionNodeId].x][graph.nodes[regionNodeId].y];
 			auto labelIt = labelToPolygon.find(labelId);
 			if (labelIt == labelToPolygon.end()) {
+				delNodes.insert(regionNodeId);
 				continue;
 			}
 			BoostPolygon* regionPol = labelIt->second;  // labelToPolygon[labelId];
@@ -914,6 +922,10 @@ namespace BWTA
 			Region* newRegion = newRegionImpl;
 			regions.push_back(newRegion);
 			node2region.emplace(regionNodeId, newRegion);
+		}
+		for (const auto& regionNodeId : delNodes) {
+			(const_cast<RegionGraph&>(graph)).unmarkRegionNode(regionNodeId);
+			(const_cast<RegionGraph&>(graph)).unmarkChokeNode(regionNodeId);
 		}
 		// TODO we don't need regionPol function output (just print BWTA::Region)
 

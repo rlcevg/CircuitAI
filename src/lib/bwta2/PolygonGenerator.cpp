@@ -241,8 +241,9 @@ namespace BWTA
 				}
 				if (!boost::geometry::is_valid(simPolygon)) { // TODO new Boost version has message
 					LOG("[Error] polygon " << labelID << " not valid!!!!!!!!!!!!!!");
+				} else {
+					polygons.push_back(simPolygon);
 				}
-				polygons.push_back(simPolygon);
 			} else {
 				// region discarded, relabel
 // 				LOG("Discarded obstacle with label : " << labelID << " and area: " << polArea);

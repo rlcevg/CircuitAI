@@ -654,6 +654,8 @@ void CTerrainData::ComputeGeography2(CCircuitAI* circuit, int unitDefId)
 
 void CTerrainData::ComputeGeography(CCircuitAI* circuit, int unitDefId)
 {
+	g_TerrainData = this;
+	g_Circuit = circuit;
 	Timer timer;
 	timer.start();
 	ComputeAltitude(circuit, unitDefId);
@@ -970,6 +972,10 @@ void CTerrainData::ReplaceAreaIds(WalkPosition p, Area::id newAreaId)
 			if (f.first.first == oldAreaId) f.first.first = newAreaId;
 			if (f.first.second == oldAreaId) f.first.second = newAreaId;
 		}
+	} else {
+		std::remove_if(m_RawFrontier.begin(), m_RawFrontier.end(), [oldAreaId](const std::pair<std::pair<Area::id, Area::id>, WalkPosition>& f) {
+			return f.first.first == oldAreaId || f.first.second == oldAreaId;
+		});
 	}
 }
 

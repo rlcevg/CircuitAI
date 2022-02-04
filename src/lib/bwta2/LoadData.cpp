@@ -23,18 +23,18 @@ namespace BWTA
 		logFile << "Map name: " << MapData::mapFileName << std::endl;
 
 		// load map info
-		MapData::mapWidthTileRes = circuit::g_TerrainData->sectorXSize;  // BWAPI::Broodwar->mapWidth();
-		MapData::mapWidthPixelRes = MapData::mapWidthTileRes;  // * TILE_SIZE;
-		MapData::mapWidthWalkRes = MapData::mapWidthTileRes;  // * 4;
+		MapData::mapWidthTileRes = circuit::g_TerrainData->sectorXSize / 4;  // BWAPI::Broodwar->mapWidth();
+		MapData::mapWidthPixelRes = MapData::mapWidthTileRes * TILE_SIZE;
+		MapData::mapWidthWalkRes = MapData::mapWidthTileRes * 4;
 
-		MapData::mapHeightTileRes = circuit::g_TerrainData->sectorZSize;  // BWAPI::Broodwar->mapHeight();
-		MapData::mapHeightPixelRes = MapData::mapHeightTileRes;  // * TILE_SIZE;
-		MapData::mapHeightWalkRes = MapData::mapHeightTileRes;  // * 4;
+		MapData::mapHeightTileRes = circuit::g_TerrainData->sectorZSize / 4;  // BWAPI::Broodwar->mapHeight();
+		MapData::mapHeightPixelRes = MapData::mapHeightTileRes * TILE_SIZE;
+		MapData::mapHeightWalkRes = MapData::mapHeightTileRes * 4;
 
 		MapData::buildability.resize(MapData::mapWidthTileRes, MapData::mapHeightTileRes);
 		for (int x = 0; x < MapData::mapWidthTileRes; x++) {
 			for (int y = 0; y < MapData::mapHeightTileRes; y++) {
-				MapData::buildability[x][y] = circuit::g_TerrainData->isBuildable(x, y);  // BWAPI::Broodwar->isBuildable(x, y);
+				MapData::buildability[x][y] = true;  //circuit::g_TerrainData->isBuildable(x, y);  // BWAPI::Broodwar->isBuildable(x, y);
 			}
 		}
 

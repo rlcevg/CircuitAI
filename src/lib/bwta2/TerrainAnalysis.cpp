@@ -92,7 +92,7 @@ namespace BWTA
 		RegionGraph graph;
 		bgi::rtree<BoostSegmentI, bgi::quadratic<16> > rtree;
 		generateVoronoid(BWTA_Result::unwalkablePolygons, BWTA_Result::obstacleLabelMap, graph, rtree);
-		
+
 		LOG(" [Computed Voronoi in " << timer.stopAndGetTime() << " seconds]");
 #ifdef DEBUG_DRAW
 		painter.drawPolygons(BWTA_Result::unwalkablePolygons, Painter::Scale::Walk, imageScale);

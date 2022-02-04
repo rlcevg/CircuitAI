@@ -17,7 +17,8 @@
 //#include "bwapiExt.h"
 #include <deque>
 #include <vector>
-#include <assert.h>
+#undef NDEBUG
+#include <cassert>
 //#include "utils.h"
 //#include "defs.h"
 
