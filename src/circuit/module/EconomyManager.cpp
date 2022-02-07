@@ -1836,10 +1836,13 @@ void CEconomyManager::UpdateEconomy()
 
 void CEconomyManager::ReclaimOldEnergy(const SEnergyExt* energyExt)
 {
+	if (GetAvgEnergyIncome() < energyExt->cond.energyIncome) {
+		return;
+	}
 	auto ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(circuit->GetSetupManager()->GetBasePos(), 1000.f, false);
 	for (int id : ids) {
 		CCircuitUnit* unit = circuit->GetTeamUnit(id);
-		if (unit == nullptr || (GetAvgEnergyIncome() < energyExt->cond.energyIncome) || !energyDefs.IsAvail(unit->GetCircuitDef())) {
+		if ((unit == nullptr) || !energyDefs.IsAvail(unit->GetCircuitDef())) {
 			continue;
 		}
 		auto info = energyDefs.GetAvailInfo(unit->GetCircuitDef());
