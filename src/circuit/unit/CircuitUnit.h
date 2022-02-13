@@ -100,8 +100,8 @@ public:
 	void SetIsDead() { isDead = true; }
 	bool IsDead() const { return isDead; }
 
-//	void SetDamagedFrame(int frame) { damagedFrame = frame; }
-//	int GetDamagedFrame() const { return damagedFrame; }
+	void SetDamagedFrame(int frame) { damagedFrame = frame; }
+	int GetDamagedFrame() const { return damagedFrame; }
 
 	bool HasDGun() const { return dgun != nullptr; }
 	bool HasWeapon() const { return weapon != nullptr; }
@@ -186,7 +186,7 @@ private:
 
 	int moveFails;
 	int failFrame;
-//	int damagedFrame;
+	int damagedFrame;
 	int execFrame;  // TODO: Replace by CExecuteAction?
 	int disarmFrame;
 	int ammoFrame;

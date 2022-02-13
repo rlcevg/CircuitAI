@@ -104,7 +104,7 @@ public:
 	void Update(CCircuitAI* ai);
 	void EnqueueUpdate();
 
-	bool IsEnemyOrFakeIn(const springai::AIFloat3& startPos, const springai::AIFloat3& dir, float length,
+	CEnemyUnit* GetEnemyOrFakeIn(const springai::AIFloat3& startPos, const springai::AIFloat3& dir, float length,
 			const springai::AIFloat3& enemyPos, float radius, const std::set<CCircuitDef::Id>& unitDefIds);
 
 	const std::shared_ptr<CMapManager>&    GetMapManager()    const { return mapManager; }

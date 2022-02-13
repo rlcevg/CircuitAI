@@ -118,6 +118,9 @@ public:
 	bool IsBeingBuilt() const { return data.isBeingBuilt; }
 	bool IsParalyzed() const { return data.isParalyzed; }
 	bool IsDisarmed() const { return data.isDisarmed; }
+	// Next functions used by FakeEnemy system
+	void SetHealth(float value) { data.health = value; }
+	void SetBeingBuilt(bool value) { data.isBeingBuilt = value; }
 
 	bool IsAttacker() const;
 	float GetDefDamage() const { return data.GetDefDamage(); }

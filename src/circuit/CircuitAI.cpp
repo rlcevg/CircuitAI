@@ -265,10 +265,9 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_UNIT_DAMAGED", topic);
 			SCOPED_TIME(this, "EVENT_UNIT_DAMAGED");
 			struct SUnitDamagedEvent* evt = (struct SUnitDamagedEvent*)data;
-			CEnemyInfo* attacker = GetEnemyInfo(evt->attacker);
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr)
-					? this->UnitDamaged(unit, attacker, evt->weaponDefId, AIFloat3(evt->dir_posF3))
+					? this->UnitDamaged(unit, evt->attacker, evt->weaponDefId, AIFloat3(evt->dir_posF3))
 					: ERROR_UNIT_DAMAGED;
 		} break;
 		case EVENT_UNIT_DESTROYED: {
@@ -1063,18 +1062,15 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 	return 0;  // signaling: OK
 }
 
-int CCircuitAI::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker, int weaponId, AIFloat3 dir)
+int CCircuitAI::UnitDamaged(CCircuitUnit* unit, ICoreUnit::Id attackerId, int weaponId, AIFloat3 dir)
 {
-	// FIXME: Doesn't work well with multi-shots (duck)
-//	if (lastFrame <= unit->GetDamagedFrame() + FRAMES_PER_SEC / 5) {
-//		return 0;
-//	}
-//	unit->SetDamagedFrame(lastFrame);
+	unit->SetDamagedFrame(lastFrame);
+	CEnemyInfo* attacker = GetEnemyInfo(attackerId);
 
 	if (IsValidWeaponDefId(weaponId)) {
 		if (attacker != nullptr) {
 			CheckDecoy(attacker, weaponId);
-		} else if ((dir != ZeroVector)) {
+		} else if ((dir != ZeroVector) && (GetFriendlyUnit(attackerId) == nullptr)) {
 			CreateFakeEnemy(weaponId, unit->GetPos(lastFrame), dir);  // currently only for threatmap
 		}
 	}
@@ -1465,7 +1461,8 @@ void CCircuitAI::CreateFakeEnemy(int weaponId, const AIFloat3& startPos, const A
 	}
 	float range = weaponDefs[weaponId].GetRange();
 	const AIFloat3 enemyPos = CTerrainManager::CorrectPosition(startPos, dir, range);  // range adjusted
-	if (!allyTeam->IsEnemyOrFakeIn(startPos, dir, range, enemyPos, range * 0.2f, wuDef.ids)) {
+	CEnemyUnit* enemy = allyTeam->GetEnemyOrFakeIn(startPos, dir, range, enemyPos, range * 0.2f, wuDef.ids);
+	if (enemy == nullptr) {
 		int timeout = lastFrame;
 		CCircuitDef::Id defId;
 		if (wuDef.mobileIds.empty()) {  // static
@@ -1476,6 +1473,10 @@ void CCircuitAI::CreateFakeEnemy(int weaponId, const AIFloat3& startPos, const A
 			defId = *wuDef.mobileIds.begin();
 		}
 		allyTeam->RegisterEnemyFake(GetCircuitDef(defId), enemyPos, timeout);
+	} else if (enemy->IsBeingBuilt()) {
+		enemy->SetBeingBuilt(false);
+		enemy->SetHealth(enemy->GetCircuitDef()->GetHealth());
+		GetThreatMap()->SetEnemyUnitThreat(enemy);
 	}
 }
 

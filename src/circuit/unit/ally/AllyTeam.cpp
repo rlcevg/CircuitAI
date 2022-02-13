@@ -308,7 +308,7 @@ void CAllyTeam::EnqueueUpdate()
 	enemyManager->EnqueueUpdate();
 }
 
-bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& startPos, const AIFloat3& dir, float length,
+CEnemyUnit* CAllyTeam::GetEnemyOrFakeIn(const AIFloat3& startPos, const AIFloat3& dir, float length,
 		const AIFloat3& enemyPos, float radius, const std::set<CCircuitDef::Id>& unitDefIds)
 {
 	QuadFieldQuery qfQuery(quadField);
@@ -316,13 +316,13 @@ bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& startPos, const AIFloat3& dir, f
 	for (CEnemyUnit* e : *qfQuery.enemyUnits) {
 		CCircuitDef* edef = e->GetCircuitDef();
 		if ((edef != nullptr) && (unitDefIds.find(edef->GetId()) != unitDefIds.end())) {
-			return true;
+			return e;
 		}
 	}
-	for (CEnemyUnit* e : *qfQuery.enemyFakes) {
+	for (CEnemyFake* e : *qfQuery.enemyFakes) {
 		CCircuitDef* edef = e->GetCircuitDef();
 		if (unitDefIds.find(edef->GetId()) != unitDefIds.end()) {
-			return true;
+			return e;
 		}
 	}
 
@@ -340,7 +340,7 @@ bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& startPos, const AIFloat3& dir, f
 			if ((edef != nullptr) && (unitDefIds.find(edef->GetId()) != unitDefIds.end())
 				&& CAABBox(e->GetPos() - offset, e->GetPos() + offset).Intersection(ray))
 			{
-				return true;
+				return e;
 			}
 		}
 		for (CEnemyFake* e : quad.enemyFakes) {
@@ -348,12 +348,12 @@ bool CAllyTeam::IsEnemyOrFakeIn(const AIFloat3& startPos, const AIFloat3& dir, f
 			if (unitDefIds.find(edef->GetId()) != unitDefIds.end()
 				&& CAABBox(e->GetPos() - offset, e->GetPos() + offset).Intersection(ray))
 			{
-				return true;
+				return e;
 			}
 		}
 	}
 
-	return false;
+	return nullptr;
 }
 
 void CAllyTeam::OccupyCluster(int clusterId, int teamId)
