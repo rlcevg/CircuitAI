@@ -18,25 +18,28 @@
 #include <deque>
 #include <functional>
 
+namespace terrain {
+	struct SArea;
+	struct SMobileType;
+	struct SImmobileType;
+	struct SAreaSector;
+	struct SSector;
+	struct SAreaData;
+}
+
 namespace circuit {
 
 class CCircuitAI;
 class IBlockMask;
 class IPathQuery;
 class CCircuitUnit;
-struct STerrainMapArea;
-struct STerrainMapMobileType;
-struct STerrainMapImmobileType;
-struct STerrainMapAreaSector;
-struct STerrainMapSector;
-struct SAreaData;
 
-class CTerrainManager {  // <=> RAI's cBuilderPlacement
+class CTerrainManager final {  // <=> RAI's cBuilderPlacement
 public:
 	using TerrainPredicate = std::function<bool (const springai::AIFloat3& p)>;
 
-	CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData);
-	virtual ~CTerrainManager();
+	CTerrainManager(CCircuitAI* circuit, terrain::CTerrainData* terrainData);
+	~CTerrainManager();
 private:
 	CCircuitAI* circuit;
 	void ReadConfig();
@@ -135,48 +138,48 @@ public:
 	int GetConvertStoP() const { return terrainData->convertStoP; }
 	int GetSectorXSize() const { return terrainData->sectorXSize; }
 	int GetSectorZSize() const { return terrainData->sectorZSize; }
-	static void CorrectPosition(springai::AIFloat3& position) { CTerrainData::CorrectPosition(position); }
+	static void CorrectPosition(springai::AIFloat3& position) { terrain::CTerrainData::CorrectPosition(position); }
 	static springai::AIFloat3 CorrectPosition(const springai::AIFloat3& pos, const springai::AIFloat3& dir, float& len) {
-		return CTerrainData::CorrectPosition(pos, dir, len);
+		return terrain::CTerrainData::CorrectPosition(pos, dir, len);
 	}
 	static void SnapPosition(springai::AIFloat3& position);
-	std::pair<STerrainMapArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
-	std::pair<STerrainMapArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const int indexSector);
+	std::pair<terrain::SArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
+	std::pair<terrain::SArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const int indexSector);
 	int GetSectorIndex(const springai::AIFloat3& position) const { return terrainData->GetSectorIndex(position); }
-	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
+	bool CanMoveToPos(terrain::SArea* area, const springai::AIFloat3& destination);
 	springai::AIFloat3 GetBuildPosition(CCircuitDef* cdef, const springai::AIFloat3& position);
-	springai::AIFloat3 GetMovePosition(STerrainMapArea* sourceArea, const springai::AIFloat3& position);
+	springai::AIFloat3 GetMovePosition(terrain::SArea* sourceArea, const springai::AIFloat3& position);
 private:
-	std::vector<STerrainMapAreaSector>& GetSectorList(STerrainMapArea* sourceArea = nullptr);
-	STerrainMapAreaSector* GetClosestSector(STerrainMapArea* sourceArea, const int destinationSIndex);
-	STerrainMapSector* GetClosestSector(STerrainMapImmobileType* sourceIT, const int destinationSIndex);
+	std::vector<terrain::SAreaSector>& GetSectorList(terrain::SArea* sourceArea = nullptr);
+	terrain::SAreaSector* GetClosestSector(terrain::SArea* sourceArea, const int destinationSIndex);
+	terrain::SSector* GetClosestSector(terrain::SImmobileType* sourceIT, const int destinationSIndex);
 	// TODO: Refine brute-force algorithms
-	STerrainMapAreaSector* GetAlternativeSector(STerrainMapArea* sourceArea, const int sourceSIndex, STerrainMapMobileType* destinationMT);
-	STerrainMapSector* GetAlternativeSector(STerrainMapArea* destinationArea, const int sourceSIndex, STerrainMapImmobileType* destinationIT); // can return 0
-	const STerrainMapSector& GetSector(int sIndex) const { return areaData->sector[sIndex]; }
+	terrain::SAreaSector* GetAlternativeSector(terrain::SArea* sourceArea, const int sourceSIndex, terrain::SMobileType* destinationMT);
+	terrain::SSector* GetAlternativeSector(terrain::SArea* destinationArea, const int sourceSIndex, terrain::SImmobileType* destinationIT); // can return 0
+	const terrain::SSector& GetSector(int sIndex) const { return areaData->sector[sIndex]; }
 public:
-	const std::vector<STerrainMapMobileType>& GetMobileTypes() const {
+	const std::vector<terrain::SMobileType>& GetMobileTypes() const {
 		return areaData->mobileType;
 	}
-	STerrainMapMobileType* GetMobileType(CCircuitDef::Id unitDefId) const {
+	terrain::SMobileType* GetMobileType(CCircuitDef::Id unitDefId) const {
 		return GetMobileTypeById(terrainData->udMobileType[unitDefId]);
 	}
-	STerrainMapMobileType::Id GetMobileTypeId(CCircuitDef::Id unitDefId) const {
+	terrain::SMobileType::Id GetMobileTypeId(CCircuitDef::Id unitDefId) const {
 		return terrainData->udMobileType[unitDefId];
 	}
-	STerrainMapMobileType* GetMobileTypeById(STerrainMapMobileType::Id id) const {
+	terrain::SMobileType* GetMobileTypeById(terrain::SMobileType::Id id) const {
 		return (id < 0) ? nullptr : &areaData->mobileType[id];
 	}
-	const std::vector<STerrainMapImmobileType>& GetImmobileTypes() const {
+	const std::vector<terrain::SImmobileType>& GetImmobileTypes() const {
 		return areaData->immobileType;
 	}
-	STerrainMapImmobileType* GetImmobileType(CCircuitDef::Id unitDefId) const {
+	terrain::SImmobileType* GetImmobileType(CCircuitDef::Id unitDefId) const {
 		return GetImmobileTypeById(terrainData->udImmobileType[unitDefId]);
 	}
-	STerrainMapImmobileType::Id GetImmobileTypeId(CCircuitDef::Id unitDefId) const {
+	terrain::SImmobileType::Id GetImmobileTypeId(CCircuitDef::Id unitDefId) const {
 		return terrainData->udMobileType[unitDefId];
 	}
-	STerrainMapImmobileType* GetImmobileTypeById(STerrainMapImmobileType::Id id) const {
+	terrain::SImmobileType* GetImmobileTypeById(terrain::SImmobileType::Id id) const {
 		return (id < 0) ? nullptr : &areaData->immobileType[id];
 	}
 
@@ -187,8 +190,8 @@ public:
 	bool CanReachAt(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range);
 	bool CanReachAtSafe(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range, const float threat = THREAT_MIN);
 	bool CanReachAtSafe2(CCircuitUnit* unit, const springai::AIFloat3& destination, const float range);
-	bool CanMobileReachAt(STerrainMapArea* area, const springai::AIFloat3& destination, const float range);
-	bool CanMobileReachAtSafe(STerrainMapArea* area, const springai::AIFloat3& destination, const float range, const float threat = THREAT_MIN);
+	bool CanMobileReachAt(terrain::SArea* area, const springai::AIFloat3& destination, const float range);
+	bool CanMobileReachAtSafe(terrain::SArea* area, const springai::AIFloat3& destination, const float range, const float threat = THREAT_MIN);
 
 	float GetPercentLand() const { return areaData->percentLand; }
 	float GetMinLandPercent() const { return minLandPercent; }
@@ -197,21 +200,21 @@ public:
 		return areaData->sector[GetSectorIndex(position)].isWater;
 	}
 
-	SAreaData* GetAreaData() const { return areaData; }
+	terrain::SAreaData* GetAreaData() const { return areaData; }
 	void UpdateAreaUsers(int interval);
 	void OnAreaUsersUpdated() { terrainData->OnAreaUsersUpdated(); }
 
-	bool IsEnemyInArea(STerrainMapArea* area) const {
+	bool IsEnemyInArea(terrain::SArea* area) const {
 		return enemyAreas.find(area) != enemyAreas.end();
 	}
 
 private:
-	SAreaData* areaData;
-	CTerrainData* terrainData;
+	terrain::SAreaData* areaData;
+	terrain::CTerrainData* terrainData;
 
 	float minLandPercent;
 
-	std::unordered_set<const STerrainMapArea*> enemyAreas;
+	std::unordered_set<const terrain::SArea*> enemyAreas;
 
 #ifdef DEBUG_VIS
 private:

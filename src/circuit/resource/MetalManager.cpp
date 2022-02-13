@@ -206,7 +206,7 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 	const CMetalData::Metals& spots = metalData->GetSpots();
 	int nrows = spots.size();
 
-	CRagMatrix distmatrix(nrows);
+	CRagMatrix<float> distmatrix(nrows);
 	if (nrows <= 300) {
 		MoveData* moveData = commDef->GetDef()->GetMoveData();
 		int pathType = moveData->GetPathType();

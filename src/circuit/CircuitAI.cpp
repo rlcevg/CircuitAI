@@ -58,6 +58,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 #define ACTION_UPDATE_RATE	64
 #define RELEASE_RESIGN		100
@@ -802,6 +803,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdKnn[]     = "~knn";
 	const char cmdLog[]     = "~log";
 	const char cmdBTask[]   = "~btask";
+	const char cmdChoke[]   = "~choke";
 
 	const char cmdThreat[]  = "~threat";
 	const char cmdWTDraw[]  = "~wtdraw";  // widget threat draw
@@ -885,6 +887,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 		if (teamId == atoi((const char*)&message[7])) {
 			builderManager->Log();
 		}
+	}
+	else if (strncmp(message, cmdChoke, 6) == 0) {
+		gameAttribute->GetTerrainData().ToggleTAVis(lastFrame);
 	}
 
 	else if (strncmp(message, cmdThreat, 7) == 0) {
@@ -1348,7 +1353,7 @@ CCircuitUnit* CCircuitAI::RegisterTeamUnit(ICoreUnit::Id unitId, Unit* u)
 	CCircuitDef* cdef = GetCircuitDef(GetCallback()->Unit_GetDefId(unitId));
 	CCircuitUnit* unit = new CCircuitUnit(this, unitId, u, cdef);
 
-	STerrainMapArea* area;
+	SArea* area;
 	bool isValid;
 	std::tie(area, isValid) = terrainManager->GetCurrentMapArea(cdef, unit->GetPos(lastFrame));
 	unit->SetArea(area);
@@ -1611,9 +1616,7 @@ void CCircuitAI::InitRoles()
 
 void CCircuitAI::InitUnitDefs(const CCircuitDef::SArmorInfo& armor, float& outDcr)
 {
-	if (!gameAttribute->GetTerrainData().IsInitialized()) {
-		gameAttribute->GetTerrainData().Init(this);
-	}
+	gameAttribute->GetTerrainData().Init(this);
 
 	Resource* resM = callback->GetResourceByName(RES_NAME_METAL);
 	Resource* resE = callback->GetResourceByName(RES_NAME_ENERGY);
@@ -1646,7 +1649,6 @@ void CCircuitAI::InitUnitDefs(const CCircuitDef::SArmorInfo& armor, float& outDc
 	for (CCircuitDef& cdef : GetCircuitDefs()) {
 		cdef.Init(this);
 	}
-	gameAttribute->GetTerrainData().ComputeGeography(this, GetCircuitDef("armcom")->GetId());  // FIXME: DEBUG
 }
 
 void CCircuitAI::BindUnitToWeaponDefs(CCircuitDef::Id unitDefId, const std::set<CWeaponDef::Id>& weaponDefs, bool isMobile)

@@ -28,6 +28,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 		: circuit(circuit)
@@ -392,11 +393,11 @@ void CEnemyManager::UpdateAreaUsers(CCircuitAI* ai)
 
 	enemyAreas.clear();
 	CTerrainManager* terrainMgr = ai->GetTerrainManager();
-	const std::vector<STerrainMapMobileType>& mobileTypes = terrainMgr->GetMobileTypes();
+	const std::vector<SMobileType>& mobileTypes = terrainMgr->GetMobileTypes();
 	for (const CEnemyManager::SEnemyGroup& group : enemyGroups) {
 		const int iS = terrainMgr->GetSectorIndex(group.pos);
-		for (const STerrainMapMobileType& mt : mobileTypes) {
-			const STerrainMapArea* area = mt.sector[iS].area;
+		for (const SMobileType& mt : mobileTypes) {
+			const SArea* area = mt.sector[iS].area;
 			if (area != nullptr) {
 				enemyAreas.insert(area);
 			}

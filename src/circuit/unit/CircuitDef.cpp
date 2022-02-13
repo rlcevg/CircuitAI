@@ -25,6 +25,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 #define THREAT_MOD		(1.0f / 128.0f)
 
@@ -599,21 +600,21 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 
 		immobileTypeId = terrainData.udImmobileType[GetId()];
 		// If a unit can build mobile units then it will inherit mobileType from it's options
-		std::map<STerrainMapMobileType::Id, float> mtUsability;
+		std::map<SMobileType::Id, float> mtUsability;
 		for (CCircuitDef::Id buildId : GetBuildOptions()) {
 			CCircuitDef* bdef = circuit->GetCircuitDef(buildId);
 			if ((bdef == nullptr) || !bdef->IsMobile() || !bdef->IsAttacker()) {
 				continue;
 			}
-			STerrainMapMobileType::Id mtId = terrainData.udMobileType[bdef->GetId()];
+			SMobileType::Id mtId = terrainData.udMobileType[bdef->GetId()];
 			if ((mtId < 0) || (mtUsability.find(mtId) != mtUsability.end())) {
 				continue;
 			}
-			STerrainMapMobileType& mt = terrainData.areaData0.mobileType[mtId];
+			SMobileType& mt = terrainData.areaData0.mobileType[mtId];
 			mtUsability[mtId] = mt.area.empty() ? 00.0 : mt.areaLargest->percentOfMap;
 		}
 		float useMost = .0f;
-		STerrainMapMobileType::Id mtId = mobileTypeId;  // -1
+		SMobileType::Id mtId = mobileTypeId;  // -1
 		for (auto& mtkv : mtUsability) {
 			if (mtkv.second > useMost) {
 				mtId = mtkv.first;
@@ -638,12 +639,12 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 	};
 	if (IsMobile()) {
 		if (mobileTypeId >= 0) {
-			STerrainMapMobileType& mt = terrainData.areaData0.mobileType[mobileTypeId];
+			SMobileType& mt = terrainData.areaData0.mobileType[mobileTypeId];
 			fillSurface(mt.minElevation, mt.maxElevation);
 		}
 	} else {
 		if (immobileTypeId >= 0) {
-			STerrainMapImmobileType& it = terrainData.areaData0.immobileType[immobileTypeId];
+			SImmobileType& it = terrainData.areaData0.immobileType[immobileTypeId];
 			fillSurface(it.minElevation, it.maxElevation);
 		}
 	}

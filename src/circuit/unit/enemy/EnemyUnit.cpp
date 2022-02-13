@@ -15,6 +15,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 float SEnemyData::GetDefDamage() const
 {

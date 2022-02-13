@@ -24,6 +24,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CCombatTask::CCombatTask(ITaskManager* mgr, float powerMod)
 		: IFighterTask(mgr, FightType::DEFEND, powerMod)
@@ -169,7 +170,7 @@ CEnemyInfo* CCombatTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
-	STerrainMapArea* area = unit->GetArea();
+	SArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = SQUARE(cdef->GetSpeed() / FRAMES_PER_SEC);
 	const float maxPower = threatMap->GetUnitPower(unit) * powerMod;

@@ -29,6 +29,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CAntiHeavyTask::CAntiHeavyTask(ITaskManager* mgr, float powerMod)
 		: ISquadTask(mgr, FightType::AH, powerMod)
@@ -284,7 +285,7 @@ bool CAntiHeavyTask::FindTarget()
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
-	STerrainMapArea* area = leader->GetArea();
+	SArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const bool notAA = !cdef->HasSurfToAir();
 	const int canTargetCat = cdef->GetTargetCategory();

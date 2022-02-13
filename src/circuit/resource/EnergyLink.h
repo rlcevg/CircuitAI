@@ -10,6 +10,7 @@
 
 #include "resource/GridLink.h"
 #include "unit/CoreUnit.h"
+#include "util/Data.h"
 
 #include <map>
 #include <set>
@@ -20,7 +21,7 @@ namespace circuit {
 
 class CEnergyLink: public IGridLink {
 public:
-	struct SPylon {
+	struct SPylon: public utils::Markable<SPylon, int> {
 		SPylon() : pos(-RgtVector), range(0.f) {}
 		SPylon(const springai::AIFloat3& p, float r) : pos(p), range(r) {}
 		springai::AIFloat3 pos;

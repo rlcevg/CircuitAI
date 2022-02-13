@@ -22,6 +22,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		: IFighterTask(mgr, type, powerMod)
@@ -175,7 +176,7 @@ ISquadTask* ISquadTask::CheckMergeTask()
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = leader->GetPos(frame);
-	STerrainMapArea* area = leader->GetArea();
+	SArea* area = leader->GetArea();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const float sqMaxDistCost = SQUARE(MAX_TRAVEL_SEC * lowestSpeed);
 	float metric = std::numeric_limits<float>::max();
@@ -319,7 +320,7 @@ void ISquadTask::ActivePath(float speed)
 NSMicroPather::HitFunc ISquadTask::GetHitTest() const
 {
 	CTerrainManager* terrainMgr = manager->GetCircuit()->GetTerrainManager();
-	const std::vector<STerrainMapSector>& sectors = terrainMgr->GetAreaData()->sector;
+	const std::vector<SSector>& sectors = terrainMgr->GetAreaData()->sector;
 	const int sectorXSize = terrainMgr->GetSectorXSize();
 	const int convert = terrainMgr->GetConvertStoP();
 	const float aimLift = leader->GetCircuitDef()->GetHeight() * 0.5f;  // TODO: Use aim-pos of attacker and enemy

@@ -21,3 +21,7 @@ Header-only fork (no threading) https://github.com/seqan/lemon
 * Statically-typed scripting language <br />
 https://www.angelcode.com/angelscript/
 Github mirror https://github.com/codecat/angelscript-mirror
+
+### BWEM
+* Analyses maps and provides high level information such as areas, choke points <br />
+http://BWEM.sourceforge.net

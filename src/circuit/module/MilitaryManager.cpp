@@ -50,6 +50,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CMilitaryScript(circuit->GetScriptManager(), this))
@@ -888,7 +889,7 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 {
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CMetalManager* metalMgr = circuit->GetMetalManager();
-	STerrainMapArea* area = unit->GetArea();
+	SArea* area = unit->GetArea();
 //	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 //	const float minSqRange = SQUARE(unit->GetCircuitDef()->GetLosRadius());
 	const CMetalData::Metals& spots = metalMgr->GetSpots();
@@ -920,7 +921,7 @@ AIFloat3 CMilitaryManager::GetRaidPosition(CCircuitUnit* unit)
 {
 	const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
-	STerrainMapArea* area = unit->GetArea();
+	SArea* area = unit->GetArea();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);  // TODO: Check if required? Upper function may already call it
@@ -956,7 +957,7 @@ void CMilitaryManager::FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions)
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	STerrainMapArea* area = unit->GetArea();
+	SArea* area = unit->GetArea();
 	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
 
 	CMetalData::PointPredicate predicate = [inflMap, metalMgr, terrainMgr, area, clusters](const int index) {
@@ -983,7 +984,7 @@ void CMilitaryManager::FillAttackSafePos(CCircuitUnit* unit, F3Vec& outPositions
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
 
-	STerrainMapArea* area = unit->GetArea();
+	SArea* area = unit->GetArea();
 
 	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
 	for (IFighterTask::FightType type : types) {
@@ -1005,7 +1006,7 @@ void CMilitaryManager::FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions
 	const int frame = circuit->GetLastFrame();
 
 	const AIFloat3& startPos = unit->GetPos(frame);
-	STerrainMapArea* area = unit->GetArea();
+	SArea* area = unit->GetArea();
 
 	CDefenceData* defMat = defence;
 	CMetalData::PointPredicate predicate = [defMat, terrainMgr, area](const int index) {
@@ -1037,7 +1038,7 @@ void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 	const int frame = circuit->GetLastFrame();
 
 	const springai::AIFloat3& pos = unit->GetPos(frame);
-	STerrainMapArea* area = unit->GetArea();
+	SArea* area = unit->GetArea();
 
 	const std::array<IFighterTask::FightType, 2> types = {IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND};
 	for (IFighterTask::FightType type : types) {
@@ -1112,7 +1113,7 @@ void CMilitaryManager::AddResponse(CCircuitUnit* unit)
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCostM();
 	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
-	assert(roleInfos.size() == roleSize);
+	assert(roleInfos.size() == (size_t)roleSize);
 	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
 		if (cdef->IsRespRoleAny(CCircuitDef::GetMask(type))) {
 			roleInfos[type].cost += cost;
@@ -1126,7 +1127,7 @@ void CMilitaryManager::DelResponse(CCircuitUnit* unit)
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	const float cost = cdef->GetCostM();
 	const CCircuitDef::RoleT roleSize = CCircuitDef::GetRoleNames().size();
-	assert(roleInfos.size() == roleSize);
+	assert(roleInfos.size() == (size_t)roleSize);
 	for (CCircuitDef::RoleT type = 0; type < roleSize; ++type) {
 		if (cdef->IsRespRoleAny(CCircuitDef::GetMask(type))) {
 			float& metal = roleInfos[type].cost;
@@ -1453,7 +1454,7 @@ bool CMilitaryManager::IsCombatTargetExists(CCircuitUnit* unit, const AIFloat3& 
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
-	STerrainMapArea* area = unit->GetArea();
+	SArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = SQUARE(cdef->GetSpeed() / FRAMES_PER_SEC);
 	const float maxPower = threatMap->GetUnitPower(unit) * powerMod;

@@ -28,6 +28,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CAntiAirTask::CAntiAirTask(ITaskManager* mgr, float powerMod)
 		: ISquadTask(mgr, FightType::AA, powerMod)
@@ -251,7 +252,7 @@ NSMicroPather::HitFunc CAntiAirTask::GetHitTest() const
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-	const std::vector<STerrainMapSector>& sectors = terrainMgr->GetAreaData()->sector;
+	const std::vector<SSector>& sectors = terrainMgr->GetAreaData()->sector;
 	const int sectorXSize = terrainMgr->GetSectorXSize();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	if (cdef->IsAbleToFly() || cdef->IsSurfer()) {
@@ -269,7 +270,7 @@ void CAntiAirTask::FindTarget()
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
-	STerrainMapArea* area = leader->GetArea();
+	SArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const int noChaseCat = cdef->GetNoChaseCategory();

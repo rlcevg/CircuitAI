@@ -29,6 +29,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 using namespace NSMicroPather;
 
 #define SPIDER_SLOPE		0.99f
@@ -66,12 +67,12 @@ CPathFinder::CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainD
 	}
 
 	areaData = terrainData->pAreaData.load();
-	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
+	const std::vector<SMobileType>& moveTypes = areaData->mobileType;
 	moveData0.moveArrays.reserve(moveTypes.size());
 	moveData1.moveArrays.reserve(moveTypes.size());
 
 	const int totalcells = moveMapXSize * moveMapYSize;
-	for (const STerrainMapMobileType& mt : moveTypes) {
+	for (const SMobileType& mt : moveTypes) {
 		float* moveArray0 = new float[totalcells];
 		float* moveArray1 = new float[totalcells];
 		moveData0.moveArrays.push_back(moveArray0);
@@ -160,10 +161,10 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainMgr)
 
 	std::vector<float*>& moveArrays = GetNextMoveData()->moveArrays;
 	areaData = terrainData->GetNextAreaData();
-	const std::vector<STerrainMapMobileType>& moveTypes = areaData->mobileType;
+	const std::vector<SMobileType>& moveTypes = areaData->mobileType;
 	const int blockThreshold = granularity * granularity / 4;  // 25% - blocked tile
 	for (unsigned j = 0; j < moveTypes.size(); ++j) {
-		const STerrainMapMobileType& mt = moveTypes[j];
+		const SMobileType& mt = moveTypes[j];
 		float* moveArray = moveArrays[j];
 
 		int k = 0;
@@ -366,9 +367,9 @@ CPathFinder::MoveType CPathFinder::GetMoveType(CCircuitUnit* unit, int frame) co
 CostFunc CPathFinder::GetMoveFun(MoveType mt, CCircuitUnit* unit, float*& outMoveArray) const
 {
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	STerrainMapMobileType::Id mobileTypeId = cdef->GetMobileId();
+	SMobileType::Id mobileTypeId = cdef->GetMobileId();
 
-	const std::vector<STerrainMapSector>& sectors = areaData->sector;
+	const std::vector<SSector>& sectors = areaData->sector;
 	float* moveArray;
 	float maxSlope;
 	if (mobileTypeId < 0) {
@@ -854,7 +855,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateDbgPathQuery(CThreatMap* threatMa
 	std::shared_ptr<IPathQuery> pQuery = std::make_shared<CQueryPathSingle>(*this, MakeQueryId());
 	CQueryPathSingle* query = static_cast<CQueryPathSingle*>(pQuery.get());
 
-	STerrainMapMobileType::Id mobileTypeId = dbgDef->GetMobileId();
+	SMobileType::Id mobileTypeId = dbgDef->GetMobileId();
 	const float maxSlope = (mobileTypeId < 0) ? 1.f : areaData->mobileType[mobileTypeId].maxSlope;
 	const float* moveArray = (mobileTypeId < 0) ? airMoveArray : pMoveData.load()->moveArrays[mobileTypeId];
 	const float* costArray[] = {
@@ -865,7 +866,7 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateDbgPathQuery(CThreatMap* threatMa
 	};
 
 	const float* threatArray = costArray[dbgType];
-	const std::vector<STerrainMapSector>& sectors = areaData->sector;
+	const std::vector<SSector>& sectors = areaData->sector;
 	CostFunc moveFun = [&sectors, maxSlope](int index) {
 		return sectors[index].maxSlope / maxSlope;
 	};

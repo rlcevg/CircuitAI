@@ -27,7 +27,7 @@ namespace circuit {
 
 class CWeaponDef;
 
-class CCircuitDef {
+class CCircuitDef final {
 public:
 	friend class CInitScript;
 
@@ -103,7 +103,7 @@ public:
 	CCircuitDef& operator=(const CCircuitDef&) = delete;
 	CCircuitDef(CCircuitAI* circuit, springai::UnitDef* def, std::unordered_set<Id>& buildOpts,
 			springai::Resource* resM, springai::Resource* resE, const SArmorInfo& armor);
-	virtual ~CCircuitDef();
+	~CCircuitDef();
 
 	void Init(CCircuitAI* circuit);
 
@@ -233,8 +233,8 @@ public:
 	void SetFireState(FireType ft) { fireState = ft; }
 	void SetReloadTime(int time) { reloadTime = time; }
 
-	STerrainMapImmobileType::Id GetImmobileId() const { return immobileTypeId; }
-	STerrainMapMobileType::Id GetMobileId() const { return mobileTypeId; }
+	terrain::SImmobileType::Id GetImmobileId() const { return immobileTypeId; }
+	terrain::SMobileType::Id GetMobileId() const { return mobileTypeId; }
 
 	void SetIgnore(bool value) { isIgnore = value; }
 	bool IsIgnore() const { return isIgnore; }
@@ -376,8 +376,8 @@ private:
 	int targetCategory;
 	int noChaseCategory;
 
-	STerrainMapImmobileType::Id immobileTypeId;
-	STerrainMapMobileType::Id   mobileTypeId;
+	terrain::SImmobileType::Id immobileTypeId;
+	terrain::SMobileType::Id   mobileTypeId;
 
 	// ---- Bit fields ---- BEGIN
 	bool isIgnore : 1;

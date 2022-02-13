@@ -20,7 +20,7 @@
 
 namespace circuit {
 
-class CRagMatrix;
+template <class T> class CRagMatrix;
 
 class CMetalData {
 public:
@@ -97,7 +97,7 @@ public:
 	/*
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
 	 */
-	void Clusterize(float maxDistance, CRagMatrix& distmatrix);
+	void Clusterize(float maxDistance, CRagMatrix<float>& distmatrix);
 
 	const SMetal& operator[](int idx) const { return spots[idx]; }
 

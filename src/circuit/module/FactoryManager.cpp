@@ -35,6 +35,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 //#define FACTORY_CHOICE 1
 #ifdef FACTORY_CHOICE
@@ -563,7 +564,7 @@ void CFactoryManager::ReadConfig()
 				}
 				continue;
 			}
-			STerrainMapArea* area = terrainMgr->GetMobileTypeById(udef->GetMobileId())->areaLargest;
+			SArea* area = terrainMgr->GetMobileTypeById(udef->GetMobileId())->areaLargest;
 			if (area == nullptr) {
 				continue;
 			}
@@ -889,7 +890,7 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 		if (factoryData->IsT1Factory(fac.unit->GetCircuitDef())) {
 			continue;
 		}
-		STerrainMapArea* area = fac.unit->GetArea();
+		SArea* area = fac.unit->GetArea();
 		if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
 			continue;
 		}
@@ -906,7 +907,7 @@ CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
 			if (!factoryData->IsT1Factory(fac.unit->GetCircuitDef())) {
 				continue;
 			}
-			STerrainMapArea* area = fac.unit->GetArea();
+			SArea* area = fac.unit->GetArea();
 			if ((area != nullptr) && (area->sector.find(iS) == area->sector.end())) {
 				continue;
 			}
@@ -1099,7 +1100,7 @@ CCircuitDef* CFactoryManager::GetRepresenter(const CCircuitDef* facDef) const
 			return landDef;
 		} else {
 			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-			STerrainMapArea* area = terrainMgr->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
+			SArea* area = terrainMgr->GetMobileTypeById(landDef->GetMobileId())->areaLargest;
 			// FIXME: area->percentOfMap < 40.0 doesn't seem right as water identifier
 			return ((area == nullptr) || (area->percentOfMap < terrainMgr->GetMinLandPercent())) ? GetWaterDef(facDef) : landDef;
 		}
@@ -1545,7 +1546,7 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 		if (isMetalFull || (frame < FRAMES_PER_SEC * 60 * 10)) {  // TODO: Change to minimum required army power
 			return true;
 		}
-		STerrainMapArea* area;
+		SArea* area;
 		bool isValid;
 		std::tie(area, isValid) = terrainMgr->GetCurrentMapArea(bd, iS);
 		return isValid && ((area == nullptr) || terrainMgr->IsEnemyInArea(area));

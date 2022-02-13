@@ -223,7 +223,7 @@ void CQuadField::GetQuadsOnRay(QuadFieldQuery& qfq, const AIFloat3& start, const
 		if (finalX < startX)
 			std::swap(startX, finalX);
 
-		assert(finalX < numQuadsX);
+		assert(finalX < (unsigned)numQuadsX);
 
 		const int row = utils::clamp(z, 0, numQuadsZ - 1) * numQuadsX;
 

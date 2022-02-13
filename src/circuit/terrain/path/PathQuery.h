@@ -38,7 +38,7 @@ public:
 	const float* GetThreatArray() const { return threatArray; }
 	const NSMicroPather::CostFunc& GetMoveFun() const { return moveFun; }
 	const NSMicroPather::CostFunc& GetThreatFun() const { return threatFun; }
-	const SAreaData* GetAreaData() const { return pathfinder.GetAreaData(); }
+	const terrain::SAreaData* GetAreaData() const { return pathfinder.GetAreaData(); }
 
 	CCircuitUnit* GetUnit() const { return unit; }
 

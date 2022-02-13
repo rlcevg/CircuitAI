@@ -87,7 +87,7 @@ public:
 	CCircuitAI(springai::OOAICallback* callback);
 	virtual ~CCircuitAI();
 
-// ---- AI Event handler ---- BEGIN
+// >>> AI Event handler ---- BEGIN
 public:
 	int HandleEvent(int topic, const void* data);
 	void NotifyGameEnd();
@@ -105,7 +105,7 @@ private:
 	springai::Economy* economy;
 	springai::Resource* metalRes;
 	springai::Resource* energyRes;
-// ---- AI Event handler ---- END
+// <<< AI Event handler ---- END
 
 private:
 	std::string ValidateMod();
@@ -138,7 +138,7 @@ private:
 public:
 	void SetSide(const std::string& name);
 
-// ---- Units ---- BEGIN
+// >>> Units ---- BEGIN
 public:
 	using Units = std::map<ICoreUnit::Id, CCircuitUnit*>;
 private:
@@ -188,9 +188,9 @@ private:
 	unsigned int actionIterator;
 
 	std::set<CCircuitUnit*> garbage;
-// ---- Units ---- END
+// <<< Units ---- END
 
-// ---- AIOptions.lua ---- BEGIN
+// >>> AIOptions.lua ---- BEGIN
 public:
 	bool IsCheating() const { return isCheating; }
 	bool IsAllyAware() const { return isAllyAware; }
@@ -200,9 +200,9 @@ private:
 	bool isCheating;
 	bool isAllyAware;
 	bool isCommMerge;
-// ---- AIOptions.lua ---- END
+// <<< AIOptions.lua ---- END
 
-// ---- UnitDefs ---- BEGIN
+// >>> UnitDefs ---- BEGIN
 public:
 	using CircuitDefs = std::vector<CCircuitDef>;  // UnitDefId=0 is not valid, @see rts/Sim/Units/UnitDefHandler.h
 	using NamedDefs = std::map<const char*, CCircuitDef*, cmp_str>;
@@ -230,9 +230,9 @@ private:
 	CircuitDefs defsById;  // owner
 	NamedDefs defsByName;
 	std::array<CCircuitDef::RoleT, CMaskHandler::GetMaxMasks()> roleBind;
-// ---- UnitDefs ---- END
+// <<< UnitDefs ---- END
 
-// ---- WeaponDefs ---- BEGIN
+// >>> WeaponDefs ---- BEGIN
 public:
 	using WeaponDefs = std::vector<CWeaponDef>;
 
@@ -255,7 +255,7 @@ private:
 		std::set<CCircuitDef::Id> staticIds;
 	};
 	std::vector<SWeaponToUnitDef> weaponToUnitDefs;  // weapon (id=index) to unit defs
-// ---- WeaponDefs ---- END
+// <<< WeaponDefs ---- END
 
 public:
 	bool IsInitialized() const { return isInitialized; }
@@ -351,14 +351,13 @@ private:
 
 	friend class CInitScript;
 	CInitScript* script;  // owner
-	// TODO: Move into GameAttribute? Or use locally
 	struct SCategoryInfo {
 		int air;  // over surface
 		int land;  // on surface
 		int water;  // under surface
 		int bad;
 		int good;
-	} category;
+	} category;  // TODO: Move into GameAttribute? Or use locally
 
 public:
 	void PrepareAreaUpdate();

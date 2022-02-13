@@ -12,7 +12,7 @@
 
 namespace circuit {
 
-class CRagMatrix;
+template <class T> class CRagMatrix;
 
 class CHierarchCluster {
 public:
@@ -21,7 +21,7 @@ public:
 	CHierarchCluster();
 	virtual ~CHierarchCluster();
 
-	const Clusters& Clusterize(CRagMatrix& distmatrix, float maxDistance);
+	const Clusters& Clusterize(CRagMatrix<float>& distmatrix, float maxDistance);
 	const Clusters& GetClusters() const { return iclusters; }
 
 private:

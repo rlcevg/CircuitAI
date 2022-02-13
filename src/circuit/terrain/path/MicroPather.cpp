@@ -240,7 +240,7 @@ CMicroPather::~CMicroPather()
  * New: make sure that moveThreatFun doesn't return values below 0.0
  */
 void CMicroPather::SetMapData(const float* canMoveArray, const float* threatArray,
-		const CostFunc& moveFun, const CostFunc& threatFun, const circuit::SAreaData* areaData)
+		const CostFunc& moveFun, const CostFunc& threatFun, const terrain::SAreaData* areaData)
 {
 	this->canMoveArray = canMoveArray;
 	this->threatArray  = threatArray;

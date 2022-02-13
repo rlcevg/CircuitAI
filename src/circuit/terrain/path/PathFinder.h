@@ -16,15 +16,18 @@
 #include <memory>
 #include <functional>
 
+namespace terrain {
+	class CTerrainData;
+	struct SAreaData;
+}
+
 namespace circuit {
 
 class IPathQuery;
 class CScheduler;
-class CTerrainData;
 class CTerrainManager;
 class CCircuitUnit;
 class CThreatMap;
-struct SAreaData;
 #ifdef DEBUG_VIS
 class CCircuitAI;
 class CCircuitDef;
@@ -37,13 +40,13 @@ public:
 	};
 	using PathCallback = std::function<void (const IPathQuery* query)>;
 
-	CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainData* terrainData);
+	CPathFinder(const std::shared_ptr<CScheduler>& scheduler, terrain::CTerrainData* terrainData);
 	virtual ~CPathFinder();
 
 	void UpdateAreaUsers(CTerrainManager* terrainMgr);
 	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
 
-	const SAreaData* GetAreaData() const { return areaData; }
+	const terrain::SAreaData* GetAreaData() const { return areaData; }
 
 	void* MoveXY2MoveNode(int x, int y) const;
 	void MoveNode2MoveXY(void* node, int* x, int* y) const;
@@ -105,8 +108,8 @@ private:
 	void MakePathWide(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 	void MakeCostMap(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 
-	CTerrainData* terrainData;
-	SAreaData* areaData;
+	terrain::CTerrainData* terrainData;
+	terrain::SAreaData* areaData;
 
 	std::vector<NSMicroPather::CMicroPather*> micropathers;
 	SMoveData moveData0, moveData1;

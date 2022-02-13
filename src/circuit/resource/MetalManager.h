@@ -18,7 +18,7 @@ namespace circuit {
 class CCircuitAI;
 class CMetalData;
 class CScheduler;
-class CRagMatrix;
+template <class T> class CRagMatrix;
 
 class CMetalManager {
 public:

@@ -12,14 +12,14 @@
 
 // NOTES:
 // "position blocks" refers to the in-game units of measurement
-// A Map Preivew Block is 512x512 position blocks
+// A Map Preview Block is 512x512 position blocks
 // GetMapWidth(),GetMapHeight(),GetHeightMap() uses 8x8 position blocks
 // GetMetalMap(),GetSlopeMap() uses 16x16 position blocks
 
 #ifndef SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 #define SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 
-#include "terrain/cp.h"
+#include "terrain/TerrainAnalyzer.h"
 #include "util/Defines.h"
 
 #include "AIFloat3.h"
@@ -33,75 +33,71 @@ struct SSkirmishAICallback;
 
 namespace springai {
 	class MoveData;
-	class Map;
 }
 
 namespace circuit {
+	class CCircuitAI;
+	class CScheduler;
+	class CGameAttribute;
+	class IMainJob;
+	class CMap;
+}
 
-class CCircuitAI;
-class CScheduler;
-class CGameAttribute;
-class IMainJob;
-class CMap;
-#ifdef DEBUG_VIS
-class CDebugDrawer;
-#endif
+namespace terrain {
 
-struct STerrainMapArea;
-struct STerrainMapAreaSector;
-struct STerrainMapMobileType;
-struct STerrainMapImmobileType;
-struct STerrainMapSector;
+struct SArea;
+struct SAreaSector;
+struct SMobileType;
+struct SImmobileType;
+struct SSector;
 
-using altitude_t = float;
-
-struct STerrainMapAreaSector {
-	STerrainMapAreaSector() : S(nullptr), area(nullptr) {}
+struct SAreaSector {
+	SAreaSector() : S(nullptr), area(nullptr) {}
 
 	// NOTE: some of these values are loaded as they become needed, use GlobalTerrainMap functions
-	STerrainMapSector* S;  // always valid
-	STerrainMapArea* area;  // The TerrainMapArea this sector belongs to, otherwise = 0 until
+	SSector* S;  // always valid
+	SArea* area;  // The TerrainMapArea this sector belongs to, otherwise = 0 until
 	// Use this to find the closest sector useable by a unit with a different MoveType, the 0 pointer may be valid as a key index
-	std::map<STerrainMapMobileType*, STerrainMapAreaSector*> sectorAlternativeM;  // uninitialized
-	std::map<STerrainMapImmobileType*, STerrainMapSector*> sectorAlternativeI;  // uninitialized
+	std::map<SMobileType*, SAreaSector*> sectorAlternativeM;  // uninitialized
+	std::map<SImmobileType*, SSector*> sectorAlternativeI;  // uninitialized
 };
 
-struct STerrainMapArea {
-	STerrainMapArea(STerrainMapMobileType* TMMobileType) :
-		areaUsable(false),
-		mobileType(TMMobileType),
-		percentOfMap(.0f)
-	{};
+struct SArea {
+	SArea(SMobileType* TMMobileType)
+		: areaUsable(false)
+		, mobileType(TMMobileType)
+		, percentOfMap(.0f)
+	{}
 
 	bool areaUsable;  // Should units of this type be used in this area
-	STerrainMapMobileType* mobileType;
-	std::map<int, STerrainMapAreaSector*> sector;         // key = sector index, a list of all sectors belonging to it
-	std::map<int, STerrainMapAreaSector*> sectorClosest;  // key = sector indexes not in "sector", indicates the sector belonging to this map-area with the closest distance
+	SMobileType* mobileType;
+	std::map<int, SAreaSector*> sector;         // key = sector index, a list of all sectors belonging to it
+	std::map<int, SAreaSector*> sectorClosest;  // key = sector indexes not in "sector", indicates the sector belonging to this map-area with the closest distance
 	// NOTE: use TerrainData::GetClosestSector: these values are not initialized but are instead loaded as they become needed
 	float percentOfMap;  // 0-100
 };
 
 #define MAP_AREA_LIST_SIZE	50
 
-struct STerrainMapMobileType {
+struct SMobileType {
 	using Id = int;
 
-	STerrainMapMobileType() :
-		typeUsable(false),
-		areaLargest(nullptr),
-		maxSlope(.0f),
-		maxElevation(.0f),
-		minElevation(.0f),
-		canHover(false),
-		canFloat(false),
-		moveData(nullptr),
-		udCount(0)
-	{};
+	SMobileType()
+		: typeUsable(false)
+		, areaLargest(nullptr)
+		, maxSlope(.0f)
+		, maxElevation(.0f)
+		, minElevation(.0f)
+		, canHover(false)
+		, canFloat(false)
+		, moveData(nullptr)
+		, udCount(0)
+	{}
 
 	bool typeUsable;  // Should units of this type be used on this map
-	std::vector<STerrainMapAreaSector> sector;  // Each MoveType has it's own sector list, GlobalTerrainMap->GetSectorIndex() gives an index
-	std::vector<STerrainMapArea> area;  // Each MoveType has it's own MapArea list
-	STerrainMapArea* areaLargest;  // Largest area usable by this type, otherwise = 0
+	std::vector<SAreaSector> sector;  // Each MoveType has it's own sector list, GlobalTerrainMap->GetSectorIndex() gives an index
+	std::vector<SArea> area;  // Each MoveType has it's own MapArea list
+	SArea* areaLargest;  // Largest area usable by this type, otherwise = 0
 
 	float maxSlope;      // = MoveData*->maxSlope
 	float maxElevation;  // = -ud->minWaterDepth
@@ -112,16 +108,14 @@ struct STerrainMapMobileType {
 	int udCount;
 };
 
-struct STerrainMapSector {
-	STerrainMapSector() :
-		isWater(false),
-		percentLand(.0f),
-		minElevation(.0f),
-		maxElevation(.0f),
-		maxSlope(.0f)
-		, altitude(-1.f)
-		, area_id(-1)
-	{};
+struct SSector {
+	SSector()
+		: isWater(false)
+		, percentLand(.0f)
+		, minElevation(.0f)
+		, maxElevation(.0f)
+		, maxSlope(.0f)
+	{}
 
 	bool isWater;  // (Water = true) (Land = false)
 	springai::AIFloat3 position;  // center of the sector, same as unit positions
@@ -131,30 +125,23 @@ struct STerrainMapSector {
 	float minElevation;  // 0 or less for water
 	float maxElevation;
 	float maxSlope;      // 0 or higher
-
-	altitude_t altitude;
-	altitude_t Altitude() const { return altitude; }
-	int area_id;
-	void SetAreaId(int id) { area_id = id; }
-	void ReplaceAreaId(int id) { bwem_assert((area_id > 0) && ((id >= 1) || (id <= -2)) && (id != area_id)); area_id = id; }
-	int AreaId() const { return area_id; }
 };
 
-struct STerrainMapImmobileType {
+struct SImmobileType {
 	using Id = int;
 
-	STerrainMapImmobileType() :
-		typeUsable(false),
-		minElevation(.0f),
-		maxElevation(.0f),
-		canHover(false),
-		canFloat(false),
-		udCount(0)
-	{};
+	SImmobileType()
+		: typeUsable(false)
+		, minElevation(.0f)
+		, maxElevation(.0f)
+		, canHover(false)
+		, canFloat(false)
+		, udCount(0)
+	{}
 
 	bool typeUsable;  // Should units of this type be used on this map
-	std::map<int, STerrainMapSector*> sector;         // a list of sectors useable by these units
-	std::map<int, STerrainMapSector*> sectorClosest;  // key = sector indexes not in "sector", indicates the closest sector in "sector"
+	std::map<int, SSector*> sector;         // a list of sectors useable by these units
+	std::map<int, SSector*> sectorClosest;  // key = sector indexes not in "sector", indicates the closest sector in "sector"
 	float minElevation;
 	float maxElevation;
 	bool canHover;
@@ -163,40 +150,40 @@ struct STerrainMapImmobileType {
 };
 
 struct SAreaData {
-	SAreaData() :
-		minElevation(.0f),
-		maxElevation(.0f),
-		percentLand(.0f),
-		heightMapSizeX(0)
-	{};
+	SAreaData()
+		: minElevation(.0f)
+		, maxElevation(.0f)
+		, percentLand(.0f)
+		, heightMapXSize(0)
+	{}
 
 	float GetElevationAt(float posX, float posZ) const {
-		return heightMap[int(posZ) / SQUARE_SIZE * heightMapSizeX + int(posX) / SQUARE_SIZE];
+		return heightMap[int(posZ) / SQUARE_SIZE * heightMapXSize + int(posX) / SQUARE_SIZE];
 	}
 
-	std::vector<STerrainMapMobileType> mobileType;      // Used for mobile units, not all movedatas are used
-	std::vector<STerrainMapImmobileType> immobileType;  // Used for immobile units
-	std::vector<STerrainMapAreaSector> sectorAirType;   // used for flying units, GetSectorIndex gives an index
-	std::vector<STerrainMapSector> sector;  // global sector data, GetSectorIndex gives an index
+	std::vector<SMobileType> mobileType;      // Used for mobile units, not all movedatas are used
+	std::vector<SImmobileType> immobileType;  // Used for immobile units
+	std::vector<SAreaSector> sectorAirType;   // used for flying units, GetSectorIndex gives an index
+	std::vector<SSector> sector;  // global sector data, GetSectorIndex gives an index
 
 	float minElevation;  // minimum elevation
 	float maxElevation;  // maximum elevation
 	float percentLand;  // 0 to 100
 
 	FloatVec heightMap;
-	int heightMapSizeX;  // height map width
+	int heightMapXSize;  // height map width
 };
 
 #define BOUND_EXT	3e3f
 
-class TempAreaInfo;  // FIXME: DEBUG
-class CTerrainData {
+class CTerrainData final: public IGraph {
 public:
 	CTerrainData();
 	virtual ~CTerrainData();
-	void Init(CCircuitAI* circuit);
+	void Init(circuit::CCircuitAI* circuit);
+	void AnalyzeMap(circuit::CCircuitAI* circuit);
 
-	static CMap* GetMap() { return map; }
+	static circuit::CMap* GetMap() { return map; }
 	static void CorrectPosition(springai::AIFloat3& position);
 	static springai::AIFloat3 CorrectPosition(const springai::AIFloat3& pos, const springai::AIFloat3& dir, float& len);
 
@@ -206,7 +193,7 @@ public:
 	static float boundX;
 	static float boundZ;
 
-// ---- RAI's GlobalTerrainMap ---- BEGIN
+// >>> RAI's GlobalTerrainMap ---- BEGIN
 	int GetSectorIndex(const springai::AIFloat3& position) const {  // use IsSectorValid() to insure the index is valid
 		return sectorXSize * (int(position.z) / convertStoP) + int(position.x) / convertStoP;
 	}
@@ -216,49 +203,26 @@ public:
 
 	SAreaData areaData0, areaData1;  // Double-buffer for threading
 	std::atomic<SAreaData*> pAreaData;
-	std::map<int, STerrainMapMobileType::Id> udMobileType;    // key = ud->id, Used to find a TerrainMapMobileType for a unit
-	std::map<int, STerrainMapImmobileType::Id> udImmobileType;  // key = ud->id, Used to find a TerrainMapImmobileType for a unit
+	std::map<int, SMobileType::Id> udMobileType;    // key = ud->id, Used to find a TerrainMapMobileType for a unit
+	std::map<int, SImmobileType::Id> udImmobileType;  // key = ud->id, Used to find a TerrainMapImmobileType for a unit
 
 	bool waterIsHarmful;  // Units are damaged by it (Lava/Acid map)
 	bool waterIsAVoid;    // (Space map)
 
-	int sectorXSize;
-	int sectorZSize;
 	static int convertStoP;  // Sector to Position: times this value for conversion, divide for the reverse
 
 private:
 //	int GetFileValue(int& fileSize, char*& file, std::string entry);
-// ---- RAI's GlobalTerrainMap ---- END
+// <<< RAI's GlobalTerrainMap ---- END
 
-public:
-	void ComputeGeography(CCircuitAI* circuit, int unitDefId);
-private:
-	void ComputeAltitude(CCircuitAI* circuit, int unitDefId);  // Depth of passable tile from edge of outer contour
-	void ComputeAreas();
-	std::vector<std::pair<WalkPosition, STerrainMapSector*>> SortMiniTiles();
-	std::vector<TempAreaInfo> ComputeTempAreas(const std::vector<std::pair<WalkPosition, STerrainMapSector*>>& MiniTilesByDescendingAltitude);
-	void ReplaceAreaIds(WalkPosition p, Area::id newAreaId);
-	void CreateAreas(const std::vector<TempAreaInfo>& TempAreaList);
-	void Graph_CreateAreas(const std::vector<std::pair<WalkPosition, Area::id>>& AreasList);
-	void Graph_CreateChokePoints();
-public:
-	STerrainMapSector& GetMiniTile(const WalkPosition p) const { return pAreaData.load()->sector[p.x + sectorXSize * p.y]; }
-	bool IsValid(const WalkPosition p) const { return (p.x >= 0) && (p.x < sectorXSize) && (p.y >= 0) && (p.y < sectorZSize); }
-private:
-	/*const */std::vector<ChokePoint>& GetChokePoints(Area::id a, Area::id b)/* const*/;
-	int AreasCount() const { return (int)m_Areas.size(); }
-	bool Valid(Area::id id) const { return (1 <= id) && (id <= AreasCount()); }
-	std::vector<std::pair<std::pair<Area::id, Area::id>, WalkPosition>> m_RawFrontier;
-	altitude_t m_maxAltitude;
-	std::vector<Area> m_Areas;
-	std::vector<std::vector<std::vector<ChokePoint>>> m_ChokePointsMatrix;  // index == Area::id x Area::id
+	CTerrainAnalyzer::SConfig ReadConfig(circuit::CCircuitAI* circuit);
 
-	void DelegateAuthority(CCircuitAI* curOwner);
+	void DelegateAuthority(circuit::CCircuitAI* curOwner);
 
-// ---- Threaded areas updater ---- BEGIN
+// >>> Threaded areas updater ---- BEGIN
 private:
 	void EnqueueUpdate();
-	std::shared_ptr<IMainJob> UpdateAreas();
+	std::shared_ptr<circuit::IMainJob> UpdateAreas();
 	void ScheduleUsersUpdate();
 public:
 	void OnAreaUsersUpdated();
@@ -267,36 +231,36 @@ public:
 	}
 
 private:
-	static CMap* map;
-	std::shared_ptr<CScheduler> scheduler;
-	CGameAttribute* gameAttribute;
+	static circuit::CMap* map;
+	std::shared_ptr<circuit::CScheduler> scheduler;
+	circuit::CGameAttribute* gameAttribute;
 	FloatVec slopeMap;
+	int slopeMapXSize;  // slope map width
 	bool isUpdating;
 	int aiToUpdate;
-// ---- Threaded areas updater ---- END
+// <<< Threaded areas updater ---- END
 
 public:
-	bool IsInitialized() const { return isInitialized; }
+	virtual bool IsWalkable(int xSlope, int ySlope, const SMobileType& mt) const;  // x, y in slope map
 
-	// debug, could be used for defence perimeter calculation
-//	void DrawConvexHulls(springai::Drawer* drawer);
-//	void DrawCentroids(springai::Drawer* drawer);
-//	void ClearMetalClusters(springai::Drawer* drawer);
+	int GetConvertStoSM() const { return convertStoP / 16; }  // sector to slope map
+	int GetConvertStoHM() const { return convertStoP / 8; }  // sector to height map
+
+	bool IsInitialized() const { return isInitialized; }
 
 private:
 	bool isInitialized;
+	bool isAnalyzed;
 
 #ifdef DEBUG_VIS
 private:
-	std::shared_ptr<CDebugDrawer> debugDrawer;
 	std::vector<std::pair<uint32_t, float*>> sdlWindows;
-	int toggleFrame;
 	void UpdateVis();
 public:
 	void ToggleVis(int frame);
 #endif
 };
 
-} // namespace circuit
+} // namespace terrain
 
 #endif // SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_

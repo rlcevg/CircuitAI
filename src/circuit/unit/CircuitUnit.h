@@ -18,6 +18,10 @@ namespace springai {
 	class Weapon;
 }
 
+namespace terrain {
+	struct SArea;
+}
+
 namespace circuit {
 
 #define TRY_UNIT(c, u, x)	try { x } catch (const std::exception& e) { c->Garbage(u, e.what()); }
@@ -59,7 +63,6 @@ class CWeaponDef;
 class IUnitManager;
 class CDGunAction;
 class ITravelAction;
-struct STerrainMapArea;
 
 class CCircuitUnit: public CAllyUnit, public CActionList {
 public:
@@ -79,8 +82,8 @@ public:
 	void SetManager(IUnitManager* mgr) { manager = mgr; }
 	IUnitManager* GetManager() const { return manager; }
 
-	void SetArea(STerrainMapArea* area) { this->area = area; }
-	STerrainMapArea* GetArea() const { return area; }
+	void SetArea(terrain::SArea* area) { this->area = area; }
+	terrain::SArea* GetArea() const { return area; }
 
 	void ClearAct();
 	void PushDGunAct(CDGunAction* action);
@@ -176,7 +179,7 @@ private:
 	int taskFrame;
 	ETaskState taskState;
 	IUnitManager* manager;
-	STerrainMapArea* area;  // = nullptr if a unit flies
+	terrain::SArea* area;  // = nullptr if a unit flies
 
 	CDGunAction* dgunAct;
 	ITravelAction* travelAct;

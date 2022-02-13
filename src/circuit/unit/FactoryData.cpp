@@ -22,6 +22,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CFactoryData::CFactoryData(CCircuitAI *circuit)
 		: choiceNum(0)
@@ -57,8 +58,8 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	SAreaData* areaData = terrainMgr->GetAreaData();
-	const std::vector<STerrainMapImmobileType>& immobileType = areaData->immobileType;
-	const std::vector<STerrainMapMobileType>& mobileType = areaData->mobileType;
+	const std::vector<SImmobileType>& immobileType = areaData->immobileType;
+	const std::vector<SMobileType>& mobileType = areaData->mobileType;
 	const bool isAirValid = circuit->GetEnemyManager()->IsAirValid();
 
 	std::function<bool (CCircuitDef*)> predicate;
@@ -98,7 +99,7 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 			continue;
 		}
 
-		STerrainMapMobileType::Id mtId = cdef->GetMobileId();
+		SMobileType::Id mtId = cdef->GetMobileId();
 		if (((mtId < 0) && isAirValid) ||
 			((mtId >= 0) && mobileType[mtId].typeUsable))
 		{
@@ -186,7 +187,7 @@ void CFactoryData::ReadConfig(CCircuitAI* circuit)
 		if (cdef == nullptr) {
 			continue;
 		}
-		STerrainMapImmobileType::Id itId = cdef->GetImmobileId();
+		SImmobileType::Id itId = cdef->GetImmobileId();
 		if (itId < 0) {  // didn't identify proper type?
 			continue;
 		}

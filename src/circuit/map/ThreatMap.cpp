@@ -21,6 +21,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 #define THREAT_DECAY	1e-2f
 #define THREAT_CLOAK	16.0f
@@ -389,7 +390,7 @@ void CThreatMap::AddEnemyAmphConst(const float threatSurf, const float threatWat
 	const int rangeWater = (r > 0) ? r + slack : 0;
 	const int rangeWaterSq = (r > 0) ? SQUARE(rangeWater) : -1;
 	const int range = std::max(rangeSurf, rangeWater);
-	const std::vector<STerrainMapSector>& sector = areaData->sector;
+	const std::vector<SSector>& sector = areaData->sector;
 
 	const int beginX = std::max(int(posx - range + 1),      0);
 	const int endX   = std::min(int(posx + range    ),  width);
@@ -439,7 +440,7 @@ void CThreatMap::AddEnemyAmphGradient(const float threatSurf, const float threat
 	const int rangeWater = (r > 0) ? r + slack : 0;
 	const int rangeWaterSq = (r > 0) ? SQUARE(rangeWater) : -1;
 	const int range = std::max(rangeLand, rangeWater);
-	const std::vector<STerrainMapSector>& sector = areaData->sector;
+	const std::vector<SSector>& sector = areaData->sector;
 
 	const int beginX = std::max(int(posx - range + 1),      0);
 	const int endX   = std::min(int(posx + range    ),  width);
@@ -832,6 +833,6 @@ void CThreatMap::SetMaxThreat(float maxThreat, std::string layer)
 	std::string cmd = utils::float_to_string(maxThreat, "ai_thr_div:%f");
 	circuit->GetLua()->CallRules(cmd.c_str(), cmd.size());
 }
-#endif
+#endif  // DEBUG_VIS
 
 } // namespace circuit

@@ -32,6 +32,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		: circuit(circuit)
@@ -152,7 +153,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 			const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-			STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
+			SMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
 			Lua* lua = circuit->GetLua();
 
 			std::map<int, CMetalData::MetalIndices> validPoints;
@@ -167,7 +168,7 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 					}
 
 					const int iS = terrainMgr->GetSectorIndex(spots[i].position);
-					STerrainMapArea* area = mobileType->sector[iS].area;
+					SArea* area = mobileType->sector[iS].area;
 					if ((area != nullptr) && area->areaUsable) {
 						validPoints[idx].push_back(i);
 					}

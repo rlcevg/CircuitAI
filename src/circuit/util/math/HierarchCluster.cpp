@@ -21,7 +21,7 @@ CHierarchCluster::~CHierarchCluster()
 {
 }
 
-const CHierarchCluster::Clusters& CHierarchCluster::Clusterize(CRagMatrix& distmatrix, float maxDistance)
+const CHierarchCluster::Clusters& CHierarchCluster::Clusterize(CRagMatrix<float>& distmatrix, float maxDistance)
 {
 	int nrows = distmatrix.GetNrows();
 
@@ -36,8 +36,7 @@ const CHierarchCluster::Clusters& CHierarchCluster::Clusterize(CRagMatrix& distm
 
 	for (int n = nrows; n > 1; n--) {
 		// Find pair
-		int is = 1;
-		int js = 0;
+		int is = 1, js = 0;
 		if (distmatrix.FindClosestPair(n, is, js) > maxDistance) {
 			break;
 		}

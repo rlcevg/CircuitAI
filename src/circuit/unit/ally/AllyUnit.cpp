@@ -12,6 +12,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CAllyUnit::CAllyUnit(Id unitId, springai::Unit* unit, CCircuitDef* cdef)
 		: ICoreUnit(unitId, unit)

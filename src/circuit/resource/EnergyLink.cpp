@@ -85,7 +85,7 @@ void CEnergyLink::CheckConnection()
 	SPylon* targetHead = nullptr;
 	float minDist = std::numeric_limits<float>::max();
 
-	std::set<SPylon*> visited;
+	SPylon::UnmarkAll();
 	std::queue<SPylon*> queue;
 
 	for (SPylon* p : source->pylon.neighbors) {
@@ -109,9 +109,9 @@ void CEnergyLink::CheckConnection()
 			sourceHead = q;
 		}
 
-		visited.insert(q);
+		q->SetMarked();
 		for (SPylon* child : q->neighbors) {
-			if (visited.find(child) == visited.end()) {
+			if (!child->Marked()) {
 				queue.push(child);
 			}
 		}
@@ -123,7 +123,7 @@ void CEnergyLink::CheckConnection()
 	source->head = sourceHead;
 
 	minDist = std::numeric_limits<float>::max();
-	visited.clear();
+	SPylon::UnmarkAll();
 
 	for (SPylon* p : target->pylon.neighbors) {
 		queue.push(p);
@@ -139,9 +139,9 @@ void CEnergyLink::CheckConnection()
 			targetHead = q;
 		}
 
-		visited.insert(q);
+		q->SetMarked();
 		for (SPylon* child : q->neighbors) {
-			if (visited.find(child) == visited.end()) {
+			if (!child->Marked()) {
 				queue.push(child);
 			}
 		}

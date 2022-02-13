@@ -30,6 +30,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CAttackTask::CAttackTask(ITaskManager* mgr, float minPower, float powerMod)
 		: ISquadTask(mgr, FightType::ATTACK, powerMod)
@@ -244,7 +245,7 @@ void CAttackTask::FindTarget()
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
-	STerrainMapArea* area = leader->GetArea();
+	SArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const float maxSpeed = SQUARE(highestSpeed * 1.01f / FRAMES_PER_SEC);
 	const float maxPower = attackPower * powerMod;

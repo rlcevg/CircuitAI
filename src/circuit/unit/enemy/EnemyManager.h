@@ -15,11 +15,14 @@
 
 #include <limits>
 
+namespace terrain {
+	struct SArea;
+}
+
 namespace circuit {
 
 class CCircuitAI;
 class CQuadField;
-struct STerrainMapArea;
 
 class CEnemyManager {
 public:
@@ -92,7 +95,7 @@ public:
 
 	void UpdateAreaUsers(CCircuitAI* ai);
 	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
-	const std::unordered_set<const STerrainMapArea*>& GetEnemyAreas() const { return enemyAreas; }
+	const std::unordered_set<const terrain::SArea*>& GetEnemyAreas() const { return enemyAreas; }
 
 private:
 	void ReadConfig();
@@ -148,7 +151,7 @@ private:
 	std::array<SEnemyInfo, CMaskHandler::GetMaxMasks()> enemyInfos;
 
 	bool isAreaUpdated;
-	std::unordered_set<const STerrainMapArea*> enemyAreas;
+	std::unordered_set<const terrain::SArea*> enemyAreas;
 };
 
 } // namespace circuit

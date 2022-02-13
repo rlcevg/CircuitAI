@@ -31,6 +31,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position,
 						 FightType check, FightType promote, float maxPower, float powerMod)
@@ -220,7 +221,7 @@ bool CDefendTask::FindTarget()
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
-	STerrainMapArea* area = leader->GetArea();
+	SArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange() * 0.9f;

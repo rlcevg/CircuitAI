@@ -71,7 +71,7 @@ void CDefenceData::Init(CCircuitAI* circuit)
 	for (unsigned k = 0; k < clusters.size(); ++k) {
 		const CMetalData::MetalIndices& idxSpots = clusters[k].idxSpots;
 		int nrows = idxSpots.size();
-		CRagMatrix distmatrix(nrows);
+		CRagMatrix<float> distmatrix(nrows);
 		for (int i = 1; i < nrows; ++i) {
 			for (int j = 0; j < i; ++j) {
 				distmatrix(i, j) = spots[idxSpots[i]].position.distance2D(spots[idxSpots[j]].position);

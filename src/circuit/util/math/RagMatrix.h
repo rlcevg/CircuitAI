@@ -8,6 +8,10 @@
 #ifndef SRC_CIRCUIT_UTIL_RAGMATRIX_H_
 #define SRC_CIRCUIT_UTIL_RAGMATRIX_H_
 
+//#undef NDEBUG
+#include <cassert>
+#include <vector>
+
 namespace circuit {
 
 /*
@@ -18,19 +22,53 @@ namespace circuit {
  *  d 1 1 1 -
  *  e 1 1 1 1 -
  */
-class CRagMatrix {
+template <class T>
+class CRagMatrix final {
 public:
-	CRagMatrix(int nrows);
-	CRagMatrix(const CRagMatrix& matrix);
-	virtual ~CRagMatrix();
+	CRagMatrix() : nrows(0) {}
+	CRagMatrix(int nrows) : nrows(nrows) {
+		Resize(nrows);
+	}
+	CRagMatrix(const CRagMatrix& matrix) : nrows(matrix.nrows) {
+		data = matrix.data;
+	}
+	~CRagMatrix() {}
 
-	int GetNrows();
-	float FindClosestPair(int n, int& ir, int& jr);
-	float& operator()(int row, int column) const;
+	int GetNrows() const { return nrows; }
+
+	void Resize(int nrows) {
+		assert(nrows > 1);
+		int size = nrows * (nrows - 1) / 2;
+		data.resize(size);
+	}
+
+	T FindClosestPair(int n, int& ir, int& jr) const {
+		T distance = operator()(ir = 1, jr = 0);
+		for (int i = 2; i < n; ++i) {
+			for (int j = 0; j < i; ++j) {
+				const T temp = operator()(i, j);
+				if (temp < distance) {
+					distance = temp;
+					ir = i;
+					jr = j;
+				}
+			}
+		}
+		return distance;
+	}
+
+	const T& operator()(int row, int column) const {
+		assert((row >= 1 && row < nrows) && (column >= 0 && column < nrows - 1));
+		int idx = (row * (row - 1)) / 2 + column;
+		return data[idx];
+	}
+	T& operator()(int row, int column) {
+		return const_cast<T&>(static_cast<const CRagMatrix&>(*this)(row, column));
+	}
 
 private:
 	int nrows;
-	float* data;
+	std::vector<T> data;
 };
 
 } // namespace circuit

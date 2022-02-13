@@ -84,7 +84,7 @@ private:
 	};
 
 	CMapManager* manager;
-	SAreaData* areaData;
+	terrain::SAreaData* areaData;
 
 	inline void PosToXZ(const springai::AIFloat3& pos, int& x, int& z) const;
 	inline springai::AIFloat3 XZToPos(int x, int z) const;

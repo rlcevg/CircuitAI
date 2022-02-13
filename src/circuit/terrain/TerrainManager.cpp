@@ -33,6 +33,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 		: circuit(circuit)
@@ -43,10 +44,9 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 		, dbgMap(nullptr)
 #endif
 {
-	if (!terrainData->IsInitialized()) {
-		terrainData->Init(circuit);
-		terrainData->ComputeGeography(circuit, circuit->GetCircuitDef("armcom")->GetId());
-	}
+	assert(terrainData->IsInitialized());
+	terrainData->AnalyzeMap(circuit);
+
 	areaData = terrainData->pAreaData.load();
 
 	ResetBuildFrame();
@@ -380,10 +380,10 @@ void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 
 void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, const CCircuitDef* mobileDef)
 {
-	const STerrainMapMobileType::Id mobileId = mobileDef->GetMobileId();
+	const SMobileType::Id mobileId = mobileDef->GetMobileId();
 	const int iS = GetSectorIndex(pos);
-	STerrainMapMobileType* mobyleType = GetMobileType(mobileId);
-	STerrainMapAreaSector* AS = GetAlternativeSector(unit->GetArea(), iS, mobyleType);
+	SMobileType* mobyleType = GetMobileType(mobileId);
+	SAreaSector* AS = GetAlternativeSector(unit->GetArea(), iS, mobyleType);
 	if (AS == nullptr) {
 		return;
 	}
@@ -1187,9 +1187,9 @@ void CTerrainManager::SnapPosition(AIFloat3& position)
 	position.z = int(position.z / (SQUARE_SIZE * 2)) * SQUARE_SIZE * 2;
 }
 
-std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)
+std::pair<SArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)
 {
-	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
+	SMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
 	if (mobileType == nullptr) {  // flying units & buildings
 		return std::make_pair(nullptr, true);
 	}
@@ -1199,11 +1199,11 @@ std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef
 //	CorrectPosition(pos);
 	const int iS = GetSectorIndex(pos);
 
-	STerrainMapArea* area = mobileType->sector[iS].area;
+	SArea* area = mobileType->sector[iS].area;
 	if (area == nullptr) {
 		// Case: 1) unit spawned/pushed/transported outside of valid area
 		//       2) factory terraformed height around and became non-valid area
-		STerrainMapAreaSector* sector = GetAlternativeSector(nullptr, iS, mobileType);
+		SAreaSector* sector = GetAlternativeSector(nullptr, iS, mobileType);
 		if (sector != nullptr) {
 			area = sector->area;
 		}
@@ -1211,19 +1211,19 @@ std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef
 	return std::make_pair(area, area != nullptr);
 }
 
-std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const int iS)
+std::pair<SArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const int iS)
 {
-	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
+	SMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
 	if (mobileType == nullptr) {  // flying units & buildings
 		return std::make_pair(nullptr, true);
 	}
 
 	// other mobile units & their factories
-	STerrainMapArea* area = mobileType->sector[iS].area;
+	SArea* area = mobileType->sector[iS].area;
 	if (area == nullptr) {
 		// Case: 1) unit spawned/pushed/transported outside of valid area
 		//       2) factory terraformed height around and became non-valid area
-		STerrainMapAreaSector* sector = GetAlternativeSector(nullptr, iS, mobileType);
+		SAreaSector* sector = GetAlternativeSector(nullptr, iS, mobileType);
 		if (sector != nullptr) {
 			area = sector->area;
 		}
@@ -1231,7 +1231,7 @@ std::pair<STerrainMapArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef
 	return std::make_pair(area, area != nullptr);
 }
 
-bool CTerrainManager::CanMoveToPos(STerrainMapArea* area, const AIFloat3& destination)
+bool CTerrainManager::CanMoveToPos(SArea* area, const AIFloat3& destination)
 {
 	const int iS = GetSectorIndex(destination);
 	if (!terrainData->IsSectorValid(iS)) {
@@ -1252,12 +1252,12 @@ AIFloat3 CTerrainManager::GetBuildPosition(CCircuitDef* cdef, const AIFloat3& po
 //	CorrectPosition(pos);
 	const int iS = GetSectorIndex(pos);
 
-	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
-	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
+	SMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
+	SImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
 	if (mobileType != nullptr) {  // a factory or mobile unit
-		STerrainMapAreaSector* AS = GetAlternativeSector(nullptr, iS, mobileType);
+		SAreaSector* AS = GetAlternativeSector(nullptr, iS, mobileType);
 		if (immobileType != nullptr) {  // a factory
-			STerrainMapSector* sector = GetAlternativeSector(AS->area, iS, immobileType);
+			SSector* sector = GetAlternativeSector(AS->area, iS, immobileType);
 			return (sector == nullptr) ? -RgtVector : sector->position;
 		} else {
 			return AS->S->position;
@@ -1269,7 +1269,7 @@ AIFloat3 CTerrainManager::GetBuildPosition(CCircuitDef* cdef, const AIFloat3& po
 	}
 }
 
-AIFloat3 CTerrainManager::GetMovePosition(STerrainMapArea* sourceArea, const AIFloat3& position)
+AIFloat3 CTerrainManager::GetMovePosition(SArea* sourceArea, const AIFloat3& position)
 {
 	AIFloat3 pos = position;
 //	CorrectPosition(pos);
@@ -1278,7 +1278,7 @@ AIFloat3 CTerrainManager::GetMovePosition(STerrainMapArea* sourceArea, const AIF
 	return (sourceArea == nullptr) ? pos : GetClosestSector(sourceArea, iS)->S->position;
 }
 
-std::vector<STerrainMapAreaSector>& CTerrainManager::GetSectorList(STerrainMapArea* sourceArea)
+std::vector<SAreaSector>& CTerrainManager::GetSectorList(SArea* sourceArea)
 {
 	if ((sourceArea == nullptr) || (sourceArea->mobileType == nullptr)) {  // It flies or it's immobile
 		return areaData->sectorAirType;
@@ -1286,21 +1286,21 @@ std::vector<STerrainMapAreaSector>& CTerrainManager::GetSectorList(STerrainMapAr
 	return sourceArea->mobileType->sector;
 }
 
-STerrainMapAreaSector* CTerrainManager::GetClosestSector(STerrainMapArea* sourceArea, const int destinationSIndex)
+SAreaSector* CTerrainManager::GetClosestSector(SArea* sourceArea, const int destinationSIndex)
 {
 	auto iAS = sourceArea->sectorClosest.find(destinationSIndex);
 	if (iAS != sourceArea->sectorClosest.end()) {  // It's already been determined
 		return iAS->second;
 	}
 
-	std::vector<STerrainMapAreaSector>& TMSectors = GetSectorList(sourceArea);
+	std::vector<SAreaSector>& TMSectors = GetSectorList(sourceArea);
 	if (sourceArea == TMSectors[destinationSIndex].area) {
 		sourceArea->sectorClosest[destinationSIndex] = &TMSectors[destinationSIndex];
 		return &TMSectors[destinationSIndex];
 	}
 
 	AIFloat3* destination = &TMSectors[destinationSIndex].S->position;
-	STerrainMapAreaSector* SClosest = nullptr;
+	SAreaSector* SClosest = nullptr;
 	float sqDisClosest = std::numeric_limits<float>::max();
 	for (auto& iS : sourceArea->sector) {
 		float sqDist = iS.second->S->position.SqDistance2D(*destination);  // TODO: Consider SqDistance() instead of 2D
@@ -1313,7 +1313,7 @@ STerrainMapAreaSector* CTerrainManager::GetClosestSector(STerrainMapArea* source
 	return SClosest;
 }
 
-STerrainMapSector* CTerrainManager::GetClosestSector(STerrainMapImmobileType* sourceIT, const int destinationSIndex)
+SSector* CTerrainManager::GetClosestSector(SImmobileType* sourceIT, const int destinationSIndex)
 {
 	auto iS = sourceIT->sectorClosest.find(destinationSIndex);
 	if (iS != sourceIT->sectorClosest.end()) {  // It's already been determined
@@ -1321,13 +1321,13 @@ STerrainMapSector* CTerrainManager::GetClosestSector(STerrainMapImmobileType* so
 	}
 
 	if (sourceIT->sector.find(destinationSIndex) != sourceIT->sector.end()) {
-		STerrainMapSector* SClosest = &areaData->sector[destinationSIndex];
+		SSector* SClosest = &areaData->sector[destinationSIndex];
 		sourceIT->sectorClosest[destinationSIndex] = SClosest;
 		return SClosest;
 	}
 
 	const AIFloat3* destination = &areaData->sector[destinationSIndex].position;
-	STerrainMapSector* SClosest = nullptr;
+	SSector* SClosest = nullptr;
 	float sqDisClosest = std::numeric_limits<float>::max();
 	for (auto& iS : sourceIT->sector) {
 		float sqDist = iS.second->position.SqDistance2D(*destination);  // TODO: Consider SqDistance() instead of 2D
@@ -1340,9 +1340,9 @@ STerrainMapSector* CTerrainManager::GetClosestSector(STerrainMapImmobileType* so
 	return SClosest;
 }
 
-STerrainMapAreaSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* sourceArea, const int sourceSIndex, STerrainMapMobileType* destinationMT)
+SAreaSector* CTerrainManager::GetAlternativeSector(SArea* sourceArea, const int sourceSIndex, SMobileType* destinationMT)
 {
-	std::vector<STerrainMapAreaSector>& TMSectors = GetSectorList(sourceArea);
+	std::vector<SAreaSector>& TMSectors = GetSectorList(sourceArea);
 	auto iMS = TMSectors[sourceSIndex].sectorAlternativeM.find(destinationMT);
 	if (iMS != TMSectors[sourceSIndex].sectorAlternativeM.end()) {  // It's already been determined
 		return iMS->second;
@@ -1357,14 +1357,14 @@ STerrainMapAreaSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* so
 	}
 
 	const AIFloat3& position = TMSectors[sourceSIndex].S->position;
-	STerrainMapAreaSector* bestAS = nullptr;
-	STerrainMapArea* largestArea = destinationMT->areaLargest;
+	SAreaSector* bestAS = nullptr;
+	SArea* largestArea = destinationMT->areaLargest;
 	float bestDistance = -1.0;
 	float bestMidDistance = -1.0;
-	const std::vector<STerrainMapArea>& TMAreas = destinationMT->area;
+	const std::vector<SArea>& TMAreas = destinationMT->area;
 	for (auto& area : TMAreas) {
 		if (area.areaUsable || !largestArea->areaUsable) {
-			STerrainMapAreaSector* CAS = GetClosestSector(const_cast<STerrainMapArea*>(&area), sourceSIndex);
+			SAreaSector* CAS = GetClosestSector(const_cast<SArea*>(&area), sourceSIndex);
 			float midDistance; // how much of a gap exists between the two areas (source & destination)
 			if ((sourceArea == nullptr) || (sourceArea == TMSectors[GetSectorIndex(CAS->S->position)].area)) {
 				midDistance = 0.0;
@@ -1390,15 +1390,15 @@ STerrainMapAreaSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* so
 	return bestAS;
 }
 
-STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destinationArea, const int sourceSIndex, STerrainMapImmobileType* destinationIT)
+SSector* CTerrainManager::GetAlternativeSector(SArea* destinationArea, const int sourceSIndex, SImmobileType* destinationIT)
 {
-	std::vector<STerrainMapAreaSector>& TMSectors = GetSectorList(destinationArea);
+	std::vector<SAreaSector>& TMSectors = GetSectorList(destinationArea);
 	auto iMS = TMSectors[sourceSIndex].sectorAlternativeI.find(destinationIT);
 	if (iMS != TMSectors[sourceSIndex].sectorAlternativeI.end()) {  // It's already been determined
 		return iMS->second;
 	}
 
-	STerrainMapSector* closestS = nullptr;
+	SSector* closestS = nullptr;
 	if (destinationArea != nullptr) {
 		if (destinationArea != TMSectors[sourceSIndex].area) {
 			closestS = GetAlternativeSector(destinationArea, GetSectorIndex(GetClosestSector(destinationArea, sourceSIndex)->S->position), destinationIT);
@@ -1423,11 +1423,11 @@ STerrainMapSector* CTerrainManager::GetAlternativeSector(STerrainMapArea* destin
 bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, const float range)
 {
 	const int iS = GetSectorIndex(position);
-	STerrainMapSector* sector;
-	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
-	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
+	SSector* sector;
+	SMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
+	SImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
 	if (mobileType != nullptr) {  // a factory or mobile unit
-		STerrainMapAreaSector* AS = GetAlternativeSector(nullptr, iS, mobileType);
+		SAreaSector* AS = GetAlternativeSector(nullptr, iS, mobileType);
 		if (AS == nullptr) {
 			return false;  // FIXME: do not use units with typeUsable=false
 		}
@@ -1457,8 +1457,8 @@ bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position, 
 bool CTerrainManager::CanBeBuiltAt(CCircuitDef* cdef, const AIFloat3& position)
 {
 	const int iS = GetSectorIndex(position);
-	STerrainMapMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
-	STerrainMapImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
+	SMobileType* mobileType = GetMobileTypeById(cdef->GetMobileId());
+	SImmobileType* immobileType = GetImmobileTypeById(cdef->GetImmobileId());
 	if (mobileType != nullptr) {  // a factory or mobile unit
 		if (mobileType->sector[iS].S == nullptr) {
 			return false;
@@ -1489,7 +1489,7 @@ bool CTerrainManager::CanReachAt(CCircuitUnit* unit, const AIFloat3& destination
 	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
 		return unit->GetPos(circuit->GetLastFrame()).distance2D(destination) < range;
 	}
-	STerrainMapArea* area = unit->GetArea();
+	SArea* area = unit->GetArea();
 	if (area == nullptr) {  // A flying unit
 		return true;
 	}
@@ -1516,7 +1516,7 @@ bool CTerrainManager::CanReachAtSafe2(CCircuitUnit* unit, const AIFloat3& destin
 	return CanReachAt(unit, destination, range);
 }
 
-bool CTerrainManager::CanMobileReachAt(STerrainMapArea* area, const AIFloat3& destination, const float range)
+bool CTerrainManager::CanMobileReachAt(SArea* area, const AIFloat3& destination, const float range)
 {
 	if (area == nullptr) {  // A flying unit
 		return true;
@@ -1528,7 +1528,7 @@ bool CTerrainManager::CanMobileReachAt(STerrainMapArea* area, const AIFloat3& de
 	return GetClosestSector(area, iS)->S->position.distance2D(destination) < range;
 }
 
-bool CTerrainManager::CanMobileReachAtSafe(STerrainMapArea* area, const AIFloat3& destination, const float range, const float threat)
+bool CTerrainManager::CanMobileReachAtSafe(SArea* area, const AIFloat3& destination, const float range, const float threat)
 {
 	if (circuit->GetThreatMap()->GetBuilderThreatAt(destination) > threat) {
 		return false;
@@ -1546,8 +1546,8 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 		CCircuitUnit* unit = kv.second;
 
 		// Similar to GetCurrentMapArea
-		STerrainMapArea* area = nullptr;  // flying units & buildings
-		STerrainMapMobileType* mobileType = GetMobileTypeById(unit->GetCircuitDef()->GetMobileId());
+		SArea* area = nullptr;  // flying units & buildings
+		SMobileType* mobileType = GetMobileTypeById(unit->GetCircuitDef()->GetMobileId());
 		if (mobileType != nullptr) {
 			// other mobile units & their factories
 			AIFloat3 pos = unit->GetPos(frame);
@@ -1557,7 +1557,7 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 			area = mobileType->sector[iS].area;
 			if (area == nullptr) {  // unit outside of valid area
 				// TODO: Rescue operation
-				STerrainMapAreaSector* sector = GetAlternativeSector(nullptr, iS, mobileType);
+				SAreaSector* sector = GetAlternativeSector(nullptr, iS, mobileType);
 				if (sector != nullptr) {
 					area = sector->area;
 				} else {

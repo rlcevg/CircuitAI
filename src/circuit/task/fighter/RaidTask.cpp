@@ -29,6 +29,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 CRaidTask::CRaidTask(ITaskManager* mgr, float maxPower, float powerMod)
 		: ISquadTask(mgr, FightType::RAID, powerMod)
@@ -236,7 +237,7 @@ bool CRaidTask::FindTarget()
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
-	STerrainMapArea* area = leader->GetArea();
+	SArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const bool hadTarget = GetTarget() != nullptr;

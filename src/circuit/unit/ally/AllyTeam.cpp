@@ -31,6 +31,7 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
 
 bool CAllyTeam::SBox::ContainsPoint(const AIFloat3& point) const
 {
@@ -374,7 +375,7 @@ CAllyTeam::SClusterTeam CAllyTeam::GetClusterTeam(int clusterId)
 	return SClusterTeam(-1);
 }
 
-void CAllyTeam::OccupyArea(STerrainMapArea* area, int teamId)
+void CAllyTeam::OccupyArea(SArea* area, int teamId)
 {
 	auto it = habitants.find(area);
 	if (it == habitants.end()) {
@@ -382,7 +383,7 @@ void CAllyTeam::OccupyArea(STerrainMapArea* area, int teamId)
 	}
 }
 
-CAllyTeam::SAreaTeam CAllyTeam::GetAreaTeam(STerrainMapArea* area)
+CAllyTeam::SAreaTeam CAllyTeam::GetAreaTeam(SArea* area)
 {
 	auto it = habitants.find(area);
 	if (it != habitants.end()) {

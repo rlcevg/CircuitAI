@@ -229,7 +229,7 @@ namespace NSMicroPather {
 			const float* threatArray;
 			CostFunc moveFun;
 			CostFunc threatFun;
-			const circuit::SAreaData* areaData;
+			const terrain::SAreaData* areaData;
 
 			int mapSizeX;
 			int mapSizeY;
@@ -241,7 +241,7 @@ namespace NSMicroPather {
 			std::vector<void*> nodeTargets;  // helper vector
 
 			void SetMapData(const float* canMoveArray, const float* threatArray,
-					const CostFunc& moveFun, const CostFunc& threatFun, const circuit::SAreaData* areaData);
+					const CostFunc& moveFun, const CostFunc& threatFun, const terrain::SAreaData* areaData);
 			int FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes, VoidVec& targets, float maxThreat,
 					IndexVec* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat, HitFunc hitTest,

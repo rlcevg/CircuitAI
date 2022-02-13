@@ -52,6 +52,7 @@ public:
 
 	std::vector<springai::Unit*> GetSelectedUnits() const { return callback->GetSelectedUnits(); }
 
+	springai::UnitDef* GetUnitDefByName(const char* unitName) const { return callback->GetUnitDefByName(unitName); }
 	std::vector<springai::UnitDef*> GetUnitDefs() const { return callback->GetUnitDefs(); }
 	std::vector<springai::WeaponDef*> GetWeaponDefs() const { return callback->GetWeaponDefs(); }
 

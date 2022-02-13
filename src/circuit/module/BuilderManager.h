@@ -218,9 +218,9 @@ private:
 public:
 	void UpdateAreaUsers();
 private:
-	std::unordered_set<STerrainMapMobileType::Id> workerMobileTypes;
+	std::unordered_set<terrain::SMobileType::Id> workerMobileTypes;
 	std::unordered_set<CCircuitDef*> workerDefs;
-	std::map<STerrainMapArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
+	std::map<terrain::SArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
 
 	virtual void Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;

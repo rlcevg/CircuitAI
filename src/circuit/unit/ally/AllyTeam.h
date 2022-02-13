@@ -20,6 +20,10 @@ namespace springai {
 	class Unit;
 }
 
+namespace terrain {
+	struct SArea;
+}
+
 namespace circuit {
 
 class CCircuitAI;
@@ -31,7 +35,6 @@ class CEnergyGrid;
 class CDefenceData;
 class CPathFinder;
 class CFactoryData;
-struct STerrainMapArea;
 
 class CAllyTeam {
 public:
@@ -115,8 +118,8 @@ public:
 
 	void OccupyCluster(int clusterId, int teamId);
 	SClusterTeam GetClusterTeam(int clusterId);
-	void OccupyArea(STerrainMapArea* area, int teamId);
-	SAreaTeam GetAreaTeam(STerrainMapArea* area);
+	void OccupyArea(terrain::SArea* area, int teamId);
+	SAreaTeam GetAreaTeam(terrain::SArea* area);
 
 	CCircuitAI* GetAuthority() const { return circuit; }
 	void SetAuthority(CCircuitAI* authority);
@@ -136,7 +139,7 @@ private:
 	CQuadField quadField;
 
 	std::map<int, SClusterTeam> occupants;  // Cluster owner on start. clusterId: SClusterTeam
-	std::map<STerrainMapArea*, SAreaTeam> habitants;  // Area habitants on start.
+	std::map<terrain::SArea*, SAreaTeam> habitants;  // Area habitants on start.
 
 	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CMetalManager> metalManager;
