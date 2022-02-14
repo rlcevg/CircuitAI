@@ -74,6 +74,9 @@ bool CBEnergyTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | isStalling=%i", __PRETTY_FUNCTION__, isStalling);
+#endif
 	return true;
 }
 
@@ -81,6 +84,9 @@ void CBEnergyTask::Save(std::ostream& os) const
 {
 	IBuilderTask::Save(os);
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | isStalling=%i", __PRETTY_FUNCTION__, isStalling);
+#endif
 }
 
 } // namespace circuit

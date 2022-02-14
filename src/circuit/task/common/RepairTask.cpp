@@ -196,6 +196,9 @@ bool IRepairTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | targetId=%i", __PRETTY_FUNCTION__, targetId);
+#endif
 	return true;
 }
 
@@ -203,6 +206,9 @@ void IRepairTask::Save(std::ostream& os) const
 {
 	IBuilderTask::Save(os);
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | targetId=%i", __PRETTY_FUNCTION__, targetId);
+#endif
 }
 
 } // namespace circuit

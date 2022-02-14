@@ -841,6 +841,10 @@ bool IBuilderTask::Load(std::istream& is)
 	if ((target != nullptr) && (buildType != BuildType::REPAIR) && (buildType != BuildType::RECLAIM)) {
 		circuit->GetBuilderManager()->MarkUnfinishedUnit(target, this);
 	}
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | position=%f,%f,%f | shake=%f | bdefId=%i | cost=%f | targetId=%i | buildPos=%f,%f,%f | facing=%i | savedIncomeM=%f | savedIncomeE=%f | buildFails=%i | buildDef=%lx | target=%lx",
+			__PRETTY_FUNCTION__, position.x, position.y, position.z, shake, bdefId, cost, targetId, buildPos.x, buildPos.y, buildPos.z, facing, savedIncomeM, savedIncomeE, buildFails, buildDef, target);
+#endif
 	return true;
 }
 
@@ -853,9 +857,12 @@ void IBuilderTask::Save(std::ostream& os) const
 	position.LoadInto(positionF3);
 	buildPos.LoadInto(buildPosF3);
 
-	utils::binary_write(os, buildType);
 	IUnitTask::Save(os);
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | positionF3=%f,%f,%f | shake=%f | bdefId=%i | cost=%f | targetId=%i | buildPosF3=%f,%f,%f | facing=%i | savedIncomeM=%f | savedIncomeE=%f | buildFails=%i",
+			__PRETTY_FUNCTION__, positionF3[0], positionF3[1], positionF3[2], shake, bdefId, cost, targetId, buildPosF3[0], buildPosF3[1], buildPosF3[2], facing, savedIncomeM, savedIncomeE, buildFails);
+#endif
 }
 
 #ifdef DEBUG_VIS

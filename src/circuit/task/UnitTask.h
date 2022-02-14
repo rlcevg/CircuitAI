@@ -22,6 +22,8 @@ namespace springai {
 
 namespace circuit {
 
+#define DEBUG_SAVELOAD 1
+
 class CCircuitUnit;
 class CEnemyInfo;
 class ITaskManager;

@@ -150,12 +150,20 @@ bool IUnitTask::IsQueryReady(CCircuitUnit* unit) const
 bool IUnitTask::Load(std::istream& is)
 {
 	SERIALIZE(is, read)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | priority=%i | state=%i | lastTouched=%i | timeout=%i | updCount=%i | isDead=%i",
+			__PRETTY_FUNCTION__, priority, state, lastTouched, timeout, updCount, isDead);
+#endif
 	return true;
 }
 
 void IUnitTask::Save(std::ostream& os) const
 {
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | priority=%i | state=%i | lastTouched=%i | timeout=%i | updCount=%i | isDead=%i",
+			__PRETTY_FUNCTION__, priority, state, lastTouched, timeout, updCount, isDead);
+#endif
 }
 
 #ifdef DEBUG_VIS

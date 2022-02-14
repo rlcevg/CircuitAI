@@ -1735,13 +1735,14 @@ void CBuilderManager::Load(std::istream& is)
 	 * Restore data
 	 */
 	for (size_t i = 0; i < buildTasks.size(); ++i) {
-		int size;
-		is.read(reinterpret_cast<char*>(&size), sizeof(size));
-		for (int j = 0; j < size; ++j) {
-			IBuilderTask::BuildType buildType;
-			utils::binary_read(is, buildType);
+		uint32_t size;
+		utils::binary_read(is, size);
+#ifdef DEBUG_SAVELOAD
+		circuit->LOG("%s | buildType=%i | size=%i", __PRETTY_FUNCTION__, i, size);
+#endif
+		for (unsigned j = 0; j < size; ++j) {
 			IBuilderTask* task = nullptr;
-			switch (buildType) {
+			switch (IBuilderTask::BuildType(i)) {
 				case IBuilderTask::BuildType::FACTORY: {
 					task = new CBFactoryTask(this);
 				} break;
@@ -1800,10 +1801,13 @@ void CBuilderManager::Load(std::istream& is)
 			}
 			if (task != nullptr) {
 				const bool isValid = is >> *task;
-				buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())].insert(task);
+				buildTasks[i].insert(task);
 				buildTasksCount++;
 				buildUpdates.push_back(task);
 				if (!isValid) {
+#ifdef DEBUG_SAVELOAD
+					circuit->LOG("Invalid task");
+#endif
 					AbortTask(task);
 				}
 			}
@@ -1816,16 +1820,23 @@ void CBuilderManager::Save(std::ostream& os) const
 	/*
 	 * Save tasks
 	 */
-	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
-		int size = tasks.size();
+	for (size_t i = 0; i < buildTasks.size(); ++i) {
+		const std::set<IBuilderTask*>& tasks = buildTasks[i];
+		uint32_t size = tasks.size();
 		if ((size > 0) && ((*tasks.begin())->GetBuildType() == IBuilderTask::BuildType::PYLON)) {
 			// FIXME: Get pylon's link
 			size = 0;
-			os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+			utils::binary_write(os, size);
+#ifdef DEBUG_SAVELOAD
+			circuit->LOG("%s | buildType=%i | size=%i", __PRETTY_FUNCTION__, i, size);
+#endif
 			continue;
 		}
 
-		os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+		utils::binary_write(os, size);
+#ifdef DEBUG_SAVELOAD
+		circuit->LOG("%s | buildType=%i | size=%i", __PRETTY_FUNCTION__, i, size);
+#endif
 		for (const IBuilderTask* task : tasks) {
 			os << *task;
 		}

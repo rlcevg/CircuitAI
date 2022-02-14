@@ -174,6 +174,9 @@ bool CBResurrectTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | radius=%f", __PRETTY_FUNCTION__, radius);
+#endif
 	return true;
 }
 
@@ -181,6 +184,9 @@ void CBResurrectTask::Save(std::ostream& os) const
 {
 	IBuilderTask::Save(os);
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | radius=%f", __PRETTY_FUNCTION__, radius);
+#endif
 }
 
 } // namespace circuit

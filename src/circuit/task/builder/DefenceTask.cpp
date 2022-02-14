@@ -102,6 +102,9 @@ bool CBDefenceTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | isUrgent=%i | normalCost=%f", __PRETTY_FUNCTION__, isUrgent, normalCost);
+#endif
 	return true;
 }
 
@@ -109,6 +112,9 @@ void CBDefenceTask::Save(std::ostream& os) const
 {
 	IBuilderTask::Save(os);
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | isUrgent=%i | normalCost=%f", __PRETTY_FUNCTION__, isUrgent, normalCost);
+#endif
 }
 
 } // namespace circuit

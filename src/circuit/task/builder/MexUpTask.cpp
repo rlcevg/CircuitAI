@@ -173,9 +173,15 @@ bool CBMexUpTask::Load(std::istream& is)
 
 	if (!circuit->GetMetalManager()->IsSpotValid(spotId, GetPosition())) {
 		spotId = -1;
+#ifdef DEBUG_SAVELOAD
+		manager->GetCircuit()->LOG("%s | spotId=%i | reclaimMexId=%i", __PRETTY_FUNCTION__, spotId, reclaimMexId);
+#endif
 		return false;
 	}
 	circuit->GetEconomyManager()->SetUpgradingMexSpot(spotId, true);
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | spotId=%i | reclaimMexId=%i", __PRETTY_FUNCTION__, spotId, reclaimMexId);
+#endif
 	return true;
 }
 
@@ -185,6 +191,9 @@ void CBMexUpTask::Save(std::ostream& os) const
 
 	IBuilderTask::Save(os);
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | spotId=%i | reclaimMexId=%i", __PRETTY_FUNCTION__, spotId, reclaimMexId);
+#endif
 }
 
 }

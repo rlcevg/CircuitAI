@@ -79,8 +79,8 @@ using namespace terrain;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.5.4"};
-constexpr uint32_t VERSION_SAVE = 0;
+constexpr char version[]{"1.5.5"};
+constexpr uint32_t VERSION_SAVE = 1;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -1469,7 +1469,7 @@ void CCircuitAI::CreateFakeEnemy(int weaponId, const AIFloat3& startPos, const A
 			timeout += FRAMES_PER_SEC * 60 * 20;
 			defId = *wuDef.staticIds.begin();
 		} else {
-			timeout += FRAMES_PER_SEC * 60 * 1;
+			timeout += FRAMES_PER_SEC * 60 * 2;
 			defId = *wuDef.mobileIds.begin();
 		}
 		allyTeam->RegisterEnemyFake(GetCircuitDef(defId), enemyPos, timeout);

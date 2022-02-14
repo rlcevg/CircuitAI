@@ -97,9 +97,15 @@ bool CBGeoTask::Load(std::istream& is)
 	CCircuitAI* circuit = manager->GetCircuit();
 	if (circuit->GetEnergyManager()->IsSpotValid(spotId, GetPosition())) {
 		spotId = -1;
+#ifdef DEBUG_SAVELOAD
+		manager->GetCircuit()->LOG("%s | spotId=%i", __PRETTY_FUNCTION__, spotId);
+#endif
 		return false;
 	}
 	circuit->GetEconomyManager()->SetOpenGeoSpot(spotId, false);
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | spotId=%i", __PRETTY_FUNCTION__, spotId);
+#endif
 	return true;
 }
 

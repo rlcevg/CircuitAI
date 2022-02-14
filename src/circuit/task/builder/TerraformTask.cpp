@@ -171,6 +171,9 @@ bool CBTerraformTask::Load(std::istream& is)
 	SERIALIZE(is, read)
 
 	state = State::ROAM;  // reset attempt
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | targetId=%i | state=%i", __PRETTY_FUNCTION__, targetId, state);
+#endif
 	return true;
 }
 
@@ -178,6 +181,9 @@ void CBTerraformTask::Save(std::ostream& os) const
 {
 	IBuilderTask::Save(os);
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | targetId=%i", __PRETTY_FUNCTION__, targetId);
+#endif
 }
 
 } // namespace circuit

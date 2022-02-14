@@ -123,6 +123,9 @@ bool IReclaimTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | radius=%f | isMetal=%i", __PRETTY_FUNCTION__, radius, isMetal);
+#endif
 	return true;
 }
 
@@ -130,6 +133,9 @@ void IReclaimTask::Save(std::ostream& os) const
 {
 	IBuilderTask::Save(os);
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | radius=%f | isMetal=%i", __PRETTY_FUNCTION__, radius, isMetal);
+#endif
 }
 
 } // namespace circuit

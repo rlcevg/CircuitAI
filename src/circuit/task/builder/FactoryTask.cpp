@@ -162,6 +162,9 @@ bool CBFactoryTask::Load(std::istream& is)
 
 	circuit->GetFactoryManager()->AddFactory(buildDef);
 	Activate();  // circuit->GetFactoryManager()->ApplySwitchFrame();
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | reprDefId=%i | isPlop=%i | lastTouched=%i", __PRETTY_FUNCTION__, reprDefId, isPlop, lastTouched);
+#endif
 	return true;
 }
 
@@ -171,6 +174,9 @@ void CBFactoryTask::Save(std::ostream& os) const
 
 	IBuilderTask::Save(os);
 	SERIALIZE(os, write)
+#ifdef DEBUG_SAVELOAD
+	manager->GetCircuit()->LOG("%s | reprDefId=%i | isPlop=%i", __PRETTY_FUNCTION__, reprDefId, isPlop);
+#endif
 }
 
 } // namespace circuit
