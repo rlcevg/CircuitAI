@@ -199,7 +199,7 @@ void CRaidTask::Update()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			leader, threatMap, frame,
+			leader, threatMap,
 			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, GetHitTest(), true, attackPower);
 	pathQueries[leader] = query;
 
@@ -388,10 +388,9 @@ void CRaidTask::ApplyTargetPath(const CQueryPathMulti* query)
 void CRaidTask::FallbackRaid()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& pos = leader->GetPos(frame);
+	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const AIFloat3& threatPos = leader->GetTravelAct()->IsActive() ? position : pos;
 	if (attackPower * powerMod <= threatMap->GetThreatAt(leader, threatPos)) {
 		position = circuit->GetMilitaryManager()->GetRaidPosition(leader);
@@ -406,7 +405,7 @@ void CRaidTask::FallbackRaid()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			leader, threatMap, frame,
+			leader, threatMap,
 			pos, position, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
 

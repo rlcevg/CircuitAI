@@ -246,7 +246,7 @@ namespace NSMicroPather {
 					IndexVec* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat, HitFunc hitTest,
 					IndexVec* path, float* cost);
-			int FindWidePathToPath(void* startNode, VoidVec& endNodes, const bool isWide,
+			int FindWidePathToBus(void* startNode, VoidVec& endNodes, const bool isWide,
 					IndexVec* path, float* cost);
 			void MakeCostMap(void* startNode, float maxThreat, std::vector<float>& costMap);
 
@@ -254,10 +254,11 @@ namespace NSMicroPather {
 			void FillPathInfo(PathInfo& iPath);
 
 			PathNode* GetNode(void* node) const { return &pathNodeMem[(size_t)node]; }
+			bool CantMoveTo(int node) const { return canMoveArray[node] > COST_BLOCKED; }
 
 		private:
 			int CanMoveNode2Index(void* node) const {
-				return (canMoveArray[(size_t)node] > COST_BLOCKED) ? -1 : pathNodeMem[(size_t)node].index2;
+				return CantMoveTo((size_t)node) ? -1 : pathNodeMem[(size_t)node].index2;
 			}
 
 			void GoalReached(PathNode* node, void* start, void* end, IndexVec *path);

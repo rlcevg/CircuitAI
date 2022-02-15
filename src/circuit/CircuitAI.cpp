@@ -1270,6 +1270,9 @@ int CCircuitAI::Load(std::istream& is)
 		return ERROR_LOAD;
 	}
 	utils::binary_read(is, lastFrame);
+#ifdef DEBUG_SAVELOAD
+	LOG("%s | versionLoad=%i | lastFrame=%i | defs=%i", __PRETTY_FUNCTION__, versionLoad, lastFrame, GetCircuitDefs().size());
+#endif
 
 	for (auto& module : modules) {
 		is >> *module;
@@ -1282,6 +1285,9 @@ int CCircuitAI::Save(std::ostream& os)
 {
 	utils::binary_write(os, VERSION_SAVE);
 	utils::binary_write(os, lastFrame);
+#ifdef DEBUG_SAVELOAD
+	LOG("%s | VERSION_SAVE=%i | lastFrame=%i | defs=%i", __PRETTY_FUNCTION__, VERSION_SAVE, lastFrame, GetCircuitDefs().size());
+#endif
 
 	for (auto& module : modules) {
 		os << *module;

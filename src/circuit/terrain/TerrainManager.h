@@ -58,8 +58,8 @@ public:
 	void Init();
 	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
 	void DelBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
-	void AddBlockerPath(CCircuitUnit* unit, const springai::AIFloat3& pos, const CCircuitDef* mobileDef);
-	void DelBlockerPath(CCircuitUnit* unit);
+	void AddBusPath(CCircuitUnit* unit, const springai::AIFloat3& pos, const CCircuitDef* mobileDef);
+	void DelBusPath(CCircuitUnit* unit);
 	void ResetBuildFrame() { markFrame = -FRAMES_PER_SEC; }
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	// TODO: Based on map complexity use BFS or circle to calculate build offset
@@ -130,9 +130,9 @@ private:
 		std::shared_ptr<IPathQuery> query;
 		std::shared_ptr<PathInfo> path;
 	};
-	std::map<CCircuitUnit*, FactoryPathInfo> blockPath;
-	std::vector<std::shared_ptr<IPathQuery>> blockQueries;
-	void MarkBlockerPath();
+	std::map<CCircuitUnit*, FactoryPathInfo> busPath;
+	std::vector<std::shared_ptr<IPathQuery>> busQueries;
+	void MarkBusPath();
 
 public:
 	int GetConvertStoP() const { return terrainData->convertStoP; }
@@ -151,6 +151,7 @@ public:
 	springai::AIFloat3 GetMovePosition(terrain::SArea* sourceArea, const springai::AIFloat3& position);
 private:
 	std::vector<terrain::SAreaSector>& GetSectorList(terrain::SArea* sourceArea = nullptr);
+	terrain::SAreaSector* GetClosestSectorWithAltitude(terrain::SArea* sourceArea, const int destinationSIndex, const int altitude);
 	terrain::SAreaSector* GetClosestSector(terrain::SArea* sourceArea, const int destinationSIndex);
 	terrain::SSector* GetClosestSector(terrain::SImmobileType* sourceIT, const int destinationSIndex);
 	// TODO: Refine brute-force algorithms

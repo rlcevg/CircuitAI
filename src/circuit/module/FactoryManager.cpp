@@ -74,7 +74,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			if (reprDef == nullptr) {
 				reprDef = setupMgr->GetCommChoice();
 			}
-			this->circuit->GetTerrainManager()->AddBlockerPath(unit, setupMgr->GetLanePos(), reprDef);
+			this->circuit->GetTerrainManager()->AddBusPath(unit, setupMgr->GetLanePos(), reprDef);
 		}
 	};
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
@@ -111,7 +111,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		DisableFactory(unit);
 
 		// Remove blocked path from factory to lanePos
-		this->circuit->GetTerrainManager()->DelBlockerPath(unit);
+		this->circuit->GetTerrainManager()->DelBusPath(unit);
 	};
 
 	/*

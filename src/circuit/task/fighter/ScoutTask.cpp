@@ -128,7 +128,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			unit, threatMap, frame,
+			unit, threatMap,
 			pos, range * 0.5f, enemyPositions, nullptr, false, attackPower);
 	pathQueries[unit] = query;
 
@@ -274,10 +274,9 @@ void CScoutTask::ApplyTargetPath(const CQueryPathMulti* query, bool isUpdating)
 void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const AIFloat3& pos = unit->GetPos(frame);
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	const AIFloat3& threatPos = unit->GetTravelAct()->IsActive() ? position : pos;
 	// NOTE: Use max(unit_threat, THREAT_MIN) for no-weapon scouts
 	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitPower(unit), THREAT_MIN) * powerMod);
@@ -294,7 +293,7 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			unit, threatMap, frame,
+			unit, threatMap,
 			pos, position, pathfinder->GetSquareSize());
 	pathQueries[unit] = query;
 

@@ -280,6 +280,7 @@ public:
 		return GetChokePoints(a->GetId(), b->GetId());
 	}
 	const CSector& GetSector(const SectorPosition p) const { return sectors[sectorXSize * p.y + p.x]; }
+	const CSector& GetTASector(const int index) const { return sectors[index]; }
 	const std::vector<CArea>& GetAreas() const { return areas; }
 
 protected:

@@ -206,7 +206,7 @@ void CAttackTask::Update()
 	const float pathRange = std::max(highestRange - eps, eps);
 
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, endPos, pathRange, GetHitTest(), attackPower);
 	pathQueries[leader] = query;
 
@@ -351,13 +351,12 @@ void CAttackTask::FallbackFrontPos()
 		return;
 	}
 
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(circuit->GetLastFrame());
 	const float pathRange = DEFAULT_SLACK * 4;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 
@@ -382,16 +381,15 @@ void CAttackTask::ApplyFrontPos(const CQueryPathMulti* query)
 void CAttackTask::FallbackBasePos()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 
-	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(circuit->GetLastFrame());
 	const AIFloat3& endPos = setupMgr->GetBasePos();
 	const float pathRange = DEFAULT_SLACK * 4;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, endPos, pathRange);
 	pathQueries[leader] = query;
 

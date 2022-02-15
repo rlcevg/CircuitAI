@@ -86,6 +86,7 @@ IGraph::IGraph()
 		: sectorXSize(0)
 		, sectorZSize(0)
 #ifdef DEBUG_VIS
+		, debugLua(nullptr)
 		, toggleFrame(-1)
 		, debugData(new DebugDrawData)
 #endif

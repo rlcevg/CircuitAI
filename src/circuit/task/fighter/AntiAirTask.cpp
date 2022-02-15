@@ -186,7 +186,7 @@ void CAntiAirTask::Update()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, position, pathfinder->GetSquareSize(), GetHitTest());
 	pathQueries[leader] = query;
 
@@ -232,14 +232,13 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 //	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(circuit->GetLastFrame());
 	circuit->GetMilitaryManager()->FillSafePos(leader, urgentPositions);
 	const float pathRange = DEFAULT_SLACK * 4;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 
@@ -318,12 +317,11 @@ void CAntiAirTask::FindTarget()
 void CAntiAirTask::FallbackDisengage()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(circuit->GetLastFrame());
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, position, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
 
@@ -374,13 +372,12 @@ void CAntiAirTask::FallbackSafePos()
 		return;
 	}
 
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(circuit->GetLastFrame());
 	const float pathRange = DEFAULT_SLACK * 4;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 

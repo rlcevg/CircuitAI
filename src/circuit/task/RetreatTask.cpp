@@ -165,7 +165,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 
 //	const float minThreat = circuit->GetThreatMap()->GetUnitThreat(unit) * 0.125f;
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			unit, circuit->GetThreatMap(), frame,
+			unit, circuit->GetThreatMap(),
 			startPos, endPos, range/*, nullptr, minThreat*/);
 	pathQueries[unit] = query;
 
@@ -332,12 +332,11 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* newRep)
 	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& startPos = unit->GetPos(frame);
+	const AIFloat3& startPos = unit->GetPos(circuit->GetLastFrame());
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	costQuery = pathfinder->CreateCostMapQuery(
-			unit, circuit->GetThreatMap(), frame, startPos);
+			unit, circuit->GetThreatMap(), startPos);
 
 	CCircuitUnit::Id newRepId = newRep->GetId();
 	pathfinder->RunQuery(costQuery, [this, newRepId](const IPathQuery* query) {

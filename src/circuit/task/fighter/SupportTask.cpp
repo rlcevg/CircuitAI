@@ -114,7 +114,7 @@ void CSupportTask::Update()
 	const float range = pathfinder->GetSquareSize();
 
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			unit, circuit->GetThreatMap(), frame,
+			unit, circuit->GetThreatMap(),
 			startPos, range, urgentPositions, nullptr, false, std::numeric_limits<float>::max(), true);
 	pathQueries[unit] = query;
 

@@ -123,7 +123,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			unit, threatMap, frame,
+			unit, threatMap,
 			pos, range, enemyPositions);
 	pathQueries[unit] = query;
 
@@ -275,16 +275,15 @@ void CArtilleryTask::ApplyTargetPath(const CQueryPathMulti* query, bool isUpdati
 void CArtilleryTask::FallbackBasePos(CCircuitUnit* unit, bool isUpdating)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 
-	const AIFloat3& startPos = unit->GetPos(frame);
+	const AIFloat3& startPos = unit->GetPos(circuit->GetLastFrame());
 	position = setupMgr->GetBasePos();
 	const float pathRange = DEFAULT_SLACK * 4;  // pathfinder->GetSquareSize()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			unit, circuit->GetThreatMap(), frame,
+			unit, circuit->GetThreatMap(),
 			startPos, position, pathRange);
 	pathQueries[unit] = query;
 
@@ -309,8 +308,7 @@ void CArtilleryTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& pos = unit->GetPos(frame);
+	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	const AIFloat3& threatPos = unit->GetTravelAct()->IsActive() ? position : pos;
 	const bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < THREAT_MIN);
 	if (!proceed) {
@@ -326,7 +324,7 @@ void CArtilleryTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			unit, circuit->GetThreatMap(), frame,
+			unit, circuit->GetThreatMap(),
 			pos, position, pathRange);
 	pathQueries[unit] = query;
 

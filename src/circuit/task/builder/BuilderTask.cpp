@@ -507,8 +507,7 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 		return;
 	}
 
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& startPos = unit->GetPos(frame);
+	const AIFloat3& startPos = unit->GetPos(circuit->GetLastFrame());
 
 	if ((startPos.SqDistance2D(endPos) < SQUARE(range))
 		|| ((circuit->GetSetupManager()->GetBasePos().SqDistance2D(startPos) < SQUARE(circuit->GetMilitaryManager()->GetBaseDefRange()))
@@ -524,7 +523,7 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			unit, circuit->GetThreatMap(), frame,
+			unit, circuit->GetThreatMap(),
 			startPos, endPos, range);
 	pathQueries[unit] = query;
 
@@ -842,7 +841,7 @@ bool IBuilderTask::Load(std::istream& is)
 		circuit->GetBuilderManager()->MarkUnfinishedUnit(target, this);
 	}
 #ifdef DEBUG_SAVELOAD
-	manager->GetCircuit()->LOG("%s | position=%f,%f,%f | shake=%f | bdefId=%i | cost=%f | targetId=%i | buildPos=%f,%f,%f | facing=%i | savedIncomeM=%f | savedIncomeE=%f | buildFails=%i | buildDef=%lx | target=%lx",
+	manager->GetCircuit()->LOG("%s | position=%f,%f,%f | shake=%f | bdefId=%i | cost=%f | targetId=%i | buildPos=%f,%f,%f | facing=%i | savedIncomeM=%f | savedIncomeE=%f | buildFails=%i | buildDef=%p | target=%p",
 			__PRETTY_FUNCTION__, position.x, position.y, position.z, shake, bdefId, cost, targetId, buildPos.x, buildPos.y, buildPos.z, facing, savedIncomeM, savedIncomeE, buildFails, buildDef, target);
 #endif
 	return true;

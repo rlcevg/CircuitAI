@@ -231,7 +231,7 @@ void CAntiHeavyTask::Update()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, pathfinder->GetSquareSize(), enemyPositions);
 	pathQueries[leader] = query;
 
@@ -379,13 +379,12 @@ void CAntiHeavyTask::FallbackAttackSafe()
 		return;
 	}
 
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(circuit->GetLastFrame());
 	const float pathRange = DEFAULT_SLACK * 4;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 
@@ -415,13 +414,12 @@ void CAntiHeavyTask::FallbackStaticSafe()
 		return;
 	}
 
-	const int frame = circuit->GetLastFrame();
-	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(circuit->GetLastFrame());
 	const float pathRange = DEFAULT_SLACK * 4;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 
@@ -445,17 +443,16 @@ void CAntiHeavyTask::ApplyStaticSafe(const CQueryPathMulti* query)
 void CAntiHeavyTask::FallbackBasePos()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 
 	position = setupMgr->GetBasePos();
 
-	const AIFloat3& startPos = leader->GetPos(frame);
+	const AIFloat3& startPos = leader->GetPos(circuit->GetLastFrame());
 	const float pathRange = DEFAULT_SLACK * 4;
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
-			leader, circuit->GetThreatMap(), frame,
+			leader, circuit->GetThreatMap(),
 			startPos, position, pathRange);
 	pathQueries[leader] = query;
 

@@ -378,25 +378,23 @@ void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 #endif
 }
 
-void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, const CCircuitDef* mobileDef)
+void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& pos, const CCircuitDef* mobileDef)
 {
-	const SMobileType::Id mobileId = mobileDef->GetMobileId();
 	const int iS = GetSectorIndex(pos);
-	SMobileType* mobyleType = GetMobileType(mobileId);
-	SAreaSector* AS = GetAlternativeSector(unit->GetArea(), iS, mobyleType);
-	if (AS == nullptr) {
+	constexpr int altitude = 4 * 2 * ALTITUDE_SCALE;  // 4 - size of tiles in wide sector
+	SAreaSector* CAS = GetClosestSectorWithAltitude(unit->GetArea(), iS, altitude);
+	if (CAS == nullptr) {
 		return;
 	}
 
 	IndexVec targets;
-	for (const auto& kv : blockPath) {
+	for (const auto& kv : busPath) {
 		if (kv.second.path != nullptr) {
 			targets.insert(targets.end(), kv.second.path->path.begin(), kv.second.path->path.end());
 		}
 	}
 
-	const int frame = circuit->GetLastFrame();
-	AIFloat3 startPos = unit->GetPos(frame);
+	AIFloat3 startPos = unit->GetPos(circuit->GetLastFrame());
 	switch (unit->GetUnit()->GetBuildingFacing()) {
 		default:
 		case UNIT_FACING_SOUTH:
@@ -412,16 +410,16 @@ void CTerrainManager::AddBlockerPath(CCircuitUnit* unit, const AIFloat3& pos, co
 			startPos += AIFloat3(-128.f, 0.f, 0.f);
 			break;
 	}
-	const AIFloat3& endPos = AS->S->position;
-	FactoryPathInfo& fpi = blockPath[unit];
-	fpi.query = circuit->GetPathfinder()->CreatePathWideQuery(unit, frame, startPos, endPos, targets);
-	blockQueries.push_back(fpi.query);
+	const AIFloat3& endPos = CAS->S->position;
+	FactoryPathInfo& fpi = busPath[unit];
+	fpi.query = circuit->GetPathfinder()->CreatePathWideQuery(unit, mobileDef, startPos, endPos, targets);
+	busQueries.push_back(fpi.query);
 }
 
-void CTerrainManager::DelBlockerPath(CCircuitUnit* unit)
+void CTerrainManager::DelBusPath(CCircuitUnit* unit)
 {
-	auto it = blockPath.find(unit);
-	if (it == blockPath.end()) {
+	auto it = busPath.find(unit);
+	if (it == busPath.end()) {
 		return;
 	}
 	// TODO: Path for new factories contains only part that connects to 1st built path.
@@ -444,7 +442,7 @@ void CTerrainManager::DelBlockerPath(CCircuitUnit* unit)
 //			}
 //		}
 //	}
-	blockPath.erase(it);
+	busPath.erase(it);
 }
 
 AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing)
@@ -1141,12 +1139,12 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 	}
 }
 
-void CTerrainManager::MarkBlockerPath()
+void CTerrainManager::MarkBusPath()
 {
-	for (std::shared_ptr<IPathQuery>& pQuery : blockQueries) {
+	for (std::shared_ptr<IPathQuery>& pQuery : busQueries) {
 		circuit->GetPathfinder()->RunQuery(pQuery, [this](const IPathQuery* query) {
-			auto it = blockPath.find(query->GetUnit());
-			if (it == blockPath.end()) {
+			auto it = busPath.find(query->GetUnit());
+			if (it == busPath.end()) {
 				return;
 			}
 			const CQueryPathWide* q = static_cast<const CQueryPathWide*>(query);
@@ -1171,7 +1169,7 @@ void CTerrainManager::MarkBlockerPath()
 			it->second.query = nullptr;
 		});
 	}
-	blockQueries.clear();
+	busQueries.clear();
 }
 
 void CTerrainManager::SnapPosition(AIFloat3& position)
@@ -1286,6 +1284,26 @@ std::vector<SAreaSector>& CTerrainManager::GetSectorList(SArea* sourceArea)
 	return sourceArea->mobileType->sector;
 }
 
+SAreaSector* CTerrainManager::GetClosestSectorWithAltitude(SArea* sourceArea, const int destinationSIndex, const int altitude)
+{
+	std::vector<SAreaSector>& TMSectors = GetSectorList(sourceArea);
+	if (sourceArea == TMSectors[destinationSIndex].area) {
+		return &TMSectors[destinationSIndex];
+	}
+
+	const AIFloat3& destination = TMSectors[destinationSIndex].S->position;
+	SAreaSector* SClosest = nullptr;
+	float sqDisClosest = std::numeric_limits<float>::max();
+	for (auto& iS : sourceArea->sector) {
+		float sqDist = iS.second->S->position.SqDistance2D(destination);
+		if ((sqDist < sqDisClosest) && (terrainData->GetTASector(iS.first).GetMinAltitude() >= altitude)) {
+			SClosest = iS.second;
+			sqDisClosest = sqDist;
+		}
+	}
+	return SClosest;
+}
+
 SAreaSector* CTerrainManager::GetClosestSector(SArea* sourceArea, const int destinationSIndex)
 {
 	auto iAS = sourceArea->sectorClosest.find(destinationSIndex);
@@ -1299,11 +1317,11 @@ SAreaSector* CTerrainManager::GetClosestSector(SArea* sourceArea, const int dest
 		return &TMSectors[destinationSIndex];
 	}
 
-	AIFloat3* destination = &TMSectors[destinationSIndex].S->position;
+	const AIFloat3& destination = TMSectors[destinationSIndex].S->position;
 	SAreaSector* SClosest = nullptr;
 	float sqDisClosest = std::numeric_limits<float>::max();
 	for (auto& iS : sourceArea->sector) {
-		float sqDist = iS.second->S->position.SqDistance2D(*destination);  // TODO: Consider SqDistance() instead of 2D
+		float sqDist = iS.second->S->position.SqDistance2D(destination);  // TODO: Consider SqDistance() instead of 2D
 		if (sqDist < sqDisClosest) {
 			SClosest = iS.second;
 			sqDisClosest = sqDist;
@@ -1326,11 +1344,11 @@ SSector* CTerrainManager::GetClosestSector(SImmobileType* sourceIT, const int de
 		return SClosest;
 	}
 
-	const AIFloat3* destination = &areaData->sector[destinationSIndex].position;
+	const AIFloat3& destination = areaData->sector[destinationSIndex].position;
 	SSector* SClosest = nullptr;
 	float sqDisClosest = std::numeric_limits<float>::max();
 	for (auto& iS : sourceIT->sector) {
-		float sqDist = iS.second->position.SqDistance2D(*destination);  // TODO: Consider SqDistance() instead of 2D
+		float sqDist = iS.second->position.SqDistance2D(destination);  // TODO: Consider SqDistance() instead of 2D
 		if (sqDist < sqDisClosest) {
 			SClosest = iS.second;
 			sqDisClosest = sqDist;
@@ -1576,7 +1594,7 @@ void CTerrainManager::UpdateAreaUsers(int interval)
 	// stagger area update
 	circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([this]() {
 		circuit->GetPathfinder()->UpdateAreaUsers(this);
-		MarkBlockerPath();
+		MarkBusPath();
 
 		OnAreaUsersUpdated();
 	}), interval);

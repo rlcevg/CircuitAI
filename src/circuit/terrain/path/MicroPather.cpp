@@ -607,7 +607,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 		}
 		FixStartEndNode(&startNode, &endNode);
 
-		if (canMoveArray[(size_t)startNode] > COST_BLOCKED) {
+		if (CantMoveTo((size_t)startNode)) {
 			// L("Pather: trying to move from a blocked start pos");
 		}
 	}
@@ -625,7 +625,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 	{
 		const float estToGoal = LeastCostEstimateLocal((size_t)startNode);
 
-		PathNode* tempStartNode = &pathNodeMem[(size_t) startNode];
+		PathNode* tempStartNode = &pathNodeMem[(size_t)startNode];
 		tempStartNode->Reuse(frame);
 		tempStartNode->costFromStart = 0;
 		tempStartNode->totalCost = estToGoal;
@@ -642,7 +642,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 		PathNode* node = open.Pop();
 
 		if (node->isEndNode) {
-			void* theEndNode = (void*) ((((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode));
+			void* theEndNode = (void*) (((size_t)node - (size_t)pathNodeMem) / sizeof(PathNode));
 
 			GoalReached(node, startNode, theEndNode, path);
 			*cost = node->costFromStart;
@@ -656,7 +656,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 			return SOLVED;
 		} else {
 			// we have not reached the goal, add the neighbors (emulate GetNodeNeighbors)
-			const int indexStart = (((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode);
+			const int indexStart = ((size_t)node - (size_t)pathNodeMem) / sizeof(PathNode);
 
 			#ifdef USE_ASSERTIONS
 			const int ystart = indexStart / mapSizeX;
@@ -672,7 +672,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 			for (int i = 0; i < 8; ++i) {
 				const int indexEnd = offsets[i] + indexStart;
 
-				if (canMoveArray[indexEnd] > COST_BLOCKED) {
+				if (CantMoveTo(indexEnd)) {
 					continue;
 				}
 
@@ -719,7 +719,7 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x2, directNode->y2);
 
 				#ifdef USE_ASSERTIONS
-				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+				assert((size_t)indexEnd == ((size_t)directNode - (size_t)pathNodeMem) / sizeof(PathNode));
 				#endif
 
 				if (directNode->inOpen) {
@@ -735,9 +735,8 @@ int CMicroPather::FindBestPathToAnyGivenPoint(void* startNode, VoidVec& endNodes
 	}
 
 	// unmark the endNodes
-	for (unsigned i = 0; i < endNodes.size(); i++) {
-		PathNode* tempEndNode = &pathNodeMem[(size_t)endNodes[i]];
-		tempEndNode->isEndNode = 0;
+	for (const void* node : endNodes) {
+		pathNodeMem[(size_t)node].isEndNode = 0;
 	}
 
 	isRunning = false;
@@ -760,7 +759,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 	{
 		FixStartEndNode(&startNode, &endNode);
 
-		if (canMoveArray[(size_t)startNode] > COST_BLOCKED) {
+		if (CantMoveTo((size_t)startNode)) {
 			// L("Pather: trying to move from a blocked start pos");
 		}
 	}
@@ -775,8 +774,8 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 	OpenQueueBH open(heapArrayMem);
 
 	{
-		PathNode* tempStartNode = &pathNodeMem[(size_t) startNode];
-		float estToGoal = LeastCostEstimateLocal( (size_t) startNode);
+		PathNode* tempStartNode = &pathNodeMem[(size_t)startNode];
+		float estToGoal = LeastCostEstimateLocal((size_t)startNode);
 		tempStartNode->Reuse(frame);
 		tempStartNode->costFromStart = 0;
 		tempStartNode->totalCost = estToGoal;
@@ -784,7 +783,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 	}
 
 	// make the radius
-	size_t indexEnd = (size_t) endNode;
+	size_t indexEnd = (size_t)endNode;
 	int y = indexEnd / mapSizeX;
 	int x = indexEnd - y * mapSizeX;
 	int xend[2 * radius + 1];
@@ -803,7 +802,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 	while (!open.Empty()) {
 		PathNode* node = open.Pop();
 
-		const int indexStart = (((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode);
+		const int indexStart = ((size_t)node - (size_t)pathNodeMem) / sizeof(PathNode);
 		const int ystart = indexStart / mapSizeX;
 		const int xstart = indexStart - ystart * mapSizeX;
 		// L("counter: " << counter << ", ystart: " << ystart << ", xstart: " << xstart);
@@ -841,7 +840,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 			for (int i = 0; i < 8; ++i) {
 				const int indexEnd = offsets[i] + indexStart;
 
-				if (canMoveArray[indexEnd] > COST_BLOCKED) {
+				if (CantMoveTo(indexEnd)) {
 					continue;
 				}
 
@@ -888,7 +887,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x2, directNode->y2);
 
 				#ifdef USE_ASSERTIONS
-				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+				assert((size_t)indexEnd == ((size_t)directNode - (size_t)pathNodeMem) / sizeof(PathNode));
 				#endif
 
 				if (directNode->inOpen) {
@@ -907,7 +906,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 	return NO_SOLUTION;
 }
 
-int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
+int CMicroPather::FindWidePathToBus(void* startNode, VoidVec& endNodes,
 		const bool isWide, IndexVec* path, float* cost)
 {
 	assert(!isRunning);
@@ -923,7 +922,7 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 	{
 		FixStartEndNode(&startNode, &endNodes.back());
 
-		if (canMoveArray[(size_t)startNode] > COST_BLOCKED) {
+		if (CantMoveTo((size_t)startNode)) {
 			// L("Pather: trying to move from a blocked start pos");
 		}
 	}
@@ -941,7 +940,7 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 	{
 		const float estToGoal = LeastCostEstimateLocal((size_t)startNode);
 
-		PathNode* tempStartNode = &pathNodeMem[(size_t) startNode];
+		PathNode* tempStartNode = &pathNodeMem[(size_t)startNode];
 		tempStartNode->Reuse(frame);
 		tempStartNode->costFromStart = 0;
 		tempStartNode->totalCost = estToGoal;
@@ -952,7 +951,7 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 		PathNode* node = open.Pop();
 
 		if (node->isEndNode) {
-			void* theEndNode = (void*) ((((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode));
+			void* theEndNode = (void*)(((size_t)node - (size_t)pathNodeMem) / sizeof(PathNode));
 
 			GoalReached(node, startNode, theEndNode, path);
 			*cost = node->costFromStart;
@@ -966,7 +965,7 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 			return SOLVED;
 		} else {
 			// we have not reached the goal, add the neighbors (emulate GetNodeNeighbors)
-			const int indexStart = (((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode);
+			const int indexStart = ((size_t)node - (size_t)pathNodeMem) / sizeof(PathNode);
 
 			#ifdef USE_ASSERTIONS
 			const int ystart = indexStart / mapSizeX;
@@ -982,11 +981,11 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 			for (int i = 0; i < 4; ++i) {
 				const int indexEnd = offsets[i] + indexStart;
 
-				if (canMoveArray[indexEnd] > COST_BLOCKED) {
+				if (CantMoveTo(indexEnd)) {
 					continue;
 				}
-				if (isWide && ((canMoveArray[indexEnd - 1] > COST_BLOCKED) || (canMoveArray[indexEnd + 1] > COST_BLOCKED)
-						|| (canMoveArray[indexEnd - mapSizeX] > COST_BLOCKED) || (canMoveArray[indexEnd + mapSizeX] > COST_BLOCKED)))  // offsets[0..3]
+				if (isWide && (CantMoveTo(indexEnd - 1) || CantMoveTo(indexEnd + 1)
+						|| CantMoveTo(indexEnd - mapSizeX) || CantMoveTo(indexEnd + mapSizeX)))  // offsets[0..3]
 				{
 					continue;
 				}
@@ -1032,7 +1031,7 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x2, directNode->y2);
 
 				#ifdef USE_ASSERTIONS
-				assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+				assert((size_t)indexEnd == ((size_t)directNode - (size_t)pathNodeMem) / sizeof(PathNode));
 				#endif
 
 				if (directNode->inOpen) {
@@ -1047,6 +1046,11 @@ int CMicroPather::FindWidePathToPath(void* startNode, VoidVec& endNodes,
 		node->inClosed = 1;
 	}
 
+	// unmark the endNodes
+	for (const void* node : endNodes) {
+		pathNodeMem[(size_t)node].isEndNode = 0;
+	}
+
 	isRunning = false;
 	return NO_SOLUTION;
 }
@@ -1059,7 +1063,7 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 	{
 		FixNode(&startNode);
 
-		if (canMoveArray[(size_t) startNode] > COST_BLOCKED) {
+		if (CantMoveTo((size_t)startNode)) {
 			// L("Pather: trying to move from a blocked start pos");
 		}
 	}
@@ -1075,7 +1079,7 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 	OpenQueueBH open(heapArrayMem);
 
 	{
-		PathNode* tempStartNode = &pathNodeMem[(size_t) startNode];
+		PathNode* tempStartNode = &pathNodeMem[(size_t)startNode];
 		tempStartNode->Reuse(frame);
 		tempStartNode->costFromStart = 0;
 		tempStartNode->totalCost = 0;
@@ -1086,7 +1090,7 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 		PathNode* node = open.Pop();
 
 		// we have not reached the goal, add the neighbors (emulate GetNodeNeighbors)
-		const int indexStart = (((size_t) node) - ((size_t) pathNodeMem)) / sizeof(PathNode);
+		const int indexStart = ((size_t)node - (size_t)pathNodeMem) / sizeof(PathNode);
 
 		#ifdef USE_ASSERTIONS
 		const int ystart = indexStart / mapSizeX;
@@ -1103,7 +1107,7 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 		for (int i = 0; i < 8; ++i) {
 			const int indexEnd = offsets[i] + indexStart;
 
-			if (canMoveArray[indexEnd] > COST_BLOCKED) {
+			if (CantMoveTo(indexEnd)) {
 				continue;
 			}
 
@@ -1149,7 +1153,7 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 			directNode->costFromStart = newCost;
 			directNode->totalCost = newCost;
 			#ifdef USE_ASSERTIONS
-			assert(((size_t) indexEnd) == ((((size_t) directNode) - ((size_t) pathNodeMem)) / sizeof(PathNode)));
+			assert((size_t)indexEnd == ((size_t)directNode - (size_t)pathNodeMem) / sizeof(PathNode));
 			#endif
 
 			if (directNode->inOpen) {

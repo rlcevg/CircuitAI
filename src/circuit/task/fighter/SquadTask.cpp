@@ -183,7 +183,7 @@ ISquadTask* ISquadTask::CheckMergeTask()
 
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<CQueryLineMap> query = std::static_pointer_cast<CQueryLineMap>(
-			pathfinder->CreateLineMapQuery(leader, circuit->GetThreatMap(), frame));
+			pathfinder->CreateLineMapQuery(leader, circuit->GetThreatMap(), pos));
 
 	const std::set<IFighterTask*>& tasks = static_cast<CMilitaryManager*>(manager)->GetTasks(fightType);
 	for (const IFighterTask* candidate : tasks) {
