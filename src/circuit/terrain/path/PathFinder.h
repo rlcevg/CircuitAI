@@ -27,10 +27,10 @@ class IPathQuery;
 class CScheduler;
 class CTerrainManager;
 class CCircuitUnit;
+class CCircuitDef;
 class CThreatMap;
 #ifdef DEBUG_VIS
 class CCircuitAI;
-class CCircuitDef;
 #endif
 
 class CPathFinder {

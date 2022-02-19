@@ -11,6 +11,10 @@
 #include "script/RefCounter.h"
 
 #include "AIFloat3.h"
+#define DEBUG_SAVELOAD 1
+#ifdef DEBUG_SAVELOAD
+#include "Log.h"
+#endif
 
 #include <set>
 #include <map>
@@ -21,8 +25,6 @@ namespace springai {
 }
 
 namespace circuit {
-
-#define DEBUG_SAVELOAD 1
 
 class CCircuitUnit;
 class CEnemyInfo;
