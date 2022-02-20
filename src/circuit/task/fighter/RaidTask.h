@@ -23,6 +23,7 @@ public:
 
 	virtual void Start(CCircuitUnit* unit) override;
 	virtual void Update() override;
+	virtual void Stop(bool done);
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 

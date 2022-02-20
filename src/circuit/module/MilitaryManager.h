@@ -76,7 +76,7 @@ public:
 	void AbortDefence(const CBDefenceTask* task);
 	bool HasDefence(int cluster);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
-	springai::AIFloat3 GetRaidPosition(CCircuitUnit* unit);
+	void ClearScoutPosition(IUnitTask* task);
 	void FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions);
 	void FillAttackSafePos(CCircuitUnit* unit, F3Vec& outPositions);
 	void FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions);
@@ -119,8 +119,8 @@ public:
 	unsigned int GetGuardsNum() const { return defence->GetGuardsNum(); }
 	int GetGuardFrame() const { return defence->GetGuardFrame(); }
 
-	void MarkPointOfInterest(CEnemyInfo* enemy);
-	void UnmarkPointOfInterest(CEnemyInfo* enemy);
+	void AddPointOfInterest(CEnemyInfo* enemy) { PointOfInterest(enemy, +3, -1); }
+	void DelPointOfInterest(CEnemyInfo* enemy) { PointOfInterest(enemy, -3, +1); }
 
 	// TODO: Create CMilitaryManager::CTargetManager and move all FindTarget variations there.
 	//       CMilitaryManager must be responsible for target selection.
@@ -135,6 +135,7 @@ private:
 
 	void AddArmyCost(CCircuitUnit* unit);
 	void DelArmyCost(CCircuitUnit* unit);
+	void PointOfInterest(CEnemyInfo* enemy, int start, int step);
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -149,16 +150,16 @@ private:
 	CDefenceData* defence;
 	unsigned int defenceIdx;
 
-	std::vector<unsigned int> scoutPath;  // list of spot ids
-	unsigned int scoutIdx;
-
-	struct SRaidPoint {
-		unsigned int idx;
-		int lastFrame;
-		float weight;
-		std::set<CEnemyInfo*> units;
+	struct SScoutPoint {
+		int spotNum;  // last used spot number in cluster
+		int scouted;  // times this point was scouted
+		int score;
+		int enemyNum;
+		IUnitTask* task;
 	};
-	std::vector<SRaidPoint> raidPath;  // list of cluster ids
+	std::vector<SScoutPoint> scoutPoints;  // list of clusters, index = custerId
+	std::map<IUnitTask*, int> scoutTasks;  // task: clusterId
+	bool isEnemyFound;
 
 	struct SRoleInfo {
 		float cost;

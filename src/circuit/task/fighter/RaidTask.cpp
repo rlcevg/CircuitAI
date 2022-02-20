@@ -158,6 +158,7 @@ void CRaidTask::Update()
 	if (GetTarget() != nullptr) {
 		state = State::ENGAGE;
 		position = GetTarget()->GetPos();
+		circuit->GetMilitaryManager()->ClearScoutPosition(this);
 		if (leader->GetCircuitDef()->IsAbleToFly()) {
 			if (GetTarget()->GetUnit()->IsCloaked()) {
 				for (CCircuitUnit* unit : units) {
@@ -206,6 +207,12 @@ void CRaidTask::Update()
 	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
 		this->ApplyTargetPath(static_cast<const CQueryPathMulti*>(query));
 	});
+}
+
+void CRaidTask::Stop(bool done)
+{
+	manager->GetCircuit()->GetMilitaryManager()->ClearScoutPosition(this);
+	ISquadTask::Stop(done);
 }
 
 void CRaidTask::OnUnitIdle(CCircuitUnit* unit)
@@ -265,7 +272,7 @@ bool CRaidTask::FindTarget()
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
 		CEnemyInfo* enemy = kv.second;
-		if (enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
+		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1)) {
 			continue;
 		}
 
@@ -365,11 +372,7 @@ bool CRaidTask::FindTarget()
 		return true;
 	}
 
-	if (urgentPositions.empty() && enemyPositions.empty()) {
-		return false;
-	}
-
-	return true;
+	return !urgentPositions.empty() || !enemyPositions.empty();
 	// Return: target, startPos=leader->pos, urgentPositions and enemyPositions
 }
 
@@ -393,7 +396,7 @@ void CRaidTask::FallbackRaid()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const AIFloat3& threatPos = leader->GetTravelAct()->IsActive() ? position : pos;
 	if (attackPower * powerMod <= threatMap->GetThreatAt(leader, threatPos)) {
-		position = circuit->GetMilitaryManager()->GetRaidPosition(leader);
+		position = circuit->GetMilitaryManager()->GetScoutPosition(leader);
 	}
 
 	if (!utils::is_valid(position)) {

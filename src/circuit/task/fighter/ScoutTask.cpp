@@ -90,6 +90,12 @@ void CScoutTask::Update()
 	}
 }
 
+void CScoutTask::Stop(bool done)
+{
+	manager->GetCircuit()->GetMilitaryManager()->ClearScoutPosition(this);
+	IFighterTask::Stop(done);
+}
+
 void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	IFighterTask::OnUnitIdle(unit);
@@ -250,11 +256,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		SetTarget(bestTarget);
 		return true;
 	}
-	if (enemyPositions.empty()) {
-		return false;
-	}
-
-	return true;
+	return !enemyPositions.empty();
 	// Return: target=bestTarget, startPos=pos, enemyPositions
 }
 

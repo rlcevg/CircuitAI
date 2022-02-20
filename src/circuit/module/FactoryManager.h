@@ -196,11 +196,24 @@ private:
 	float bpRatio;
 	float reWeight;
 
+	struct SFireDef {
+		CCircuitDef* cdef;
+		const std::vector<float>* probs;
+		bool isResponse;
+		int buildCount;
+	};
+	int numBatch;
+	std::map<CCircuitDef::Id, SFireDef> lastFireDef;  // factory: SFireDef
+	void SetLastRequiredDef(CCircuitDef::Id facId, CCircuitDef* cdef,
+							const std::vector<float>& probs, bool isResp);
+	std::pair<CCircuitDef*, bool> GetLastRequiredDef(CCircuitDef::Id facId,
+			const std::vector<float>& probs, const std::function<bool (CCircuitDef*)>& isAvailable);
+
 	struct SRecruitDef {
 		CCircuitDef::Id id;
 		CRecruitTask::Priority priority;
 	};
-	SRecruitDef RequiredFireDef(CCircuitUnit* builder) const;
+	SRecruitDef RequiredFireDef(CCircuitUnit* builder);
 
 	const std::vector<float>& GetFacTierProbs(const SFactoryDef& facDef) const;
 	CCircuitDef* GetFacRoleDef(CCircuitDef::RoleT role, const SFactoryDef& facDef) const;

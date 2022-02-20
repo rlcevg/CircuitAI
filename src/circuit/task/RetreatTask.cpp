@@ -259,23 +259,27 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 		// TODO: push WaitAction into unit
 		if (/*cdef->GetDef()->IsAbleToAssist() || */cdef->IsAbleToRepair()) {
 			AIFloat3 pos = unitPos;
-			const float size = SQUARE_SIZE * 16;
-			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-			float centerX = terrainMgr->GetTerrainWidth() / 2;
-			float centerZ = terrainMgr->GetTerrainHeight() / 2;
-			pos.x += (pos.x > centerX) ? size : -size;
-			pos.z += (pos.z > centerZ) ? size : -size;
-			AIFloat3 oldPos = pos;
-			CTerrainManager::CorrectPosition(pos);
-			if (oldPos.SqDistance2D(pos) > SQUARE_SIZE * SQUARE_SIZE) {
-				pos = unitPos;
-				pos.x += (pos.x > centerX) ? -size : size;
-				pos.z += (pos.z > centerZ) ? -size : size;
+			if (unit->GetUnit()->IsCloaked()) {
+				pos += AIFloat3(SQUARE_SIZE * 2, 0, SQUARE_SIZE * 2);  // don't move, but assist if required
+			} else {
+				const float size = SQUARE_SIZE * 16;
+				CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+				float centerX = terrainMgr->GetTerrainWidth() / 2;
+				float centerZ = terrainMgr->GetTerrainHeight() / 2;
+				pos.x += (pos.x > centerX) ? size : -size;
+				pos.z += (pos.z > centerZ) ? size : -size;
+				AIFloat3 oldPos = pos;
+				CTerrainManager::CorrectPosition(pos);
+				if (oldPos.SqDistance2D(pos) > SQUARE_SIZE * SQUARE_SIZE) {
+					pos = unitPos;
+					pos.x += (pos.x > centerX) ? -size : size;
+					pos.z += (pos.z > centerZ) ? -size : size;
+				}
+				CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
+					return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
+				};
+				pos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_NO_FACING, predicate);
 			}
-			CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
-				return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
-			};
-			pos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_NO_FACING, predicate);
 			TRY_UNIT(circuit, unit,
 //				unit->CmdPriority(0);
 				unit->GetUnit()->PatrolTo(pos);

@@ -27,13 +27,11 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 private:
-	void Execute(CCircuitUnit* unit, bool isUpdating);
+	void Execute(CCircuitUnit* unit);
 	CEnemyInfo* FindTarget(CCircuitUnit* unit, const springai::AIFloat3& pos);
-	void ApplyTargetPath(const CQueryPathMulti* query, bool isUpdating);
-	void FallbackBasePos(CCircuitUnit* unit, bool isUpdating);
-	void ApplyBasePos(const CQueryPathSingle* query, bool isUpdating);
-	void FallbackScout(CCircuitUnit* unit, bool isUpdating);
-	void ApplyScoutPath(const CQueryPathSingle* query);
+	void ApplyTargetPath(const CQueryPathMulti* query);
+	void FallbackSafePos(CCircuitUnit* unit);
+	void ApplySafePos(const CQueryPathMulti* query);
 	void Fallback(CCircuitUnit* unit, bool proceed);
 };
 

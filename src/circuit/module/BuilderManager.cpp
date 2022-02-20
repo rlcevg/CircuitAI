@@ -246,11 +246,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 					destroyedHandler[unitDefId] = rezzDestroyedHandler;
 				}
 
-				if (cdef.GetRetreat() < 0.f) {
-					cdef.SetRetreat(builderRet);
-				} else {
-					cdef.SetRetreat(cdef.GetRetreat() * retMod);
-				}
+				cdef.SetRetreat((cdef.GetRetreat() < 0.f) ? builderRet : cdef.GetRetreat() * retMod);
 //			} else if (cdef->GetCostM() > 999.0f) {
 //				createdHandler[unitDefId] = heavyCreatedHandler;
 			}

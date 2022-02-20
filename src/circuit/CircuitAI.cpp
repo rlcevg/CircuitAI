@@ -1171,7 +1171,7 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 		}
 	}
 
-	militaryManager->MarkPointOfInterest(enemy);
+	militaryManager->AddPointOfInterest(enemy);
 
 	return 0;  // signaling: OK
 }
@@ -1207,7 +1207,7 @@ int CCircuitAI::EnemyDestroyed(CEnemyInfo* enemy)
 {
 	allyTeam->EnemyDestroyed(enemy->GetData(), this);
 
-	militaryManager->UnmarkPointOfInterest(enemy);
+	militaryManager->DelPointOfInterest(enemy);
 
 	return 0;  // signaling: OK
 }
@@ -1475,7 +1475,7 @@ void CCircuitAI::CreateFakeEnemy(int weaponId, const AIFloat3& startPos, const A
 			timeout += FRAMES_PER_SEC * 60 * 20;
 			defId = *wuDef.staticIds.begin();
 		} else {
-			timeout += FRAMES_PER_SEC * 60 * 2;
+			timeout += FRAMES_PER_SEC * 60 * 1;
 			defId = *wuDef.mobileIds.begin();
 		}
 		allyTeam->RegisterEnemyFake(GetCircuitDef(defId), enemyPos, timeout);

@@ -276,7 +276,7 @@ void CAttackTask::FindTarget()
 
 		for (const ICoreUnit::Id eId : group.units) {
 			CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
-			if ((enemy == nullptr) || enemy->IsHidden() || (enemy->GetTasks().size() > 2)) {
+			if ((enemy == nullptr) || enemy->IsHidden()/* || (enemy->GetTasks().size() > 2)*/) {
 				continue;
 			}
 			const AIFloat3& ePos = enemy->GetPos();
@@ -319,7 +319,7 @@ void CAttackTask::FindTarget()
 			if (minSqDist > sqOEDist) {
 				minSqDist = sqOEDist;
 				bestTarget = enemy;
-				hasGoodTarget = hasGoodTarget || !isOverpowered;
+				hasGoodTarget |= !isOverpowered;
 			}
 		}
 	}

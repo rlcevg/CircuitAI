@@ -503,25 +503,25 @@ void CTerrainAnalyzer::DecideSeasOrLakes()
 			TilePosition origin = TilePosition(x, y);
 			CTile& tOrigin = GetTile(origin);
 			if (tOrigin.IsSeaOrLake()) {
-				std::vector<TilePosition> ToSearch{origin};
+				std::vector<TilePosition> toSearch{origin};
 				std::vector<CTile*> seaExtent{&tOrigin};
 				tOrigin.SetSea();
 				TilePosition topLeft = origin;
 				TilePosition bottomRight = origin;
-				while (!ToSearch.empty()) {
-					TilePosition current = ToSearch.back();
+				while (!toSearch.empty()) {
+					TilePosition current = toSearch.back();
 					if (current.x < topLeft.x) topLeft.x = current.x;
 					if (current.y < topLeft.y) topLeft.y = current.y;
 					if (current.x > bottomRight.x) bottomRight.x = current.x;
 					if (current.y > bottomRight.y) bottomRight.y = current.y;
 
-					ToSearch.pop_back();
+					toSearch.pop_back();
 					for (TilePosition delta : {TilePosition(0, -1), TilePosition(-1, 0), TilePosition(+1, 0), TilePosition(0, +1)}) {
 						TilePosition next = current + delta;
 						if (IsValid(next)) {
 							CTile& tNext = GetTile(next);
 							if (tNext.IsSeaOrLake()) {
-								ToSearch.push_back(next);
+								toSearch.push_back(next);
 								if ((int)seaExtent.size() <= config.lakeMaxTiles) seaExtent.push_back(&tNext);
 								tNext.SetSea();
 							}

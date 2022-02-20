@@ -86,17 +86,17 @@ void CEnergyLink::CheckConnection()
 	float minDist = std::numeric_limits<float>::max();
 
 	SPylon::UnmarkAll();
-	std::queue<SPylon*> queue;
+	std::queue<SPylon*> toVisit;
 
 	for (SPylon* p : source->pylon.neighbors) {
-		queue.push(p);
+		toVisit.push(p);
 	}
 	AIFloat3 P1 = target->pylon.pos;
 
-	// depth-first search
-	while (!queue.empty()) {
-		SPylon* q = queue.front();
-		queue.pop();
+	// breadth-first search
+	while (!toVisit.empty()) {
+		SPylon* q = toVisit.front();
+		toVisit.pop();
 		if (q == &target->pylon) {
 			isFinished = true;
 			costMod = MIN_COSTMOD;
@@ -112,7 +112,7 @@ void CEnergyLink::CheckConnection()
 		q->SetMarked();
 		for (SPylon* child : q->neighbors) {
 			if (!child->Marked()) {
-				queue.push(child);
+				toVisit.push(child);
 			}
 		}
 	}
@@ -126,13 +126,13 @@ void CEnergyLink::CheckConnection()
 	SPylon::UnmarkAll();
 
 	for (SPylon* p : target->pylon.neighbors) {
-		queue.push(p);
+		toVisit.push(p);
 	}
 	P1 = sourceHead->pos;
 
-	while (!queue.empty()) {
-		SPylon* q = queue.front();
-		queue.pop();
+	while (!toVisit.empty()) {
+		SPylon* q = toVisit.front();
+		toVisit.pop();
 		float dist = P1.distance2D(q->pos) - q->range;
 		if (dist < minDist) {
 			minDist = dist;
@@ -142,7 +142,7 @@ void CEnergyLink::CheckConnection()
 		q->SetMarked();
 		for (SPylon* child : q->neighbors) {
 			if (!child->Marked()) {
-				queue.push(child);
+				toVisit.push(child);
 			}
 		}
 	}
