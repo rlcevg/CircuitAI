@@ -35,7 +35,7 @@ void CQueryPathMulti::InitQuery(const AIFloat3& startPos, float maxRange,
 
 void CQueryPathMulti::Prepare()
 {
-	pPath = std::make_shared<PathInfo>(endPosOnly);
+	pPath = std::make_shared<CPathInfo>(endPosOnly);
 	if (hitTest == nullptr) {
 		hitTest = [](int2 start, int2 end) {
 			return true;

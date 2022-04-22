@@ -19,7 +19,7 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 		: IUnitAction(owner, type)
 		, speed(speed)
 		, pathIterator(0)
-		, isForce(true)
+		, lastSector(-1)
 		, lastFrame(-1)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
@@ -38,7 +38,7 @@ ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, int squareSize, flo
 	minSqDist *= minSqDist;
 }
 
-ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, const std::shared_ptr<PathInfo>& pPath,
+ITravelAction::ITravelAction(CCircuitUnit* owner, Type type, const std::shared_ptr<CPathInfo>& pPath,
 		int squareSize, float speed)
 		: ITravelAction(owner, type, squareSize, speed)
 {
@@ -56,12 +56,12 @@ void ITravelAction::OnEnd()
 	unit->GetTask()->OnTravelEnd(unit);  // WARNING: do not clear/delete unit actions
 }
 
-void ITravelAction::SetPath(const std::shared_ptr<PathInfo>& pPath, float speed)
+void ITravelAction::SetPath(const std::shared_ptr<CPathInfo>& pPath, float speed)
 {
 	pathIterator = 0;
 	this->pPath = pPath;
 	this->speed = speed;
-	isForce = true;
+//	lastSector = -1;
 	lastFrame = -1;
 	StateActivate();
 }
@@ -72,7 +72,7 @@ int ITravelAction::CalcSpeedStep(float& stepSpeed)
 	const AIFloat3& pos = unit->GetPos(lastFrame);
 	int pathMaxIndex = pPath->posPath.size() - 1;
 
-	int lastStep = pathIterator;
+//	int lastStep = pathIterator;
 	float sqDistToStep = pos.SqDistance2D(pPath->posPath[pathIterator]);
 	int step = std::min(pathIterator + increment, pathMaxIndex);
 	float sqNextDistToStep = pos.SqDistance2D(pPath->posPath[step]);
@@ -83,12 +83,14 @@ int ITravelAction::CalcSpeedStep(float& stepSpeed)
 		sqNextDistToStep = pos.SqDistance2D(pPath->posPath[step]);
 	}
 
-	if (!isForce && (pathIterator == lastStep) && ((int)sqDistToStep > minSqDist)) {
+	if (/*(pathIterator == lastStep) && */((int)sqDistToStep > minSqDist)
+		&& (pPath->path[pathIterator + pPath->start] == lastSector))
+	{
 		return -1;
 	} else {
 		stepSpeed = speed;
 	}
-	isForce = false;
+	lastSector = pPath->path[pathIterator + pPath->start];
 
 	if ((int)sqDistToStep <= minSqDist) {
 		pathIterator = step;

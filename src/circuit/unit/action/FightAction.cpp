@@ -21,7 +21,7 @@ CFightAction::CFightAction(CCircuitUnit* owner, int squareSize, float speed)
 {
 }
 
-CFightAction::CFightAction(CCircuitUnit* owner, const std::shared_ptr<PathInfo>& pPath,
+CFightAction::CFightAction(CCircuitUnit* owner, const std::shared_ptr<CPathInfo>& pPath,
 		int squareSize, float speed)
 		: ITravelAction(owner, Type::FIGHT, pPath, squareSize, speed)
 {

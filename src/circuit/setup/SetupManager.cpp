@@ -318,6 +318,10 @@ void CSetupManager::SetCommander(CCircuitUnit* unit)
 		return;
 	}
 	commChoice = commander->GetCircuitDef();
+	if (!utils::is_valid(basePos)) {
+		SetBasePos(unit->GetPos(circuit->GetLastFrame()));
+	}
+
 	if (isSideSelected) {
 		return;
 	}

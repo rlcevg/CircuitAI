@@ -15,7 +15,7 @@ namespace circuit {
 class CFightAction: public ITravelAction {
 public:
 	CFightAction(CCircuitUnit* owner, int squareSize, float speed = NO_SPEED_LIMIT);
-	CFightAction(CCircuitUnit* owner, const std::shared_ptr<PathInfo>& pPath,
+	CFightAction(CCircuitUnit* owner, const std::shared_ptr<CPathInfo>& pPath,
 			int squareSize, float speed = NO_SPEED_LIMIT);
 	virtual ~CFightAction();
 

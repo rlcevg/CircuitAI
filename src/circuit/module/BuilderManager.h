@@ -77,6 +77,15 @@ public:
 							  float shake = SQUARE_SIZE * 32,
 							  bool isActive = true,
 							  int timeout = ASSIGN_TIMEOUT);
+	IBuilderTask* EnqueueDefence(IBuilderTask::Priority priority,
+								 CCircuitDef* buildDef,
+								 int pointId,
+								 const springai::AIFloat3& position,
+								 IBuilderTask::BuildType type,
+								 float cost,
+								 float shake = SQUARE_SIZE * 32,
+								 bool isActive = true,
+								 int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask* EnqueueSpot(IBuilderTask::Priority priority,
 							  CCircuitDef* buildDef,
 							  int spotId,
@@ -174,6 +183,11 @@ public:
 		return GetResurrectTask(pos, radius) != nullptr;
 	}
 
+	void SetCanUpMex(CCircuitDef* cdef, bool value);
+	bool CanUpMex(CCircuitDef* cdef) const;
+	void SetCanUpGeo(CCircuitDef* cdef, bool value);
+	bool CanUpGeo(CCircuitDef* cdef) const;
+
 private:
 	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) override;
 	IBuilderTask* MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query);
@@ -215,11 +229,16 @@ private:
 		float maxTime;  // seconds
 	} super;
 
+	struct SWorkExt {
+		bool canUpMex : 1;
+		bool canUpGeo : 1;
+	};
+	std::unordered_map<CCircuitDef*, SWorkExt> workerDefs;
+
 public:
 	void UpdateAreaUsers();
 private:
 	std::unordered_set<terrain::SMobileType::Id> workerMobileTypes;
-	std::unordered_set<CCircuitDef*> workerDefs;
 	std::map<terrain::SArea*, std::map<CCircuitDef*, int>> buildAreas;  // area <=> worker types
 
 	virtual void Load(std::istream& is) override;

@@ -151,6 +151,14 @@ const std::vector<Unit*>& COOAICallback::GetNeutralUnitsIn(const AIFloat3& pos, 
 	return units;
 }
 
+bool COOAICallback::IsNeutralUnitsIn(const AIFloat3& pos, float radius, bool spherical) const
+{
+	float pos_posF3[3];
+	pos.LoadInto(pos_posF3);
+	int size = sAICallback->getNeutralUnitsIn(skirmishAIId, pos_posF3, radius, spherical, nullptr, -1);
+	return size > 0;
+}
+
 bool COOAICallback::IsFeatures() const
 {
 	int size = sAICallback->getFeatures(skirmishAIId, nullptr, -1);

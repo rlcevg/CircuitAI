@@ -259,6 +259,7 @@ private:
 
 public:
 	bool IsInitialized() const { return isInitialized; }
+	bool IsSavegame() const { return isSavegame; }
 	bool IsLoadSave() const { return isLoadSave; }
 	CGameAttribute* GetGameAttribute() const { return gameAttribute.get(); }
 	const std::shared_ptr<CScheduler>& GetScheduler() { return scheduler; }
@@ -306,10 +307,11 @@ public:
 	int GetEnemyTeamSize() const;
 
 private:
-	bool isInitialized;
-	bool isLoadSave;
-	bool isResigned;
-	bool isSlave;
+	bool isInitialized : 1;
+	bool isSavegame : 1;
+	bool isLoadSave : 1;
+	bool isResigned : 1;
+	bool isSlave : 1;
 	int lastFrame;
 	int skirmishAIId;
 	int teamId;

@@ -8,10 +8,11 @@
 #ifndef SRC_CIRCUIT_STATIC_METALDATA_H_
 #define SRC_CIRCUIT_STATIC_METALDATA_H_
 
-#include "AIFloat3.h"
-
+#include "util/Point.h"
 #include "kdtree/nanoflann.hpp"
 #include "lemon/smart_graph.h"
+
+#include "AIFloat3.h"
 
 #include <vector>
 #include <atomic>
@@ -32,27 +33,6 @@ public:
 		springai::AIFloat3 position;
 	};
 	using Metals = std::vector<SMetal>;
-	template <class Derived>
-	struct SPointAdaptor {
-		const Derived& pts;
-		SPointAdaptor(const Derived& v) : pts(v) {}
-		/*
-		 * KDTree adapter interface
-		 */
-		// Must return the number of data points
-		inline size_t kdtree_get_point_count() const { return pts.size(); }
-		// Returns the dim'th component of the idx'th point in the class:
-			// Since this is inlined and the "dim" argument is typically an immediate value, the
-			//  "if/else's" are actually solved at compile time.
-		inline float kdtree_get_pt(const size_t idx, const size_t dim) const {
-			return (dim == 0) ? pts[idx].position.x : pts[idx].position.z;
-		}
-		// Optional bounding-box computation: return false to default to a standard bbox computation loop.
-			//   Return true if the BBOX was already computed by the class and returned in "bb" so it can be avoided to redo it again.
-			//   Look at bb.size() to find out the expected dimensionality (e.g. 2 or 3 for point clouds)
-		template <class BBOX>
-		bool kdtree_get_bbox(BBOX& /* bb */) const { return false; }
-	};
 	using PointPredicate = nanoflann::KNNCondResultSet<float, int>::Predicate;
 	using MetalIndices = std::vector<int>;
 	using IndicesDists = std::vector<std::pair<int, float>>;
@@ -111,10 +91,10 @@ private:
 
 	bool isInitialized;
 	Metals spots;
-	SPointAdaptor<Metals> spotsAdaptor;
+	utils::SPointAdaptor<Metals> spotsAdaptor;
 	using MetalTree = nanoflann::KDTreeSingleIndexAdaptor<
-			nanoflann::L2_Simple_Adaptor<float, SPointAdaptor<Metals> >,
-			SPointAdaptor<Metals>,
+			nanoflann::L2_Simple_Adaptor<float, utils::SPointAdaptor<Metals> >,
+			utils::SPointAdaptor<Metals>,
 			2 /* dim */, int>;
 	MetalTree metalTree;
 	float minIncome;
@@ -122,10 +102,10 @@ private:
 	float maxIncome;
 
 	Clusters clusters;
-	SPointAdaptor<Clusters> clustersAdaptor;
+	utils::SPointAdaptor<Clusters> clustersAdaptor;
 	using ClusterTree = nanoflann::KDTreeSingleIndexAdaptor<
-			nanoflann::L2_Simple_Adaptor<float, SPointAdaptor<Clusters> >,
-			SPointAdaptor<Clusters>,
+			nanoflann::L2_Simple_Adaptor<float, utils::SPointAdaptor<Clusters> >,
+			utils::SPointAdaptor<Clusters>,
 			2 /* dim */, int>;
 	ClusterTree clusterTree;
 

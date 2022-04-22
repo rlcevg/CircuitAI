@@ -11,6 +11,7 @@
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "resource/MetalManager.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -84,7 +85,7 @@ void CBMexUpTask::Cancel()
 	circuit->GetBuilderManager()->UnregisterReclaim(reclaimMex);
 }
 
-void CBMexUpTask::Execute(CCircuitUnit* unit)
+bool CBMexUpTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -98,15 +99,15 @@ void CBMexUpTask::Execute(CCircuitUnit* unit)
 		TRY_UNIT(circuit, unit,
 			unit->CmdRepair(target, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
-		return;
+		return true;
 	}
-	if (utils::is_valid(buildPos)) {
-		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing)) {
-			TRY_UNIT(circuit, unit,
-				unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
-			)
-			return;
-		}
+	if (utils::is_valid(buildPos)
+		&& circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing))
+	{
+		TRY_UNIT(circuit, unit,
+			unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+		)
+		return true;
 	}
 
 	circuit->GetThreatMap()->SetThreatType(unit);
@@ -119,30 +120,33 @@ void CBMexUpTask::Execute(CCircuitUnit* unit)
 		TRY_UNIT(circuit, unit,
 			unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
-	} else {
-		CCircuitUnit* oldMex = nullptr;
-		const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(position, searchRadius, false);
-		for (ICoreUnit::Id unitId : unitIds) {
-			CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
-			if (curMex == nullptr) {
-				continue;
-			}
-			if (curMex->GetCircuitDef()->GetExtractsM() > 0.f) {
-				oldMex = curMex;
-				break;
-			}
+		return true;
+	}
+
+	CCircuitUnit* oldMex = nullptr;
+	const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(position, searchRadius, false);
+	for (ICoreUnit::Id unitId : unitIds) {
+		CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
+		if (curMex == nullptr) {
+			continue;
 		}
-		if (oldMex != nullptr) {
-			state = State::ENGAGE;  // reclaim finished => UnitIdle => build on 2nd try
-			reclaimMex = oldMex;
-			circuit->GetBuilderManager()->RegisterReclaim(reclaimMex);
-			TRY_UNIT(circuit, unit,
-				unit->CmdReclaimUnit(oldMex, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
-			)
-		} else {
-			manager->AbortTask(this);
+		if (curMex->GetCircuitDef()->GetExtractsM() > 0.f) {
+			oldMex = curMex;
+			break;
 		}
 	}
+	if (oldMex != nullptr) {
+		state = State::ENGAGE;  // reclaim finished => UnitIdle => build on 2nd try
+		reclaimMex = oldMex;
+		circuit->GetBuilderManager()->RegisterReclaim(reclaimMex);
+		TRY_UNIT(circuit, unit,
+			unit->CmdReclaimUnit(oldMex, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+		)
+	} else {
+		manager->AbortTask(this);
+		return false;
+	}
+	return true;
 }
 
 void CBMexUpTask::OnUnitIdle(CCircuitUnit* unit)
@@ -155,6 +159,24 @@ void CBMexUpTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 
 	IBuilderTask::OnUnitIdle(unit);
+}
+
+void CBMexUpTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)
+{
+	FindFacing(pos);
+
+	CCircuitAI* circuit = manager->GetCircuit();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	if (terrainMgr->CanReachAtSafe(builder, pos, builder->GetCircuitDef()->GetBuildDistance())
+		&& circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), pos, facing))
+	{
+		SetBuildPos(pos);
+	} else {
+		CTerrainManager::TerrainPredicate predicate = [terrainMgr, builder](const AIFloat3& p) {
+			return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance());
+		};
+		SetBuildPos(terrainMgr->FindBuildSite(buildDef, pos, searchRadius, facing, predicate));
+	}
 }
 
 #define SERIALIZE(stream, func)	\

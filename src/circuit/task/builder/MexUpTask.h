@@ -24,12 +24,14 @@ protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual bool Execute(CCircuitUnit* unit) override;
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
 private:
+	virtual void FindBuildSite(CCircuitUnit* builder, const springai::AIFloat3& pos, float searchRadius) override;
+
 	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 

@@ -60,7 +60,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-#define ACTION_UPDATE_RATE	64
+#define ACTION_UPDATE_RATE	32
 #define RELEASE_RESIGN		100
 #define RELEASE_SIDE		200
 #define RELEASE_CONFIG		201
@@ -79,8 +79,8 @@ using namespace terrain;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.5.5"};
-constexpr uint32_t VERSION_SAVE = 1;
+constexpr char version[]{"1.5.6"};
+constexpr uint32_t VERSION_SAVE = 2;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -96,6 +96,7 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, isAllyAware(true)
 		, isCommMerge(true)
 		, isInitialized(false)
+		, isSavegame(false)
 		, isLoadSave(false)
 		, isResigned(false)
 		, isSlave(false)
@@ -299,11 +300,11 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_LOS", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_LOS");
 			struct SEnemyEnterLOSEvent* evt = (struct SEnemyEnterLOSEvent*)data;
-			CEnemyInfo* unit;
+			CEnemyInfo* enemy;
 			bool isReal;
-			std::tie(unit, isReal) = RegisterEnemyInfo(evt->enemy, true);
+			std::tie(enemy, isReal) = RegisterEnemyInfo(evt->enemy, true);
 			ret = isReal
-					? (unit != nullptr) ? this->EnemyEnterLOS(unit) : ERROR_ENEMY_ENTER_LOS
+					? (enemy != nullptr) ? this->EnemyEnterLOS(enemy) : ERROR_ENEMY_ENTER_LOS
 					: 0;
 		} break;
 		case EVENT_ENEMY_LEAVE_LOS: {
@@ -321,11 +322,11 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			PRINT_TOPIC("EVENT_ENEMY_ENTER_RADAR", topic);
 			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_RADAR");
 			struct SEnemyEnterRadarEvent* evt = (struct SEnemyEnterRadarEvent*)data;
-			CEnemyInfo* unit;
+			CEnemyInfo* enemy;
 			bool isReal;
-			std::tie(unit, isReal) = RegisterEnemyInfo(evt->enemy, false);
+			std::tie(enemy, isReal) = RegisterEnemyInfo(evt->enemy, false);
 			ret = isReal
-					? (unit != nullptr) ? this->EnemyEnterRadar(unit) : ERROR_ENEMY_ENTER_RADAR
+					? (enemy != nullptr) ? this->EnemyEnterRadar(enemy) : ERROR_ENEMY_ENTER_RADAR
 					: 0;
 		} break;
 		case EVENT_ENEMY_LEAVE_RADAR: {
@@ -999,11 +1000,6 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		return 0;
 	}
 
-	// FIXME: Random-Side workaround
-	if (unit->GetCircuitDef()->IsRoleComm() && (setupManager->GetCommander() == nullptr)) {
-		setupManager->SetCommander(unit);
-	}
-
 	unit->GetCircuitDef()->AdjustSinceFrame(lastFrame);
 	TRY_UNIT(this, unit,
 		unit->CmdFireAtRadar(true);
@@ -1237,11 +1233,20 @@ int CCircuitAI::PlayerCommand(const std::vector<CCircuitUnit*>& units)
 
 int CCircuitAI::Load(std::istream& is)
 {
+	isSavegame = true;
 	isLoadSave = true;
 
 //	if (mergeTask != nullptr) {
 //		scheduler->RemoveJob(mergeTask);
 //	}
+
+	uint32_t versionLoad;
+	utils::binary_read(is, versionLoad);
+	if (versionLoad != VERSION_SAVE) {
+		return ERROR_LOAD;
+	}
+	utils::binary_read(is, lastFrame);
+	utils::binary_read(is, sideId);
 
 	auto units = callback->GetTeamUnits();
 	for (Unit* u : units) {
@@ -1249,13 +1254,15 @@ int CCircuitAI::Load(std::istream& is)
 			continue;
 		}
 		ICoreUnit::Id unitId = u->GetUnitId();
-		CCircuitUnit* unit = GetTeamUnit(unitId);
-		if (unit != nullptr) {
+		if (GetTeamUnit(unitId) != nullptr) {
 			delete u;
 			continue;
 		}
-		unit = RegisterTeamUnit(unitId, u);
-		u->IsBeingBuilt() ? UnitCreated(unit, nullptr) : UnitFinished(unit);
+		CCircuitUnit* unit = RegisterTeamUnit(unitId, u);
+		UnitCreated(unit, nullptr);  // NOTE: NIL task assigned only on UnitCreated
+		if (!u->IsBeingBuilt()) {
+			UnitFinished(unit);
+		}
 	}
 	for (auto& kv : teamUnits) {
 		CCircuitUnit* unit = kv.second;
@@ -1264,20 +1271,33 @@ int CCircuitAI::Load(std::istream& is)
 		}
 	}
 
-	uint32_t versionLoad;
-	utils::binary_read(is, versionLoad);
-	if (versionLoad != VERSION_SAVE) {
-		return ERROR_LOAD;
+	auto& enemies = callback->GetEnemyUnits();
+	for (Unit* e : enemies) {
+		if (e == nullptr) {
+			continue;
+		}
+		if (GetEnemyInfo(e) != nullptr) {
+			delete e;
+			continue;
+		}
+		CEnemyInfo* enemy = RegisterEnemyInfo(e);
+		if (enemy != nullptr) {
+			EnemyEnterRadar(enemy);
+			if (enemy->GetCircuitDef() != nullptr) {
+				EnemyEnterLOS(enemy);
+			}
+		}
 	}
-	utils::binary_read(is, lastFrame);
 #ifdef DEBUG_SAVELOAD
-	LOG("%s | versionLoad=%i | lastFrame=%i | defs=%i", __PRETTY_FUNCTION__, versionLoad, lastFrame, GetCircuitDefs().size());
+	LOG("%s | versionLoad=%i | lastFrame=%i | sideId=%i | defs=%i | units=%i | enemies=%i", __PRETTY_FUNCTION__,
+			versionLoad, lastFrame, sideId, GetCircuitDefs().size(), teamUnits.size(), enemyInfos.size());
 #endif
 
 	for (auto& module : modules) {
 		is >> *module;
 	}
 
+	isLoadSave = false;
 	return 0;  // signaling: OK
 }
 
@@ -1285,8 +1305,9 @@ int CCircuitAI::Save(std::ostream& os)
 {
 	utils::binary_write(os, VERSION_SAVE);
 	utils::binary_write(os, lastFrame);
+	utils::binary_write(os, sideId);
 #ifdef DEBUG_SAVELOAD
-	LOG("%s | VERSION_SAVE=%i | lastFrame=%i | defs=%i", __PRETTY_FUNCTION__, VERSION_SAVE, lastFrame, GetCircuitDefs().size());
+	LOG("%s | VERSION_SAVE=%i | lastFrame=%i | sideId=%i | defs=%i", __PRETTY_FUNCTION__, VERSION_SAVE, lastFrame, sideId, GetCircuitDefs().size());
 #endif
 
 	for (auto& module : modules) {

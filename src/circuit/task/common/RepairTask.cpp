@@ -120,7 +120,7 @@ void IRepairTask::Cancel()
 	}
 }
 
-void IRepairTask::Execute(CCircuitUnit* unit)
+bool IRepairTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -139,7 +139,9 @@ void IRepairTask::Execute(CCircuitUnit* unit)
 		}
 	} else {
 		manager->AbortTask(this);
+		return false;
 	}
+	return true;
 }
 
 void IRepairTask::SetTarget(CAllyUnit* unit)

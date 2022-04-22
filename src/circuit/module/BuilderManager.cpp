@@ -237,7 +237,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 					if (mtId >= 0) {  // not air
 						workerMobileTypes.insert(mtId);
 					}
-					workerDefs.insert(&cdef);
+					workerDefs[&cdef] = SWorkExt{false, false};
 				} else if (cdef.IsAbleToResurrect()) {
 					createdHandler[unitDefId]   = workerCreatedHandler;
 					finishedHandler[unitDefId]  = rezzFinishedHandler;
@@ -635,6 +635,20 @@ IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
 	return AddTask(priority, buildDef, position, type, cost, shake, isActive, timeout);
 }
 
+IBuilderTask* CBuilderManager::EnqueueDefence(IBuilderTask::Priority priority,
+											  CCircuitDef* buildDef,
+											  int pointId,
+											  const AIFloat3& position,
+											  IBuilderTask::BuildType type,
+											  float cost,
+											  float shake,
+											  bool isActive,
+											  int timeout)
+{
+	IBuilderTask* task = new CBDefenceTask(this, priority, buildDef, position, cost, shake, timeout);
+	return task;
+}
+
 IBuilderTask* CBuilderManager::EnqueueSpot(IBuilderTask::Priority priority,
 										   CCircuitDef* buildDef,
 										   int spotId,
@@ -995,6 +1009,34 @@ IBuilderTask* CBuilderManager::GetResurrectTask(const AIFloat3& pos, float radiu
 		}
 	}
 	return nullptr;
+}
+
+void CBuilderManager::SetCanUpMex(CCircuitDef* cdef, bool value)
+{
+	auto it = workerDefs.find(cdef);
+	if (it != workerDefs.end()) {
+		it->second.canUpMex = value;
+	}
+}
+
+bool CBuilderManager::CanUpMex(CCircuitDef* cdef) const
+{
+	auto it = workerDefs.find(cdef);
+	return (it != workerDefs.end()) && it->second.canUpMex;
+}
+
+void CBuilderManager::SetCanUpGeo(CCircuitDef* cdef, bool value)
+{
+	auto it = workerDefs.find(cdef);
+	if (it != workerDefs.end()) {
+		it->second.canUpGeo = value;
+	}
+}
+
+bool CBuilderManager::CanUpGeo(CCircuitDef* cdef) const
+{
+	auto it = workerDefs.find(cdef);
+	return (it != workerDefs.end()) && it->second.canUpGeo;
 }
 
 IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)

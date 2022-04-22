@@ -21,7 +21,7 @@ CJumpAction::CJumpAction(CCircuitUnit* owner, int squareSize, float speed)
 {
 }
 
-CJumpAction::CJumpAction(CCircuitUnit* owner, const std::shared_ptr<PathInfo>& pPath,
+CJumpAction::CJumpAction(CCircuitUnit* owner, const std::shared_ptr<CPathInfo>& pPath,
 		int squareSize, float speed)
 		: ITravelAction(owner, Type::JUMP, pPath, squareSize, speed)
 {

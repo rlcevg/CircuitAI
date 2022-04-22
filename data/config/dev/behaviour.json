@@ -378,7 +378,8 @@
 	},
 	"armpw": {
 		"role": ["raider"],
-		"attribute": ["scout"]
+		"attribute": ["scout"],
+		"retreat": 0.1
 	},
 	"armrectr": {
 		"role": ["raider"],
@@ -435,7 +436,7 @@
 	"armvader": {
 		"role": ["raider"],
 		"attribute": ["melee"],
-		"retreat": 0,
+		"retreat": 0
 	},
 	"armaak": {
 		"role": ["anti_air"]
@@ -715,7 +716,8 @@
 	},
 	"corak": {
 		"role": ["raider"],
-		"attribute": ["scout"]
+		"attribute": ["scout"],
+		"retreat": 0.1
 	},
 	"cornecro": {
 		"role": ["raider"],

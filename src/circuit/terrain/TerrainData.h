@@ -243,8 +243,8 @@ private:
 public:
 	virtual bool IsWalkable(int xSlope, int ySlope, const SMobileType& mt) const;  // x, y in slope map
 
-	int GetConvertStoSM() const { return convertStoP / 16; }  // sector to slope map
-	int GetConvertStoHM() const { return convertStoP / 8; }  // sector to height map
+	int GetConvertStoSM() const { return convertStoP / SLOPE_TILE; }  // sector to slope map
+	int GetConvertStoHM() const { return convertStoP / HEIGHT_TILE; }  // sector to height map
 
 	bool IsInitialized() const { return isInitialized; }
 

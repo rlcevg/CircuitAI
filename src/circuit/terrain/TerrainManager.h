@@ -32,6 +32,7 @@ namespace circuit {
 class CCircuitAI;
 class IBlockMask;
 class IPathQuery;
+class CPathInfo;
 class CCircuitUnit;
 
 class CTerrainManager final {  // <=> RAI's cBuilderPlacement
@@ -73,6 +74,8 @@ public:
 									 float searchRadius,
 									 int facing,
 									 TerrainPredicate& predicate);
+	void DoLineOfDef(const springai::AIFloat3& start, const springai::AIFloat3& end, CCircuitDef* buildDef,
+			std::function<void (const springai::AIFloat3& pos, CCircuitDef* buildDef)> exec) const;  // FillRowOfBuildPos
 
 	const SBlockingMap& GetBlockingMap();
 
@@ -126,12 +129,15 @@ private:
 	void MarkBlockerByMask(const SStructure& building, bool block, IBlockMask* mask);
 	void MarkBlocker(const SStructure& building, bool block);
 
-	struct FactoryPathInfo {
+	struct FactoryPathQuery {
 		std::shared_ptr<IPathQuery> query;
-		std::shared_ptr<PathInfo> path;
+		const CCircuitDef* mobileDef;
+		springai::AIFloat3 startPos;
+		springai::AIFloat3 endPos;
+		IndexVec targets;
 	};
-	std::map<CCircuitUnit*, FactoryPathInfo> busPath;
-	std::vector<std::shared_ptr<IPathQuery>> busQueries;
+	std::map<CCircuitUnit*, std::shared_ptr<CPathInfo>> busPath;
+	std::map<CCircuitUnit*, FactoryPathQuery> busQueries;
 	void MarkBusPath();
 
 public:
@@ -200,6 +206,9 @@ public:
 	bool IsWaterSector(const springai::AIFloat3& position) const {
 		return areaData->sector[GetSectorIndex(position)].isWater;
 	}
+
+	const terrain::CArea* GetTAArea(const springai::AIFloat3& pos) const;
+	const std::vector<terrain::CChokePoint*>& GetTAChokePoints() const { return terrainData->GetChokePoints(); }
 
 	terrain::SAreaData* GetAreaData() const { return areaData; }
 	void UpdateAreaUsers(int interval);

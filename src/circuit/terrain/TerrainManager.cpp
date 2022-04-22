@@ -332,20 +332,19 @@ void CTerrainManager::Init()
 	}
 
 	// Mark edges of the map
-//	notIgnoreMask = ~(STRUCT_BIT(MEX) | STRUCT_BIT(GEO) | STRUCT_BIT(FACTORY));  // all except mex, geo and factory
-	notIgnoreMask = STRUCT_BIT(NONE);
-	for (int j = 0; j < 5; ++j) {
-		for (int i = 6; i < blockingMap.columns - 6; ++i) {
-			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
-			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::TERRA, notIgnoreMask);
-		}
-	}
-	for (int j = 6; j < blockingMap.rows - 6; ++j) {
-		for (int i = 0; i < 5; ++i) {
-			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
-			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
-		}
-	}
+//	notIgnoreMask = STRUCT_BIT(NONE);
+//	for (int j = 0; j < 5; ++j) {
+//		for (int i = 6; i < blockingMap.columns - 6; ++i) {
+//			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+//			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::TERRA, notIgnoreMask);
+//		}
+//	}
+//	for (int j = 6; j < blockingMap.rows - 6; ++j) {
+//		for (int i = 0; i < 5; ++i) {
+//			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+//			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+//		}
+//	}
 }
 
 void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing, bool isOffset)
@@ -381,7 +380,7 @@ void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& pos, const CCircuitDef* mobileDef)
 {
 	const int iS = GetSectorIndex(pos);
-	constexpr int altitude = 4 * 2 * ALTITUDE_SCALE;  // 4 - size of tiles in wide sector
+	constexpr int altitude = 4 * 2 * ALTITUDE_SCALE;  // 4 - tiles in sector, side
 	SAreaSector* CAS = GetClosestSectorWithAltitude(unit->GetArea(), iS, altitude);
 	if (CAS == nullptr) {
 		return;
@@ -389,8 +388,8 @@ void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& pos, const 
 
 	IndexVec targets;
 	for (const auto& kv : busPath) {
-		if (kv.second.path != nullptr) {
-			targets.insert(targets.end(), kv.second.path->path.begin(), kv.second.path->path.end());
+		if (kv.second != nullptr) {
+			targets.insert(targets.end(), kv.second->path.begin(), kv.second->path.end());
 		}
 	}
 
@@ -411,9 +410,13 @@ void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& pos, const 
 			break;
 	}
 	const AIFloat3& endPos = CAS->S->position;
-	FactoryPathInfo& fpi = busPath[unit];
-	fpi.query = circuit->GetPathfinder()->CreatePathWideQuery(unit, mobileDef, startPos, endPos, targets);
-	busQueries.push_back(fpi.query);
+
+	FactoryPathQuery& fpq = busQueries[unit];
+	fpq.mobileDef = mobileDef;
+	fpq.startPos = startPos;
+	fpq.endPos = endPos;
+	fpq.targets = std::move(targets);
+	busPath[unit] = nullptr;
 }
 
 void CTerrainManager::DelBusPath(CCircuitUnit* unit)
@@ -443,6 +446,7 @@ void CTerrainManager::DelBusPath(CCircuitUnit* unit)
 //		}
 //	}
 	busPath.erase(it);
+	busQueries.erase(unit);
 }
 
 AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing)
@@ -515,6 +519,46 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	}
 
 	return -RgtVector;
+}
+
+void CTerrainManager::DoLineOfDef(const AIFloat3& start, const AIFloat3& end, CCircuitDef* buildDef,
+		std::function<void (const AIFloat3& pos, CCircuitDef* buildDef)> exec) const
+{
+	const AIFloat3 delta = end - start;
+	float xsize, zsize;
+
+	auto search = blockInfos.find(buildDef->GetId());
+	if (search != blockInfos.end()) {
+		xsize = search->second->GetXSize() * 2 * SQUARE_SIZE;
+		zsize = search->second->GetZSize() * 2 * SQUARE_SIZE;
+	} else {
+		xsize = buildDef->GetDef()->GetXSize() * SQUARE_SIZE;
+		zsize = buildDef->GetDef()->GetZSize() * SQUARE_SIZE;
+	}
+	// NOTE: Ignore facing for simplicity, hence turn rectangles into squares
+	xsize = zsize = std::max(xsize, zsize);
+
+	const int xnum = (int)((math::fabs(delta.x) + xsize * 1.4f) / xsize);
+	const int znum = (int)((math::fabs(delta.z) + zsize * 1.4f) / zsize);
+
+	float xstep = (int)((0 < delta.x) ? xsize : -xsize);
+	float zstep = (int)((0 < delta.z) ? zsize : -zsize);
+
+	const bool xDominatesZ = (math::fabs(delta.x) > math::fabs(delta.z));
+
+	if (xDominatesZ) {
+		zstep = xstep * delta.z / (delta.x ? delta.x : 1);
+	} else {
+		xstep = zstep * delta.x / (delta.z ? delta.z : 1);
+	}
+
+	int n = xDominatesZ ? xnum : znum, x = start.x, z = start.z;
+	for (int i = 0; i < n; ++i) {
+		exec(AIFloat3(x, 0.f, z), buildDef);
+
+		x += xstep;
+		z += zstep;
+	}
 }
 
 const SBlockingMap& CTerrainManager::GetBlockingMap()
@@ -1141,7 +1185,14 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 
 void CTerrainManager::MarkBusPath()
 {
-	for (std::shared_ptr<IPathQuery>& pQuery : busQueries) {
+	for (auto& kv : busQueries) {
+		FactoryPathQuery& fpq = kv.second;
+		std::shared_ptr<IPathQuery>& pQuery = fpq.query;
+		if (pQuery != nullptr) {
+			continue;
+		}
+		pQuery = circuit->GetPathfinder()->CreatePathWideQuery(kv.first, fpq.mobileDef, fpq.startPos, fpq.endPos, fpq.targets);
+
 		circuit->GetPathfinder()->RunQuery(pQuery, [this](const IPathQuery* query) {
 			auto it = busPath.find(query->GetUnit());
 			if (it == busPath.end()) {
@@ -1165,11 +1216,10 @@ void CTerrainManager::MarkBusPath()
 					}
 				}
 			}
-			it->second.path = q->GetPathInfo();
-			it->second.query = nullptr;
+			it->second = q->GetPathInfo();
+			busQueries.erase(query->GetUnit());
 		});
 	}
-	busQueries.clear();
 }
 
 void CTerrainManager::SnapPosition(AIFloat3& position)
@@ -1552,6 +1602,16 @@ bool CTerrainManager::CanMobileReachAtSafe(SArea* area, const AIFloat3& destinat
 		return false;
 	}
 	return CanMobileReachAt(area, destination, range);
+}
+
+const CArea* CTerrainManager::GetTAArea(const springai::AIFloat3& pos) const
+{
+	int iS = terrainData->GetSectorIndex(pos);
+	int id = terrainData->GetTASector(iS).GetAreaId();
+	if (id <= 0) {
+		return nullptr;
+	}
+	return const_cast<const CTerrainData*>(terrainData)->GetArea(id);
 }
 
 void CTerrainManager::UpdateAreaUsers(int interval)

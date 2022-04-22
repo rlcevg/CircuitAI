@@ -37,6 +37,7 @@
 #ifndef SRC_CIRCUIT_TERRAIN_TERRAINANALYZER_H_
 #define SRC_CIRCUIT_TERRAIN_TERRAINANALYZER_H_
 
+#include "util/Defines.h"
 #include "util/math/RagMatrix.h"
 #include "util/Data.h"
 
@@ -96,24 +97,25 @@ public:
 	CChokePoint& operator=(const CChokePoint&) = delete;
 	~CChokePoint() {}
 
+	// Returns the two Areas of this ChokePoint.
+	const std::pair<const CArea*, const CArea*>& GetAreas() const { return areas; }
+
 	// Returns the center of this ChokePoint.
-	const TilePosition& GetCenter() const { return GetPos(middle); }
+	const springai::AIFloat3& GetCenter() const { return GetPos(middle); }
+	const springai::AIFloat3& GetEnd1() const { return GetPos(end1); }
+	const springai::AIFloat3& GetEnd2() const { return GetPos(end2); }
 
-	// Returns the position of one of the 3 nodes of this ChokePoint (Cf. node definition).
-	// Note: the returned value is contained in Geometry()
-	const TilePosition& GetPos(node n) const { assert(n < node_count); return nodes[n]; }
-
-	// Returns the set of positions that defines the shape of this ChokePoint.
-	// Note: none of these Tiles actually belongs to this ChokePoint (a ChokePoint doesn't contain any Tile).
-	//       They are however guaranteed to be part of one of the 2 Areas.
-	// Note: the returned set contains Pos(middle), Pos(end1) and Pos(end2).
-	const std::deque<TilePosition>& GetGeometry() const { return geometry; }
+	bool IsSmall() const { return size < 300.f; }
 
 private:
+	// Returns the position of one of the 3 nodes of this ChokePoint (Cf. node definition).
+	// Note: the returned value is contained in Geometry()
+	const springai::AIFloat3& GetPos(node n) const { assert(n < node_count); return nodes[n]; }
+
 	const Id id;
 	const std::pair<const CArea*, const CArea*> areas;
-	TilePosition nodes[node_count];
-	const std::deque<TilePosition> geometry;
+	springai::AIFloat3 nodes[node_count];
+	float size;  // distance from end1 to end2
 };
 
 class CArea final: public utils::Markable<CArea, int> {
@@ -150,6 +152,8 @@ public:
 	// Returns the number of MiniTiles in this Area.
 	// This most accurately defines the size of this Area.
 	int GetNumTiles() const { return numTiles; }
+	int GetNumSectors() const { return numSectors; }
+	int GetNumSmallChokes() const { return numSmallChokes; }
 
 	// Returns the ChokePoints between this Area and the neighbouring ones.
 	// Note: if there are no neighbouring Areas, then an empty set is returned.
@@ -198,6 +202,7 @@ private:
 	std::map<const CArea*, const std::vector<CChokePoint>*> chokePointsByArea;
 	std::vector<const CArea*> accessibleNeighbours;
 	std::vector<const CChokePoint*> chokePoints;
+	int numSmallChokes = 0;
 };
 
 class CTile final {
@@ -275,6 +280,7 @@ public:
 	virtual bool IsWalkable(int xSlope, int ySlope, const SMobileType& mt) const = 0;
 
 	const CArea* GetArea(CArea::Id id) const { assert(IsValid(id)); return &areas[id - 1]; }
+	const std::vector<CChokePoint*>& GetChokePoints() const { return chokePointList; }
 	const std::vector<CChokePoint>& GetChokePoints(CArea::Id a, CArea::Id b) const;
 	const std::vector<CChokePoint>& GetChokePoints(const CArea* a, const CArea* b) const {
 		return GetChokePoints(a->GetId(), b->GetId());
@@ -353,6 +359,10 @@ public:
 
 	const SConfig& GetConfig() const { return config; }
 	const CTile& GetTile(const TilePosition p) const { return tiles[config.tileSize.x * p.y + p.x]; }
+
+	springai::AIFloat3 Tile2Pos(const TilePosition p) const {
+		return springai::AIFloat3(p.x * SLOPE_TILE + SLOPE_TILE / 2, 0.f, p.y * SLOPE_TILE + SLOPE_TILE / 2);
+	}
 
 private:
 	CTile& GetTile(const TilePosition p) { return const_cast<CTile&>(static_cast<const CTerrainAnalyzer&>(*this).GetTile(p)); }

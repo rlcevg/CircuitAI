@@ -44,7 +44,6 @@ public:
 		std::vector<int> waterTypes;  // underwater
 	};
 
-	// TODO: Rebuild response system on unit vs unit basis (opposed to role vs role).
 	// Not implemented: mine, transport
 	// No special task: air, sub, static, heavy, comm
 	enum class RoleType: CMaskHandler::Type {NONE = -1,
@@ -255,6 +254,7 @@ public:
 	bool IsAmphibious()      const { return isAmphibious; }
 	bool IsLander()          const { return isLander; }
 	bool IsSurfer()          const { return isSurfer; }
+	bool IsStealth()         const { return isStealth; }
 	bool IsSonarStealth()    const { return isSonarStealth; }
 	bool IsTurnLarge()       const { return isTurnLarge; }
 	bool IsAbleToFly()       const { return isAbleToFly; }
@@ -400,6 +400,7 @@ private:
 	bool isAmphibious : 1;
 	bool isLander : 1;
 	bool isSurfer : 1;  // isFloater && isLander
+	bool isStealth : 1;
 	bool isSonarStealth : 1;
 	bool isTurnLarge : 1;
 	bool isAbleToFly : 1;

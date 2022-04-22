@@ -113,6 +113,7 @@ public:
 	bool IsShieldCharged(float percent);
 	bool IsJumpReady();
 	bool IsJumping();
+	bool IsInvisible();
 	float GetDamage();
 	float GetShieldPower();
 	float GetBuildSpeed();

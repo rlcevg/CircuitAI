@@ -262,7 +262,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 
 void CScoutTask::ApplyTargetPath(const CQueryPathMulti* query, bool isUpdating)
 {
-	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
+	const std::shared_ptr<CPathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	if (!pPath->posPath.empty()) {
@@ -306,7 +306,7 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 
 void CScoutTask::ApplyScoutPath(const CQueryPathSingle* query)
 {
-	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
+	const std::shared_ptr<CPathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	if (pPath->path.size() > 2) {

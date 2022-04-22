@@ -279,7 +279,7 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 		return data;
 	}
 
-	CCircuitDef* cdef = circuit->GetCircuitDef(unitDefId);
+	CCircuitDef* cdef = circuit->GetCircuitDefSafe(unitDefId);
 	if (cdef != nullptr) {
 		isIgnore |= cdef->IsIgnore();
 	}

@@ -82,7 +82,7 @@ void CBMexTask::Cancel()
 	}
 }
 
-void CBMexTask::Execute(CCircuitUnit* unit)
+bool CBMexTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -96,7 +96,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		TRY_UNIT(circuit, unit,
 			unit->CmdRepair(target, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
-		return;
+		return true;
 	}
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
@@ -107,7 +107,7 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 			TRY_UNIT(circuit, unit,
 				unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 			)
-			return;
+			return true;
 		} else {
 			economyMgr->SetOpenMexSpot(spotId, true);
 		}
@@ -117,8 +117,10 @@ void CBMexTask::Execute(CCircuitUnit* unit)
 		if (!CheckLandBlock(unit)) {
 			// Fallback to Guard/Assist/Patrol
 			manager->FallbackTask(unit);
+			return false;
 		}
 	}
+	return true;
 }
 
 void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
@@ -161,19 +163,20 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 	++blockCount;
 
 	COOAICallback* clb = circuit->GetCallback();
-	Unit* neutral = nullptr;
+	bool isNeutral = false;
 	auto& neutrals = clb->GetNeutralUnitsIn(buildPos, SQUARE_SIZE * 8);
 	for (Unit* n : neutrals) {
 		if (n != nullptr) {
-			neutral = n;
+			isNeutral = true;
+			state = State::REGROUP;
+			TRY_UNIT(circuit, unit,
+				unit->GetUnit()->ReclaimUnit(n);
+			);
 			break;
 		}
 	}
-	if (neutral != nullptr) {
-		state = State::REGROUP;
-		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->ReclaimUnit(neutral);
-		);
+	utils::free(neutrals);
+	if (isNeutral) {
 		return true;
 	}
 

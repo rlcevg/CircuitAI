@@ -33,7 +33,7 @@ ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
 		, leader(nullptr)
 		, groupPos(-RgtVector)
 		, prevGroupPos(-RgtVector)
-		, pPath(std::make_shared<PathInfo>())
+		, pPath(std::make_shared<CPathInfo>())
 		, groupFrame(0)
 		, attackFrame(-1)
 {
@@ -101,7 +101,7 @@ void ISquadTask::Merge(ISquadTask* task)
 {
 	const std::set<CCircuitUnit*>& rookies = task->GetAssignees();
 	IAction::State state = leader->GetTravelAct()->GetState();
-	const std::shared_ptr<PathInfo>& lPath = leader->GetTravelAct()->GetPath();
+	const std::shared_ptr<CPathInfo>& lPath = leader->GetTravelAct()->GetPath();
 	for (CCircuitUnit* unit : rookies) {
 		unit->SetTask(this);
 		if (unit->GetCircuitDef()->IsRoleSupport()) {
@@ -402,14 +402,25 @@ void ISquadTask::Attack(const int frame, const bool isGround)
 	for (const auto& kv : rangeUnits) {
 		CCircuitDef* rowDef = (*kv.second.begin())->GetCircuitDef();
 		const float range = (((row++ == 0) && !GetTarget()->IsInLOS()) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first) * RANGE_MOD;
-		const float maxDelta = (M_PI * 0.8f) / kv.second.size();
+		const float maxDelta = (M_PI * 0.9f) / kv.second.size();
 		// NOTE: float delta = asinf(cdef->GetRadius() / range);
 		//       but sin of a small angle is similar to that angle, omit asinf() call
 		float delta = (3.0f * (rowDef->GetRadius() + aoe)) / range;
 		if (delta > maxDelta) {
 			delta = maxDelta;
 		}
+
 		float beta = -delta * (kv.second.size() / 2);
+		const float end1 = alpha + beta;
+		const float end2 = alpha - beta;
+		AIFloat3 newPos1(tPos.x + range * cosf(end1), tPos.y, tPos.z + range * sinf(end1));
+		AIFloat3 newPos2(tPos.x + range * cosf(end2), tPos.y, tPos.z + range * sinf(end2));
+		const AIFloat3 testPos = (*kv.second.begin())->GetPos(frame);
+		if (testPos.SqDistance2D(newPos1) > testPos.SqDistance2D(newPos2)) {
+			delta = -delta;
+			beta = -beta;
+		}
+
 		for (CCircuitUnit* unit : kv.second) {
 			unit->GetTravelAct()->StateWait();
 			if (unit->Blocker() != nullptr) {

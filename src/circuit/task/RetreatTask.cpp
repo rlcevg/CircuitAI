@@ -124,8 +124,8 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 	float range;
 
 	if (unit->GetTravelAct()->GetPath() == nullptr) {
-		std::shared_ptr<PathInfo> pPath = std::make_shared<PathInfo>();
-		pPath->posPath.push_back(startPos);
+		std::shared_ptr<CPathInfo> pPath = std::make_shared<CPathInfo>();
+		pPath->PushPos(startPos, pathfinder);
 		unit->GetTravelAct()->SetPath(pPath);
 	}
 
@@ -372,11 +372,11 @@ void CRetreatTask::Recovered(CCircuitUnit* unit)
 
 void CRetreatTask::ApplyPath(const CQueryPathSingle* query)
 {
-	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
+	const std::shared_ptr<CPathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	if (pPath->posPath.empty()) {
-		pPath->posPath.push_back(query->GetEndPos());
+		pPath->PushPos(query->GetEndPos(), manager->GetCircuit()->GetPathfinder());
 	}
 	unit->GetTravelAct()->SetPath(pPath);
 }

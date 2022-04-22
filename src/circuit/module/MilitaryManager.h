@@ -34,6 +34,8 @@ public:
 		std::vector<CCircuitDef*> waterDefenders;
 		BuildVector baseDefence;
 
+		std::vector<CCircuitDef*> wallDefs;  // land and water
+		std::vector<CCircuitDef*> chokeDefs;  // land and water
 		CCircuitDef* defaultPorc;
 
 		SuperInfos superInfos;

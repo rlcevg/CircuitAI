@@ -29,6 +29,8 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define DEBUG_MARK			0xBAD0C0DE
 #define UNKNOWN_CATEGORY	0xFFFFFFFF
 #define NO_SPEED_LIMIT		2000.0f
+#define SLOPE_TILE			16
+#define HEIGHT_TILE			8
 
 // UNIT_COMMAND_BUILD_NO_FACING
 #define UNIT_NO_FACING		-1
@@ -55,15 +57,6 @@ typedef std::vector<float> FloatVec;
 typedef std::vector<bool> BoolVec;
 typedef std::vector<int> IndexVec;
 typedef std::vector<int> IntVec;
-
-struct PathInfo {
-	PathInfo(bool last = false) : start(0), isEndPos(last) {}
-	void Clear() { posPath.clear(); path.clear(); }  // FIXME: stop TravelAction
-	F3Vec posPath;
-	IndexVec path;
-	size_t start;
-	bool isEndPos;
-};
 
 struct cmp_str {
 	bool operator()(char const* a, char const* b) const {

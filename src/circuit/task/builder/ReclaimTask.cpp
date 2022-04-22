@@ -59,7 +59,7 @@ bool CBReclaimTask::CanAssignTo(CCircuitUnit* unit) const
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
 	const AIFloat3& pos = GetPosition();
-	if (unit->GetCircuitDef()->IsAttrSolo() && (circuit->GetInflMap()->GetInfluenceAt(pos) < INFL_EPS)) {
+	if (unit->GetCircuitDef()->IsAttrSolo() && (circuit->GetInflMap()->GetEnemyInflAt(pos) > INFL_EPS)) {
 		return false;
 	}
 	if (unit->GetCircuitDef()->IsAttacker()) {

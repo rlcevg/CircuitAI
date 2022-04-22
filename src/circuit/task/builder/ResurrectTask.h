@@ -27,7 +27,7 @@ private:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual bool Execute(CCircuitUnit* unit) override;
 
 	virtual bool Reevaluate(CCircuitUnit* unit) override;
 

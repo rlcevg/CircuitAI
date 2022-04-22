@@ -70,7 +70,7 @@ void CBResurrectTask::Cancel()
 {
 }
 
-void CBResurrectTask::Execute(CCircuitUnit* unit)
+bool CBResurrectTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -92,6 +92,7 @@ void CBResurrectTask::Execute(CCircuitUnit* unit)
 	TRY_UNIT(circuit, unit,
 		unit->CmdResurrectInArea(pos, rezzRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 	)
+	return true;
 }
 
 bool CBResurrectTask::Reevaluate(CCircuitUnit* unit)

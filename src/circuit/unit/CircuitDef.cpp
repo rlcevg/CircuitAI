@@ -202,6 +202,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	delete md;
 	isAbleToFly       = def->IsAbleToFly();
 	isPlane           = !def->IsHoverAttack() && isAbleToFly;
+	isStealth         = def->IsStealth();
 	isSonarStealth    = def->IsSonarStealth();
 	isTurnLarge       = (speed / (def->GetTurnRate() + 1e-3f) > 0.09f);  // empirical magic number
 	isAbleToCloak     = def->IsAbleToCloak();

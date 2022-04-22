@@ -256,7 +256,7 @@ CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 
 void CArtilleryTask::ApplyTargetPath(const CQueryPathMulti* query)
 {
-	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
+	const std::shared_ptr<CPathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	if (!pPath->posPath.empty()) {
@@ -296,7 +296,7 @@ void CArtilleryTask::FallbackSafePos(CCircuitUnit* unit)
 
 void CArtilleryTask::ApplySafePos(const CQueryPathMulti* query)
 {
-	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
+	const std::shared_ptr<CPathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	const bool proceed = pPath->path.size() > 2;

@@ -53,7 +53,7 @@ void CBGeoTask::Cancel()
 	}
 }
 
-void CBGeoTask::Execute(CCircuitUnit* unit)
+bool CBGeoTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -67,17 +67,18 @@ void CBGeoTask::Execute(CCircuitUnit* unit)
 		TRY_UNIT(circuit, unit,
 			unit->CmdRepair(target, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
-		return;
+		return true;
 	}
 	if (circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing)) {
 		TRY_UNIT(circuit, unit,
 			unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
 		)
-		return;
 	} else {
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
+		return false;
 	}
+	return true;
 }
 
 void CBGeoTask::SetBuildPos(const AIFloat3& pos)

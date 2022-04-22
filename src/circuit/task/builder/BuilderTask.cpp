@@ -172,8 +172,11 @@ void IBuilderTask::Start(CCircuitUnit* unit)
 
 void IBuilderTask::Update()
 {
-	for (CCircuitUnit* unit : traveled) {
-		Execute(unit);
+	decltype(traveled) tmpTraveled = traveled;
+	for (CCircuitUnit* unit : tmpTraveled) {
+		if (!Execute(unit)) {
+			return;
+		}
 	}
 	traveled.clear();
 
@@ -188,6 +191,8 @@ void IBuilderTask::Update()
 void IBuilderTask::Stop(bool done)
 {
 	IUnitTask::Stop(done);
+	traveled.clear();
+	executors.clear();
 
 	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
 		manager->DelMetalPull(buildPower);
@@ -230,7 +235,7 @@ void IBuilderTask::Cancel()
 	// Destructor will take care of the nextTask queue
 }
 
-void IBuilderTask::Execute(CCircuitUnit* unit)
+bool IBuilderTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -244,15 +249,15 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 		TRY_UNIT(circuit, unit,
 			unit->CmdRepair(target, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
-		return;
+		return true;
 	}
-	if (utils::is_valid(buildPos)) {
-		if (circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing)) {
-			TRY_UNIT(circuit, unit,
-				unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
-			)
-			return;
-		}
+	if (utils::is_valid(buildPos)
+		&& circuit->GetMap()->IsPossibleToBuildAt(buildDef->GetDef(), buildPos, facing))
+	{
+		TRY_UNIT(circuit, unit,
+			unit->CmdBuild(buildDef, buildPos, facing, 0, frame + FRAMES_PER_SEC * 60);
+		)
+		return true;
 	}
 
 	// FIXME: Move to Reevaluate
@@ -267,7 +272,7 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 			TRY_UNIT(circuit, unit,
 				unit->CmdRepair(alu, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 			)
-			return;
+			return true;
 		}
 	}
 
@@ -296,7 +301,9 @@ void IBuilderTask::Execute(CCircuitUnit* unit)
 
 		// Fallback to Guard/Assist/Patrol
 		manager->FallbackTask(unit);
+		return false;
 	}
+	return true;
 }
 
 void IBuilderTask::OnUnitIdle(CCircuitUnit* unit)
@@ -534,7 +541,7 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 
 void IBuilderTask::ApplyPath(const CQueryPathSingle* query)
 {
-	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
+	const std::shared_ptr<CPathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	if (pPath->path.size() > 2) {

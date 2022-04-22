@@ -29,7 +29,7 @@ void CQueryPathWide::InitQuery(const AIFloat3& startPos, const AIFloat3& endPos,
 
 void CQueryPathWide::Prepare()
 {
-	pPath = std::make_shared<PathInfo>(false);
+	pPath = std::make_shared<CPathInfo>(false);
 }
 
 } // namespace circuit

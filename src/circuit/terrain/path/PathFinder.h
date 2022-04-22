@@ -10,7 +10,7 @@
 #define SRC_CIRCUIT_TERRAIN_PATHFINDER_H_
 
 #include "terrain/path/MicroPather.h"
-#include "util/Defines.h"
+#include "terrain/path/PathInfo.h"
 
 #include <atomic>
 #include <memory>
@@ -54,6 +54,7 @@ public:
 	void* Pos2MoveNode(springai::AIFloat3 pos) const;
 	void Pos2MoveXY(springai::AIFloat3 pos, int* x, int* y) const;
 	void Pos2PathXY(springai::AIFloat3 pos, int* x, int* y) const;
+	int Pos2PathIndex(springai::AIFloat3 pos) const;
 	int PathXY2PathIndex(int x, int y) const;
 	void PathIndex2PathXY(int index, int* x, int* y) const;
 	void PathIndex2MoveXY(int index, int* x, int* y) const;

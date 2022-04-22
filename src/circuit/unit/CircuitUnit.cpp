@@ -210,6 +210,12 @@ bool CCircuitUnit::IsJumping()
 	return unit->GetRulesParamFloat("is_jumping", 0) > 0.f;
 }
 
+bool CCircuitUnit::IsInvisible()
+{
+	// FIXME: lua can Spring.SetUnitStealth()
+	return circuitDef->IsStealth() && unit->IsCloaked();
+}
+
 float CCircuitUnit::GetDamage()
 {
 	float dmg = circuitDef->GetPwrDamage();

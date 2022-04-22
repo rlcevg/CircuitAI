@@ -1599,8 +1599,8 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 		float weight;
 		bool isResponse;
 	};
-	static std::vector<SCandidate> candidates;  // NOTE: micro-opt
-//	candidates.reserve(facDef.buildDefs.size());
+	std::vector<SCandidate> candidates;
+	candidates.reserve(facDef.buildDefs.size());
 
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	const float maxCost = militaryMgr->GetArmyCost();
@@ -1663,7 +1663,6 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 			}
 		}
 	}
-	candidates.clear();
 
 	SetLastRequiredDef(it->first, buildDef, probs, isResponse);
 	if (buildDef != nullptr) {

@@ -68,7 +68,7 @@ void IReclaimTask::Cancel()
 {
 }
 
-void IReclaimTask::Execute(CCircuitUnit* unit)
+bool IReclaimTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -82,7 +82,7 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 		TRY_UNIT(circuit, unit,
 			unit->CmdReclaimUnit(target, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 		)
-		return;
+		return true;
 	}
 
 	AIFloat3 pos;
@@ -97,6 +97,7 @@ void IReclaimTask::Execute(CCircuitUnit* unit)
 	TRY_UNIT(circuit, unit,
 		unit->CmdReclaimInArea(pos, reclRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 	)
+	return true;
 }
 
 void IReclaimTask::OnUnitIdle(CCircuitUnit* unit)

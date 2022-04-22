@@ -9,6 +9,7 @@
 #include "unit/CircuitUnit.h"
 #include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
+#include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -50,7 +51,7 @@ void CCaptureAction::Update(CCircuitAI* circuit)
 	const float metalIncome = circuit->GetEconomyManager()->GetAvgMetalIncome() * 0.5f;
 	const float energyIncome = circuit->GetEconomyManager()->GetAvgEnergyIncome() * 0.5f;
 
-	const std::vector<Unit*>& neutrals = std::move(clb->GetNeutralUnitsIn(pos, range));
+	const std::vector<Unit*>& neutrals = clb->GetNeutralUnitsIn(pos, range);
 	if (!neutrals.empty()) {
 		float minSqDist = SQUARE(range);
 		Unit* neutral = nullptr;
@@ -70,7 +71,8 @@ void CCaptureAction::Update(CCircuitAI* circuit)
 					continue;
 				}
 			}
-			const AIFloat3& npos = n->GetPos();
+			AIFloat3 npos = n->GetPos();
+			CTerrainManager::CorrectPosition(npos);
 			if (threatMap->GetThreatAt(npos) > power) {
 				continue;
 			}
@@ -92,7 +94,7 @@ void CCaptureAction::Update(CCircuitAI* circuit)
 		}
 	}
 
-	const std::vector<CCircuitUnit::Id>& enemies = std::move(clb->GetEnemyUnitIdsIn(pos, range));
+	const std::vector<CCircuitUnit::Id>& enemies = clb->GetEnemyUnitIdsIn(pos, range);
 	if (enemies.empty()) {
 		return;
 	}

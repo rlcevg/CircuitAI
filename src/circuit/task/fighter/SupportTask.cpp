@@ -125,7 +125,7 @@ void CSupportTask::Update()
 
 void CSupportTask::ApplyPath(const CQueryPathMulti* query)
 {
-	const std::shared_ptr<PathInfo>& pPath = query->GetPathInfo();
+	const std::shared_ptr<CPathInfo>& pPath = query->GetPathInfo();
 	CCircuitUnit* unit = query->GetUnit();
 
 	if (pPath->posPath.empty()) {

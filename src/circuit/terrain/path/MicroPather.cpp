@@ -45,7 +45,6 @@
 
 #include "terrain/path/MicroPather.h"
 #include "terrain/path/PathFinder.h"
-#include "util/Defines.h"
 
 #include <cstdlib>  // malloc(), free()
 #include <cmath>
@@ -1211,7 +1210,7 @@ size_t CMicroPather::RefinePath(IndexVec& path)
 	};
 
 	int l = 1;
-	int r = std::min<int>(path.size() - 1, 10);  // NOTE: start and end always present in path
+	int r = /*std::min<int>(*/path.size() - 1/*, 10)*/;  // NOTE: start and end always present in path
 
 	while (l <= r) {
 		int m = (l + r) / 2;  // floor
@@ -1225,7 +1224,7 @@ size_t CMicroPather::RefinePath(IndexVec& path)
 	return l - 1;
 }
 
-void CMicroPather::FillPathInfo(PathInfo& iPath)
+void CMicroPather::FillPathInfo(circuit::CPathInfo& iPath)
 {
 	if (iPath.isEndPos) {
 		float3 pos = graph.PathIndex2Pos(iPath.path.back());

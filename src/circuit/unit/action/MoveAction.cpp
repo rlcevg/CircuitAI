@@ -21,7 +21,7 @@ CMoveAction::CMoveAction(CCircuitUnit* owner, int squareSize, float speed)
 {
 }
 
-CMoveAction::CMoveAction(CCircuitUnit* owner, const std::shared_ptr<PathInfo>& pPath,
+CMoveAction::CMoveAction(CCircuitUnit* owner, const std::shared_ptr<CPathInfo>& pPath,
 		int squareSize, float speed)
 		: ITravelAction(owner, Type::MOVE, pPath, squareSize, speed)
 {

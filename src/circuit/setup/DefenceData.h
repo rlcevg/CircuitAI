@@ -8,6 +8,9 @@
 #ifndef SRC_CIRCUIT_SETUP_DEFENCEDATA_H_
 #define SRC_CIRCUIT_SETUP_DEFENCEDATA_H_
 
+#include "util/Point.h"
+#include "kdtree/nanoflann.hpp"
+
 #include "AIFloat3.h"
 
 #include <vector>
@@ -24,20 +27,22 @@ public:
 		float cost;
 	};
 	using DefPoints = std::vector<SDefPoint>;
+	using DefIndices = std::vector<int>;
 	struct SClusterInfo {
-		DefPoints defPoints;
+		DefIndices idxPoints;  // index of SDefPoint in defPoints array
 	};
 
 public:
 	CDefenceData(CCircuitAI* circuit);
-	virtual ~CDefenceData();
+	~CDefenceData();
 
 private:
 	void ReadConfig(CCircuitAI* circuit);
 	void Init(CCircuitAI* circuit);
 
 public:
-	std::vector<SDefPoint>& GetDefPoints(int index) { return clusterInfos[index].defPoints; }
+	const DefPoints& GetDefPoints() const { return defPoints; }
+	const DefIndices& GetDefIndices(int cluster) const { return clusterInfos[cluster].idxPoints; }
 	SDefPoint* GetDefPoint(const springai::AIFloat3& pos, float cost);
 
 	void SetBaseRange(float range);
@@ -53,6 +58,14 @@ public:
 private:
 	CMetalManager* metalManager;
 	std::vector<SClusterInfo> clusterInfos;
+
+	DefPoints defPoints;  // starting part corresponds to choke points, rest are points in cluster
+	utils::SPointAdaptor<DefPoints> defAdaptor;
+	using DefTree = nanoflann::KDTreeSingleIndexAdaptor<
+			nanoflann::L2_Simple_Adaptor<float, utils::SPointAdaptor<DefPoints> >,
+			utils::SPointAdaptor<DefPoints>,
+			2 /* dim */, int>;
+	DefTree defTree;
 
 	float baseRadMin;
 	float baseRadMax;

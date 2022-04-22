@@ -64,9 +64,13 @@ void AiTaskCreated(IUnitTask@ task)
 // 		AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 		break;
 // 	case 14:  // BuildType::REPAIR
+// 		AiAddPoint(task.GetBuildPos(), "rep");
+// 		break;
 // 	case 15:  // BuildType::RECLAIM
+// 		AiAddPoint(task.GetBuildPos(), "rec");
+// 		break;
 // 	case 16:  // BuildType::RESURRECT
-// 		AiAddPoint(task.GetBuildPos(), "re");
+// 		AiAddPoint(task.GetBuildPos(), "res");
 // 		break;
 // 	default:
 // 		break;

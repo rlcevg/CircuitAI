@@ -157,7 +157,7 @@ void CMetalManager::ParseMetalSpots()
 		}
 		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetSideInfo().mexDef;
 		const float extrRange = map->GetExtractorRadius(metalRes) / 2;  // mexDef->GetExtrRangeM();
-		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+//		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 		const int xsize = mexDef->GetDef()->GetXSize();
 		const int zsize = mexDef->GetDef()->GetZSize();
 		for (unsigned i = 0; i < spotsPos.size(); i += inc) {
@@ -168,8 +168,8 @@ void CMetalManager::ParseMetalSpots()
 			CTerrainManager::SnapPosition(pos);
 			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
 			const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;
-			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height) &&
-				terrainMgr->CanBeBuiltAt(mexDef, pos))
+			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height)
+				/*&& terrainMgr->CanBeBuiltAt(mexDef, pos)*/)  // FIXME: Water def?
 			{
 				const float y = map->GetElevationAt(pos.x, pos.z);
 				spots.push_back({pos.y, AIFloat3(pos.x, y, pos.z)});

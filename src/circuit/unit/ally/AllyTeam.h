@@ -44,10 +44,10 @@ public:
 	union SBox {
 		SBox() : edge{0.f, 0.f, 0.f, 0.f} {}
 		struct {
-			float bottom;
 			float left;
 			float right;
 			float top;
+			float bottom;
 		};
 		float edge[4];
 

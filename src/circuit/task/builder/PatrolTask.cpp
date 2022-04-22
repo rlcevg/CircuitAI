@@ -72,7 +72,7 @@ void CBPatrolTask::Cancel()
 {
 }
 
-void CBPatrolTask::Execute(CCircuitUnit* unit)
+bool CBPatrolTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -87,6 +87,7 @@ void CBPatrolTask::Execute(CCircuitUnit* unit)
 		pos.z += (pos.z > terrainMgr->GetTerrainHeight() / 2) ? -size : size;
 		unit->GetUnit()->PatrolTo(pos);
 	)
+	return true;
 }
 
 } // namespace circuit

@@ -74,7 +74,7 @@ protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
 
-	virtual void Execute(CCircuitUnit* unit);
+	virtual bool Execute(CCircuitUnit* unit);
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;

@@ -32,7 +32,7 @@ void CIdleTask::AssignTo(CCircuitUnit* unit)
 
 void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 {
-	if (units.erase(unit) > 0) {
+	if (units.erase(unit) > 0) {  // double call of this function is OK
 		updateUnits.erase(unit);
 	}
 
@@ -41,6 +41,7 @@ void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CIdleTask::Start(CCircuitUnit* unit)
 {
+	assert(false);
 }
 
 void CIdleTask::Update()
@@ -75,7 +76,8 @@ void CIdleTask::Update()
 
 void CIdleTask::Stop(bool done)
 {
-	// NOTE: Should not be ever called
+	// NOTE: Should not be ever called, except on AI termination
+	assert(false);
 	units.clear();
 	updateUnits.clear();
 }

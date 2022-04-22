@@ -91,6 +91,7 @@
 
 namespace circuit {
 	class CPathFinder;
+	class CPathInfo;
 }
 
 namespace NSMicroPather {
@@ -251,7 +252,7 @@ namespace NSMicroPather {
 			void MakeCostMap(void* startNode, float maxThreat, std::vector<float>& costMap);
 
 			size_t RefinePath(IndexVec& path);
-			void FillPathInfo(PathInfo& iPath);
+			void FillPathInfo(circuit::CPathInfo& iPath);
 
 			PathNode* GetNode(void* node) const { return &pathNodeMem[(size_t)node]; }
 			bool CantMoveTo(int node) const { return canMoveArray[node] > COST_BLOCKED; }

@@ -26,7 +26,7 @@ public:
 	// Process Data
 	springai::AIFloat3& GetStartPosRef() { return startPos; }
 	F3Vec& GetTargetsRef() { return targets; }
-	PathInfo& GetPathInfoRef() { return *pPath; }
+	CPathInfo& GetPathInfoRef() { return *pPath; }
 	float& GetPathCostRef() { return pathCost; }
 
 	// Input Data
@@ -38,11 +38,11 @@ public:
 	const float GetMaxThreat() const { return maxThreat; }
 
 	// Result
-	const std::shared_ptr<PathInfo>& GetPathInfo() const { return pPath; }
+	const std::shared_ptr<CPathInfo>& GetPathInfo() const { return pPath; }
 	const float GetPathCost() const { return pathCost; }
 
 private:
-	std::shared_ptr<PathInfo> pPath;
+	std::shared_ptr<CPathInfo> pPath;
 	float pathCost = 0.f;
 
 	springai::AIFloat3 startPos;

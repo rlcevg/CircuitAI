@@ -22,9 +22,13 @@
 namespace circuit {
 
 using namespace springai;
+using namespace terrain;
+using namespace nanoflann;
 
 CDefenceData::CDefenceData(CCircuitAI* circuit)
 		: metalManager(nullptr)
+		, defAdaptor(defPoints)
+		, defTree(2 /*dim*/, defAdaptor, KDTreeSingleIndexAdaptorParams(2 /*max leaf*/))
 {
 	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CDefenceData::Init, this, circuit));
 
@@ -63,6 +67,12 @@ void CDefenceData::Init(CCircuitAI* circuit)
 	const CMetalData::Clusters& clusters = metalManager->GetClusters();
 	clusterInfos.resize(clusters.size());
 
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	defPoints.reserve(terrainMgr->GetTAChokePoints().size() + clusters.size());
+	for (CChokePoint* ch : terrainMgr->GetTAChokePoints()) {
+		defPoints.push_back({ch->GetCenter(), .0f});
+	}
+
 	CMap* map = circuit->GetMap();
 	const float maxDistance = pointRange;
 	CHierarchCluster clust;
@@ -80,9 +90,9 @@ void CDefenceData::Init(CCircuitAI* circuit)
 
 		const CHierarchCluster::Clusters& iclusters = clust.Clusterize(distmatrix, maxDistance);
 
-		DefPoints& defPoints = clusterInfos[k].defPoints;
+		DefIndices& clPoints = clusterInfos[k].idxPoints;
 		unsigned nclusters = iclusters.size();
-		defPoints.reserve(nclusters);
+		clPoints.reserve(nclusters);
 		for (unsigned i = 0; i < nclusters; ++i) {
 			std::vector<AIFloat3> points;
 			points.reserve(iclusters[i].size());
@@ -93,30 +103,47 @@ void CDefenceData::Init(CCircuitAI* circuit)
 			AIFloat3 pos = enclose.GetCenter();
 			pos.y = map->GetElevationAt(pos.x, pos.z);
 			defPoints.push_back({pos, .0f});
+			clPoints.push_back(defPoints.size() - 1);
 		}
 	}
+
+	defTree.buildIndex();
 }
 
 CDefenceData::SDefPoint* CDefenceData::GetDefPoint(const AIFloat3& pos, float defCost)
 {
+	// FIXME: Re-work cluster-only points into search-tree.
+	//        Add cost to DefenceTask only on task creation.
+//	float query_pt[2] = {pos.x, pos.z};
+//	int ret_index;
+//	float out_dist_sqr;
+//
+//	KNNCondResultSet<float, int>::Predicate predicate = [this, defCost](const int index) {
+//		return defPoints[index].cost >= defCost;
+//	};
+//	if (defTree.knnSearch(&query_pt[0], 1, &ret_index, &out_dist_sqr, predicate) > 0) {
+//		return &defPoints[ret_index];
+//	}
+//	return nullptr;
+
 	int index = metalManager->FindNearestCluster(pos);
 	if (index < 0) {
 		return nullptr;
 	}
 
-	DefPoints& defPoints = clusterInfos[index].defPoints;
+	DefIndices& indices = clusterInfos[index].idxPoints;
 	unsigned idx = 0;
-	float dist = pos.distance2D(defPoints[idx].position);
-	for (unsigned i = 1; i < defPoints.size(); ++i) {
-		if (defPoints[i].cost >= defCost) {
-			float tmp = pos.distance2D(defPoints[i].position);
+	float dist = pos.distance2D(defPoints[indices[idx]].position);
+	for (unsigned i = 1; i < indices.size(); ++i) {
+		if (defPoints[indices[i]].cost >= defCost) {
+			float tmp = pos.distance2D(defPoints[indices[i]].position);
 			if (tmp < dist) {
 				tmp = dist;
 				idx = i;
 			}
 		}
 	}
-	return &defPoints[idx];
+	return &defPoints[indices[idx]];
 }
 
 void CDefenceData::SetBaseRange(float range)

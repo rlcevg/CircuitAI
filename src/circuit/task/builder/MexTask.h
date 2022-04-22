@@ -25,7 +25,7 @@ public:
 protected:
 	virtual void Cancel() override;
 
-	virtual void Execute(CCircuitUnit* unit) override;
+	virtual bool Execute(CCircuitUnit* unit) override;
 
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;

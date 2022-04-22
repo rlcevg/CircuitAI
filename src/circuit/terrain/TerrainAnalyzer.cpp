@@ -18,21 +18,23 @@ using namespace circuit;
 using namespace springai;
 
 CChokePoint::CChokePoint(const CTerrainAnalyzer& ta, Id idx, const CArea* area1, const CArea* area2, const std::deque<TilePosition>& geometry)
-		: id(idx), areas(area1, area2), geometry(geometry)
+		: id(idx), areas(area1, area2)
 {
 	assert(!geometry.empty());
 
-	nodes[end1] = geometry.front();
-	nodes[end2] = geometry.back();
+	nodes[end1] = ta.Tile2Pos(geometry.front());
+	nodes[end2] = ta.Tile2Pos(geometry.back());
+	size = nodes[end1].distance2D(nodes[end2]);
 
 	int i = geometry.size() / 2;
-	while ((i > 0) && (ta.GetTile(geometry[i - 1]).GetAltitude() > ta.GetTile(geometry[i]).GetAltitude())) {
-		--i;
-	}
-	while ((i < (int)geometry.size() - 1) && (ta.GetTile(geometry[i + 1]).GetAltitude() > ta.GetTile(geometry[i]).GetAltitude())) {
-		++i;
-	}
-	nodes[middle] = geometry[i];
+	// NOTE: Related to lakes
+//	while ((i > 0) && (ta.GetTile(geometry[i - 1]).GetAltitude() > ta.GetTile(geometry[i]).GetAltitude())) {
+//		--i;
+//	}
+//	while ((i < (int)geometry.size() - 1) && (ta.GetTile(geometry[i + 1]).GetAltitude() > ta.GetTile(geometry[i]).GetAltitude())) {
+//		++i;
+//	}
+	nodes[middle] = ta.Tile2Pos(geometry[i]);
 }
 
 CArea::CArea(Id areaId, SectorPosition topSec, const CTile& topTile, int tilesCount)
@@ -59,6 +61,9 @@ void CArea::AddChokePoints(CArea* pArea, std::vector<CChokePoint>* pChokePoints)
 
 	for (const auto& cp : *pChokePoints) {
 		chokePoints.push_back(&cp);
+		if (cp.IsSmall()) {
+			++numSmallChokes;
+		}
 	}
 }
 
@@ -172,7 +177,7 @@ void IGraph::CreateChokePoints(const CTerrainAnalyzer& ta)
 		// 3.1) Use that information to efficiently cluster RawFrontierAB in one or several chokepoints.
 		//    Each cluster will be populated starting with the center of a chokepoint (max altitude)
 		//    and finishing with the ends (min altitude).
-		const int clusterMinDist = (int)sqrt(ta.GetConfig().lakeMaxTiles);
+		const int clusterMinDist = 1;  // (int)sqrt(ta.GetConfig().lakeMaxTiles);
 		std::vector<std::deque<TilePosition>> clusters;
 		for (auto w : rawFrontierAB) {
 			bool added = false;
@@ -193,8 +198,9 @@ void IGraph::CreateChokePoints(const CTerrainAnalyzer& ta)
 
 		// 3.2) Create one Chokepoint for each cluster:
 		GetChokePoints(a, b).reserve(clusters.size());
-		for (const auto& cluster : clusters)
+		for (const auto& cluster : clusters) {
 			GetChokePoints(a, b).emplace_back(ta, newIndex++, GetArea(a), GetArea(b), cluster);
+		}
 	}
 
 	// 4) Create one Chokepoint for each pair of blocked areas, for each blocking Neutral:
@@ -355,14 +361,7 @@ void IGraph::ToggleTAVis(int frame)
 			for (CArea::Id b = 1; b < a; ++b) {
 				const auto& chokes = GetChokePoints(a, b);
 				for (const CChokePoint& cp : chokes) {
-					const std::deque<TilePosition>& g = cp.GetGeometry();
-					for (TilePosition gp : g) {
-						int i = debugData->tileSize.x * gp.y + gp.x;
-						tileWin.second[i * 3 + 0] = 0.9f;
-						tileWin.second[i * 3 + 1] = 0.9f;
-						tileWin.second[i * 3 + 2] = 0.9f;
-					}
-					TilePosition p = cp.GetCenter();
+					TilePosition p(cp.GetCenter().x / SLOPE_TILE, cp.GetCenter().z / SLOPE_TILE);
 					int i = debugData->tileSize.x * p.y + p.x;
 					tileWin.second[i * 3 + 0] = 0.2f;
 					tileWin.second[i * 3 + 1] = 0.2f;
@@ -389,8 +388,7 @@ void IGraph::ToggleTAVis(int frame)
 			for (CArea::Id b = 1; b < a; ++b) {
 				const auto& chokes = GetChokePoints(a, b);
 				for (const CChokePoint& cp : chokes) {
-					TilePosition p = cp.GetCenter();
-					AIFloat3 pos = AIFloat3(p.x * 16 + 16 / 2, 0, p.y * 16 + 16 / 2);
+					AIFloat3 pos = cp.GetCenter();
 					std::string cmd("ai_mrk_add:");
 					cmd += utils::int_to_string(pos.x) + " " + utils::int_to_string(pos.z) + " 16 0.2 0.2 0.9 9";
 					debugLua->CallRules(cmd.c_str(), cmd.size());
@@ -482,6 +480,9 @@ void CTerrainAnalyzer::LoadData(const SMobileType& mt)
 			if (graph->IsWalkable(x, y, mt)) {
 				continue;
 			}
+#if 1
+			GetTile(TilePosition(x, y)).SetWalkable(false);
+#else
 			// For each unwalkable minitile, we also mark its 8 neighbours as not walkable.
 			// According to some tests, this prevents from wrongly pretending one Marine can go by some thin path.
 			for (int dy = -1; dy <= +1; ++dy) {
@@ -492,6 +493,7 @@ void CTerrainAnalyzer::LoadData(const SMobileType& mt)
 					}
 				}
 			}
+#endif
 		}
 	}
 }

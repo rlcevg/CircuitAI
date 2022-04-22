@@ -68,18 +68,26 @@ void CSetupData::ParseSetupScript(CCircuitAI* circuit, const char* setupScript)
 		}
 	} else {
 		// engine way
+		const std::map<std::string, int> rectWords = {{"left", 0}, {"right", 1}, {"top", 2}, {"bottom", 3}};
 		std::regex patternAlly("\\[allyteam(\\d+)\\]", std::regex::ECMAScript | std::regex::icase);
-		std::regex patternRect("startrect\\w+=(\\d+(\\.\\d+)?);", std::regex::ECMAScript | std::regex::icase);
+		std::regex patternRect("startrect(\\w+)=(\\d+(\\.\\d+)?);", std::regex::ECMAScript | std::regex::icase);
 		while (std::regex_search(start, end, section, patternAlly)) {
 			start = section[0].second;
 			int allyTeamId = utils::string_to_int(section[1]);
 
-			std::string::const_iterator bodyEnd = utils::EndInBraces(start, end);
-			std::sregex_token_iterator tokenIt(start, bodyEnd, patternRect, 1);
-			std::sregex_token_iterator tokenEnd;
 			CAllyTeam::SBox startbox;
-			for (int i = 0; tokenIt != tokenEnd && i < 4; ++tokenIt, i++) {
-				startbox.edge[i] = utils::string_to_float(*tokenIt);
+			std::string::const_iterator bodyStart = start;
+			std::string::const_iterator bodyEnd = utils::EndInBraces(start, end);
+			std::smatch rectm;
+			while (std::regex_search(bodyStart, bodyEnd, rectm, patternRect)) {
+				std::string word = rectm[1];
+				std::for_each(word.begin(), word.end(), [](char& c){ c = std::tolower(c); });
+				auto wordIt = rectWords.find(word);
+				if (wordIt != rectWords.end()) {
+					startbox.edge[wordIt->second] = utils::string_to_float(rectm[2]);
+				}
+
+				bodyStart = rectm[0].second;
 			}
 
 			startbox.bottom *= height;

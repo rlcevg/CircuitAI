@@ -15,7 +15,7 @@ namespace circuit {
 class CJumpAction: public ITravelAction {
 public:
 	CJumpAction(CCircuitUnit* owner, int squareSize, float speed = NO_SPEED_LIMIT);
-	CJumpAction(CCircuitUnit* owner, const std::shared_ptr<PathInfo>& pPath,
+	CJumpAction(CCircuitUnit* owner, const std::shared_ptr<CPathInfo>& pPath,
 			int squareSize, float speed = NO_SPEED_LIMIT);
 	virtual ~CJumpAction();
 

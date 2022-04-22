@@ -484,9 +484,19 @@ void CEconomyManager::Init()
 	CSetupManager::StartFunc subinit = [this](const AIFloat3& pos) {
 		metalProduced = GetMetalCur() * metalMod;
 
+		CSetupManager* setupMgr = circuit->GetSetupManager();
+		if (setupMgr->GetCommander() == nullptr) {
+			for (const auto& kv : circuit->GetTeamUnits()) {
+				if (kv.second->GetCircuitDef()->IsRoleComm()) {
+					setupMgr->SetCommander(kv.second);
+					break;
+				}
+			}
+		}
+
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		CAllyTeam* allyTeam = circuit->GetAllyTeam();
-		if (circuit->IsCommMerge() && !circuit->IsLoadSave()) {
+		if (circuit->IsCommMerge() && !circuit->IsSavegame()) {
 			const int spotId = circuit->GetMetalManager()->FindNearestSpot(pos);
 			const int clusterId = (spotId < 0) ? -1 : circuit->GetMetalManager()->GetCluster(spotId);
 			int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;
@@ -497,7 +507,7 @@ void CEconomyManager::Init()
 				return;
 			}
 
-			CCircuitUnit* commander = circuit->GetSetupManager()->GetCommander();
+			CCircuitUnit* commander = setupMgr->GetCommander();
 			if (commander == nullptr) {
 				commander = circuit->GetTeamUnits().begin()->second;
 			}
@@ -993,6 +1003,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 				};
 				const AIFloat3& searchPos = circuit->GetSetupManager()->GetBasePos();
 				int index = metalMgr->GetSpotToUpgrade(searchPos, predicate);
+				builderMgr->SetCanUpMex(unit->GetCircuitDef(), index != -1);
 				if (index != -1) {
 					const AIFloat3& pos = spots[index].position;
 					task = builderMgr->EnqueueSpot(IBuilderTask::Priority::HIGH, mexDef, index, pos, IBuilderTask::BuildType::MEXUP);
@@ -1004,7 +1015,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 		CMetalManager* metalMgr = circuit->GetMetalManager();
 		CCircuitDef* mexDef = nullptr;
 		const unsigned int mexTaskSize = builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size();
-		if (mexTaskSize < (unsigned)mexMax/*builderMgr->GetWorkerCount() * 2 + 1*/) {
+		if (mexTaskSize < (unsigned)mexMax/*builderMgr->GetWorkerCount() * 2 + 1*/ && !builderMgr->CanUpMex(unit->GetCircuitDef())) {
 			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
 			std::vector<CCircuitDef*> mexDefs;
 			for (CCircuitDef* mDef : mexDefOptions) {
@@ -1069,7 +1080,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCircuitUnit* unit, bool isNear)
 {
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
-	if (/*!builderManager->CanEnqueueTask() || */(unit == nullptr)) {
+	if (/*!builderManager->CanEnqueueTask() || */(unit == nullptr) || !unit->GetCircuitDef()->IsAbleToReclaim()) {
 		return nullptr;
 	}
 
@@ -1181,7 +1192,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	const auto& infos = energyDefs.GetInfos();
 	const float curWind = circuit->GetMap()->GetCurWind();
 	auto checkWind = [curWind, terrainMgr, position, &infos](unsigned i) {
-		unsigned lowerIdx = -1;
+		int lowerIdx = -1;
 		for (unsigned j = i + 1; j < infos.size(); ++j) {
 			if (terrainMgr->CanBeBuiltAtSafe(infos[j].cdef, position)) {
 				lowerIdx = j;
@@ -1240,6 +1251,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	AIFloat3 buildPos = -RgtVector;
 	if (bestDef->GetCostM() < 200.0f) {
 		buildPos = position + (position - terrainMgr->GetTerrainCenter()).Normalize2D() * (bestDef->GetRadius() + SQUARE_SIZE * 6);  // utils::get_radial_pos(position, bestDef->GetRadius() + SQUARE_SIZE * 6);
+		CTerrainManager::CorrectPosition(buildPos);
 	} else {
 		buildPos = (bestDef->GetCostM() < 1000.0f) ? circuit->GetSetupManager()->GetEnergyBase() : circuit->GetSetupManager()->GetEnergyBase2();
 		CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
@@ -1417,7 +1429,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	}
 	if ((engyFactor < energyPower) || IsEnergyStalling()) {
 		isEnergyRequired = true;  // enough metal, request energy
-		UpdateEnergyTasks(position, unit);
+		UpdateEnergyTasks(utils::is_valid(position) ? position : circuit->GetSetupManager()->GetBasePos(), unit);
 		return nullptr;
 	}
 	if (!isStart && !circuit->IsSlave() && !factoryMgr->IsSwitchAllowed(facDef)) {
@@ -1597,7 +1609,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 void CEconomyManager::StartFactoryTask(const float seconds)
 {
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
-	if (factoryMgr->GetFactoryCount() == 0) {
+	if ((factoryMgr->GetFactoryCount() == 0) && circuit->GetBuilderManager()->GetTasks(IBuilderTask::BuildType::FACTORY).empty()) {
 		CCircuitUnit* comm = circuit->GetSetupManager()->GetCommander();
 		const AIFloat3 pos = (comm != nullptr) ? comm->GetPos(circuit->GetLastFrame()) : AIFloat3(-RgtVector);
 		if (!factoryMgr->IsSwitchTime() && (comm != nullptr) && (comm->GetTask()->GetType() == IUnitTask::Type::BUILDER)) {
@@ -1675,6 +1687,9 @@ void CEconomyManager::UpdateMorph()
 
 void CEconomyManager::OpenStrategy(const CCircuitDef* facDef, const AIFloat3& pos)
 {
+	if (circuit->IsLoadSave()) {
+		return;
+	}
 	const std::vector<CCircuitDef::RoleT>* opener = circuit->GetSetupManager()->GetOpener(facDef);
 	if (opener == nullptr) {
 		return;

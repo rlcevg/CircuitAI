@@ -53,7 +53,7 @@ protected:
 	CCircuitUnit* leader;  // slowest, weakest unit, true leader
 	springai::AIFloat3 groupPos;
 	springai::AIFloat3 prevGroupPos;
-	std::shared_ptr<PathInfo> pPath;
+	std::shared_ptr<CPathInfo> pPath;
 
 	std::map<float, std::set<CCircuitUnit*>> rangeUnits;
 

@@ -225,6 +225,11 @@ void CPathFinder::Pos2PathXY(AIFloat3 pos, int* x, int* y) const
 	*y = int(pos.z / squareSize);
 }
 
+int CPathFinder::Pos2PathIndex(AIFloat3 pos) const
+{
+	return int(pos.z / squareSize) * pathMapXSize + int(pos.x / squareSize);
+}
+
 int CPathFinder::PathXY2PathIndex(int x, int y) const
 {
 	return y * pathMapXSize + x;
@@ -350,7 +355,7 @@ CPathFinder::MoveType CPathFinder::GetMoveType(CCircuitUnit* unit, float elevati
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if ((elevation < .0f) && !cdef->IsSonarStealth()) {
 		return MoveType::UNDERWATER;
-	} else if (unit->GetUnit()->IsCloaked()) {
+	} else if (unit->IsInvisible()) {
 		return MoveType::CLOAK;
 	} else if (cdef->IsAbleToFly()) {
 		return MoveType::AIR;
@@ -624,7 +629,7 @@ void CPathFinder::MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micro
 	const NSMicroPather::HitFunc& hitTest = q->GetHitTest();
 	const float maxThreat = q->GetMaxThreat();
 
-	PathInfo& iPath = q->GetPathInfoRef();
+	CPathInfo& iPath = q->GetPathInfoRef();
 	float& pathCost = q->GetPathCostRef();
 
 	iPath.Clear();
@@ -658,7 +663,7 @@ void CPathFinder::FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* m
 	const bool isWithGoal = q->IsWithGoal();
 	const float maxThreat = q->GetMaxThreat();
 
-	PathInfo& iPath = q->GetPathInfoRef();
+	CPathInfo& iPath = q->GetPathInfoRef();
 	float& pathCost = q->GetPathCostRef();
 
 	// <maxRange> must always be >= squareSize, otherwise
@@ -803,9 +808,9 @@ void CPathFinder::MakePathWide(IPathQuery* query, NSMicroPather::CMicroPather* m
 	AIFloat3& startPos = q->GetStartPosRef();
 	AIFloat3& endPos = q->GetEndPosRef();
 	IndexVec& targets = q->GetTargetsRef();
-	const bool isWide = squareSize <= 64;
+	const bool isWide = squareSize <= 64;  // FIXME
 
-	PathInfo& iPath = q->GetPathInfoRef();
+	CPathInfo& iPath = q->GetPathInfoRef();
 	float& pathCost = q->GetPathCostRef();
 
 	iPath.Clear();

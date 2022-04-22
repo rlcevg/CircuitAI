@@ -145,7 +145,7 @@ void CRecruitTask::Cancel()
 	}
 }
 
-void CRecruitTask::Execute(CCircuitUnit* unit)
+bool CRecruitTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -186,7 +186,9 @@ void CRecruitTask::Execute(CCircuitUnit* unit)
 		)
 	} else {
 		manager->AbortTask(this);
+		return false;
 	}
+	return true;
 }
 
 void CRecruitTask::OnUnitIdle(CCircuitUnit* unit)

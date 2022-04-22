@@ -36,6 +36,9 @@ public:
 	bool IsPossibleToBuildAt(springai::UnitDef* unitDef, const springai::AIFloat3& pos, int facing) const {
 		return map->IsPossibleToBuildAt(unitDef, pos, facing);
 	}
+	springai::AIFloat3 FindClosestBuildSite(springai::UnitDef* unitDef, const springai::AIFloat3& pos, float searchRadius, int minDist, int facing) {
+		return map->FindClosestBuildSite(unitDef, pos, searchRadius, minDist, facing);
+	}
 
 	float GetWaterDamage() const { return map->GetWaterDamage(); }
 	float GetMinWind() const { return map->GetMinWind(); }

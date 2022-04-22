@@ -68,7 +68,7 @@ void CBGuardTask::Stop(bool done)
 	IBuilderTask::Stop(done);
 }
 
-void CBGuardTask::Execute(CCircuitUnit* unit)
+bool CBGuardTask::Execute(CCircuitUnit* unit)
 {
 	executors.insert(unit);
 
@@ -86,7 +86,9 @@ void CBGuardTask::Execute(CCircuitUnit* unit)
 		)
 	} else {
 		manager->AbortTask(this);
+		return false;
 	}
+	return true;
 }
 
 void CBGuardTask::OnUnitIdle(CCircuitUnit* unit)

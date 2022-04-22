@@ -49,6 +49,7 @@ public:
 
 	const std::vector<springai::Unit*>& GetNeutralUnits();
 	const std::vector<springai::Unit*>& GetNeutralUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+	bool IsNeutralUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const;
 
 	std::vector<springai::Unit*> GetSelectedUnits() const { return callback->GetSelectedUnits(); }
 
