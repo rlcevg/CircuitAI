@@ -77,7 +77,7 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.2.6"};
+constexpr char version[]{"1.2.7"};
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -1157,18 +1157,38 @@ int CCircuitAI::Load(std::istream& is)
 			continue;
 		}
 		ICoreUnit::Id unitId = u->GetUnitId();
-		CCircuitUnit* unit = GetTeamUnit(unitId);
-		if (unit != nullptr) {
+		if (GetTeamUnit(unitId) != nullptr) {
 			delete u;
 			continue;
 		}
-		unit = RegisterTeamUnit(unitId, u);
-		u->IsBeingBuilt() ? UnitCreated(unit, nullptr) : UnitFinished(unit);
+		CCircuitUnit* unit = RegisterTeamUnit(unitId, u);
+		UnitCreated(unit, nullptr);  // NOTE: NIL task assigned only on UnitCreated
+		if (!u->IsBeingBuilt()) {
+			UnitFinished(unit);
+		}
 	}
 	for (auto& kv : teamUnits) {
 		CCircuitUnit* unit = kv.second;
 		if (unit->GetUnit()->GetRulesParamFloat("disableAiControl", 0) > 0.f) {
 			DisableControl(unit);
+		}
+	}
+
+	auto& enemies = callback->GetEnemyUnits();
+	for (Unit* e : enemies) {
+		if (e == nullptr) {
+			continue;
+		}
+		if (GetEnemyInfo(e) != nullptr) {
+			delete e;
+			continue;
+		}
+		CEnemyInfo* enemy = RegisterEnemyInfo(e);
+		if (enemy != nullptr) {
+			EnemyEnterRadar(enemy);
+			if (enemy->GetCircuitDef() != nullptr) {
+				EnemyEnterLOS(enemy);
+			}
 		}
 	}
 

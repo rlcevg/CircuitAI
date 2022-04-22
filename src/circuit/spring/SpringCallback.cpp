@@ -39,7 +39,7 @@ int COOAICallback::GetEnemyTeamSize() const
 	return sAICallback->getEnemyTeams(skirmishAIId, nullptr, -1) - 1;  // -1 for Gaia team :(
 }
 
-std::vector<Unit*> COOAICallback::GetFriendlyUnits()
+const std::vector<Unit*>& COOAICallback::GetFriendlyUnits()
 {
 	unitIds.resize(MAX_UNITS);
 	int size = sAICallback->getFriendlyUnits(skirmishAIId, unitIds.data(), MAX_UNITS);
@@ -52,7 +52,7 @@ std::vector<Unit*> COOAICallback::GetFriendlyUnits()
 	return units;
 }
 
-std::vector<Unit*> COOAICallback::GetFriendlyUnitsIn(const AIFloat3& pos, float radius, bool spherical)
+const std::vector<Unit*>& COOAICallback::GetFriendlyUnitsIn(const AIFloat3& pos, float radius, bool spherical)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
@@ -75,7 +75,7 @@ bool COOAICallback::IsFriendlyUnitsIn(const AIFloat3& pos, float radius, bool sp
 	return size > 0;
 }
 
-std::vector<int> COOAICallback::GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical)
+const std::vector<int>& COOAICallback::GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
@@ -85,7 +85,7 @@ std::vector<int> COOAICallback::GetFriendlyUnitIdsIn(const springai::AIFloat3& p
 	return unitIds;
 }
 
-std::vector<Unit*> COOAICallback::GetEnemyUnits()
+const std::vector<Unit*>& COOAICallback::GetEnemyUnits()
 {
 	unitIds.resize(MAX_UNITS);
 	int size = sAICallback->getEnemyUnits(skirmishAIId, unitIds.data(), MAX_UNITS);
@@ -98,7 +98,7 @@ std::vector<Unit*> COOAICallback::GetEnemyUnits()
 	return units;
 }
 
-std::vector<Unit*> COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, float radius, bool spherical)
+const std::vector<Unit*>& COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, float radius, bool spherical)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
@@ -113,7 +113,7 @@ std::vector<Unit*> COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, float rad
 	return units;
 }
 
-std::vector<int> COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, float radius, bool spherical)
+const std::vector<int>& COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, float radius, bool spherical)
 {
 	float pos_posF3[3];
 	pos.LoadInto(pos_posF3);
@@ -121,6 +121,42 @@ std::vector<int> COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, float rad
 	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
 	unitIds.resize(size);
 	return unitIds;
+}
+
+const std::vector<Unit*>& COOAICallback::GetNeutralUnits()
+{
+	unitIds.resize(MAX_UNITS);
+	int size = sAICallback->getNeutralUnits(skirmishAIId, unitIds.data(), MAX_UNITS);
+
+	units.resize(size);
+	for (int i = 0; i < size; ++i) {
+		units[i] = WrappUnit::GetInstance(skirmishAIId, unitIds[i]);
+	}
+
+	return units;
+}
+
+const std::vector<Unit*>& COOAICallback::GetNeutralUnitsIn(const AIFloat3& pos, float radius, bool spherical)
+{
+	float pos_posF3[3];
+	pos.LoadInto(pos_posF3);
+	unitIds.resize(MAX_UNITS);
+	int size = sAICallback->getNeutralUnitsIn(skirmishAIId, pos_posF3, radius, spherical, unitIds.data(), MAX_UNITS);
+
+	units.resize(size);
+	for (int i = 0; i < size; ++i) {
+		units[i] = WrappUnit::GetInstance(skirmishAIId, unitIds[i]);
+	}
+
+	return units;
+}
+
+bool COOAICallback::IsNeutralUnitsIn(const AIFloat3& pos, float radius, bool spherical) const
+{
+	float pos_posF3[3];
+	pos.LoadInto(pos_posF3);
+	int size = sAICallback->getNeutralUnitsIn(skirmishAIId, pos_posF3, radius, spherical, nullptr, -1);
+	return size > 0;
 }
 
 bool COOAICallback::IsFeatures() const
@@ -140,6 +176,16 @@ bool COOAICallback::IsFeaturesIn(const AIFloat3& pos, float radius, bool spheric
 int COOAICallback::Unit_GetDefId(int unitId) const
 {
 	return sAICallback->Unit_getDef(skirmishAIId, unitId);
+}
+
+bool COOAICallback::Unit_HasCommands(int unitId) const
+{
+	return sAICallback->Unit_getCurrentCommands(skirmishAIId, unitId) > 0;
+}
+
+bool COOAICallback::Feature_IsResurrectable(int featureId) const
+{
+	return sAICallback->Feature_getResurrectDef(skirmishAIId, featureId) != -1;
 }
 
 bool COOAICallback::UnitDef_HasYardMap(int unitDefId) const

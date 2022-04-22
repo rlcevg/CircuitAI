@@ -38,17 +38,22 @@ public:
 
 	std::vector<springai::Unit*> GetTeamUnits() const { return callback->GetTeamUnits(); }
 
-	std::vector<springai::Unit*> GetFriendlyUnits();
-	std::vector<springai::Unit*> GetFriendlyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+	const std::vector<springai::Unit*>& GetFriendlyUnits();
+	const std::vector<springai::Unit*>& GetFriendlyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
 	bool IsFriendlyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const;
-	std::vector<int> GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+	const std::vector<int>& GetFriendlyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
 
-	std::vector<springai::Unit*> GetEnemyUnits();
-	std::vector<springai::Unit*> GetEnemyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
-	std::vector<int> GetEnemyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+	const std::vector<springai::Unit*>& GetEnemyUnits();
+	const std::vector<springai::Unit*>& GetEnemyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+	const std::vector<int>& GetEnemyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+
+	const std::vector<springai::Unit*>& GetNeutralUnits();
+	const std::vector<springai::Unit*>& GetNeutralUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+	bool IsNeutralUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const;
 
 	std::vector<springai::Unit*> GetSelectedUnits() const { return callback->GetSelectedUnits(); }
 
+	springai::UnitDef* GetUnitDefByName(const char* unitName) const { return callback->GetUnitDefByName(unitName); }
 	std::vector<springai::UnitDef*> GetUnitDefs() const { return callback->GetUnitDefs(); }
 	std::vector<springai::WeaponDef*> GetWeaponDefs() const { return callback->GetWeaponDefs(); }
 
@@ -60,6 +65,9 @@ public:
 	bool IsFeaturesIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const;
 
 	int Unit_GetDefId(int unitId) const;
+	bool Unit_HasCommands(int unitId) const;
+
+	bool Feature_IsResurrectable(int featureId) const;
 
 	bool UnitDef_HasYardMap(int unitDefId) const;
 
