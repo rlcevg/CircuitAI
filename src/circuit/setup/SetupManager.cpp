@@ -150,91 +150,93 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 	switch (type) {
 		case StartPosType::METAL_SPOT: {
-			const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
-			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
-			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-			SMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
-			Lua* lua = circuit->GetLua();
-
-			std::map<int, CMetalData::MetalIndices> validPoints;
-			for (unsigned idx = 0; idx < clusters.size(); ++idx) {
-				for (int i : clusters[idx].idxSpots) {
-					std::string cmd("ai_is_valid_startpos:");
-					const CMetalData::SMetal& spot = spots[i];
-					cmd += utils::int_to_string(spot.position.x) + "/" + utils::int_to_string(spot.position.z);
-					std::string result = lua->CallRules(cmd.c_str(), cmd.size());
-					if (result != "1") {
-						continue;
-					}
-
-					const int iS = terrainMgr->GetSectorIndex(spots[i].position);
-					SArea* area = mobileType->sector[iS].area;
-					if ((area != nullptr) && area->areaUsable) {
-						validPoints[idx].push_back(i);
-					}
-				}
-			}
-
-			if (!validPoints.empty()) {
-				struct SCluster {
-					unsigned count;
-					float distDivIncome;
-				};
-				const AIFloat3 mapCenter = terrainMgr->GetTerrainCenter();
-				std::vector<std::pair<int, SCluster>> validClusters;
-				for (auto& kv : validPoints) {
-					SCluster c;
-					c.count = allyTeam->GetClusterTeam(kv.first).count;
-					const CMetalData::SCluster& cl = clusters[kv.first];
-					const float income = cl.income + (float)rand() / RAND_MAX - 0.5f;
-					c.distDivIncome = mapCenter.distance(cl.position) / income;
-					validClusters.push_back(std::make_pair(kv.first, c));
-				}
-				std::random_shuffle(validClusters.begin(), validClusters.end());
-
-				auto cmp = [](const std::pair<int, SCluster>& a, const std::pair<int, SCluster>& b) {
-					if (a.second.count < b.second.count) {
-						return true;
-					} else if (a.second.count > b.second.count) {
-						return false;
-					}
-					return a.second.distDivIncome < b.second.distDivIncome;
-				};
-				std::sort(validClusters.begin(), validClusters.end(), cmp);
-
-				int clusterId = validClusters.front().first;
-				allyTeam->OccupyCluster(clusterId, circuit->GetTeamId());
-
-				const CMetalData::MetalIndices& indices = validPoints[clusterId];
-				const CMetalData::SMetal& spot = spots[indices[rand() % indices.size()]];
-				x = spot.position.x;
-				z = spot.position.z;
-				break;
-			}
-
-//			AIFloat3 posFrom(box.left, 0, box.top);
-//			AIFloat3 posTo(box.right, 0, box.bottom);
-//			CMetalManager* metalMgr = circuit->GetMetalManager();
-//			CMetalData::MetalIndices inBoxIndices = metalMgr->FindWithinRangeSpots(posFrom, posTo);
-//			if (!inBoxIndices.empty()) {
-//				const CMetalData::Metals& spots = metalMgr->GetSpots();
-//				CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-//				STerrainMapMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
-//				std::vector<int> filteredIndices;
-//				for (auto idx : inBoxIndices) {
-//					int iS = terrainMgr->GetSectorIndex(spots[idx].position);
-//					STerrainMapArea* area = mobileType->sector[iS].area;
+			// FIXME: BA
+//			const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+//			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
+//			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+//			SMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
+//			Lua* lua = circuit->GetLua();
+//
+//			std::map<int, CMetalData::MetalIndices> validPoints;
+//			for (unsigned idx = 0; idx < clusters.size(); ++idx) {
+//				for (int i : clusters[idx].idxSpots) {
+//					std::string cmd("ai_is_valid_startpos:");
+//					const CMetalData::SMetal& spot = spots[i];
+//					cmd += utils::int_to_string(spot.position.x) + "/" + utils::int_to_string(spot.position.z);
+//					std::string result = lua->CallRules(cmd.c_str(), cmd.size());
+//					if (result != "1") {
+//						continue;
+//					}
+//
+//					const int iS = terrainMgr->GetSectorIndex(spots[i].position);
+//					SArea* area = mobileType->sector[iS].area;
 //					if ((area != nullptr) && area->areaUsable) {
-//						filteredIndices.push_back(idx);
+//						validPoints[idx].push_back(i);
 //					}
 //				}
-//				if (!filteredIndices.empty()) {
-//					const AIFloat3& pos = spots[filteredIndices[rand() % filteredIndices.size()]].position;
-//					x = pos.x;
-//					z = pos.z;
-//					break;
-//				}
 //			}
+//
+//			if (!validPoints.empty()) {
+//				struct SCluster {
+//					unsigned count;
+//					float distDivIncome;
+//				};
+//				const AIFloat3 mapCenter = terrainMgr->GetTerrainCenter();
+//				std::vector<std::pair<int, SCluster>> validClusters;
+//				for (auto& kv : validPoints) {
+//					SCluster c;
+//					c.count = allyTeam->GetClusterTeam(kv.first).count;
+//					const CMetalData::SCluster& cl = clusters[kv.first];
+//					const float income = cl.income + (float)rand() / RAND_MAX - 0.5f;
+//					c.distDivIncome = mapCenter.distance(cl.position) / income;
+//					validClusters.push_back(std::make_pair(kv.first, c));
+//				}
+//				std::random_shuffle(validClusters.begin(), validClusters.end());
+//
+//				auto cmp = [](const std::pair<int, SCluster>& a, const std::pair<int, SCluster>& b) {
+//					if (a.second.count < b.second.count) {
+//						return true;
+//					} else if (a.second.count > b.second.count) {
+//						return false;
+//					}
+//					return a.second.distDivIncome < b.second.distDivIncome;
+//				};
+//				std::sort(validClusters.begin(), validClusters.end(), cmp);
+//
+//				int clusterId = validClusters.front().first;
+//				allyTeam->OccupyCluster(clusterId, circuit->GetTeamId());
+//
+//				const CMetalData::MetalIndices& indices = validPoints[clusterId];
+//				const CMetalData::SMetal& spot = spots[indices[rand() % indices.size()]];
+//				x = spot.position.x;
+//				z = spot.position.z;
+//				break;
+//			}
+
+			AIFloat3 posFrom(box.left, 0, box.top);
+			AIFloat3 posTo(box.right, 0, box.bottom);
+			CMetalManager* metalMgr = circuit->GetMetalManager();
+			CMetalData::IndicesDists inBoxIndices;
+			metalMgr->FindWithinRangeSpots(posFrom, posTo, inBoxIndices);
+			if (!inBoxIndices.empty()) {
+				const CMetalData::Metals& spots = metalMgr->GetSpots();
+				CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+				SMobileType* mobileType = terrainMgr->GetMobileTypeById(commChoice->GetMobileId());
+				std::vector<int> filteredIndices;
+				for (auto& kv : inBoxIndices) {
+					int iS = terrainMgr->GetSectorIndex(spots[kv.first].position);
+					SArea* area = mobileType->sector[iS].area;
+					if ((area != nullptr) && area->areaUsable) {
+						filteredIndices.push_back(kv.first);
+					}
+				}
+				if (!filteredIndices.empty()) {
+					const AIFloat3& pos = spots[filteredIndices[rand() % filteredIndices.size()]].position;
+					x = pos.x;
+					z = pos.z;
+					break;
+				}
+			}
 
 			random(box, x, z);
 		} break;

@@ -49,6 +49,8 @@ public:
 	void FindSpotsInRadius(const springai::AIFloat3& pos, const float radius, CMetalData::IndicesDists& outIndices) const {
 		metalData->FindSpotsInRadius(pos, radius, outIndices);
 	}
+	void FindWithinRangeSpots(const springai::AIFloat3& posFrom, const springai::AIFloat3& posTo,
+							  CMetalData::IndicesDists& outIndices) const;
 
 	const int FindNearestCluster(const springai::AIFloat3& pos) const {
 		return metalData->FindNearestCluster(pos);

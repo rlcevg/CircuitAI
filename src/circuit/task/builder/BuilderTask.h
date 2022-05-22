@@ -10,7 +10,7 @@
 
 #include "task/UnitTask.h"
 #include "util/Defines.h"
-#include "util/Point.h"
+#include "util/math/Geometry.h"
 
 #include <map>
 #include <vector>

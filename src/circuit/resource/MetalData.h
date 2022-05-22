@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_STATIC_METALDATA_H_
 #define SRC_CIRCUIT_STATIC_METALDATA_H_
 
-#include "util/Point.h"
+#include "util/math/Geometry.h"
 #include "kdtree/nanoflann.hpp"
 #include "lemon/smart_graph.h"
 

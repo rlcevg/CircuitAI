@@ -81,6 +81,8 @@ public:
 	CCircuitDef* GetDefaultDef(CCircuitDef* builderDef) { return defaultDefs[builderDef->GetId()]; }
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 
+	void AddAssistDef(CCircuitDef* cdef) { assistDefs.AddDef(cdef); cdef->SetIsAssist(true); }
+	void AddFactoryDef(CCircuitDef* cdef) { factoryDefs.AddDef(cdef); }
 	bool IsFactoryDefAvail(CCircuitDef* buildDef) const { return factoryDefs.IsAvail(buildDef); }
 
 	void UpdateResourceIncome();
@@ -101,7 +103,7 @@ public:
 	bool IsEnergyStalling();
 	bool IsEnergyEmpty();
 	bool IsEnergyFull();
-	bool IsEnergyRequired() const { return isEnergyRequired; }
+//	bool IsEnergyRequired() const { return isEnergyRequired; }
 	void ClearEnergyRequired() { isEnergyRequired = false; }
 	bool IsExcessed() const { return metalProduced > metalUsed; }
 	int GetBuildDelay() const { return buildDelay; }
@@ -131,6 +133,8 @@ public:
 	void RemoveMorphee(CCircuitUnit* unit) { morphees.erase(unit); }
 	void UpdateMorph();
 
+	void AddFactoryInfo(CCircuitUnit* unit);
+	void DelFactoryInfo(CCircuitUnit* unit);
 	void OpenStrategy(const CCircuitDef* facDef, const springai::AIFloat3& pos);
 
 private:

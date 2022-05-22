@@ -1,12 +1,12 @@
 /*
- * Point.h
+ * Geometry.h
  *
  *  Created on: May 13, 2020
  *      Author: rlcevg
  */
 
-#ifndef SRC_CIRCUIT_UTIL_POINT_H_
-#define SRC_CIRCUIT_UTIL_POINT_H_
+#ifndef SRC_CIRCUIT_UTIL_MATH_GEOMETRY_H_
+#define SRC_CIRCUIT_UTIL_MATH_GEOMETRY_H_
 
 #include "Sim/Misc/GlobalConstants.h"
 #include "AIFloat3.h"
@@ -36,6 +36,10 @@ static inline bool is_valid(const springai::AIFloat3& pos)
 	return pos.x != -RgtVector.x;
 }
 
+struct SRegion {
+
+};
+
 /*
  * nanoflann
  */
@@ -63,4 +67,4 @@ struct SPointAdaptor {
 
 } // namespace utils
 
-#endif // SRC_CIRCUIT_UTIL_POINT_H_
+#endif // SRC_CIRCUIT_UTIL_MATH_GEOMETRY_H_

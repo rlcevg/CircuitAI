@@ -9,7 +9,7 @@
 #define SRC_CIRCUIT_UTIL_UTILS_H_
 
 #include "util/Defines.h"
-#include "util/Point.h"
+#include "util/math/Geometry.h"
 
 #include "System/StringUtil.h"
 #include "System/Threading/SpringThreading.h"

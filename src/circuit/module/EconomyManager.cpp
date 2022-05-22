@@ -75,27 +75,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CEconomyManager::Init, this));
 
 	/*
-	 * factory handlers
-	 */
-	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
-		const int frame = this->circuit->GetLastFrame();
-		const int index = this->circuit->GetMetalManager()->FindNearestCluster(unit->GetPos(frame));
-		if (index >= 0) {
-			clusterInfos[index].factory = unit;
-		}
-	};
-	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
-		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
-			return;
-		}
-		for (auto& info : clusterInfos) {
-			if (info.factory == unit) {
-				info.factory = nullptr;
-			}
-		}
-	};
-
-	/*
 	 * resources
 	 */
 	auto energyFinishedHandler = [this](CCircuitUnit* unit) {
@@ -249,21 +228,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				&& ((it = customParams.find("energyconv_efficiency")) != customParams.end()) && (utils::string_to_float(it->second) > 0.f))
 			{
 				convertDefs.AddDef(&cdef);
-			}
-
-			// factory and assist
-			if (cdef.GetDef()->IsBuilder()) {
-				// FIXME: Caretaker can be factory. Make attributes?
-				if (!cdef.GetBuildOptions().empty()) {
-					finishedHandler[cdef.GetId()] = factoryFinishedHandler;
-					destroyedHandler[cdef.GetId()] = factoryDestroyedHandler;
-					factoryDefs.AddDef(&cdef);
-				} else if (cdef.IsAbleToAssist()
-					&& (std::max(cdef.GetDef()->GetXSize(), cdef.GetDef()->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
-				{
-					assistDefs.AddDef(&cdef);
-					cdef.SetIsAssist(true);
-				}
 			}
 
 			// energy
@@ -958,7 +922,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
 			std::vector<std::pair<CCircuitDef*, float>> mexDefs;
 			float maxRange = 0.f;
-			for (CCircuitDef* mDef : mexDefOptions) {
+			for (auto it = mexDefOptions.rbegin(); it != mexDefOptions.rend(); ++it){
+				CCircuitDef* mDef = *it;
 				if (mDef->IsAvailable(frame)) {
 					mexDefs.push_back(std::make_pair(mDef, mDef->GetExtractsM()));
 					const float range = mDef->GetExtrRangeM();
@@ -1681,6 +1646,23 @@ void CEconomyManager::UpdateMorph()
 			unit->Upgrade();  // Morph();
 			it = morphees.erase(it);
 			break;  // one unit at a time
+		}
+	}
+}
+
+void CEconomyManager::AddFactoryInfo(CCircuitUnit* unit)
+{
+	const int index = circuit->GetMetalManager()->FindNearestCluster(unit->GetPos(circuit->GetLastFrame()));
+	if (index >= 0) {
+		clusterInfos[index].factory = unit;
+	}
+}
+
+void CEconomyManager::DelFactoryInfo(CCircuitUnit* unit)
+{
+	for (auto& info : clusterInfos) {
+		if (info.factory == unit) {
+			info.factory = nullptr;
 		}
 	}
 }

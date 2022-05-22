@@ -79,7 +79,7 @@ using namespace terrain;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.5.6"};
+constexpr char version[]{"1.5.7"};
 constexpr uint32_t VERSION_SAVE = 2;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -103,7 +103,7 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		// NOTE: assert(lastFrame != -1): CCircuitUnit initialized with -1
 		//       and lastFrame check will misbehave until first update event.
 		, lastFrame(-2)
-		, skirmishAIId(clb != nullptr ? clb->GetSkirmishAIId() : -1)
+		, skirmishAIId(clb->GetSkirmishAIId())
 		, sideId(0)
 		, callback(std::unique_ptr<COOAICallback>(new COOAICallback(clb)))
 		, engine(nullptr)
@@ -998,6 +998,14 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		// BAR on SendUnits invokes EVENT_UNIT_CAPTURED, no need for:
 		UnregisterTeamUnit(unit);
 		return 0;
+	}
+
+	// FIXME: Random-Side workaround
+	// Faction data used before UnitFinished reaches EconomyManager where it sets side if commander is null.
+	// Option: remove faction specific lists and make common by economy type list with all water/underwater/factions units.
+	// Cons: iterating over full list.
+	if (unit->GetCircuitDef()->IsRoleComm() && (setupManager->GetCommander() == nullptr)) {
+		setupManager->SetCommander(unit);
 	}
 
 	unit->GetCircuitDef()->AdjustSinceFrame(lastFrame);

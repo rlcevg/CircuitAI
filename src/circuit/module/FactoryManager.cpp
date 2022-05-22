@@ -91,6 +91,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		)
 
 		const int frame = this->circuit->GetLastFrame();
+		this->circuit->GetEconomyManager()->AddFactoryInfo(unit);
 //		if (factories.empty() && (this->circuit->GetBuilderManager()->GetWorkerCount() <= 2)) {
 			this->circuit->GetEconomyManager()->OpenStrategy(unit->GetCircuitDef(), unit->GetPos(frame));
 //		}
@@ -109,6 +110,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		// NOTE: Do not del if factory rotation wanted
 		DelFactory(unit->GetCircuitDef());
 		DisableFactory(unit);
+		this->circuit->GetEconomyManager()->DelFactoryInfo(unit);
 
 		// Remove blocked path from factory to lanePos
 		this->circuit->GetTerrainManager()->DelBusPath(unit);
@@ -179,7 +181,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			}
 			if (!isInHaven) {
 				havens.push_back(assPos);
-				// TODO: Send HavenFinished message?
 			}
 		}
 	};
@@ -232,23 +233,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	};
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
-		const bool isBuilder = cdef.GetDef()->IsBuilder();
-		if (!cdef.IsMobile() && isBuilder) {
-			CCircuitDef::Id unitDefId = cdef.GetId();
-			// FIXME: Caretaker can be factory. Make attributes?
-			if (!cdef.GetBuildOptions().empty()) {
-				createdHandler[unitDefId] = factoryCreatedHandler;
-				finishedHandler[unitDefId] = factoryFinishedHandler;
-				idleHandler[unitDefId] = factoryIdleHandler;
-				destroyedHandler[unitDefId] = factoryDestroyedHandler;
-			} else if (cdef.IsAssist()) {
-				createdHandler[unitDefId] = assistCreatedHandler;
-				finishedHandler[unitDefId] = assistFinishedHandler;
-				idleHandler[unitDefId] = assistIdleHandler;
-				destroyedHandler[unitDefId] = assistDestroyedHandler;
-			}
-		}
-
 		// Auto-assign roles
 		auto setRoles = [circuit, &cdef](CCircuitDef::RoleT type) {
 			if (circuit->GetBindedRole(cdef.GetMainRole()) != type) {
@@ -261,7 +245,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			setRoles(ROLE_TYPE(AIR));
 		} else if (!cdef.IsMobile() && cdef.IsAttacker() && cdef.HasSurfToLand()) {
 			setRoles(ROLE_TYPE(STATIC));
-		} else if (isBuilder && !cdef.GetBuildOptions().empty() && !cdef.IsRoleComm()) {
+		} else if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty() && !cdef.IsRoleComm()) {
 			setRoles(ROLE_TYPE(BUILDER));
 		}
 		if (cdef.IsRoleComm()) {
@@ -274,10 +258,32 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 	ReadConfig();
 
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
 		if (!cdef.GetDef()->IsBuilder()) {
 			continue;
 		}
+
+		if (!cdef.IsMobile()) {
+			CCircuitDef::Id unitDefId = cdef.GetId();
+			// FIXME: Caretaker can be factory. Make attributes?
+			if (!cdef.GetBuildOptions().empty() && (factoryDefs.find(unitDefId) != factoryDefs.end())) {
+				createdHandler[unitDefId] = factoryCreatedHandler;
+				finishedHandler[unitDefId] = factoryFinishedHandler;
+				idleHandler[unitDefId] = factoryIdleHandler;
+				destroyedHandler[unitDefId] = factoryDestroyedHandler;
+				economyMgr->AddFactoryDef(&cdef);
+			} else if (cdef.IsAbleToAssist()
+				&& (std::max(cdef.GetDef()->GetXSize(), cdef.GetDef()->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
+			{
+				createdHandler[unitDefId] = assistCreatedHandler;
+				finishedHandler[unitDefId] = assistFinishedHandler;
+				idleHandler[unitDefId] = assistIdleHandler;
+				destroyedHandler[unitDefId] = assistDestroyedHandler;
+				economyMgr->AddAssistDef(&cdef);
+			}
+		}
+
 		for (SSideInfo& sideInfo : sideInfos) {
 			if (cdef.CanBuild(sideInfo.airpadDef)) {
 				airpadDefs[cdef.GetId()] = sideInfo.airpadDef;

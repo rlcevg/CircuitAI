@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_SETUP_DEFENCEDATA_H_
 #define SRC_CIRCUIT_SETUP_DEFENCEDATA_H_
 
-#include "util/Point.h"
+#include "util/math/Geometry.h"
 #include "kdtree/nanoflann.hpp"
 
 #include "AIFloat3.h"
