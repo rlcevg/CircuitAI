@@ -33,19 +33,14 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-bool CAllyTeam::SBox::ContainsPoint(const AIFloat3& point) const
-{
-	return (point.x >= left) && (point.x <= right) &&
-		   (point.z >= top) && (point.z <= bottom);
-}
-
-CAllyTeam::CAllyTeam(const TeamIds& tids, const SBox& sb)
+CAllyTeam::CAllyTeam(const TeamIds& tids, const utils::CRegion& sb)
 		: circuit(nullptr)
 		, teamIds(tids)
 		, startBox(sb)
 		, initCount(0)
 		, resignSize(0)
 		, lastUpdate(-1)
+		, isResetStart(true)
 		, uEnemyMark(0)
 {
 }
@@ -390,6 +385,15 @@ CAllyTeam::SAreaTeam CAllyTeam::GetAreaTeam(SArea* area)
 		return it->second;
 	}
 	return SAreaTeam(-1);
+}
+
+void CAllyTeam::ResetStartOnce()
+{
+	if (isResetStart) {
+		occupants.clear();
+		habitants.clear();
+	}
+	isResetStart = false;
 }
 
 void CAllyTeam::SetAuthority(CCircuitAI* authority)

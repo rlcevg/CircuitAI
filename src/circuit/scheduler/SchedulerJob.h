@@ -29,7 +29,7 @@ public:
 };
 
 template<typename _Callable>
-class CGameJob : public IMainJob {
+class CGameJob: public IMainJob {
 public:
 	CGameJob(_Callable&& __f) : _M_func(std::forward<_Callable>(__f)) {}
 
@@ -45,7 +45,7 @@ std::shared_ptr<CGameJob<_Callable>> _M_make_game_routine(_Callable&& __f) {
 }
 
 template<typename _Callable>
-class CPathedJob : public IMainJob {
+class CPathedJob: public IMainJob {
 public:
 	CPathedJob(const std::shared_ptr<IPathQuery>& query, _Callable&& __f)
 		: _M_func(std::forward<_Callable>(__f)), query(query) {}
@@ -81,7 +81,7 @@ public:
 };
 
 template<typename _Callable>
-class CWorkJob : public IThreadJob {
+class CWorkJob: public IThreadJob {
 public:
 	CWorkJob(_Callable&& __f) : _M_func(std::forward<_Callable>(__f)) {}
 
@@ -97,7 +97,7 @@ std::shared_ptr<CWorkJob<_Callable>> _M_make_work_routine(_Callable&& __f) {
 }
 
 template<typename _Callable>
-class CPathJob : public IThreadJob {
+class CPathJob: public IThreadJob {
 public:
 	CPathJob(const std::shared_ptr<IPathQuery>& query, _Callable&& __f)
 		: _M_func(std::forward<_Callable>(__f)), query(query) {}

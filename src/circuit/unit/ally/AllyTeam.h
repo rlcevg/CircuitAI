@@ -10,6 +10,7 @@
 
 #include "unit/enemy/EnemyManager.h"
 #include "util/math/QuadField.h"
+#include "util/math/Region.h"
 
 #include <memory>
 #include <map>
@@ -41,19 +42,6 @@ public:
 	using Id = int;
 	using AllyUnits = std::map<ICoreUnit::Id, CAllyUnit*>;
 	using TeamIds = std::unordered_set<Id>;
-	union SBox {
-		SBox(float l, float r, float t, float b) : edge{l, r, t, b} {}
-		SBox() : edge{0.f, 0.f, 0.f, 0.f} {}
-		struct {
-			float left;
-			float right;
-			float top;
-			float bottom;
-		};
-		float edge[4];
-
-		bool ContainsPoint(const springai::AIFloat3& point) const;
-	};
 	struct SClusterTeam {
 		SClusterTeam(int tid, unsigned cnt = 0) : teamId(tid), count(cnt) {}
 		int teamId;  // cluster leader
@@ -65,15 +53,15 @@ public:
 	};
 
 public:
-	CAllyTeam(const TeamIds& tids, const SBox& sb);
-	virtual ~CAllyTeam();
+	CAllyTeam(const TeamIds& tids, const utils::CRegion& sb);
+	~CAllyTeam();
 
 	int GetSize() const { return teamIds.size(); }
 	int GetAliveSize() const { return GetSize() - resignSize; }
 	const TeamIds& GetTeamIds() const { return teamIds; }
 	const Id GetLeaderId() const;
 	const CCircuitAI* GetLeader() const { return circuit; }
-	const SBox& GetStartBox() const { return startBox; }
+	const utils::CRegion& GetStartBox() const { return startBox; }
 
 	void Init(CCircuitAI* circuit, float decloakRadius);
 	void NonDefaultThreats(std::set<CCircuitDef::RoleT>&& modRoles, CCircuitAI* ai);
@@ -121,6 +109,7 @@ public:
 	SClusterTeam GetClusterTeam(int clusterId);
 	void OccupyArea(terrain::SArea* area, int teamId);
 	SAreaTeam GetAreaTeam(terrain::SArea* area);
+	void ResetStartOnce();
 
 	CCircuitAI* GetAuthority() const { return circuit; }
 	void SetAuthority(CCircuitAI* authority);
@@ -131,7 +120,7 @@ private:
 	CCircuitAI* circuit;  // authority
 	std::shared_ptr<IMainJob> releaseTask;
 	TeamIds teamIds;
-	SBox startBox;
+	utils::CRegion startBox;
 
 	int initCount;
 	int resignSize;
@@ -141,6 +130,7 @@ private:
 
 	std::map<int, SClusterTeam> occupants;  // Cluster owner on start. clusterId: SClusterTeam
 	std::map<terrain::SArea*, SAreaTeam> habitants;  // Area habitants on start.
+	bool isResetStart;
 
 	std::shared_ptr<CMapManager> mapManager;
 	std::shared_ptr<CMetalManager> metalManager;

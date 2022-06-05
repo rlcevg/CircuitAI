@@ -12,6 +12,7 @@
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/math/RagMatrix.h"
+#include "util/math/Region.h"
 #include "util/Utils.h"
 
 #include "spring/SpringMap.h"
@@ -237,13 +238,12 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 void CMetalManager::FindWithinRangeSpots(const AIFloat3& posFrom, const AIFloat3& posTo,
 										 CMetalData::IndicesDists& outIndices) const
 {
-	// FIXME: lazy slow implementation through available FindSpotsInRadius
 	const AIFloat3 pos = (posFrom + posTo) / 2;
 	const float radius = posFrom.distance2D(posTo) / 2;
 	CMetalData::IndicesDists indices;
 	FindSpotsInRadius(pos, radius, indices);
 	const CMetalData::Metals& spots = GetSpots();
-	const CAllyTeam::SBox box(posFrom.x, posTo.x, posFrom.z, posTo.z);
+	const utils::SBox box(posFrom.x, posTo.x, posFrom.z, posTo.z);
 	for (auto& kv : indices) {
 		if (box.ContainsPoint(spots[kv.first].position)) {
 			outIndices.push_back(kv);

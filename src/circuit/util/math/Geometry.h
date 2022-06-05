@@ -36,10 +36,6 @@ static inline bool is_valid(const springai::AIFloat3& pos)
 	return pos.x != -RgtVector.x;
 }
 
-struct SRegion {
-
-};
-
 /*
  * nanoflann
  */

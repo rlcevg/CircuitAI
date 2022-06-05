@@ -27,7 +27,7 @@ class CSetupManager {
 public:
 	friend class CInitScript;
 
-	enum class StartPosType: char {METAL_SPOT = 0, MIDDLE = 1, RANDOM = 2};
+	enum class StartPosType: char {METAL_SPOT = 0, RANDOM = 1};
 	// TODO: class CCommander;
 	struct SCommInfo {
 		struct SMorph {

@@ -8,6 +8,17 @@
 
 namespace lemon {
 
+  // WARNING: std::iterator deprecated since C++17
+  template<class Tag, class Type>
+  struct std_iterator {
+  public:
+    using iterator_category = Tag;
+    using value_type = Type;
+    using difference_type = Type;
+    using pointer = Type*;
+    using reference = Type&;
+  };
+
   /// \brief Template to make STL iterators from Lemon iterators.
   ///
   /// This template makes an STL iterator from a Lemon iterator
@@ -17,7 +28,7 @@ namespace lemon {
   /// \c T should be the lemon iterator to be decorated.
   template<class T>
   struct LemonItWrapper
-      : public T, public std::iterator<std::input_iterator_tag, T> {
+      : public T, public std_iterator<std::input_iterator_tag, T> {
 
     LemonItWrapper(const T &x) : T(x) {}
 

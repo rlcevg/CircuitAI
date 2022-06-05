@@ -332,19 +332,19 @@ void CTerrainManager::Init()
 	}
 
 	// Mark edges of the map
-//	notIgnoreMask = STRUCT_BIT(NONE);
-//	for (int j = 0; j < 5; ++j) {
-//		for (int i = 6; i < blockingMap.columns - 6; ++i) {
-//			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
-//			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::TERRA, notIgnoreMask);
-//		}
-//	}
-//	for (int j = 6; j < blockingMap.rows - 6; ++j) {
-//		for (int i = 0; i < 5; ++i) {
-//			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
-//			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
-//		}
-//	}
+	notIgnoreMask = STRUCT_BIT(NONE);
+	for (int j = 0; j < 4; ++j) {
+		for (int i = 5; i < blockingMap.columns - 5; ++i) {
+			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+			blockingMap.MarkBlocker(i, blockingMap.rows - j - 1, SBlockingMap::StructType::TERRA, notIgnoreMask);
+		}
+	}
+	for (int j = 5; j < blockingMap.rows - 5; ++j) {
+		for (int i = 0; i < 4; ++i) {
+			blockingMap.MarkBlocker(i, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+			blockingMap.MarkBlocker(blockingMap.columns - i - 1, j, SBlockingMap::StructType::TERRA, notIgnoreMask);
+		}
+	}
 }
 
 void CTerrainManager::AddBlocker(CCircuitDef* cdef, const AIFloat3& pos, int facing, bool isOffset)

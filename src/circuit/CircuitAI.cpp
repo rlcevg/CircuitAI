@@ -585,7 +585,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		const CSetupManager::StartPosType spt = metalManager->HasMetalSpots() ?
 												CSetupManager::StartPosType::METAL_SPOT :
-												CSetupManager::StartPosType::MIDDLE;
+												CSetupManager::StartPosType::RANDOM;
 		setupManager->PickStartPos(this, spt);
 	}
 

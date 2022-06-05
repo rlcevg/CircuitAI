@@ -10,7 +10,7 @@ $ python amalgamate.py
 https://github.com/jlblancoc/nanoflann
 
 ### delaunator
-* Triangulation <br />
+* Set of points triangulation <br />
 Fork with fixes https://github.com/soerendd/delaunator-cpp
 
 ### lemon

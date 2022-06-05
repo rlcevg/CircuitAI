@@ -422,7 +422,7 @@ void CEconomyManager::Init()
 
 	const Json::Value& econ = circuit->GetSetupManager()->GetConfig()["economy"];
 	const float mm = econ.get("mex_max", 2.f).asFloat();
-	mexMax = (mm < 1.f) ? (mm * spSize) : std::numeric_limits<decltype(mexMax)>::max();
+	mexMax = (mm < 1.f) ? decltype(mexMax)(mm * spSize) : std::numeric_limits<decltype(mexMax)>::max();
 
 	const Json::Value& pull = econ["ms_pull"];
 	mspInfos.resize(pull.size());
@@ -461,6 +461,7 @@ void CEconomyManager::Init()
 		CScheduler* scheduler = circuit->GetScheduler().get();
 		CAllyTeam* allyTeam = circuit->GetAllyTeam();
 		if (circuit->IsCommMerge() && !circuit->IsSavegame()) {
+			allyTeam->ResetStartOnce();  // for the case when game ignores AI start positions
 			const int spotId = circuit->GetMetalManager()->FindNearestSpot(pos);
 			const int clusterId = (spotId < 0) ? -1 : circuit->GetMetalManager()->GetCluster(spotId);
 			int ownerId = allyTeam->GetClusterTeam(clusterId).teamId;
