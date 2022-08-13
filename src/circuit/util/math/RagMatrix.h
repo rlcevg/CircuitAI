@@ -26,8 +26,8 @@ template <class T>
 class CRagMatrix final {
 public:
 	CRagMatrix() : nrows(0) {}
-	CRagMatrix(int nrows) : nrows(nrows) {
-		Resize(nrows);
+	CRagMatrix(int rows) {
+		Resize(rows);
 	}
 	CRagMatrix(const CRagMatrix& matrix) : nrows(matrix.nrows) {
 		data = matrix.data;
@@ -36,8 +36,9 @@ public:
 
 	int GetNrows() const { return nrows; }
 
-	void Resize(int nrows) {
-		assert(nrows > 1);
+	void Resize(int rows) {
+		assert(rows > 1);
+		nrows = rows;
 		int size = nrows * (nrows - 1) / 2;
 		data.resize(size);
 	}

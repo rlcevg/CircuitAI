@@ -12,6 +12,8 @@
 
 #include "spring/SpringMap.h"
 
+#include "Game.h"
+
 #include <regex>
 
 namespace circuit {

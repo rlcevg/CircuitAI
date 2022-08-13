@@ -13,6 +13,7 @@
 #include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
+#include "spring/SpringMap.h"
 
 #include "Drawer.h"
 
