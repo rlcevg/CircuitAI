@@ -70,6 +70,7 @@ void CEnergyManager::ParseGeoSpots()
 
 bool CEnergyManager::IsSpotValid(int index, const AIFloat3& pos) const
 {
+//circuit->LOG("IsSpotValid: %i | %f, %f, %f | size=%i", index, pos.x, pos.y, pos.z, GetSpots().size());
 	if ((index < 0) || ((size_t)index >= GetSpots().size())) {
 		return false;
 	}

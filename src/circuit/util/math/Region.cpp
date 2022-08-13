@@ -15,21 +15,23 @@ using namespace springai;
 CPolygon::CPolygon(F3Vec&& points)
 		: box(points[0].x, points[0].x, points[0].z, points[0].z)
 		, verts(points)
+		, center(ZeroVector)
 {
 	for (const AIFloat3& v : verts) {
 		box.Add(v);
 	}
 	Triangulate::Process(verts, tris);
-	int tcount = tris.size() / 3;
-	for (int i = 0; i < tcount; ++i) {
-		areas.push_back(Triangulate::Area(verts[tris[i * 3 + 0]], verts[tris[i * 3 + 1]], verts[tris[i * 3 + 2]]));
+	CalcArea();
+	for (const AIFloat3& p : verts) {
+		center += p;
 	}
-	area = Triangulate::Area(verts);
+	center /= verts.size();
 }
 
 CPolygon::CPolygon(const SBox& b)
 		: box(b)
 		, area((box.right - box.left) * (box.bottom - box.top))
+		, center((AIFloat3(box.left, 0.f, box.top) + AIFloat3(box.right, 0.f, box.bottom)) / 2)
 {
 	verts.emplace_back(box.left, 0.f, box.top);
 	verts.emplace_back(box.left, 0.f, box.bottom);
@@ -79,6 +81,31 @@ AIFloat3 CPolygon::Random() const
 	}
 	AIFloat3 w = a * u1 + b * u2;
 	return w + verts[tris[choice * 3 + 0]];
+}
+
+void CPolygon::Scale(float value)
+{
+	for (AIFloat3& p : verts) {
+		p = (p - center) * value + center;
+	}
+	CalcArea();
+}
+
+void CPolygon::Extend(float value)
+{
+	for (AIFloat3& p : verts) {
+		p = (p - center) * value + center;
+	}
+	CalcArea();
+}
+
+void CPolygon::CalcArea()
+{
+	const int tcount = tris.size() / 3;
+	for (int i = 0; i < tcount; ++i) {
+		areas.push_back(Triangulate::Area(verts[tris[i * 3 + 0]], verts[tris[i * 3 + 1]], verts[tris[i * 3 + 2]]));
+	}
+	area = Triangulate::Area(verts);
 }
 
 CRegion::CRegion(std::vector<CPolygon>&& polys)

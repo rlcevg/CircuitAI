@@ -19,6 +19,11 @@ CBGenericTask::CBGenericTask(ITaskManager* mgr, BuildType buildType, Priority pr
 {
 }
 
+CBGenericTask::CBGenericTask(ITaskManager* mgr, BuildType buildType)
+		: IBuilderTask(mgr, Type::BUILDER, buildType)
+{
+}
+
 CBGenericTask::~CBGenericTask()
 {
 }

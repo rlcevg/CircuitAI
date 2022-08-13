@@ -85,7 +85,7 @@ void CMetalData::FindSpotsInRadius(const AIFloat3& pos, const float radius,
 	nanoflann::SearchParams searchParams;
 	searchParams.sorted = false;
 
-	metalTree.radiusSearch(&query_pt[0], radius, outIndices, searchParams);
+	metalTree.radiusSearch(&query_pt[0], SQUARE(radius), outIndices, searchParams);
 }
 
 const int CMetalData::FindNearestCluster(const AIFloat3& pos) const
@@ -182,7 +182,7 @@ void CMetalData::TriangulateGraph(const std::vector<double>& coords,
 			for (std::size_t C : vs) {
 				float AC = distance(e.first, C);
 				float BC = distance(e.second, C);
-				if (AB > (BC + AC) * 0.9f) {
+				if (AB > (BC + AC) * 0.85f) {
 					return true;
 				}
 			}

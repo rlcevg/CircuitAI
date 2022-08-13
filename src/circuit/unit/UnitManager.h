@@ -18,7 +18,7 @@ protected:
 public:
 	virtual ~IUnitManager();
 
-	virtual CCircuitAI* GetCircuit() = 0;
+	virtual CCircuitAI* GetCircuit() const = 0;
 };
 
 } // namespace circuit

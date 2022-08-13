@@ -448,7 +448,14 @@ void CFactoryManager::ReadConfig()
 
 		cdef->SetGoalBuildMod(behaviour.get("build_mod", cdef->GetGoalBuildMod()).asFloat());
 
-		cdef->SetRetreat(behaviour.get("retreat", cdef->GetRetreat()).asFloat());
+		const Json::Value& retreat = behaviour.get("retreat", cdef->GetRetreat());
+		if (retreat.isNumeric()) {
+			cdef->SetRetreat(retreat.asFloat());
+		} else {
+			const float min = retreat.get((unsigned)0, cdef->GetRetreat()).asFloat();
+			const float max = retreat.get((unsigned)1, cdef->GetRetreat()).asFloat();
+			cdef->SetRetreat((float)rand() / RAND_MAX * (max - min) + min);
+		}
 
 		const Json::Value& pwrMod = behaviour["power"];
 		if (!pwrMod.isNull()) {
@@ -1076,7 +1083,6 @@ CCircuitDef* CFactoryManager::GetFactoryToBuild(AIFloat3 position, bool isStart,
 		facDef = factoryData->GetFactoryToBuild(circuit, -RgtVector, isStart, isReset);
 	}
 	return facDef;
-//	return factoryData->GetFactoryToBuild(circuit, position, isStart, isReset);
 }
 
 void CFactoryManager::AddFactory(const CCircuitDef* cdef)

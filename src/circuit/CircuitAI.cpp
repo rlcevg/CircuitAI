@@ -79,8 +79,8 @@ using namespace terrain;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.5.7"};
-constexpr uint32_t VERSION_SAVE = 2;
+constexpr char version[]{"1.5.8"};
+constexpr uint32_t VERSION_SAVE = 3;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;

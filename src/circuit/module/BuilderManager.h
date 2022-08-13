@@ -171,6 +171,7 @@ public:
 
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
 
+	IBuilderTask* GetRepairTask(ICoreUnit::Id unitId) const;
 	IBuilderTask* GetReclaimFeatureTask(const springai::AIFloat3& pos, float radius) const;
 	IBuilderTask* GetResurrectTask(const springai::AIFloat3& pos, float radius) const;
 	void RegisterReclaim(CAllyUnit* unit) { reclaimUnits[unit] = nullptr; }

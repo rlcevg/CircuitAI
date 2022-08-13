@@ -233,8 +233,10 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& retreat = root["retreat"]["fighter"];
-	const float fighterRet = retreat.get((unsigned)0, 0.5f).asFloat();
-	const float retMod = retreat.get((unsigned)1, 1.0f).asFloat();
+	const float minRet = retreat.get((unsigned)0, 0.5f).asFloat();
+	const float maxRet = retreat.get((unsigned)1, 0.5f).asFloat();
+	const float fighterRet = (float)rand() / RAND_MAX * (maxRet - minRet) + minRet;
+	const float retMod = retreat.get((unsigned)2, 1.0f).asFloat();
 	const float commMod = root["quota"]["thr_mod"].get("comm", 1.f).asFloat();
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {

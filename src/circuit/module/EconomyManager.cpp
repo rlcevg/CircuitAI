@@ -491,7 +491,7 @@ void CEconomyManager::Init()
 
 		const float maxTravel = 7 + rand() % (10 - 7 + 1);  // seconds
 		const int interval = allyTeam->GetSize() * FRAMES_PER_SEC;
-		startFactory = CScheduler::GameJob(&CEconomyManager::StartFactoryTask, this, maxTravel);
+		startFactory = CScheduler::GameJob(&CEconomyManager::StartFactoryJob, this, maxTravel);
 		scheduler->RunJobEvery(startFactory, 1, circuit->GetSkirmishAIId() + 0 + 5 * FRAMES_PER_SEC);
 		scheduler->RunJobEvery(CScheduler::GameJob(&CEconomyManager::UpdateStorageTasks, this),
 								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
@@ -1345,29 +1345,11 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	}
 
 	const bool isStart = (factoryMgr->GetFactoryCount() == 0);
-	CCircuitDef* facDef;
-	CCircuitDef* reprDef;
-	if (factoryTask == nullptr) {
-		facDef = factoryMgr->GetFactoryToBuild(position, isStart);
-//		facDef = factoryMgr->GetFactoryToBuild(-RgtVector, isStart);
-		if (facDef == nullptr) {
-			return nullptr;
-		}
-		reprDef = factoryMgr->GetRepresenter(facDef);
-		if (reprDef == nullptr) {  // identify area to build by factory representatives
-			return nullptr;
-		}
-		IBuilderTask::Priority priority = (builderMgr->GetWorkerCount() <= 2)
-										  ? IBuilderTask::Priority::NOW
-										  : IBuilderTask::Priority::HIGH;
-		const bool isPlop = (factoryMgr->GetFactoryCount() <= 0);
-		// hold selected facDef - create non-active task
-		factoryTask = static_cast<CBFactoryTask*>(builderMgr->EnqueueFactory(priority,
-				facDef, reprDef, -RgtVector, SQUARE_SIZE, isPlop, false, FRAMES_PER_SEC * 120));
-	} else {
-		facDef = factoryTask->GetBuildDef();
-		reprDef = factoryTask->GetReprDef();
+	if ((factoryTask == nullptr) && (PickNextFactory(position, isStart) == nullptr)) {
+		return nullptr;
 	}
+	CCircuitDef* facDef = factoryTask->GetBuildDef();
+	CCircuitDef* reprDef = factoryTask->GetReprDef();
 
 	/*
 	 * check metal and energy levels
@@ -1572,7 +1554,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 	return nullptr;
 }
 
-void CEconomyManager::StartFactoryTask(const float seconds)
+void CEconomyManager::StartFactoryJob(const float seconds)
 {
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
 	if ((factoryMgr->GetFactoryCount() == 0) && circuit->GetBuilderManager()->GetTasks(IBuilderTask::BuildType::FACTORY).empty()) {
@@ -1607,6 +1589,28 @@ void CEconomyManager::StartFactoryTask(const float seconds)
 	auto update = static_cast<IBuilderTask* (CEconomyManager::*)(void)>(&CEconomyManager::UpdateFactoryTasks);
 	scheduler->RunJobEvery(CScheduler::GameJob(update, this),
 							interval, circuit->GetSkirmishAIId() + 0 + 10 * interval);
+}
+
+CBFactoryTask* CEconomyManager::PickNextFactory(const AIFloat3& position, bool isStart)
+{
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	CCircuitDef* facDef = factoryMgr->GetFactoryToBuild(position, isStart);
+	if (facDef == nullptr) {
+		return nullptr;
+	}
+	CCircuitDef* reprDef = factoryMgr->GetRepresenter(facDef);
+	if (reprDef == nullptr) {  // identify area to build by factory representatives
+		return nullptr;
+	}
+	CBuilderManager* builderMgr = circuit->GetBuilderManager();
+	IBuilderTask::Priority priority = (builderMgr->GetWorkerCount() <= 2)
+									  ? IBuilderTask::Priority::NOW
+									  : IBuilderTask::Priority::HIGH;
+	const bool isPlop = (factoryMgr->GetFactoryCount() <= 0);
+	// hold selected facDef - create non-active task
+	factoryTask = static_cast<CBFactoryTask*>(builderMgr->EnqueueFactory(priority,
+			facDef, reprDef, -RgtVector, SQUARE_SIZE, isPlop, false, FRAMES_PER_SEC * 120));
+	return factoryTask;
 }
 
 void CEconomyManager::AddMorphee(CCircuitUnit* unit)

@@ -23,11 +23,6 @@ IUnitModule::~IUnitModule()
 {
 }
 
-CCircuitAI* IUnitModule::GetCircuit()
-{
-	return circuit;
-}
-
 void IUnitModule::DequeueTask(IUnitTask* task, bool done)
 {
 	task->Dead();

@@ -217,8 +217,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& retreat = root["retreat"]["builder"];
-	const float builderRet = retreat.get((unsigned)0, 0.8f).asFloat();
-	const float retMod = retreat.get((unsigned)1, 1.0f).asFloat();
+	const float minRet = retreat.get((unsigned)0, 0.8f).asFloat();
+	const float maxRet = retreat.get((unsigned)1, 0.8f).asFloat();
+	const float builderRet = (float)rand() / RAND_MAX * (maxRet - minRet) + minRet;
+	const float retMod = retreat.get((unsigned)2, 1.0f).asFloat();
 	const float goalBuildMod = root["economy"].get("build_mod", 320.f).asFloat();
 
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
@@ -897,7 +899,14 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 		case IBuilderTask::BuildType::CONVERT: {
 			task = new CBConvertTask(this, priority, buildDef, position, cost, shake, timeout);
 		} break;
+		// NOTE: Tasks created by config "hub"
+//		case IBuilderTask::BuildType::FACTORY: {
+//			task = new CBFactoryTask(this, priority, buildDef, nullptr, position, cost, shake, false, timeout);
+//		} break;
 		default: {
+			// FIXME: CBGenericTask is a workaround and should be fixed to remain as crash handler.
+			//        Currently used by build_chain->hub config.
+			//        There's no way for AS to distinguish generic from real BuildType task. Save/Load gets confused.
 			task = new CBGenericTask(this, type, priority, buildDef, position, cost, shake, timeout);
 		} break;
 	}
@@ -987,6 +996,15 @@ SBuildChain* CBuilderManager::GetBuildChain(IBuilderTask::BuildType buildType, C
 		return nullptr;
 	}
 	return it2->second;
+}
+
+IBuilderTask* CBuilderManager::GetRepairTask(ICoreUnit::Id unitId) const
+{
+	auto it = repairUnits.find(unitId);
+	if (it != repairUnits.end()) {
+		return it->second;
+	}
+	return nullptr;
 }
 
 IBuilderTask* CBuilderManager::GetReclaimFeatureTask(const AIFloat3& pos, float radius) const
@@ -1780,7 +1798,11 @@ void CBuilderManager::Load(std::istream& is)
 #endif
 		for (unsigned j = 0; j < size; ++j) {
 			IBuilderTask* task = nullptr;
-			switch (IBuilderTask::BuildType(i)) {
+			bool isGeneric = false;
+			utils::binary_read(is, isGeneric);
+			if (isGeneric) {
+				task = new CBGenericTask(this, IBuilderTask::BuildType(i));
+			} else switch (IBuilderTask::BuildType(i)) {
 				case IBuilderTask::BuildType::FACTORY: {
 					task = new CBFactoryTask(this);
 				} break;
@@ -1876,6 +1898,7 @@ void CBuilderManager::Save(std::ostream& os) const
 		circuit->LOG("%s | buildType=%i | size=%i", __PRETTY_FUNCTION__, i, size);
 #endif
 		for (const IBuilderTask* task : tasks) {
+			utils::binary_write(os, task->IsGeneric());
 			os << *task;
 		}
 	}

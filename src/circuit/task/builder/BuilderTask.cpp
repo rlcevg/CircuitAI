@@ -805,10 +805,11 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				CTerrainManager::CorrectPosition(pos);
 				pos = terrainMgr->GetBuildPosition(bdef, pos);
 
+				IBuilderTask* task = builderMgr->EnqueueTask(bi.priority, bi.cdef, pos, bi.buildType, 0.f, parent == nullptr, 0);
 				if (parent == nullptr) {
-					parent = builderMgr->EnqueueTask(bi.priority, bi.cdef, pos, bi.buildType, 0.f, true, 0);
+					parent = task;
 				} else {
-					parent->SetNextTask(builderMgr->EnqueueTask(bi.priority, bi.cdef, pos, bi.buildType, 0.f, false, 0));
+					parent->SetNextTask(task);
 					parent = parent->GetNextTask();
 				}
 			}

@@ -134,12 +134,13 @@ void CMetalManager::ParseMetalSpots()
 	Game* game = circuit->GetGame();
 	std::vector<CMetalData::SMetal> spots;
 
-	int mexCount = -1;  // game->GetRulesParamFloat("mex_count", -1);
+	int mexCount = game->GetRulesParamFloat("mex_count", -1);
 	if (mexCount <= 0) {
 		// FIXME: Replace metal-map workaround by own grid-spot generator
 		CMap* map = circuit->GetMap();
 		Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 		std::vector<AIFloat3> spotsPos;
+		// NOTE: Ignores spots with income less than ~20% (50/255) of max spot
 		map->GetResourceMapSpotsPositions(metalRes, spotsPos);
 		const unsigned width = map->GetWidth();
 		const unsigned height = map->GetHeight();
@@ -147,17 +148,17 @@ void CMetalManager::ParseMetalSpots()
 		const float offset = (float)rand() / RAND_MAX * 50.f - 25.f;
 		//  8x8  ~  80 spots +-25
 		// 24x24 ~ 240 spots +-25
-		unsigned mexCount = (240.f - 80.f) / (SQUARE(24.f) - SQUARE(8.f)) * (mapSize - SQUARE(8.f)) + 80.f + offset;
+		unsigned mCount = (240.f - 80.f) / (SQUARE(24.f) - SQUARE(8.f)) * (mapSize - SQUARE(8.f)) + 80.f + offset;
 		unsigned inc;
-		if (spotsPos.size() > mexCount) {
-			inc = spotsPos.size() / mexCount;
-			spots.reserve(mexCount);
+		if (spotsPos.size() > mCount) {
+			inc = spotsPos.size() / mCount;
+			spots.reserve(mCount);
 		} else {
 			inc = 1;
 			spots.reserve(spotsPos.size());
 		}
 		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetSideInfo().mexDef;
-		const float extrRange = map->GetExtractorRadius(metalRes) / 2;  // mexDef->GetExtrRangeM();
+		const float extrRange = SQUARE_SIZE * 2;  // map->GetExtractorRadius(metalRes) / 2;  // mexDef->GetExtrRangeM();
 //		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 		const int xsize = mexDef->GetDef()->GetXSize();
 		const int zsize = mexDef->GetDef()->GetZSize();

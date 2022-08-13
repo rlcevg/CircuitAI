@@ -52,13 +52,18 @@ public:
 	float GetArea() const { return area; }
 	bool ContainsPoint(const springai::AIFloat3& point) const;
 	springai::AIFloat3 Random() const;
+	void Scale(float value);
+	void Extend(float value);
 
 private:
+	void CalcArea();
+
 	SBox box;
 	F3Vec verts;
 	IndexVec tris;
 	FloatVec areas;
 	float area;
+	springai::AIFloat3 center;
 };
 
 class CRegion {
@@ -68,6 +73,7 @@ public:
 	CRegion(SBox&& b);
 	~CRegion() {}
 
+	const SBox& GetBox() const { return box; }  // bounding box
 	bool ContainsPoint(const springai::AIFloat3& point) const;
 	springai::AIFloat3 Random() const;
 

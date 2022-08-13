@@ -7,10 +7,12 @@
 
 #include "setup/SetupManager.h"
 #include "setup/SetupData.h"
+#include "module/EconomyManager.h"
 #include "module/MilitaryManager.h"  // only for CalcLanePos
 #include "resource/MetalManager.h"
 #include "scheduler/Scheduler.h"
 #include "terrain/TerrainManager.h"
+#include "task/builder/FactoryTask.h"
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/FileSystem.h"
@@ -140,6 +142,13 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 	switch (type) {
 		case StartPosType::METAL_SPOT: {
+			// 1) Select suitable factory to build
+//			CBFactoryTask* factoryTask = circuit->GetEconomyManager()->PickNextFactory(-RgtVector, true);
+//			if (factoryTask != nullptr) {
+//				circuit->LOG("fac: %s | repr: %s", factoryTask->GetBuildDef()->GetDef()->GetName(), factoryTask->GetReprDef()->GetDef()->GetName());
+//			}
+//			circuit->GetTerrainManager()->GetMobileTypeById(factoryTask->GetReprDef()->GetMobileId())->sector;
+
 			const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
 			const CMetalData::Metals& spots = circuit->GetMetalManager()->GetSpots();
 			CTerrainManager* terrainMgr = circuit->GetTerrainManager();

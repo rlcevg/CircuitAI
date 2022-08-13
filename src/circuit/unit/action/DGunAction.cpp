@@ -52,13 +52,15 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		return;
 	}
 
-	const int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
-	const bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
-	const bool isRoleComm = unit->GetCircuitDef()->IsRoleComm();
+	CMap* map = circuit->GetMap();
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	const int canTargetCat = cdef->GetTargetCategoryDGun();
+	const int noChaseCat = cdef->GetNoChaseCategory();
+	const bool isRoleComm = cdef->IsRoleComm();
+	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
 	CEnemyInfo* bestTarget = nullptr;
 	float maxThreat = 0.f;
 
-	// TODO: Check water weapon
 	for (int eId : enemies) {
 		if (eId == -1) {
 			continue;
@@ -68,10 +70,27 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();
-		if ((edef == nullptr) || ((edef->GetCategory() & canTargetCat) == 0) || (edef->IsAbleToFly() && notDGunAA)
-			|| (isRoleComm && edef->IsRoleComm()))  // FIXME: comm kamikaze
+		if ((edef == nullptr)
+			|| ((edef->GetCategory() & canTargetCat) == 0)
+			|| ((edef->GetCategory() & noChaseCat) != 0)
+			|| (isRoleComm && edef->IsRoleComm()))  // NOTE: BAR, comm kamikaze
 		{
 			continue;
+		}
+
+		const AIFloat3& ePos = enemy->GetPos();
+		const float elevation = map->GetElevationAt(ePos.x, ePos.z);
+		if (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAirDGun() : cdef->HasSurfToAirDGun())) {  // notAA
+			continue;
+		}
+		if (edef->IsInWater(elevation, ePos.y)) {
+			if (!(IsInWater ? cdef->HasSubToWaterDGun() : cdef->HasSurfToWaterDGun())) {  // notAW
+				continue;
+			}
+		} else {
+			if (!(IsInWater ? cdef->HasSubToLandDGun() : cdef->HasSurfToLandDGun())) {  // notAL
+				continue;
+			}
 		}
 
 		AIFloat3 dir = enemy->GetPos() - pos;

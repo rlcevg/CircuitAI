@@ -11,7 +11,7 @@
 #include "script/RefCounter.h"
 
 #include "AIFloat3.h"
-#define DEBUG_SAVELOAD 1
+//#define DEBUG_SAVELOAD 1
 #ifdef DEBUG_SAVELOAD
 #include "Log.h"
 #endif

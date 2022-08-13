@@ -196,7 +196,6 @@ public:
 	int GetBuildCount() const { return buildCounts; }
 
 	bool HasDGun() const { return hasDGun; }
-	bool HasDGunAA() const { return hasDGunAA; }
 	CWeaponDef* GetDGunDef() const { return dgunDef; }
 	CWeaponDef* GetWeaponDef() const { return weaponDef; }
 	springai::WeaponMount* GetDGunMount() const { return dgunMount; }
@@ -220,6 +219,7 @@ public:
 	int GetReloadTime() const { return reloadTime; }
 	int GetCategory() const { return category; }
 	int GetTargetCategory() const { return targetCategory; }
+	int GetTargetCategoryDGun() const { return targetCategoryDGun; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
 	void ModPower(float mod) { pwrDmg *= mod; power *= mod; }
@@ -238,14 +238,20 @@ public:
 	void SetIgnore(bool value) { isIgnore = value; }
 	bool IsIgnore() const { return isIgnore; }
 
-	bool IsAttacker()     const { return isAttacker; }
+	bool IsAttacker()  const { return isAttacker; }
+	bool IsAlwaysHit() const { return isAlwaysHit; }
 	bool HasSurfToAir()   const { return hasSurfToAir; }
 	bool HasSurfToLand()  const { return hasSurfToLand; }
 	bool HasSurfToWater() const { return hasSurfToWater; }
 	bool HasSubToAir()    const { return hasSubToAir; }
 	bool HasSubToLand()   const { return hasSubToLand; }
 	bool HasSubToWater()  const { return hasSubToWater; }
-	bool IsAlwaysHit()    const { return isAlwaysHit; }
+	bool HasSurfToAirDGun()   const { return hasSurfToAirDGun; }
+	bool HasSurfToLandDGun()  const { return hasSurfToLandDGun; }
+	bool HasSurfToWaterDGun() const { return hasSurfToWaterDGun; }
+	bool HasSubToAirDGun()    const { return hasSubToAirDGun; }
+	bool HasSubToLandDGun()   const { return hasSubToLandDGun; }
+	bool HasSubToWaterDGun()  const { return hasSubToWaterDGun; }
 
 	bool IsMobile()          const { return speed > .1f; }
 	bool IsPlane()           const { return isPlane; }
@@ -374,6 +380,7 @@ private:
 	int reloadTime;  // frames in ticks
 	int category;
 	int targetCategory;
+	int targetCategoryDGun;
 	int noChaseCategory;
 
 	terrain::SImmobileType::Id immobileTypeId;
@@ -383,16 +390,22 @@ private:
 	bool isIgnore : 1;
 
 	bool isAttacker : 1;
+	bool isAlwaysHit : 1;  // FIXME: calc per weapon
 	bool hasDGun : 1;
-	bool hasDGunAA : 1;
 
+	// TODO: std::bitset<2>
 	bool hasSurfToAir : 1;  // air layer
 	bool hasSurfToLand : 1;  // surface (water and land)
 	bool hasSurfToWater : 1;  // under water
 	bool hasSubToAir : 1;
 	bool hasSubToLand : 1;
 	bool hasSubToWater : 1;
-	bool isAlwaysHit : 1;  // FIXME: calc per weapon
+	bool hasSurfToAirDGun : 1;  // air layer
+	bool hasSurfToLandDGun : 1;  // surface (water and land)
+	bool hasSurfToWaterDGun : 1;  // under water
+	bool hasSubToAirDGun : 1;
+	bool hasSubToLandDGun : 1;
+	bool hasSubToWaterDGun : 1;
 
 	bool isPlane : 1;  // no hover attack
 	bool isFloater : 1;

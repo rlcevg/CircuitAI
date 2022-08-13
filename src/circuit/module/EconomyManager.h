@@ -127,7 +127,8 @@ public:
 	IBuilderTask* UpdateFactoryTasks();
 	IBuilderTask* UpdateStorageTasks();
 	IBuilderTask* UpdatePylonTasks();
-	void StartFactoryTask(const float seconds);
+	void StartFactoryJob(const float seconds);
+	CBFactoryTask* PickNextFactory(const springai::AIFloat3& position, bool isStart);
 
 	void AddMorphee(CCircuitUnit* unit);
 	void RemoveMorphee(CCircuitUnit* unit) { morphees.erase(unit); }

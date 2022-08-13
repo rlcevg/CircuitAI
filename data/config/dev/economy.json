@@ -54,7 +54,7 @@
 		"pylon": []
 	},
 
-	"cluster_range": 950.0,  // maximum distance between 2 points in hierarchical cluster
+	"cluster_range": 800.0,  // 950.0  // maximum distance between 2 points in hierarchical cluster
 
 	"geo": {
 		"armada": "armgeo",

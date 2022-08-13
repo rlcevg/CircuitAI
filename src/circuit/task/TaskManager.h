@@ -24,7 +24,7 @@ protected:
 public:
 	virtual ~ITaskManager();
 
-	virtual CCircuitAI* GetCircuit() = 0;
+	virtual CCircuitAI* GetCircuit() const = 0;
 
 	void AssignTask(CCircuitUnit* unit, IUnitTask* task);
 	void AssignTask(CCircuitUnit* unit);

@@ -128,18 +128,24 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, maxShield(.0f)
 		, reloadTime(0)
 		, targetCategory(0)
+		, targetCategoryDGun(0)
 		, immobileTypeId(-1)
 		, mobileTypeId(-1)
 		, isIgnore(false)
 		, isAttacker(false)
-		, hasDGunAA(false)
+		, isAlwaysHit(false)
 		, hasSurfToAir(false)
 		, hasSurfToLand(false)
 		, hasSurfToWater(false)
 		, hasSubToAir(false)
 		, hasSubToLand(false)
 		, hasSubToWater(false)
-		, isAlwaysHit(false)
+		, hasSurfToAirDGun(false)
+		, hasSurfToLandDGun(false)
+		, hasSurfToWaterDGun(false)
+		, hasSubToAirDGun(false)
+		, hasSubToLandDGun(false)
+		, hasSubToWaterDGun(false)
 		, isFloater(false)
 		, isAmphibious(false)
 		, isLander(false)
@@ -393,10 +399,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		const bool isAirWeapon = isAlwaysHit && (range > 150.f);
 		canSurfTargetAir |= isAirWeapon;
 
-		bool isLandWeapon = ((wt != "TorpedoLauncher") || wd->IsSubMissile());
+		const bool isLandWeapon = ((wt != "TorpedoLauncher") || wd->IsSubMissile());
 		canSurfTargetLand |= isLandWeapon;
 
-		bool isWaterWeapon = wd->IsWaterWeapon();
+		const bool isWaterWeapon = wd->IsWaterWeapon();
 		canSurfTargetWater |= isWaterWeapon;
 
 		canSubTargetAir |= (isAirWeapon && isWaterWeapon);
@@ -470,7 +476,13 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 				bestDGunDef = circuit->GetWeaponDef(wd->GetWeaponDefId());
 				delete bestDGunMnt;
 				bestDGunMnt = mount;
-				hasDGunAA |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
+				targetCategoryDGun |= weaponCat;
+				hasSurfToAirDGun   |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
+				hasSurfToLandDGun  |= (weaponCat & circuit->GetLandCategory()) && isLandWeapon;
+				hasSurfToWaterDGun |= (weaponCat & circuit->GetWaterCategory()) && isWaterWeapon;
+				hasSubToAirDGun    |= (weaponCat & circuit->GetAirCategory()) && (isAirWeapon && isWaterWeapon);
+				hasSubToLandDGun   |= (weaponCat & circuit->GetLandCategory()) && (isLandWeapon && isWaterWeapon);
+				hasSubToWaterDGun  |= (weaponCat & circuit->GetWaterCategory()) && (wd->IsFireSubmersed() && isWaterWeapon);
 //			} else {  // FIXME: Dynamo com workaround
 //				delete mount;
 //			}

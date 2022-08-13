@@ -102,8 +102,14 @@ bool CBRepairTask::Load(std::istream& is)
 {
 	IRepairTask::Load(is);
 
+	CBuilderManager* builderMgr = static_cast<CBuilderManager*>(manager);
 	if (target != nullptr) {
-		static_cast<CBuilderManager*>(manager)->MarkRepairUnit(target->GetId(), this);
+		IUnitTask* task = builderMgr->GetRepairTask(target->GetId());
+		if (task != nullptr) {
+			// FIXME: Units added before Load() by UnitCreated() may create repair task
+			builderMgr->AbortTask(task);
+		}
+		builderMgr->MarkRepairUnit(target->GetId(), this);
 	}
 	return true;
 }

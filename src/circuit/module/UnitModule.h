@@ -20,7 +20,7 @@ protected:
 public:
 	virtual ~IUnitModule();
 
-	virtual CCircuitAI* GetCircuit();
+	virtual CCircuitAI* GetCircuit() const override { return circuit; }
 
 protected:
 	virtual void DequeueTask(IUnitTask* task, bool done = false) override;

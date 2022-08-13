@@ -89,6 +89,7 @@ public:
 	const springai::AIFloat3& GetTaskPos() const { return position; }
 	CCircuitDef* GetBuildDef() const { return buildDef; }
 
+	virtual bool IsGeneric() const { return false; }
 	BuildType GetBuildType() const { return buildType; }
 	float GetBuildPower() const { return buildPower; }
 	float GetCost() const { return cost; }
