@@ -265,6 +265,11 @@ void CTerrainManager::ReadConfig()
 				continue;
 			}
 
+			if (blockInfos.find(cdef->GetId()) != blockInfos.end()) {
+				circuit->LOG("CONFIG %s: ignored block_map duplicate of '%s'", cfgName.c_str(), def.asCString());
+				continue;
+			}
+
 			blockInfos[cdef->GetId()] = createBlockInfo(blockDesc, cdef->GetDef());
 		}
 	}
