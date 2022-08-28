@@ -49,7 +49,7 @@ void CSupportAction::Update(CCircuitAI* circuit)
 		if (unit->GetCircuitDef()->IsAttrMelee()) {
 			unit->GetUnit()->Guard(leader->GetUnit());
 		} else {
-			unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->CmdFightTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		}
 	)
 }

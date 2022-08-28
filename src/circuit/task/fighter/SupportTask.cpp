@@ -51,10 +51,12 @@ void CSupportTask::Start(CCircuitUnit* unit)
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 pos = position;
 	CTerrainManager::CorrectPosition(pos);
-	pos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_NO_FACING);
+	AIFloat3 freePos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_NO_FACING, true);
+//	AIFloat3 freePos = terrainMgr->FindSpringBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_NO_FACING);
+	pos = utils::is_valid(freePos) ? freePos : pos;
 
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		unit->CmdFightTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		unit->CmdWantedSpeed(NO_SPEED_LIMIT);
 	)
 	state = State::DISENGAGE;  // Wait
@@ -159,7 +161,7 @@ void CSupportTask::ApplyPath(const CQueryPathMulti* query)
 //		manager->DoneTask(this);  // NOTE: RemoveAssignee will abort task
 	} else {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(endPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->CmdFightTo(endPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		state = State::ROAM;  // Not wait
 	}

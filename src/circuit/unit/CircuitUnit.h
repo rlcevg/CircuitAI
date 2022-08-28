@@ -124,6 +124,8 @@ public:
 	void CmdRemove(std::vector<float>&& params, short options = 0);
 	void CmdMoveTo(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
 	void CmdJumpTo(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
+	void CmdFightTo(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
+	void CmdPatrolTo(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
 	void CmdAttackGround(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
 	void CmdWantedSpeed(float speed = NO_SPEED_LIMIT);
 	void CmdSetTarget(CEnemyInfo* enemy);

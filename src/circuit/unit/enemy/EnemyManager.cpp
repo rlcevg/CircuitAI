@@ -524,7 +524,7 @@ void CEnemyManager::KMeansIteration()
 		if (newMeans[groupData.maxThreatGroupIdx].influence < newMeans[i].influence) {
 			groupData.maxThreatGroupIdx = i;
 		}
-		newMeans[i].vagueMetric = (newMeans[i].influence + 1.f) / newMeans[i].cost;
+		newMeans[i].vagueMetric = (newMeans[i].influence + 1.f) / (newMeans[i].cost + DIV0_SLACK);
 	}
 	groupData.enemyPos /= newK;
 

@@ -37,7 +37,7 @@ public:
 	int GetNrows() const { return nrows; }
 
 	void Resize(int rows) {
-		assert(rows > 1);
+		assert(rows > 0);  // rows == 1: empty matrix, less code for special cases, worse optimization.
 		nrows = rows;
 		int size = nrows * (nrows - 1) / 2;
 		data.resize(size);

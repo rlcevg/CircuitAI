@@ -449,15 +449,15 @@ void CTerrainManager::DelBusPath(CCircuitUnit* unit)
 	busQueries.erase(unit);
 }
 
-AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing)
+AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, bool isIgnore)
 {
 	TerrainPredicate predicate = [](const AIFloat3& p) {
 		return true;
 	};
-	return FindBuildSite(cdef, pos, searchRadius, facing, predicate);
+	return FindBuildSite(cdef, pos, searchRadius, facing, predicate, isIgnore);
 }
 
-AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate)
+AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate, bool isIgnore)
 {
 	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	if (circuit->IsAllyAware()) {
@@ -470,7 +470,7 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	}
 
 	if (searchRadius > SQUARE_SIZE * 2 * 100) {
-		return FindBuildSiteLow(cdef, pos, searchRadius, facing, predicate);
+		return FindBuildSiteLow(cdef, pos, searchRadius, facing, predicate);  // isIgnore = false
 	}
 
 	/*
@@ -480,8 +480,8 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
-	auto isOpenSite = [this](const int2& s1, const int2& s2) {
-		const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
+	const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(isIgnore ? SBlockingMap::StructMask::NONE : SBlockingMap::StructMask::ALL);
+	auto isOpenSite = [this, notIgnore](const int2& s1, const int2& s2) {
 		for (int z = s1.y; z < s2.y; ++z) {
 			for (int x = s1.x; x < s2.x; ++x) {
 				if (blockingMap.IsBlocked(x, z, notIgnore)) {
@@ -520,6 +520,11 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 
 	return -RgtVector;
 }
+
+//AIFloat3 CTerrainManager::FindSpringBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing)
+//{
+//	return circuit->GetMap()->FindClosestBuildSite(cdef->GetDef(), pos, searchRadius, 0, facing);
+//}
 
 void CTerrainManager::DoLineOfDef(const AIFloat3& start, const AIFloat3& end, CCircuitDef* buildDef,
 		std::function<void (const AIFloat3& pos, CCircuitDef* buildDef)> exec) const
@@ -738,8 +743,8 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 	const int xsize = (((facing & 1) == 0) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 	const int zsize = (((facing & 1) == 1) ? unitDef->GetXSize() : unitDef->GetZSize()) / 2;
 
-	auto isOpenSite = [this](const int2& s1, const int2& s2) {
-		const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
+	const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
+	auto isOpenSite = [this, notIgnore](const int2& s1, const int2& s2) {
 		for (int z = s1.y; z < s2.y; z++) {
 			for (int x = s1.x; x < s2.x; x++) {
 				if (blockingMap.IsBlocked(x, z, notIgnore)) {
@@ -759,8 +764,6 @@ AIFloat3 CTerrainManager::FindBuildSiteLow(CCircuitDef* cdef, const AIFloat3& po
 
 	const int cornerX1 = int(pos.x / (SQUARE_SIZE * 2)) - (xsize / 2);
 	const int cornerZ1 = int(pos.z / (SQUARE_SIZE * 2)) - (zsize / 2);
-
-	const SBlockingMap::SM notIgnore = static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::ALL);
 
 	AIFloat3 probePos(ZeroVector);
 	CMap* map = circuit->GetMap();

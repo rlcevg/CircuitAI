@@ -67,19 +67,19 @@ using namespace terrain;
 #define RELEASE_SCRIPT		202
 #define RELEASE_COMMANDER	203
 #define RELEASE_CORRUPTED	204
-#ifdef DEBUG
+#ifdef DEBUG_TOPIC
 	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
 #else
 	#define PRINT_TOPIC(txt, topic)
 #endif
 
 /*
- * Эти парни не созданы чувствовать!
- * Ледяная душа не боится жути!
- * Только под ногами их крутятся:
- * По оси земля, по полу полу-люди!
+ * Почему-то всегда
+ * Так незыблемы цели:
+ * Разрушать города,
+ * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.5.8"};
+constexpr char version[]{"1.5.9"};
 constexpr uint32_t VERSION_SAVE = 3;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);

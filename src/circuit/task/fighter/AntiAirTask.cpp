@@ -138,7 +138,7 @@ void CAntiAirTask::Update()
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Fight(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
+					unit->CmdFightTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
 				unit->GetTravelAct()->StateWait();
 			}
@@ -423,7 +423,7 @@ void CAntiAirTask::Fallback()
 	const int frame = circuit->GetLastFrame();
 	for (CCircuitUnit* unit : units) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->CmdFightTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		unit->GetTravelAct()->StateWait();
 	}

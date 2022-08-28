@@ -68,12 +68,15 @@ public:
 	springai::AIFloat3 FindBuildSite(CCircuitDef* cdef,
 									 const springai::AIFloat3& pos,
 									 float searchRadius,
-									 int facing);
+									 int facing,
+									 bool isIgnore = false);
 	springai::AIFloat3 FindBuildSite(CCircuitDef* cdef,
 									 const springai::AIFloat3& pos,
 									 float searchRadius,
 									 int facing,
-									 TerrainPredicate& predicate);
+									 TerrainPredicate& predicate,
+									 bool isIgnore = false);
+//	springai::AIFloat3 FindSpringBuildSite(CCircuitDef* cdef, const springai::AIFloat3& pos, float searchRadius, int facing);
 	void DoLineOfDef(const springai::AIFloat3& start, const springai::AIFloat3& end, CCircuitDef* buildDef,
 			std::function<void (const springai::AIFloat3& pos, CCircuitDef* buildDef)> exec) const;  // FillRowOfBuildPos
 

@@ -36,6 +36,10 @@ static inline bool is_valid(const springai::AIFloat3& pos)
 	return pos.x != -RgtVector.x;
 }
 
+static inline bool is_in_map(const springai::AIFloat3& pos) {  // for assert
+	return (pos.x >= 0) && (pos.z >= 0) && (pos.x <= springai::AIFloat3::maxxpos) && (pos.z <= springai::AIFloat3::maxzpos);
+}
+
 /*
  * nanoflann
  */

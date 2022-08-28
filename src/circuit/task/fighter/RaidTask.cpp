@@ -431,7 +431,7 @@ void CRaidTask::ApplyRaidPath(const CQueryPathSingle* query)
 	const int frame = circuit->GetLastFrame();
 	for (CCircuitUnit* unit : units) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->CmdFightTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
 		unit->GetTravelAct()->StateWait();
 	}

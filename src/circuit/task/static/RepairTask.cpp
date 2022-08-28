@@ -152,7 +152,7 @@ void CSRepairTask::Finish()
 	for (CCircuitUnit* unit : units) {
 		TRY_UNIT(circuit, unit,
 			unit->CmdPriority(0);
-			unit->GetUnit()->PatrolTo(position, UNIT_COMMAND_OPTION_SHIFT_KEY);
+			unit->CmdPatrolTo(position, UNIT_COMMAND_OPTION_SHIFT_KEY);
 		)
 	}
 

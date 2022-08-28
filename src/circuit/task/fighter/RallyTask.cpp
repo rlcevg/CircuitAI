@@ -57,7 +57,9 @@ void CRallyTask::Start(CCircuitUnit* unit)
 	if (attackPower < maxPower) {
 		CCircuitAI* circuit = manager->GetCircuit();
 		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-		AIFloat3 pos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_NO_FACING);
+		AIFloat3 freePos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_NO_FACING, true);
+//		AIFloat3 freePos = terrainMgr->FindSpringBuildSite(unit->GetCircuitDef(), position, 300.0f, UNIT_NO_FACING);
+		AIFloat3 pos = utils::is_valid(freePos) ? freePos : position;
 
 		TRY_UNIT(circuit, unit,
 			unit->CmdMoveTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);

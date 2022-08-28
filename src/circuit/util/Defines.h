@@ -31,6 +31,7 @@ template<typename T> static inline constexpr T SQUARE(T x) { return x * x; }
 #define NO_SPEED_LIMIT		2000.0f
 #define SLOPE_TILE			16
 #define HEIGHT_TILE			8
+#define DIV0_SLACK			1e-6f
 
 // UNIT_COMMAND_BUILD_NO_FACING
 #define UNIT_NO_FACING		-1

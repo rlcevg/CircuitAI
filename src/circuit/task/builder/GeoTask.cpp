@@ -96,6 +96,7 @@ bool CBGeoTask::Load(std::istream& is)
 	SERIALIZE(is, read)
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	// TODO: Instead of IsSpotValid check IsPossibleToBuildAt
 	if (circuit->GetEnergyManager()->IsSpotValid(spotId, GetPosition())) {
 		spotId = -1;
 #ifdef DEBUG_SAVELOAD

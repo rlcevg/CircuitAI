@@ -77,15 +77,16 @@ bool CBPatrolTask::Execute(CCircuitUnit* unit)
 	executors.insert(unit);
 
 	CCircuitAI* circuit = manager->GetCircuit();
+	const float size = SQUARE_SIZE * 100;
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	AIFloat3 pos = position;
+	pos.x += (pos.x > terrainMgr->GetTerrainWidth() / 2) ? -size : size;
+	pos.z += (pos.z > terrainMgr->GetTerrainHeight() / 2) ? -size : size;
+	CTerrainManager::CorrectPosition(pos);
+
 	TRY_UNIT(circuit, unit,
 		unit->CmdPriority(0);
-
-		const float size = SQUARE_SIZE * 100;
-		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-		AIFloat3 pos = position;
-		pos.x += (pos.x > terrainMgr->GetTerrainWidth() / 2) ? -size : size;
-		pos.z += (pos.z > terrainMgr->GetTerrainHeight() / 2) ? -size : size;
-		unit->GetUnit()->PatrolTo(pos);
+		unit->CmdPatrolTo(pos);
 	)
 	return true;
 }

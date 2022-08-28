@@ -8,6 +8,7 @@
 #include "task/UnitTask.h"
 #include "task/IdleTask.h"
 #include "task/TaskManager.h"
+#include "terrain/TerrainManager.h"
 #include "terrain/path/PathQuery.h"
 #include "unit/CircuitUnit.h"
 #include "unit/action/AntiCapAction.h"
@@ -116,7 +117,8 @@ void IUnitTask::OnUnitMoveFailed(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
-	const AIFloat3& pos = utils::get_radial_pos(unit->GetPos(frame), SQUARE_SIZE * 32);
+	AIFloat3 pos = utils::get_radial_pos(unit->GetPos(frame), SQUARE_SIZE * 32);
+	CTerrainManager::CorrectPosition(pos);
 	TRY_UNIT(circuit, unit,
 		unit->CmdMoveTo(pos, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC);
 	)

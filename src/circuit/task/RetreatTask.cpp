@@ -261,6 +261,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			AIFloat3 pos = unitPos;
 			if (unit->GetUnit()->IsCloaked()) {
 				pos += AIFloat3(SQUARE_SIZE * 2, 0, SQUARE_SIZE * 2);  // don't move, but assist if required
+				CTerrainManager::CorrectPosition(pos);
 			} else {
 				const float size = SQUARE_SIZE * 16;
 				CTerrainManager* terrainMgr = circuit->GetTerrainManager();
@@ -278,11 +279,13 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 				CTerrainManager::TerrainPredicate predicate = [unitPos](const AIFloat3& p) {
 					return unitPos.SqDistance2D(p) > SQUARE(SQUARE_SIZE * 8);
 				};
-				pos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_NO_FACING, predicate);
+				AIFloat3 freePos = terrainMgr->FindBuildSite(cdef, pos, maxDist, UNIT_NO_FACING, predicate, true);
+//				AIFloat3 freePos = terrainMgr->FindSpringBuildSite(cdef, pos, maxDist, UNIT_NO_FACING, predicate);
+				pos = utils::is_valid(freePos) ? freePos : pos;
 			}
 			TRY_UNIT(circuit, unit,
 //				unit->CmdPriority(0);
-				unit->GetUnit()->PatrolTo(pos);
+				unit->CmdPatrolTo(pos);
 			)
 		}
 

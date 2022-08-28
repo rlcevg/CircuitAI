@@ -923,7 +923,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
 			std::vector<std::pair<CCircuitDef*, float>> mexDefs;
 			float maxRange = 0.f;
-			for (auto it = mexDefOptions.rbegin(); it != mexDefOptions.rend(); ++it){
+			for (auto it = mexDefOptions.begin(); it != mexDefOptions.end(); ++it){
 				CCircuitDef* mDef = *it;
 				if (mDef->IsAvailable(frame)) {
 					mexDefs.push_back(std::make_pair(mDef, mDef->GetExtractsM()));

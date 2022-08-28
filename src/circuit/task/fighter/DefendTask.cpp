@@ -87,10 +87,12 @@ void CDefendTask::Start(CCircuitUnit* unit)
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 pos = utils::get_radial_pos(position, SQUARE_SIZE * 32);
 	CTerrainManager::CorrectPosition(pos);
-	pos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_NO_FACING);
+//	AIFloat3 freePos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_NO_FACING);
+	AIFloat3 freePos = circuit->GetMap()->FindClosestBuildSite(unit->GetCircuitDef()->GetDef(), pos, 300.0f, 0, UNIT_NO_FACING);
+	pos = utils::is_valid(freePos) ? freePos : pos;
 
 	TRY_UNIT(circuit, unit,
-		unit->GetUnit()->Fight(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
+		unit->CmdFightTo(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, circuit->GetLastFrame() + FRAMES_PER_SEC * 60);
 		unit->CmdWantedSpeed(NO_SPEED_LIMIT);
 	)
 }
@@ -198,7 +200,7 @@ void CDefendTask::Merge(ISquadTask* task)
 		unit->SetTask(this);
 
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(leadPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
+			unit->CmdFightTo(leadPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 		)
 	}
 	units.insert(rookies.begin(), rookies.end());
@@ -399,7 +401,7 @@ void CDefendTask::Fallback()
 	const int frame = circuit->GetLastFrame();
 	for (CCircuitUnit* unit : units) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Fight(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+			unit->CmdFightTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			unit->CmdWantedSpeed(lowestSpeed);
 		)
 		unit->GetTravelAct()->StateWait();

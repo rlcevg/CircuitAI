@@ -150,7 +150,8 @@ void CCombatTask::Execute(CCircuitUnit* unit)
 		const AIFloat3 lead = velLead.SqLength2D() < SQUARE(300.f)
 				? velLead
 				: AIFloat3(AIFloat3(GetTarget()->GetVel()).Normalize2D() * 300.f);
-		const AIFloat3 leadPos = position + lead;
+		AIFloat3 leadPos = position + lead;
+		CTerrainManager::CorrectPosition(leadPos);
 		TRY_UNIT(circuit, unit,
 			unit->CmdMoveTo(leadPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)

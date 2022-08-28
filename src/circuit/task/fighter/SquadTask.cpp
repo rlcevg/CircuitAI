@@ -405,7 +405,7 @@ void ISquadTask::Attack(const int frame, const bool isGround)
 		const float maxDelta = (M_PI * 0.9f) / kv.second.size();
 		// NOTE: float delta = asinf(cdef->GetRadius() / range);
 		//       but sin of a small angle is similar to that angle, omit asinf() call
-		float delta = (3.0f * (rowDef->GetRadius() + aoe)) / range;
+		float delta = (3.0f * (rowDef->GetRadius() + aoe)) / (range + DIV0_SLACK);
 		if (delta > maxDelta) {
 			delta = maxDelta;
 		}

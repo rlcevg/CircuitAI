@@ -39,6 +39,8 @@ using namespace springai;
 // FIXME: Make Engine consts available to AI. @see rts/Sim/MoveTypes/MoveDefHandler.cpp
 #define MAX_ALLOWED_WATER_DAMAGE_GMM	1e3f
 #define MAX_ALLOWED_WATER_DAMAGE_HMM	1e4f
+// FIXME: gcc10 DEBUG bug with regard to stringstream (chokes on float, expects only double)
+#define GCC10_STREAM_FIX	double
 
 float CTerrainData::boundX(0.f);
 float CTerrainData::boundZ(0.f);
@@ -382,15 +384,15 @@ void CTerrainData::Init(CCircuitAI* circuit)
 		} else if (mt.canHover) {
 			mtText << "hover";
 		} else {
-			mtText << mt.minElevation;
+			mtText << (GCC10_STREAM_FIX)mt.minElevation;
 		}
 		mtText << " / ";
 		if (mt.maxElevation < 10000) {
-			mtText << mt.maxElevation;
+			mtText << (GCC10_STREAM_FIX)mt.maxElevation;
 		} else {
 			mtText << "any";
 		}
-		mtText << ")  \tMax Slope=(" << mt.maxSlope << ")";
+		mtText << ")  \tMax Slope=(" << (GCC10_STREAM_FIX)mt.maxSlope << ")";
 		mtText << ")  \tMove-Data used:'" << mt.moveData->GetName() << "'";
 
 		std::deque<int> sectorSearch;
@@ -484,7 +486,7 @@ void CTerrainData::Init(CCircuitAI* circuit)
 
 			percentOfMap += area.percentOfMap;
 		}
-		mtText << "  \tHas " << areaSize << " Map-Area(s) occupying " << percentOfMap << "%% of the map. (used by " << mt.udCount << " unit-defs)";
+		mtText << "  \tHas " << areaSize << " Map-Area(s) occupying " << (GCC10_STREAM_FIX)percentOfMap << "%% of the map. (used by " << mt.udCount << " unit-defs)";
 		circuit->LOG(mtText.str().c_str());
 	}
 
