@@ -87,8 +87,8 @@ void CDefendTask::Start(CCircuitUnit* unit)
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	AIFloat3 pos = utils::get_radial_pos(position, SQUARE_SIZE * 32);
 	CTerrainManager::CorrectPosition(pos);
-//	AIFloat3 freePos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_NO_FACING);
-	AIFloat3 freePos = circuit->GetMap()->FindClosestBuildSite(unit->GetCircuitDef()->GetDef(), pos, 300.0f, 0, UNIT_NO_FACING);
+	AIFloat3 freePos = terrainMgr->FindBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_NO_FACING, true);
+//	AIFloat3 freePos = terrainMgr->FindSpringBuildSite(unit->GetCircuitDef(), pos, 300.0f, UNIT_NO_FACING);
 	pos = utils::is_valid(freePos) ? freePos : pos;
 
 	TRY_UNIT(circuit, unit,

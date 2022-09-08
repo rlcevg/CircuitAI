@@ -1461,7 +1461,8 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 		}
 	}
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
-	task = economyMgr->MakeEconomyTasks(pos, unit);
+	// FIXME: MakeEconomyTasks doesn't check CanAssignTo() and may create task irrelevant for unit
+	/*task = */economyMgr->MakeEconomyTasks(pos, unit);
 //	if (task != nullptr) {
 //		return const_cast<IBuilderTask*>(task);
 //	}
@@ -1599,13 +1600,17 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		}
 	}
 
-	CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(position);
-	if (vip != nullptr) {
-		return EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
+	if (unit->GetCircuitDef()->IsAbleToAssist()) {
+		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(position);
+		if (vip != nullptr) {
+			return EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
+		}
+	} else {
+		// TODO: Find closest AttackTask and assist. Have to make "support" work with builders
 	}
 
 	CSetupManager* setupMgr = circuit->GetSetupManager();
-	if ((setupMgr->GetCommander() != nullptr) && !unit->GetCircuitDef()->IsAbleToAssist()) {
+	if (setupMgr->GetCommander() != nullptr) {
 		return EnqueueGuard(IBuilderTask::Priority::LOW, setupMgr->GetCommander(), true, FRAMES_PER_SEC * 20);
 	}
 	return EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);

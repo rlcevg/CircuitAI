@@ -58,14 +58,22 @@ bool CBReclaimTask::CanAssignTo(CCircuitUnit* unit) const
 		return false;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	const AIFloat3& pos = GetPosition();
-	if (unit->GetCircuitDef()->IsAttrSolo() && (circuit->GetInflMap()->GetEnemyInflAt(pos) > INFL_EPS)
-		&& (pos.SqDistance2D(unit->GetPos(circuit->GetLastFrame())) > SQUARE(unit->GetCircuitDef()->GetBuildDistance() + SQUARE_SIZE * 8)))
+	if (cdef->IsAttrSolo()
+		&& ((circuit->GetInflMap()->GetEnemyInflAt(pos) > INFL_EPS)
+			|| (pos.SqDistance2D(unit->GetPos(circuit->GetLastFrame())) > SQUARE(cdef->GetBuildDistance() + SQUARE_SIZE * 8))))
 	{
 		return false;
 	}
-	if (unit->GetCircuitDef()->IsAttacker()) {
-		return true;
+	// FIXME: @see CBReclaimTask::Reevaluate, unify checks
+	if (isMetal && circuit->GetEconomyManager()->IsMetalFull()) {
+		return false;
+	}
+	// FIXME: @see IBuilderTask::UpdatePath, unify rules at one place.
+	//        Unify checks before CanAssignTo() call
+	if (!circuit->GetTerrainManager()->CanReachAtSafe(unit, pos, cdef->GetBuildDistance(), cdef->GetPower())) {
+		return false;
 	}
 	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	if ((militaryMgr->GetGuardTaskNum() == 0) || (circuit->GetLastFrame() > militaryMgr->GetGuardFrame())) {

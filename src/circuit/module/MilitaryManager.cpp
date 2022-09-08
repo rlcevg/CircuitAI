@@ -1598,15 +1598,15 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 	IFighterTask* task = nullptr;
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	if (cdef->IsRoleSupport()) {
+	if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
+		task = EnqueueTask(IFighterTask::FightType::SCOUT);
+	} else if (cdef->IsRoleSupport()) {
 		if (/*cdef->IsAttacker() && */GetTasks(IFighterTask::FightType::ATTACK).empty() && GetTasks(IFighterTask::FightType::DEFEND).empty()) {
 			task = EnqueueDefend(IFighterTask::FightType::ATTACK,
 								 IFighterTask::FightType::SUPPORT, minAttackers);
 		} else {
 			task = EnqueueTask(IFighterTask::FightType::SUPPORT);
 		}
-	} else if (cdef->IsRoleScout() && (GetTasks(IFighterTask::FightType::SCOUT).size() < maxScouts)) {
-		task = EnqueueTask(IFighterTask::FightType::SCOUT);
 	} else {
 		auto it = types.find(circuit->GetBindedRole(cdef->GetMainRole()));
 		if (it != types.end()) {

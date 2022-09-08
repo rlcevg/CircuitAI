@@ -1563,7 +1563,7 @@ bool CTerrainManager::CanBeBuiltAtSafe(CCircuitDef* cdef, const AIFloat3& positi
 bool CTerrainManager::CanReachAt(CCircuitUnit* unit, const AIFloat3& destination, const float range)
 {
 	if (unit->GetCircuitDef()->GetImmobileId() != -1) {  // A hub or factory
-		return unit->GetPos(circuit->GetLastFrame()).distance2D(destination) < range;
+		return unit->GetPos(circuit->GetLastFrame()).SqDistance2D(destination) < SQUARE(range);
 	}
 	SArea* area = unit->GetArea();
 	if (area == nullptr) {  // A flying unit
@@ -1573,7 +1573,7 @@ bool CTerrainManager::CanReachAt(CCircuitUnit* unit, const AIFloat3& destination
 	if (area->sector.find(iS) != area->sector.end()) {
 		return true;
 	}
-	return GetClosestSector(area, iS)->S->position.distance2D(destination) < range;
+	return GetClosestSector(area, iS)->S->position.SqDistance2D(destination) < SQUARE(range);
 }
 
 bool CTerrainManager::CanReachAtSafe(CCircuitUnit* unit, const AIFloat3& destination, const float range, const float threat)
@@ -1601,7 +1601,7 @@ bool CTerrainManager::CanMobileReachAt(SArea* area, const AIFloat3& destination,
 	if (area->sector.find(iS) != area->sector.end()) {
 		return true;
 	}
-	return GetClosestSector(area, iS)->S->position.distance2D(destination) < range;
+	return GetClosestSector(area, iS)->S->position.SqDistance2D(destination) < SQUARE(range);
 }
 
 bool CTerrainManager::CanMobileReachAtSafe(SArea* area, const AIFloat3& destination, const float range, const float threat)

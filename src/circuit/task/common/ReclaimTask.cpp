@@ -95,7 +95,8 @@ bool IReclaimTask::Execute(CCircuitUnit* unit)
 		reclRadius = radius;
 	}
 	TRY_UNIT(circuit, unit,
-		unit->CmdReclaimInArea(pos, reclRadius, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+		// NOTE: CONTROL_KEY enables special mode that ignores autoreclaimable value
+		unit->CmdReclaimInArea(pos, reclRadius, UNIT_COMMAND_OPTION_CONTROL_KEY, frame + FRAMES_PER_SEC * 60);
 	)
 	return true;
 }

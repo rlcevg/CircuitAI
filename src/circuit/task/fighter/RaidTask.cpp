@@ -396,7 +396,12 @@ void CRaidTask::FallbackRaid()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const AIFloat3& threatPos = leader->GetTravelAct()->IsActive() ? position : pos;
 	if (attackPower * powerMod <= threatMap->GetThreatAt(leader, threatPos)) {
-		position = circuit->GetMilitaryManager()->GetScoutPosition(leader);
+		AIFloat3 nextPos = circuit->GetMilitaryManager()->GetScoutPosition(leader);
+		if (utils::is_equal_pos(nextPos, pos)) {
+			return;
+		} else {
+			position = nextPos;
+		}
 	}
 
 	if (!utils::is_valid(position)) {

@@ -112,7 +112,8 @@ void CRecruitTask::Finish()
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int buildDelay = circuit->GetEconomyManager()->GetBuildDelay();
 	if (buildDelay > 0) {
-		IUnitTask* task = circuit->GetFactoryManager()->EnqueueWait(false, buildDelay);
+		// NOTE: force-stop as there could be bug present that queues more than 1 unit
+		IUnitTask* task = circuit->GetFactoryManager()->EnqueueWait(true, buildDelay);
 		decltype(units) tmpUnits = units;
 		for (CCircuitUnit* unit : tmpUnits) {
 			manager->AssignTask(unit, task);
