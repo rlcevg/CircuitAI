@@ -83,6 +83,7 @@ public:
 	void FillAttackSafePos(CCircuitUnit* unit, F3Vec& outPositions);
 	void FillStaticSafePos(CCircuitUnit* unit, F3Vec& outPositions);
 	void FillSafePos(CCircuitUnit* unit, F3Vec& outPositions);
+	CCircuitUnit* GetClosestLeader(IFighterTask::FightType type, const springai::AIFloat3& position);
 
 	IFighterTask* AddGuardTask(CCircuitUnit* unit);
 	bool DelGuardTask(CCircuitUnit* unit);

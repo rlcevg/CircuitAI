@@ -275,6 +275,7 @@ void CCircuitUnit::CmdMoveTo(const AIFloat3& pos, short options, int timeout)
 
 void CCircuitUnit::CmdJumpTo(const AIFloat3& pos, short options, int timeout)
 {
+//	assert(utils::is_in_map(pos));
 //	unit->ExecuteCustomCommand(CMD_JUMP, {pos.x, pos.y, pos.z}, options, timeout);
 }
 
@@ -302,6 +303,11 @@ void CCircuitUnit::CmdWantedSpeed(float speed)
 //	unit->SetWantedMaxSpeed(speed / FRAMES_PER_SEC, true);
 //	unit->SetWantedMaxSpeed(0.5f, true);
 //	unit->ExecuteCustomCommand(CMD_WANTED_SPEED, {speed});
+}
+
+void CCircuitUnit::CmdStop(short options, int timeout)
+{
+	unit->Stop(options, timeout);
 }
 
 void CCircuitUnit::CmdSetTarget(CEnemyInfo* enemy)
@@ -603,6 +609,9 @@ void CCircuitUnit::Log()
 		task->Log();
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
+	if (travelAct != nullptr) {
+		travelAct->Log(circuit);
+	}
 	circuit->LOG("unit: %lx | id: %i | %s", this, id, circuitDef->GetDef()->GetName());
 	auto commands = unit->GetCurrentCommands();
 	for (springai::Command* c : commands) {

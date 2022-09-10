@@ -66,6 +66,7 @@ public:
 	const springai::AIFloat3& GetMetalBase() const { return metalBase; }
 	const springai::AIFloat3& GetEnergyBase() const { return energyBase; }
 	const springai::AIFloat3& GetEnergyBase2() const { return energyBase2; }
+	void FindNewBase(CCircuitUnit* unit);
 	void ExecOnFindStart(StartFunc& func) { startFuncs.push_back(func); }
 
 	bool PickCommander();

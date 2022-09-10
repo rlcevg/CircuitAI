@@ -893,7 +893,7 @@ CCircuitUnit* CFactoryManager::NeedUpgrade(unsigned int nanoQueued)
 	return nullptr;
 }
 
-CCircuitUnit* CFactoryManager::GetClosestFactory(AIFloat3 position)
+CCircuitUnit* CFactoryManager::GetClosestFactory(const AIFloat3& position)
 {
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 //	CTerrainManager::CorrectPosition(position);

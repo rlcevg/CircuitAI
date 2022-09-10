@@ -40,9 +40,15 @@ void CMoveAction::Update(CCircuitAI* circuit)
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 
 	float stepSpeed;
-	int pathMaxIndex = CalcSpeedStep(stepSpeed);
-	if (pathMaxIndex < 0) {
-		return;
+	int pathMaxIndex = CalcSpeedStep(circuit, stepSpeed);
+	switch (pathMaxIndex) {
+		case -2:  // arrived
+			TRY_UNIT(circuit, unit,
+				unit->CmdMoveTo(pPath->posPath.back(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, lastFrame + FRAMES_PER_SEC * 60);
+			)
+			return;
+		case -1: return;  // continue with current waypoints
+		default: break;  // update waypoints
 	}
 	int step = pathIterator;
 

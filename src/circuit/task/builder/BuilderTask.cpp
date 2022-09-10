@@ -289,14 +289,7 @@ bool IBuilderTask::Execute(CCircuitUnit* unit)
 		)
 	} else {
 		if (circuit->GetSetupManager()->GetBasePos().SqDistance2D(position) < SQUARE(searchRadius)) {  // base must be full
-			// TODO: Select new proper BasePos, like near metal cluster.
-			CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-			int terWidth = terrainMgr->GetTerrainWidth();
-			int terHeight = terrainMgr->GetTerrainHeight();
-			float x = terWidth / 4 + rand() % (int)(terWidth / 2);
-			float z = terHeight / 4 + rand() % (int)(terHeight / 2);
-			AIFloat3 pos(x, circuit->GetMap()->GetElevationAt(x, z), z);
-			circuit->GetSetupManager()->SetBasePos(pos);
+			circuit->GetSetupManager()->FindNewBase(unit);
 		}
 
 		// Fallback to Guard/Assist/Patrol

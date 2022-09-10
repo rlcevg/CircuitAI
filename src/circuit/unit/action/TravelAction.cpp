@@ -11,6 +11,8 @@
 #include "task/UnitTask.h"
 #include "util/Utils.h"
 
+#include "spring/SpringCallback.h"
+
 namespace circuit {
 
 using namespace springai;
@@ -58,6 +60,7 @@ void ITravelAction::OnEnd()
 
 void ITravelAction::SetPath(const std::shared_ptr<CPathInfo>& pPath, float speed)
 {
+	// NOTE: pPath can be null. Caller uses StateWait() after this call in such cases
 	pathIterator = 0;
 	this->pPath = pPath;
 	this->speed = speed;
@@ -66,7 +69,7 @@ void ITravelAction::SetPath(const std::shared_ptr<CPathInfo>& pPath, float speed
 	StateActivate();
 }
 
-int ITravelAction::CalcSpeedStep(float& stepSpeed)
+int ITravelAction::CalcSpeedStep(CCircuitAI* circuit, float& stepSpeed)
 {
 	CCircuitUnit* unit = static_cast<CCircuitUnit*>(ownerList);
 	const AIFloat3& pos = unit->GetPos(lastFrame);
@@ -96,11 +99,18 @@ int ITravelAction::CalcSpeedStep(float& stepSpeed)
 		pathIterator = step;
 		if (pathIterator == pathMaxIndex) {
 			StateFinish();
-			return -1;
+			return circuit->GetCallback()->Unit_HasCommands(unit->GetId()) ? -2 : -1;
 		}
 	}
 
 	return pathMaxIndex;
 }
+
+#ifdef DEBUG_VIS
+void ITravelAction::Log(CCircuitAI* circuit)
+{
+	circuit->LOG("travel: %p | state: %i", this, state);
+}
+#endif
 
 } // namespace circuit

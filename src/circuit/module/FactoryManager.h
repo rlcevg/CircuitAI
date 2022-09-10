@@ -77,7 +77,7 @@ public:
 	void RaiseSwitchTime() { isSwitchTime = true; }
 	bool IsSwitchAllowed(CCircuitDef* facDef) const;
 	CCircuitUnit* NeedUpgrade(unsigned int nanoQueued);
-	CCircuitUnit* GetClosestFactory(springai::AIFloat3 position);
+	CCircuitUnit* GetClosestFactory(const springai::AIFloat3& position);
 //	CCircuitDef* GetClosestDef(springai::AIFloat3& position, CCircuitDef::RoleT role);
 
 	springai::AIFloat3 GetClosestHaven(CCircuitUnit* unit) const;

@@ -1167,6 +1167,26 @@ void CMilitaryManager::FillSafePos(CCircuitUnit* unit, F3Vec& outPositions)
 	}
 }
 
+CCircuitUnit* CMilitaryManager::GetClosestLeader(IFighterTask::FightType type, const AIFloat3& position)
+{
+	IFighterTask* task = nullptr;
+	float sqMinDist = std::numeric_limits<float>::max();
+	const std::set<IFighterTask*>& tasks = GetTasks(type);
+	for (IFighterTask* t : tasks) {
+		const float sqDist = t->GetPosition().SqDistance2D(position);
+		if (sqMinDist > sqDist) {
+			sqMinDist = sqDist;
+			task = t;
+		}
+	}
+	if ((task == nullptr) || task->GetAssignees().empty()) {
+		return nullptr;
+	}
+	return (task->GetAssignees().size() > 1)
+			? static_cast<ISquadTask*>(task)->GetLeader()
+			: *task->GetAssignees().begin();
+}
+
 IFighterTask* CMilitaryManager::AddGuardTask(CCircuitUnit* unit)
 {
 	auto it = guardTasks.find(unit);

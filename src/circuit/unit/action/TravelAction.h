@@ -28,7 +28,7 @@ public:
 	const std::shared_ptr<CPathInfo>& GetPath() const { return pPath; }
 
 protected:
-	int CalcSpeedStep(float& stepSpeed);
+	int CalcSpeedStep(CCircuitAI* circuit, float& stepSpeed);
 
 	std::shared_ptr<CPathInfo> pPath;
 	float speed;
@@ -37,6 +37,11 @@ protected:
 	int minSqDist;
 	int lastSector;  // last issued sector index
 	int lastFrame;
+
+#ifdef DEBUG_VIS
+public:
+	void Log(CCircuitAI* circuit);
+#endif
 };
 
 } // namespace circuit

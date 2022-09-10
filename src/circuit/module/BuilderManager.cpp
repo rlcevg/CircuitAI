@@ -1600,13 +1600,11 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 		}
 	}
 
-	if (unit->GetCircuitDef()->IsAbleToAssist()) {
-		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(position);
-		if (vip != nullptr) {
-			return EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
-		}
-	} else {
-		// TODO: Find closest AttackTask and assist. Have to make "support" work with builders
+	CCircuitUnit* vip = unit->GetCircuitDef()->IsAbleToAssist()
+			? circuit->GetFactoryManager()->GetClosestFactory(position)
+			: militaryMgr->GetClosestLeader(IFighterTask::FightType::ATTACK, position);
+	if (vip != nullptr) {
+		return EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
 	}
 
 	CSetupManager* setupMgr = circuit->GetSetupManager();

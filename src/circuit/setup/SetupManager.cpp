@@ -7,6 +7,7 @@
 
 #include "setup/SetupManager.h"
 #include "setup/SetupData.h"
+#include "map/InfluenceMap.h"
 #include "module/EconomyManager.h"
 #include "module/MilitaryManager.h"  // only for CalcLanePos
 #include "resource/MetalManager.h"
@@ -237,6 +238,22 @@ void CSetupManager::SetBasePos(const AIFloat3& pos)
 	CTerrainManager::CorrectPosition(metalBase);
 	CTerrainManager::CorrectPosition(energyBase);
 	CTerrainManager::CorrectPosition(energyBase2);
+}
+
+void CSetupManager::FindNewBase(CCircuitUnit* unit)
+{
+	CInfluenceMap* inflMap = circuit->GetInflMap();
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	const CMetalData::Clusters& clusters = metalMgr->GetClusters();
+	CMetalData::PointPredicate pred = [inflMap, terrainMgr, unit, &clusters](const int index) {
+		const AIFloat3& pos = clusters[index].position;
+		return (inflMap->GetInfluenceAt(pos) > INFL_SAFE) && terrainMgr->CanReachAt(unit, pos, DEFAULT_SLACK);
+	};
+	const int clusterId = metalMgr->FindNearestCluster(basePos, pred);
+	if (clusterId >= 0) {
+		circuit->GetSetupManager()->SetBasePos(clusters[clusterId].position);
+	}
 }
 
 bool CSetupManager::PickCommander()
