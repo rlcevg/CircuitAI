@@ -9,6 +9,7 @@
 #include "unit/CircuitUnit.h"
 #include "unit/CircuitDef.h"
 #include "task/UnitTask.h"
+#include "CircuitAI.h"
 #include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
