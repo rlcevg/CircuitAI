@@ -74,12 +74,12 @@ local options = {
 		name    = 'Difficulty profile',
 		desc    = 'Difficulty or play-style of AI (see init.as).\nkey: profile',
 		type    = 'list',
-		def     = 'flaka',
+		def     = 'hard',
 		items   = {
 			{
-				key  = 'easy',
-				name = 'Easy | Slowpoke',
-				desc = 'Difficulty: Easy |Playstyle: Podpivas',
+				key  = 'hard',
+				name = 'Hard | Balanced',
+				desc = 'Difficulty: Hard |Playstyle: Balanced |Made by Flaka',
 			},
 			{
 				key  = 'medium',
@@ -87,14 +87,14 @@ local options = {
 				desc = 'Difficulty: Medium |Playstyle: Learning mechanics',
 			},
 			{
-				key  = 'flaka',
-				name = 'Hard | Balanced',
-				desc = 'Difficulty: Hard |Playstyle: Balanced |Made by Flaka',
+				key  = 'easy',
+				name = 'Easy | Slow',
+				desc = 'Difficulty: Easy |Playstyle: First launch',
 			},
 			{
 				key  = 'dev',
-				name = 'Bleeding edge testing AI',
-				desc = 'Bleeding edge testing config',
+				name = 'Testing AI',
+				desc = 'Testing config',
 			},
 		},
 	},

@@ -1566,6 +1566,22 @@ void CEconomyManager::StartFactoryJob(const float seconds)
 			if (taskB->GetPosition().SqDistance2D(pos) > SQUARE(maxDist)) {
 				factoryMgr->RaiseSwitchTime();
 			}
+			// FIXME: Alternative WIP
+//			IBuilderTask* taskB = static_cast<IBuilderTask*>(comm->GetTask());
+//			const float dist = taskB->GetPosition().distance2D(pos) - comm->GetCircuitDef()->GetBuildDistance();
+//			const float moveETA = dist / comm->GetCircuitDef()->GetSpeed();
+//			const float moveMetal = GetMetalCur() + GetAvgMetalIncome() * (moveETA + 1);  // 1 seconds - buffer
+//			const float store = GetMetalStore();
+//			if (moveMetal >= store) {
+//				factoryMgr->RaiseSwitchTime();
+//			} else {
+//				const float buildTime = taskB->GetBuildDef()->GetBuildTime() / comm->GetCircuitDef()->GetWorkerTime();
+//				const float pull = GetAvgMetalIncome() * buildTime - taskB->GetBuildDef()->GetCostM();
+//				if (moveMetal + pull >= store) {
+//					factoryMgr->RaiseSwitchTime();
+//				}
+//			}
+			// FIXME
 		}
 		IBuilderTask* factoryTask = UpdateFactoryTasks(pos, comm);
 		if (factoryTask == nullptr) {
