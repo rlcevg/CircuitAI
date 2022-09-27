@@ -275,6 +275,8 @@ public:
 	bool IsAbleToRestore()   const { return isAbleToRestore; }
 	bool IsAbleToCapture()   const { return captureSpeed > .1f; }
 	bool IsAssistable()      const { return buildTime < 1e6f; }
+	bool IsReclaimable()     const { return isReclaimable; }
+	bool IsCapturable()      const { return isCapturable; }
 
 	void SetIsMex(bool value) { isMex = value; }
 	bool IsMex() const { return isMex; }
@@ -426,6 +428,8 @@ private:
 	bool isAbleToResurrect : 1;
 	bool isAbleToAssist : 1;
 	bool isAbleToRestore : 1;
+	bool isReclaimable : 1;
+	bool isCapturable : 1;
 
 	bool isMex : 1;
 	bool isWind : 1;

@@ -276,6 +276,7 @@ bool CInitScript::InitConfig(const std::string& profile,
 
 	folderName = profile;
 	if (!script->Load("init", folderName, "init.as")) {
+		r = script->GetEngine()->RemoveConfigGroup("init"); ASSERT(r >= 0);
 		return false;
 	}
 	asIScriptModule* mod = script->GetEngine()->GetModule("init");

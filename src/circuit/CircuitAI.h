@@ -210,7 +210,7 @@ public:
 	/*const */CircuitDefs& GetCircuitDefs() /*const */{ return defsById; }
 	CCircuitDef* GetCircuitDef(const char* name);
 	bool IsValidUnitDefId(CCircuitDef::Id unitDefId) const {
-		return (unitDefId > 0) && ((size_t)unitDefId < defsById.size());
+		return /*(unitDefId > 0) && */((size_t)unitDefId < defsById.size());
 	}
 	CCircuitDef* GetCircuitDef(CCircuitDef::Id unitDefId) {
 		return &defsById[unitDefId - 1];

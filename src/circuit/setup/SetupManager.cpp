@@ -641,8 +641,8 @@ void CSetupManager::CalcLanePos()
 
 	SetLanePos(bestPos);
 #ifdef DEBUG_VIS
-	circuit->GetDrawer()->AddPoint((basePos + lanePos) / 2, utils::int_to_string(circuit->GetTeamId()).c_str());
-	circuit->GetDrawer()->AddLine((basePos + lanePos) / 2, lanePos);
+	circuit->GetDrawer()->AddPoint(basePos, utils::int_to_string(circuit->GetTeamId()).c_str());
+	circuit->GetDrawer()->AddLine(basePos, lanePos);
 	circuit->LOG("baseRange: %f", lanePos.distance2D(basePos));
 #endif  // DEBUG_VIS
 

@@ -65,7 +65,7 @@ void CSuperTask::Update()
 		if (targetFrame + (cdef->GetReloadTime() + TARGET_DELAY) > frame) {
 			if ((State::ENGAGE == state) && (targetFrame + TARGET_DELAY <= frame)) {
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Stop();
+					unit->CmdStop();
 				)
 				state = State::ROAM;
 			}
@@ -131,7 +131,7 @@ void CSuperTask::Update()
 	const float maxCost = cdef->IsAttrStock() ? cdef->GetWeaponDef()->GetCostM() : cdef->GetCostM() * 0.01f;
 	if ((groupIdx < 0) || (cost < maxCost)) {
 		TRY_UNIT(circuit, unit,
-			unit->GetUnit()->Stop();
+			unit->CmdStop();
 		)
 		SetTarget(nullptr);
 		targetFrame = frame;

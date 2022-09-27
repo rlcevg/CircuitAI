@@ -218,6 +218,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	// Factory: def->IsBuilder() && !def->GetYardMap(0).empty() && !def->GetBuildOptions().empty()
 	isAbleToAssist    = def->IsAbleToAssist() && !clb->UnitDef_HasYardMap(id);
 	isAbleToRestore   = def->IsAbleToRestore();
+	isReclaimable     = def->IsReclaimable();
+	isCapturable      = def->IsCapturable();
 
 	const std::map<std::string, std::string>& customParams = def->GetCustomParams();
 	auto it = customParams.find("energyconv_capacity");

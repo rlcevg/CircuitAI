@@ -269,7 +269,7 @@ bool ISquadTask::IsMustRegroup()
 				((unit->GetTaskFrame() < groupFrame) || !terrainMgr->CanMoveToPos(unit->GetArea(), pos)))
 			{
 				TRY_UNIT(circuit, unit,
-					unit->GetUnit()->Stop();
+					unit->CmdStop();
 					unit->GetUnit()->SetMoveState(2);
 				)
 				circuit->Garbage(unit, "stuck");
@@ -297,7 +297,7 @@ bool ISquadTask::IsMustRegroup()
 	if (!wasRegroup && (State::REGROUP == state)) {
 		if (utils::is_equal_pos(prevGroupPos, groupPos)) {
 			TRY_UNIT(circuit, leader,
-				leader->GetUnit()->Stop();
+				leader->CmdStop();
 				leader->GetUnit()->SetMoveState(2);
 			)
 			circuit->Garbage(leader, "stuck");

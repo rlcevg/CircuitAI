@@ -1054,7 +1054,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 
 	if (unit->IsMoveFailed(lastFrame)) {
 		TRY_UNIT(this, unit,
-			unit->GetUnit()->Stop();
+			unit->CmdStop();
 			unit->GetUnit()->SetMoveState(2);
 		)
 //		Garbage(unit, "stuck");
@@ -1113,7 +1113,7 @@ int CCircuitAI::UnitGiven(ICoreUnit::Id unitId, int oldTeamId, int newTeamId)
 	}
 
 	TRY_UNIT(this, unit,
-		unit->GetUnit()->Stop();
+		unit->CmdStop();
 		unit->CmdFireAtRadar(true);
 		unit->GetUnit()->SetAutoRepairLevel(0);
 		unit->GetUnit()->SetOn(true);

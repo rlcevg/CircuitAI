@@ -56,7 +56,6 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	CMap* map = circuit->GetMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	const int canTargetCat = cdef->GetTargetCategoryDGun();
-	const int noChaseCat = cdef->GetNoChaseCategory();
 	const bool isRoleComm = cdef->IsRoleComm();
 	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
 	CEnemyInfo* bestTarget = nullptr;
@@ -73,7 +72,6 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if ((edef == nullptr)
 			|| ((edef->GetCategory() & canTargetCat) == 0)
-			|| ((edef->GetCategory() & noChaseCat) != 0)
 			|| (isRoleComm && edef->IsRoleComm()))  // NOTE: BAR, comm kamikaze
 		{
 			continue;

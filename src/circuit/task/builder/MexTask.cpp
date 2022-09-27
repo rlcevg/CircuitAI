@@ -166,7 +166,11 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 	bool isNeutral = false;
 	auto& neutrals = clb->GetNeutralUnitsIn(buildPos, SQUARE_SIZE * 8);
 	for (Unit* n : neutrals) {
-		if (n != nullptr) {
+		if (n == nullptr) {
+			continue;
+		}
+		CCircuitDef* ndef = circuit->GetCircuitDefSafe(clb->Unit_GetDefId(n->GetUnitId()));
+		if ((ndef == nullptr) || ndef->IsReclaimable()) {
 			isNeutral = true;
 			state = State::REGROUP;
 			TRY_UNIT(circuit, unit,
@@ -183,8 +187,13 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 	CEnemyInfo* enemy = nullptr;
 	auto& enemies = clb->GetEnemyUnitIdsIn(buildPos, SQUARE_SIZE * 8);
 	for (ICoreUnit::Id enemyId : enemies) {
-		if (enemyId != -1) {
-			enemy = circuit->GetEnemyInfo(enemyId);
+		CEnemyInfo* e = circuit->GetEnemyInfo(enemyId);
+		if (e == nullptr) {
+			continue;
+		}
+		CCircuitDef* edef = e->GetCircuitDef();
+		if ((edef == nullptr) || edef->IsReclaimable()) {
+			enemy = e;
 			break;
 		}
 	}

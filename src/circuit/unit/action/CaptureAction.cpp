@@ -63,7 +63,9 @@ void CCaptureAction::Update(CCircuitAI* circuit)
 			CCircuitDef::Id defId = clb->Unit_GetDefId(n->GetUnitId());
 			if (defId != -1) {
 				CCircuitDef* ndef = circuit->GetCircuitDef(defId);
-				if (ndef->IsIgnore() || (ndef->GetUpkeepM() > metalIncome) || (ndef->GetUpkeepE() > energyIncome)) {
+				if (ndef->IsIgnore() || !ndef->IsCapturable()
+					|| (ndef->GetUpkeepM() > metalIncome) || (ndef->GetUpkeepE() > energyIncome))
+				{
 					continue;
 				}
 				CWeaponDef* wdef = ndef->GetWeaponDef();
@@ -99,6 +101,7 @@ void CCaptureAction::Update(CCircuitAI* circuit)
 		return;
 	}
 
+	const float maxSpeed = unit->GetCircuitDef()->GetSpeed() * 0.5f;
 	float minSqDist = SQUARE(range);
 	CEnemyInfo* enemy = nullptr;
 	for (ICoreUnit::Id eId : enemies) {
@@ -106,7 +109,10 @@ void CCaptureAction::Update(CCircuitAI* circuit)
 		if ((e == nullptr) || (threatMap->GetThreatAt(e->GetPos()) > power)) {
 			continue;
 		}
-		if ((e->GetCircuitDef() != nullptr) && e->GetCircuitDef()->IsIgnore()) {
+		CCircuitDef* edef = e->GetCircuitDef();
+		if ((edef != nullptr)
+			&& (edef->IsIgnore() || !edef->IsCapturable() || edef->GetSpeed() > maxSpeed))
+		{
 			continue;
 		}
 		float sqDist = e->GetPos().SqDistance2D(pos);

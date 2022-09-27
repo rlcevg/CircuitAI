@@ -110,11 +110,13 @@ bool CBResurrectTask::Reevaluate(CCircuitUnit* unit)
 	const std::vector<ICoreUnit::Id>& enemyIds = circuit->GetCallback()->GetEnemyUnitIdsIn(pos, 500.0f);
 	for (ICoreUnit::Id enemyId : enemyIds) {
 		CEnemyInfo* enemy = circuit->GetEnemyInfo(enemyId);
-		if ((enemy != nullptr)
-			&& (unit->GetCircuitDef()->IsAttrVampire()
-				|| ((enemy->GetCircuitDef() != nullptr)
-					&& !enemy->GetCircuitDef()->IsAttacker()
-					/* && enemy->GetUnit()->IsBeingBuilt()*/)))
+		if (enemy == nullptr) {
+			continue;
+		}
+		CCircuitDef* edef = enemy->GetCircuitDef();
+		if ((edef == nullptr) || (edef->IsReclaimable()
+			&& (!edef->IsAttacker() || unit->GetCircuitDef()->IsAttrVampire())
+			/* && enemy->GetUnit()->IsBeingBuilt()*/))
 		{
 			TRY_UNIT(circuit, unit,
 				unit->CmdReclaimEnemy(enemy, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);

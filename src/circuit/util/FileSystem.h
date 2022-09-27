@@ -112,7 +112,7 @@ static inline std::string GetAIDataGameDir(SkirmishAI* skirm, const std::string&
 	const char* version = info->GetValueByKey("version");
 	const char* name = info->GetValueByKey("shortName");
 	delete info;
-	return std::string("LuaRules/Configs/") + name + SLASH + version + SLASH + subdir + SLASH;
+	return std::string("LuaRules" SLASH "Configs" SLASH) + name + SLASH + version + SLASH + subdir + SLASH;
 }
 
 } // namespace utils
