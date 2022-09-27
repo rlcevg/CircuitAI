@@ -25,6 +25,7 @@ public:
 	struct SDefPoint {
 		springai::AIFloat3 position;
 		float cost;
+		int id;
 	};
 	using DefPoints = std::vector<SDefPoint>;
 	using DefIndices = std::vector<int>;
@@ -44,6 +45,8 @@ public:
 	const DefPoints& GetDefPoints() const { return defPoints; }
 	const DefIndices& GetDefIndices(int cluster) const { return clusterInfos[cluster].idxPoints; }
 	SDefPoint* GetDefPoint(const springai::AIFloat3& pos, float cost);
+	SDefPoint* GetDefPoint(int pointId) { return &defPoints[pointId]; }
+	float GetPointRange() const { return pointRange; }
 
 	void SetBaseRange(float range);
 	float GetBaseRange() const { return baseRange; }
@@ -65,7 +68,7 @@ private:
 			nanoflann::L2_Simple_Adaptor<float, utils::SPointAdaptor<DefPoints> >,
 			utils::SPointAdaptor<DefPoints>,
 			2 /* dim */, int>;
-	DefTree defTree;
+	DefTree defTree;  // TODO: replace cluster points, currently unused
 
 	float baseRadMin;
 	float baseRadMax;

@@ -102,8 +102,9 @@ void CDefenceData::Init(CCircuitAI* circuit)
 			enclose.MakeCircle(points);
 			AIFloat3 pos = enclose.GetCenter();
 			pos.y = map->GetElevationAt(pos.x, pos.z);
-			defPoints.push_back({pos, .0f});
-			clPoints.push_back(defPoints.size() - 1);
+			int defPointId = defPoints.size();
+			defPoints.push_back({pos, .0f, defPointId});
+			clPoints.push_back(defPointId);
 		}
 	}
 

@@ -74,13 +74,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 	};
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
-		int frame = this->circuit->GetLastFrame();
-		float defCost = unit->GetCircuitDef()->GetCostM();
-		CDefenceData::SDefPoint* point = defence->GetDefPoint(unit->GetPos(frame), defCost);
-		if (point != nullptr) {
-			point->cost -= defCost;
-		}
-
+		UnmarkPorc(unit);
 		if (unit->GetCircuitDef()->IsAttrStock()) {
 			stockpilers.erase(unit);
 		}
@@ -815,9 +809,10 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	}
 	isPorc |= circuit->GetInflMap()->GetInfluenceAt(pos) < INFL_EPS;
 	if (!isPorc) {
+		const float sqPtRange = SQUARE(defence->GetPointRange());
 		for (IBuilderTask* t : builderMgr->GetTasks(IBuilderTask::BuildType::DEFENCE)) {
 			if ((t->GetTarget() == nullptr) && (t->GetNextTask() != nullptr) &&
-				(closestPoint->position.SqDistance2D(t->GetTaskPos()) < SQUARE(SQUARE_SIZE)))
+				(closestPoint->position.SqDistance2D(t->GetTaskPos()) < sqPtRange))
 			{
 				builderMgr->AbortTask(t);
 				break;
@@ -871,6 +866,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 			const int ind = pose.second++ % 2;
 			IBuilderTask* task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, defDef, pose.first[ind],
 					IBuilderTask::BuildType::DEFENCE, defDef->GetCostM(), SQUARE_SIZE * 2, isFirst);
+			static_cast<CBDefenceTask*>(task)->SetDefPointId(closestPoint->id);
 			pose.first[ind] += (ind == 0) ? sideDir : -sideDir;
 			CTerrainManager::CorrectPosition(pose.first[ind]);
 			if (parentTask != nullptr) {
@@ -927,10 +923,27 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	}
 }
 
-void CMilitaryManager::AbortDefence(const CBDefenceTask* task)
+void CMilitaryManager::MarkPorc(CCircuitUnit* unit, int defPointId)
+{
+	porcToPoint[unit] = defPointId;
+}
+
+void CMilitaryManager::UnmarkPorc(CCircuitUnit* unit)
+{
+	auto it = porcToPoint.find(unit);
+	if (it == porcToPoint.end()) {
+		return;
+	}
+	defence->GetDefPoint(it->second)->cost -= unit->GetCircuitDef()->GetCostM();
+	porcToPoint.erase(it);
+}
+
+void CMilitaryManager::AbortDefence(const CBDefenceTask* task, int defPointId)
 {
 	float defCost = task->GetBuildDef()->GetCostM();
-	CDefenceData::SDefPoint* point = defence->GetDefPoint(task->GetPosition(), defCost);
+	CDefenceData::SDefPoint* point = (defPointId < 0)
+			? defence->GetDefPoint(task->GetPosition(), defCost)
+			: defence->GetDefPoint(defPointId);
 	if (point == nullptr) {
 		return;
 	}

@@ -20,6 +20,8 @@ public:
 	CBDefenceTask(ITaskManager* mgr);  // Load
 	virtual ~CBDefenceTask();
 
+	void SetDefPointId(int pointId) { defPointId = pointId; }
+
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
 	virtual void Update() override;
 
@@ -32,6 +34,7 @@ protected:
 
 	bool isUrgent;
 	float normalCost;
+	int defPointId;
 };
 
 } // namespace circuit

@@ -75,7 +75,9 @@ public:
 	void MakeDefence(int cluster);
 	void MakeDefence(int cluster, const springai::AIFloat3& pos);
 	void DefaultMakeDefence(int cluster, const springai::AIFloat3& pos);
-	void AbortDefence(const CBDefenceTask* task);
+	void MarkPorc(CCircuitUnit* unit, int defPointId);
+	void UnmarkPorc(CCircuitUnit* unit);
+	void AbortDefence(const CBDefenceTask* task, int defPointId);
 	bool HasDefence(int cluster);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
 	void ClearScoutPosition(IUnitTask* task);
@@ -152,6 +154,7 @@ private:
 
 	CDefenceData* defence;
 	unsigned int defenceIdx;
+	std::map<CCircuitUnit*, int> porcToPoint;  // unit: defPointId
 
 	struct SScoutPoint {
 		int spotNum;  // last used spot number in cluster

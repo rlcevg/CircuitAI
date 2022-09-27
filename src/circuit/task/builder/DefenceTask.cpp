@@ -28,6 +28,7 @@ CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::DEFENCE, cost, shake, timeout)
 		, isUrgent(false)
 		, normalCost(cost)
+		, defPointId(-1)
 {
 }
 
@@ -35,6 +36,7 @@ CBDefenceTask::CBDefenceTask(ITaskManager* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::DEFENCE)
 		, isUrgent(false)
 		, normalCost(.0f)
+		, defPointId(-1)
 {
 }
 
@@ -78,6 +80,9 @@ void CBDefenceTask::Update()
 void CBDefenceTask::Finish()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	if (defPointId >= 0) {
+		circuit->GetMilitaryManager()->MarkPorc(target, defPointId);
+	}
 	// Reclaim turret blockers
 	const float radius = 128.0f;  // buildDef->GetMaxRange() * 0.5f;
 	if (circuit->GetCallback()->IsFeaturesIn(buildPos, radius)) {
@@ -89,7 +94,9 @@ void CBDefenceTask::Finish()
 
 void CBDefenceTask::Cancel()
 {
-	manager->GetCircuit()->GetMilitaryManager()->AbortDefence(this);
+	if (defPointId >= 0) {
+		manager->GetCircuit()->GetMilitaryManager()->AbortDefence(this, defPointId);
+	}
 
 	IBuilderTask::Cancel();
 }
@@ -102,6 +109,7 @@ bool CBDefenceTask::Load(std::istream& is)
 {
 	IBuilderTask::Load(is);
 	SERIALIZE(is, read)
+	// TODO: Save DefenceData::defPoints cost, otherwise save-loading defPointId makes no sense
 #ifdef DEBUG_SAVELOAD
 	manager->GetCircuit()->LOG("%s | isUrgent=%i | normalCost=%f", __PRETTY_FUNCTION__, isUrgent, normalCost);
 #endif
