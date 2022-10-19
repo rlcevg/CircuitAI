@@ -577,6 +577,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	energyManager = allyTeam->GetEnergyManager();
 	pathfinder = allyTeam->GetPathfinder();
 
+	// FIXME: CanChooseStartPos = false, finish start factory and position selection
 	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
 		const CSetupManager::StartPosType spt = metalManager->HasMetalSpots() ?
 												CSetupManager::StartPosType::METAL_SPOT :

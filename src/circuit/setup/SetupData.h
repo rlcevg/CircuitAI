@@ -35,7 +35,7 @@ public:
 	void ParseSetupScript(CCircuitAI* circuit, const char* setupScript);
 
 	bool IsInitialized() const { return isInitialized; }
-	bool CanChooseStartPos() const { return startPosType == CGameSetup::StartPos_ChooseInGame; }
+	bool CanChooseStartPos() const { return false/*startPosType == CGameSetup::StartPos_ChooseInGame*/; }
 
 	CAllyTeam* GetAllyTeam(int allyTeamId) { return allyTeams[allyTeamId]; }
 	const utils::CRegion& GetStartBox(int boxId) { return boxes[boxId]; }
