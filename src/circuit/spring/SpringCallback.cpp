@@ -113,6 +113,14 @@ const std::vector<Unit*>& COOAICallback::GetEnemyUnitsIn(const AIFloat3& pos, fl
 	return units;
 }
 
+bool COOAICallback::IsEnemyUnitsIn(const AIFloat3& pos, float radius, bool spherical) const
+{
+	float pos_posF3[3];
+	pos.LoadInto(pos_posF3);
+	int size = sAICallback->getEnemyUnitsIn(skirmishAIId, pos_posF3, radius, spherical, nullptr, -1);
+	return size > 0;
+}
+
 const std::vector<int>& COOAICallback::GetEnemyUnitIdsIn(const AIFloat3& pos, float radius, bool spherical)
 {
 	float pos_posF3[3];

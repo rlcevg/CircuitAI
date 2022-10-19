@@ -45,6 +45,7 @@ public:
 
 	const std::vector<springai::Unit*>& GetEnemyUnits();
 	const std::vector<springai::Unit*>& GetEnemyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
+	bool IsEnemyUnitsIn(const springai::AIFloat3& pos, float radius, bool spherical = true) const;
 	const std::vector<int>& GetEnemyUnitIdsIn(const springai::AIFloat3& pos, float radius, bool spherical = true);
 
 	const std::vector<springai::Unit*>& GetNeutralUnits();

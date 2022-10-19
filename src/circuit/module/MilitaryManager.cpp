@@ -889,9 +889,6 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 		COOAICallback* clb = circuit->GetCallback();
 		const auto& friendlies = clb->GetFriendlyUnitIdsIn(backPos, range);
 		for (int auId : friendlies) {
-			if (auId == -1) {
-				continue;
-			}
 			CCircuitDef::Id defId = clb->Unit_GetDefId(auId);
 			if (isSensor(circuit->GetCircuitDef(defId))) {
 				return true;

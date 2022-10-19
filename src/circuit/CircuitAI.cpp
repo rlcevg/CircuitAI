@@ -79,7 +79,7 @@ using namespace terrain;
  * Разрушать города,
  * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.6.0"};
+constexpr char version[]{"1.6.1"};
 constexpr uint32_t VERSION_SAVE = 3;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -156,9 +156,7 @@ void CCircuitAI::Resign(int newTeamId)
 	std::vector<Unit*> migrants;
 	auto allTeamUnits = callback->GetTeamUnits();
 	for (Unit* u : allTeamUnits) {
-		if (u != nullptr) {
-			migrants.push_back(u);
-		}
+		migrants.push_back(u);
 	}
 	economy->SendUnits(migrants, newTeamId);
 	utils::free_clear(allTeamUnits);
@@ -503,9 +501,6 @@ void CCircuitAI::CheatPreload()
 {
 	auto& enemies = callback->GetEnemyUnits();
 	for (Unit* e : enemies) {
-		if (e == nullptr) {
-			continue;
-		}
 		CEnemyInfo* enemy = RegisterEnemyInfo(e);
 		if (enemy != nullptr) {
 			this->EnemyEnterLOS(enemy);
@@ -829,9 +824,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	auto selfD = [this]() {
 		auto units = callback->GetTeamUnits();
 		for (Unit* u : units) {
-			if (u != nullptr) {
-				u->SelfDestruct();
-			}
+			u->SelfDestruct();
 			delete u;
 		}
 	};
@@ -1166,9 +1159,6 @@ int CCircuitAI::EnemyEnterLOS(CEnemyInfo* enemy)
 		return 0;  // signaling: OK
 	}
 	for (int fId : friendlies) {
-		if (fId == -1) {
-			continue;
-		}
 		CCircuitUnit* unit = GetTeamUnit(fId);
 		if ((unit != nullptr) && (unit->GetTask()->GetType() != IUnitTask::Type::NIL)) {
 			unit->ForceUpdate(lastFrame + THREAT_UPDATE_RATE);
@@ -1258,9 +1248,6 @@ int CCircuitAI::Load(std::istream& is)
 
 	auto units = callback->GetTeamUnits();
 	for (Unit* u : units) {
-		if (u == nullptr) {
-			continue;
-		}
 		ICoreUnit::Id unitId = u->GetUnitId();
 		if (GetTeamUnit(unitId) != nullptr) {
 			delete u;
@@ -1281,10 +1268,7 @@ int CCircuitAI::Load(std::istream& is)
 
 	auto& enemies = callback->GetEnemyUnits();
 	for (Unit* e : enemies) {
-		if (e == nullptr) {
-			continue;
-		}
-		if (GetEnemyInfo(e) != nullptr) {
+		if (GetEnemyInfo(e->GetUnitId()) != nullptr) {
 			delete e;
 			continue;
 		}
@@ -1432,10 +1416,6 @@ CCircuitUnit* CCircuitAI::GetTeamUnit(ICoreUnit::Id unitId) const
 
 CAllyUnit* CCircuitAI::GetFriendlyUnit(Unit* u) const
 {
-	if (u == nullptr) {
-		return nullptr;
-	}
-
 	if (u->GetTeam() == teamId) {
 		return GetTeamUnit(u->GetUnitId());
 	} else if (u->GetAllyTeam() == allyTeamId) {
@@ -1524,14 +1504,6 @@ void CCircuitAI::CheckDecoy(CEnemyInfo* enemy, int weaponId)
 			allyTeam->UpdateInLOS(enemy->GetData(), *wuDef.ids.begin());
 		}
 	}
-}
-
-CEnemyInfo* CCircuitAI::GetEnemyInfo(Unit* u) const
-{
-	if (u == nullptr) {
-		return nullptr;
-	}
-	return GetEnemyInfo(u->GetUnitId());
 }
 
 CEnemyInfo* CCircuitAI::GetEnemyInfo(ICoreUnit::Id unitId) const

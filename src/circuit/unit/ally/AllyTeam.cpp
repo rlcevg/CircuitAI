@@ -149,9 +149,6 @@ void CAllyTeam::UpdateFriendlyUnits()
 	COOAICallback* clb = circuit->GetCallback();
 	const std::vector<Unit*>& units = clb->GetFriendlyUnits();
 	for (Unit* u : units) {
-		if (u == nullptr) {  // engine returns vector with nullptrs
-			continue;
-		}
 		int unitId = u->GetUnitId();
 		CCircuitDef::Id unitDefId = clb->Unit_GetDefId(unitId);
 		CAllyUnit* unit = new CAllyUnit(unitId, u, circuit->GetCircuitDef(unitDefId));

@@ -62,9 +62,6 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	float maxThreat = 0.f;
 
 	for (int eId : enemies) {
-		if (eId == -1) {
-			continue;
-		}
 		CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
 		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetInfluence() < THREAT_MIN)) {
 			continue;

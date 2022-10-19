@@ -57,7 +57,7 @@ void CCaptureAction::Update(CCircuitAI* circuit)
 		Unit* neutral = nullptr;
 		for (Unit* n : neutrals) {
 			// NOTE: check allyTeam as BAR creates units as neutral (nano-frame spam fix)
-			if ((n == nullptr) || (n->GetAllyTeam() == circuit->GetAllyTeamId())) {
+			if (n->GetAllyTeam() == circuit->GetAllyTeamId()) {
 				continue;
 			}
 			CCircuitDef::Id defId = clb->Unit_GetDefId(n->GetUnitId());

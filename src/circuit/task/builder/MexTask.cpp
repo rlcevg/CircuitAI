@@ -166,9 +166,6 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 	bool isNeutral = false;
 	auto& neutrals = clb->GetNeutralUnitsIn(buildPos, SQUARE_SIZE * 8);
 	for (Unit* n : neutrals) {
-		if (n == nullptr) {
-			continue;
-		}
 		CCircuitDef* ndef = circuit->GetCircuitDefSafe(clb->Unit_GetDefId(n->GetUnitId()));
 		if ((ndef == nullptr) || ndef->IsReclaimable()) {
 			isNeutral = true;
@@ -207,14 +204,8 @@ bool CBMexTask::CheckLandBlock(CCircuitUnit* unit)
 	}
 
 	bool blocked = sqPosDist < SQUARE(unit->GetCircuitDef()->GetBuildDistance() + SQUARE_SIZE);
-	if (blocked) {
-		auto& allies = clb->GetFriendlyUnitIdsIn(buildPos, SQUARE_SIZE * 8);
-		for (ICoreUnit::Id allyId : allies) {
-			if (allyId != -1) {
-				blocked = false;
-				break;
-			}
-		}
+	if (blocked && clb->IsFriendlyUnitsIn(buildPos, SQUARE_SIZE * 8)) {
+		blocked = false;
 	}
 	if (blocked) {
 		AIFloat3 dir = (buildPos - pos).Normalize2D();
@@ -254,21 +245,11 @@ bool CBMexTask::CheckWaterBlock(CCircuitUnit* unit)
 
 	COOAICallback* clb = circuit->GetCallback();
 	bool blocked = sqPosDist < SQUARE(unit->GetCircuitDef()->GetBuildDistance() + SQUARE_SIZE);
-	if (blocked) {
-		auto& allies = clb->GetFriendlyUnitIdsIn(buildPos, SQUARE_SIZE);
-		for (int allyId : allies) {
-			if (allyId != -1) {
-				blocked = false;
-				break;
-			}
-		}
+	if (blocked && clb->IsFriendlyUnitsIn(buildPos, SQUARE_SIZE)) {
+		blocked = false;
 	}
-	auto& enemies = clb->GetEnemyUnitIdsIn(buildPos, SQUARE_SIZE);
-	for (int enemyId : enemies) {
-		if (enemyId != -1) {
-			blocked = true;
-			break;
-		}
+	if (!blocked && clb->IsEnemyUnitsIn(buildPos, SQUARE_SIZE)) {
+		blocked = true;
 	}
 	if (!blocked) {
 		return false;

@@ -1139,9 +1139,6 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	auto& units = clb->GetFriendlyUnitsIn(pos, GetAssistRange() * 0.9f);
 	int teamId = circuit->GetTeamId();
 	for (Unit* nano : units) {
-		if (nano == nullptr) {
-			continue;
-		}
 		int unitId = nano->GetUnitId();
 		CCircuitDef* nDef = circuit->GetCircuitDef(clb->Unit_GetDefId(unitId));
 		if (nDef->IsAssist() && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {

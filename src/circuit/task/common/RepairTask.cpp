@@ -180,7 +180,7 @@ CAllyUnit* IRepairTask::FindUnitToAssist(CCircuitUnit* unit)
 	circuit->UpdateFriendlyUnits();
 	auto& units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius);
 	for (Unit* u : units) {
-		if ((u != nullptr) && (u->GetHealth() < u->GetMaxHealth()) && (u->GetVel().SqLength2D() <= maxSpeed)) {
+		if ((u->GetHealth() < u->GetMaxHealth()) && (u->GetVel().SqLength2D() <= maxSpeed)) {
 			target = circuit->GetFriendlyUnit(u);
 			if (target != nullptr) {
 				break;

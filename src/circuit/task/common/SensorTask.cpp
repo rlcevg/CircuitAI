@@ -54,9 +54,6 @@ void ISensorTask::Update()
 	COOAICallback* clb = circuit->GetCallback();
 	auto& friendlies = clb->GetFriendlyUnitIdsIn(GetPosition(), 500.f);
 	for (int auId : friendlies) {
-		if (auId == -1) {
-			continue;
-		}
 		CCircuitDef::Id defId = clb->Unit_GetDefId(auId);
 		if (isSensorTest(circuit->GetCircuitDef(defId))) {
 			isBuilt = true;
