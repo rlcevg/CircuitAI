@@ -768,7 +768,7 @@ void CSetupManager::OverrideConfig()
 	 * Check startscript specific config
 	 */
 	OptionValues* options = circuit->GetSkirmishAI()->GetOptionValues();
-	const char* value = options->GetValueByKey("JSON");
+	const char* value = options->GetValueByKey("json");
 	std::string cfgStr = ((value != nullptr) && strlen(value) > 0) ? value : "";
 	delete options;
 	if (!cfgStr.empty()) {

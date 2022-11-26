@@ -24,9 +24,9 @@
 		},
 		"fac_land_t2":{
 			"type": ["rectangle", "factory"],
-			"size": [8 ,8],
-			"yard": [5, 10],
-			"offset": [0, 4],
+			//"size": [8 ,8],
+			"yard": [12, 20],
+			"offset": [4, 6],
 			"ignore": ["none"]
 		},		
 		"fac_air": {
@@ -117,7 +117,7 @@
 		},
 		"def_hvy": {
 			"type": ["circle", "def_low"],
-			"yard": [8, 8]	
+			"radius": 8
 		},
 		"def_air": {
 			"type": ["rectangle", "unknown"],
@@ -176,12 +176,12 @@
 		"geo2": ["armageo", "corageo"],
 		"fusion":["armfus", "armuwfus", "armckfus", "armafus", "corfus", "coruwfus", "corafus"],
 		"store": ["armmstor", "armestor", "cormstor", "corestor"],
-		"mex": ["armmex", "cormex", "armuwmex", "coruwmex"],
+		"mex": ["armmex", "cormex", "armuwmex", "armuwmex"],
 		"mex2": ["armmoho", "cormoho", "armuwmme", "coruwmme"],
 		"converter": ["armmakr", "cormakr", "armmmkr", "cormmkr", "armfmkr", "corfmkr", "armuwmmm", "coruwmmm"],
 		"def_low": ["armllt", "corllt", "armbeamer", "corhllt"],
-		"def_mid": ["armclaw", "cormaw", "armpb", "corvipe"],
-		"def_hvy":  ["armamb", "armanni", "cortoast", "cordoom"],
+		"def_mid": ["armclaw", "cormaw", "armpb", "corvipe", "armhlt", "corhlt"],
+		"def_hvy":  ["armamb", "armanni", "cortoast", "cordoom", "armguard", "corpun"],
 		"def_air": ["armferret", "armcir", "corrl", "cormadsam", "corerad"],
 		"caretaker": ["armnanotc", "armasp", "cornanotc", "corasp"],
 		"small": ["armrad", "corrad"]
