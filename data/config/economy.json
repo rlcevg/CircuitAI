@@ -54,7 +54,7 @@
 		"pylon": []
 	},
 
-	"cluster_range": 950.0,  // maximum distance between 2 points in hierarchical cluster
+	"cluster_range": 800.0,  // 950.0  // maximum distance between 2 points in hierarchical cluster
 
 	"geo": {
 		"armada": "armgeo",
@@ -64,7 +64,7 @@
 		"armada": "armmex",
 		"cortex": "cormex"
 	},
-	"mex_up": 2,  // maximum number of simultaneous mex upgrades
+	"mex_up": 3,  // maximum number of simultaneous mex upgrades
 
 	"goal_exec": 42.0,  // targeted time to finish non-build task, in seconds
 	"build_mod": 1000.0,  // default build_mod for UnitDef, if it's not specified
@@ -74,7 +74,7 @@
 	"eps_step": 0.2,
 
 	// Mobile buildpower to metal income ratio
-	"buildpower": 1.5,  // 1.25,
+	"buildpower": 1.2,  // 1.25,
 
 	// Metal excess to income ratio, -1 to disable
 	"excess": -1.0,

@@ -89,21 +89,25 @@ inline void SBlockingMap::AddStruct(int x, int z, StructType structType, SM notI
 			cellLow.blockerMask |= static_cast<SM>(GetStructMask(structType));
 		}
 	}
-	cell.notIgnoreMask = notIgnoreMask;
+	if (cell.blockerCounts[static_cast<ST>(structType)] < MAX_BLOCK_VAL) {
+		cell.notIgnoreMask = notIgnoreMask;
+	}
 	cell.structMask = GetStructMask(structType);
 }
 
 inline void SBlockingMap::DelStruct(int x, int z, StructType structType, SM notIgnoreMask)
 {
 	SBlockCell& cell = grid[z * columns + x];
-	cell.notIgnoreMask = 0;
-	cell.structMask = StructMask::NONE;
 	if (cell.blockerCounts[static_cast<ST>(structType)] == 0) {
 		SBlockCellLow& cellLow = gridLow[z / GRID_RATIO_LOW * columnsLow + x / GRID_RATIO_LOW];
 		if (cellLow.blockerCounts[static_cast<ST>(structType)]-- == BLOCK_THRESHOLD) {
 			cellLow.blockerMask &= ~static_cast<SM>(GetStructMask(structType));
 		}
 	}
+	if (cell.blockerCounts[static_cast<ST>(structType)] < MAX_BLOCK_VAL) {
+		cell.notIgnoreMask = 0;
+	}
+	cell.structMask = StructMask::NONE;
 }
 
 inline bool SBlockingMap::IsInBounds(const int2& r1, const int2& r2) const

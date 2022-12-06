@@ -993,18 +993,20 @@ AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
 	int bestScore = -1;
 	int bestScouted = 0;
 	int bestIndex = -1;
+	int numToScout = 0;
 	for (size_t index = 0; index < scoutPoints.size(); ++index) {
 		const SScoutPoint& sp = scoutPoints[index];
 		if ((sp.task != nullptr) || metalMgr->IsClusterQueued(index) || metalMgr->IsClusterFinished(index) || !canMoveTo(clusters[index])) {
 			continue;
 		}
+		numToScout++;
 		if ((bestScore < sp.score) || ((sp.score == bestScore) && (bestScouted > sp.scouted))) {
 			bestScore = sp.score;
 			bestIndex = index;
 			bestScouted = sp.scouted;
 		}
 	}
-	if (bestIndex == -1) {
+	if ((numToScout <= 1) || (bestIndex == -1)) {
 		return -RgtVector;
 	}
 

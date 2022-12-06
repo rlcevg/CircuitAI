@@ -1113,14 +1113,6 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query)
 {
-	if (GetTasks(IBuilderTask::BuildType::STORE).empty()
-		&& GetTasks(IBuilderTask::BuildType::ENERGY).empty()
-		&& GetTasks(IBuilderTask::BuildType::FACTORY).empty()
-		&& GetTasks(IBuilderTask::BuildType::NANO).empty())
-	{
-		return MakeCommPeaceTask(unit, query, SQUARE(2000.f));
-	}
-
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	threatMap->SetThreatType(unit);
 	const IBuilderTask* task = nullptr;
@@ -1144,24 +1136,32 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	const float buildSqDistance = SQUARE(buildDistance);
 	float metric = std::numeric_limits<float>::max();
-	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
-		for (const IBuilderTask* candidate : tasks) {
+
+	std::array<std::pair<IBuilderTask::BuildType, float>, static_cast<int>(IBuilderTask::BuildType::_SIZE_)> prioTasks = {
+		std::make_pair(IBuilderTask::BuildType::ENERGY, SQUARE(10000.f)),
+		std::make_pair(IBuilderTask::BuildType::STORE, SQUARE(10000.f)),
+		std::make_pair(IBuilderTask::BuildType::FACTORY, SQUARE(10000.f)),
+		std::make_pair(IBuilderTask::BuildType::NANO, SQUARE(10000.f)),
+		std::make_pair(IBuilderTask::BuildType::MEXUP, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::MEX, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::GEO, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::CONVERT, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::PYLON, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::RADAR, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::SONAR, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::BUNKER, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::BIG_GUN, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::DEFENCE, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::REPAIR, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::RECLAIM, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::RESURRECT, SQUARE(2000.f)),
+		std::make_pair(IBuilderTask::BuildType::TERRAFORM, SQUARE(2000.f)),
+	};
+
+	for (const std::pair<IBuilderTask::BuildType, float>& pair : prioTasks) {
+		for (const IBuilderTask* candidate : GetTasks(pair.first)) {
 			if (!candidate->CanAssignTo(unit)) {
 				continue;
-			}
-			float prioMod = 1.f;
-			switch (candidate->GetBuildType()) {
-				case IBuilderTask::BuildType::NANO:
-				case IBuilderTask::BuildType::FACTORY: {
-					prioMod = .0001f;
-				} break;
-				case IBuilderTask::BuildType::STORE: {
-					prioMod = .001f;
-				} break;
-				case IBuilderTask::BuildType::ENERGY: {
-					prioMod = 1000.f;
-				} break;
-				default: continue;
 			}
 
 			// Check time-distance to target
@@ -1178,7 +1178,8 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 
 				int index = metalMgr->FindNearestCluster(buildPos);
 				const AIFloat3& testPos = (index < 0) ? buildPos : clusters[index].position;
-				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
+				if ((pos.SqDistance2D(testPos) > pair.second)
+					|| !terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
 					|| (inflMap->GetInfluenceAt(testPos) < -INFL_EPS))  // safety check
 				{
 					continue;
@@ -1199,7 +1200,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 			distCost = std::max(distCost, COST_BASE);
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
-			weight = 1.0f / SQUARE(weight) * prioMod;
+			weight = 1.0f / SQUARE(weight);
 			bool valid = false;
 
 			CCircuitUnit* target = candidate->GetTarget();
@@ -1217,6 +1218,10 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 				task = candidate;
 				metric = distCost * weight;
 			}
+		}
+
+		if (task != nullptr) {
+			break;
 		}
 	}
 

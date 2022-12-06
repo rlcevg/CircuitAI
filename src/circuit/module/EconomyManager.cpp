@@ -912,135 +912,131 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 		return nullptr;
 	}
 
-	IBuilderTask* task = nullptr;
-	const bool isEnergyStalling = IsEnergyStalling();
-
-	if (!isEnergyStalling) {
-		const int frame = circuit->GetLastFrame();
-		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
-
-		if ((builderMgr->GetTasks(IBuilderTask::BuildType::MEXUP).size() < numMexUp) && (GetAvgMetalIncome() > 10.f)) {
-			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
-			std::vector<std::pair<CCircuitDef*, float>> mexDefs;
-			float maxRange = 0.f;
-			for (auto it = mexDefOptions.begin(); it != mexDefOptions.end(); ++it){
-				CCircuitDef* mDef = *it;
-				if (mDef->IsAvailable(frame)) {
-					mexDefs.push_back(std::make_pair(mDef, mDef->GetExtractsM()));
-					const float range = mDef->GetExtrRangeM();
-					if (maxRange < range) {
-						maxRange = range;
-					}
-				}
-			}
-			if (!mexDefs.empty()) {
-				CMetalManager* metalMgr = circuit->GetMetalManager();
-				const CMetalData::Metals& spots = metalMgr->GetSpots();
-				CCircuitDef* mexDef = nullptr;
-				CMetalData::PointPredicate predicate = [this, &spots, &mexDefs, maxRange, terrainMgr, unit, &mexDef](int index) {
-					const AIFloat3& pos = spots[index].position;
-					if (!IsOpenMexSpot(index)
-						&& !IsUpgradingMexSpot(index)
-						&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
-					{
-						const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(pos, maxRange, false);
-						float curExtract = -1.f;
-						for (ICoreUnit::Id unitId : unitIds) {
-							CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
-							if (curMex == nullptr) {
-								continue;
-							}
-							const float extract = curMex->GetCircuitDef()->GetExtractsM();
-							if (curExtract < extract) {
-								curExtract = extract;
-							}
-						}
-						if (curExtract <= 0.f) {
-							return false;
-						}
-						for (const auto& pair : mexDefs) {
-							if ((curExtract < pair.second) && terrainMgr->CanBeBuiltAt(pair.first, pos)) {
-								mexDef = pair.first;
-								return true;
-							}
-						}
-					}
-					return false;
-				};
-				const AIFloat3& searchPos = circuit->GetSetupManager()->GetBasePos();
-				int index = metalMgr->GetSpotToUpgrade(searchPos, predicate);
-				builderMgr->SetCanUpMex(unit->GetCircuitDef(), index != -1);
-				if (index != -1) {
-					const AIFloat3& pos = spots[index].position;
-					task = builderMgr->EnqueueSpot(IBuilderTask::Priority::HIGH, mexDef, index, pos, IBuilderTask::BuildType::MEXUP);
-					return task;
-				}
-			}
-		}
-
-		CMetalManager* metalMgr = circuit->GetMetalManager();
-		CCircuitDef* mexDef = nullptr;
-		const unsigned int mexTaskSize = builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size();
-		if (mexTaskSize < (unsigned)mexMax/*builderMgr->GetWorkerCount() * 2 + 1*/ && !builderMgr->CanUpMex(unit->GetCircuitDef())) {
-			const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
-			std::vector<CCircuitDef*> mexDefs;
-			for (CCircuitDef* mDef : mexDefOptions) {
-				if (mDef->IsAvailable(frame)) {
-					mexDefs.push_back(mDef);
-				}
-			}
-			if (!mexDefs.empty()) {
-				const CMetalData::Metals& spots = metalMgr->GetSpots();
-				CMap* map = circuit->GetMap();
-				// NOTE: threatmap type is set outside
-				CMetalData::PointPredicate predicate = [this, &spots, map, &mexDefs, terrainMgr, unit, &mexDef](int index) {
-					const AIFloat3& pos = spots[index].position;
-					if (IsAllyOpenMexSpot(index)
-						&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
-					{
-						for (CCircuitDef* mDef : mexDefs) {
-							if (terrainMgr->CanBeBuiltAt(mDef, pos)
-								&& map->IsPossibleToBuildAt(mDef->GetDef(), pos, UNIT_NO_FACING))
-							{
-								mexDef = mDef;
-								return true;
-							}
-						}
-					}
-					return false;
-				};
-				int index = metalMgr->GetSpotToBuild(position, predicate);
-				if (index != -1) {
-					const AIFloat3& pos = spots[index].position;
-					task = builderMgr->EnqueueSpot(IBuilderTask::Priority::HIGH, mexDef, index, pos, IBuilderTask::BuildType::MEX);
-					return task;
-				}
-			}
-		}
-
-		if (convertDefs.HasAvail() && IsEnergyFull()
-			&& (builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2)
-			&& ((mexTaskSize == 0) || (builderMgr->GetWorkerCount() > circuit->GetMilitaryManager()->GetGuardTaskNum() + 2)))
-		{
-			const AIFloat3& pos = circuit->GetSetupManager()->GetMetalBase();
-			CCircuitDef* convertDef = convertDefs.GetBestDef([frame, terrainMgr, &pos](CCircuitDef* cdef, const SConvertExt& data) {
-				return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, pos);
-			});
-			if (convertDef != nullptr) {
-				const SConvertExt* convertExt = convertDefs.GetAvailInfo(convertDef);
-				if ((mexDef == nullptr) || (convertExt->make / convertDef->GetCostM() >= metalMgr->GetAvgIncome() * mexDef->GetExtractsM() / mexDef->GetCostM())) {
-					task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT, 0.f, true);
-					return task;
-				}
-			}
-		}
-
-		task = UpdateReclaimTasks(position, unit);
-	} else {
-		task = UpdateEnergyTasks(position, unit);
+	if (IsEnergyStalling()) {
+		return UpdateEnergyTasks(position, unit);
 	}
 
-	return task;
+	IBuilderTask* task = nullptr;
+	const int frame = circuit->GetLastFrame();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+
+	if ((builderMgr->GetTasks(IBuilderTask::BuildType::MEXUP).size() < numMexUp) && (GetAvgMetalIncome() > 10.f)) {
+		const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
+		std::vector<std::pair<CCircuitDef*, float>> mexDefs;
+		float maxRange = 0.f;
+		for (auto it = mexDefOptions.begin(); it != mexDefOptions.end(); ++it){
+			CCircuitDef* mDef = *it;
+			if (mDef->IsAvailable(frame)) {
+				mexDefs.push_back(std::make_pair(mDef, mDef->GetExtractsM()));
+				const float range = mDef->GetExtrRangeM();
+				if (maxRange < range) {
+					maxRange = range;
+				}
+			}
+		}
+		if (!mexDefs.empty()) {
+			CMetalManager* metalMgr = circuit->GetMetalManager();
+			const CMetalData::Metals& spots = metalMgr->GetSpots();
+			CCircuitDef* mexDef = nullptr;
+			CMetalData::PointPredicate predicate = [this, &spots, &mexDefs, maxRange, terrainMgr, unit, &mexDef](int index) {
+				const AIFloat3& pos = spots[index].position;
+				if (!IsOpenMexSpot(index)
+					&& !IsUpgradingMexSpot(index)
+					&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
+				{
+					const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(pos, maxRange, false);
+					float curExtract = -1.f;
+					for (ICoreUnit::Id unitId : unitIds) {
+						CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
+						if (curMex == nullptr) {
+							continue;
+						}
+						const float extract = curMex->GetCircuitDef()->GetExtractsM();
+						if (curExtract < extract) {
+							curExtract = extract;
+						}
+					}
+					if (curExtract <= 0.f) {
+						return false;
+					}
+					for (const auto& pair : mexDefs) {
+						if ((curExtract < pair.second) && terrainMgr->CanBeBuiltAt(pair.first, pos)) {
+							mexDef = pair.first;
+							return true;
+						}
+					}
+				}
+				return false;
+			};
+//			const AIFloat3& searchPos = circuit->GetSetupManager()->GetBasePos();
+			int index = metalMgr->GetSpotToUpgrade(/*searchPos*/position, predicate);
+			builderMgr->SetCanUpMex(unit->GetCircuitDef(), index != -1);
+			if (index != -1) {
+				const AIFloat3& pos = spots[index].position;
+				task = builderMgr->EnqueueSpot(IBuilderTask::Priority::HIGH, mexDef, index, pos, IBuilderTask::BuildType::MEXUP);
+				return task;
+			}
+		}
+	}
+
+	CMetalManager* metalMgr = circuit->GetMetalManager();
+	CCircuitDef* mexDef = nullptr;
+	const unsigned int mexTaskSize = builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size();
+	if (mexTaskSize < (unsigned)mexMax/*builderMgr->GetWorkerCount() * 2 + 1*/ && !builderMgr->CanUpMex(unit->GetCircuitDef())) {
+		const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
+		std::vector<CCircuitDef*> mexDefs;
+		for (CCircuitDef* mDef : mexDefOptions) {
+			if (mDef->IsAvailable(frame)) {
+				mexDefs.push_back(mDef);
+			}
+		}
+		if (!mexDefs.empty()) {
+			const CMetalData::Metals& spots = metalMgr->GetSpots();
+			CMap* map = circuit->GetMap();
+			// NOTE: threatmap type is set outside
+			CMetalData::PointPredicate predicate = [this, &spots, map, &mexDefs, terrainMgr, unit, &mexDef](int index) {
+				const AIFloat3& pos = spots[index].position;
+				if (IsAllyOpenMexSpot(index)
+					&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
+				{
+					for (CCircuitDef* mDef : mexDefs) {
+						if (terrainMgr->CanBeBuiltAt(mDef, pos)
+							&& map->IsPossibleToBuildAt(mDef->GetDef(), pos, UNIT_NO_FACING))
+						{
+							mexDef = mDef;
+							return true;
+						}
+					}
+				}
+				return false;
+			};
+			int index = metalMgr->GetSpotToBuild(position, predicate);
+			if (index != -1) {
+				const AIFloat3& pos = spots[index].position;
+				task = builderMgr->EnqueueSpot(IBuilderTask::Priority::HIGH, mexDef, index, pos, IBuilderTask::BuildType::MEX);
+				return task;
+			}
+		}
+	}
+
+	if (convertDefs.HasAvail() && IsEnergyFull()
+		&& (builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2)
+		&& ((mexTaskSize == 0) || (builderMgr->GetWorkerCount() > circuit->GetMilitaryManager()->GetGuardTaskNum() + 2)))
+	{
+		const AIFloat3& pos = circuit->GetSetupManager()->GetMetalBase();
+		CCircuitDef* convertDef = convertDefs.GetBestDef([frame, terrainMgr, &pos](CCircuitDef* cdef, const SConvertExt& data) {
+			return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, pos);
+		});
+		if (convertDef != nullptr) {
+			const SConvertExt* convertExt = convertDefs.GetAvailInfo(convertDef);
+			if ((mexDef == nullptr) || (convertExt->make / convertDef->GetCostM() >= metalMgr->GetAvgIncome() * mexDef->GetExtractsM() / mexDef->GetCostM())) {
+				task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT, 0.f, true);
+				return task;
+			}
+		}
+	}
+
+	return UpdateReclaimTasks(position, unit);
 }
 
 IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCircuitUnit* unit, bool isNear)
