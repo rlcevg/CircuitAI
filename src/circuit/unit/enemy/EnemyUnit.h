@@ -94,6 +94,7 @@ struct SEnemyData {
  * Per AllyTeam common enemy information
  */
 class CEnemyUnit: public ICoreUnit {
+	friend class CEnemyManager;  // FIXME: HAX to re-create WrappUnit::GetInstance by authority AI
 public:
 	CEnemyUnit(const CEnemyUnit& that) = delete;
 	CEnemyUnit& operator=(const CEnemyUnit&) = delete;

@@ -43,6 +43,8 @@ public:
 	CPathFinder(const std::shared_ptr<CScheduler>& scheduler, terrain::CTerrainData* terrainData);
 	virtual ~CPathFinder();
 
+	void SetAuthority(const std::shared_ptr<CScheduler>& authority) { scheduler = authority; }
+
 	void UpdateAreaUsers(CTerrainManager* terrainMgr);
 	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
 

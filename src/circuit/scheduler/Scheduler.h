@@ -108,7 +108,7 @@ public:
 	 */
 	void RemoveReleaseJob(const std::shared_ptr<IMainJob>& task);
 
-	int GetMaxWorkThreads() const { return maxWorkThreads; }
+	static int GetMaxWorkThreads()/* const*/ { return maxWorkThreads; }
 
 private:
 	std::weak_ptr<CScheduler> self;

@@ -17,6 +17,7 @@
 #include "setup/SetupManager.h"
 #include "terrain/path/PathFinder.h"
 #include "terrain/TerrainData.h"
+#include "terrain/TerrainManager.h"  // Only for ApplyAuthority
 #include "CircuitAI.h"
 #include "util/math/RayBox.h"
 #include "util/GameAttribute.h"
@@ -61,6 +62,7 @@ const CAllyTeam::Id CAllyTeam::GetLeaderId() const
 void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 {
 	if (initCount++ > 0) {
+		mapManager->GetThreatMap()->CopyDefs(circuit);
 		return;
 	}
 
@@ -419,6 +421,12 @@ void CAllyTeam::ApplyAuthority(CCircuitAI* newOwner)
 	metalManager->SetAuthority(newOwner);
 	energyManager->SetAuthority(newOwner);
 	energyGrid->SetAuthority(newOwner);
+
+	UpdateFriendlyUnits();
+	enemyManager->ApplyAuthority(newOwner);
+	circuit->GetTerrainManager()->ApplyAuthority();
+	pathfinder->SetAuthority(newOwner->GetScheduler());
+
 	releaseTask = CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this);
 	newOwner->GetScheduler()->RunOnRelease(releaseTask);
 }

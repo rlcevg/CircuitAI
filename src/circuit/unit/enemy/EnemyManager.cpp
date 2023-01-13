@@ -73,6 +73,20 @@ CEnemyManager::~CEnemyManager()
 //	enemyFakes.clear();
 }
 
+void CEnemyManager::ApplyAuthority(CCircuitAI* authority)
+{
+	circuit = authority;
+
+	for (auto& kv : enemyUnits) {
+		CEnemyUnit* enemy = kv.second;
+		delete enemy->GetUnit();
+		enemy->unit = WrappUnit::GetInstance(authority->GetSkirmishAIId(), enemy->GetId());
+		if (enemy->GetCircuitDef() != nullptr) {
+			enemy->SetCircuitDef(authority->GetCircuitDef(enemy->GetCircuitDef()->GetId()));
+		}
+	}
+}
+
 CEnemyUnit* CEnemyManager::GetEnemyUnit(ICoreUnit::Id unitId) const
 {
 	auto it = enemyUnits.find(unitId);

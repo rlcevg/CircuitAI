@@ -84,6 +84,8 @@ public:
 
 	bool ResignAllyBuilding(CCircuitUnit* unit);
 
+	void ApplyAuthority();
+
 private:
 	int markFrame;
 	struct SStructure {

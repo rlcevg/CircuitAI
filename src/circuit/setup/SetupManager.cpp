@@ -9,7 +9,7 @@
 #include "setup/SetupData.h"
 #include "map/InfluenceMap.h"
 #include "module/EconomyManager.h"
-#include "module/MilitaryManager.h"  // only for CalcLanePos
+#include "module/MilitaryManager.h"  // Only for CalcLanePos
 #include "resource/MetalManager.h"
 #include "scheduler/Scheduler.h"
 #include "terrain/TerrainManager.h"
@@ -650,6 +650,7 @@ void CSetupManager::CalcLanePos()
 	circuit->GetMilitaryManager()->SetBaseDefRange(lanePos.distance2D(basePos));
 
 	// FIXME: Influence map gets broken
+	// FIXED: @see CThreatMap::CopyDefs
 //	const AIFloat3 mapCenter = CTerrainManager::GetTerrainCenter();
 //	CAllyTeam* allyTeam = circuit->GetAllyTeam();
 //	if (mapCenter.SqDistance2D(lanePos) < mapCenter.SqDistance2D(allyTeam->GetAuthority()->GetSetupManager()->GetLanePos())) {

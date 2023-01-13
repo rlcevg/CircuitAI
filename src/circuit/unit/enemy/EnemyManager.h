@@ -45,7 +45,7 @@ public:
 	CEnemyManager(CCircuitAI* circuit);
 	virtual ~CEnemyManager();
 
-	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
+	void ApplyAuthority(CCircuitAI* authority);
 
 	CEnemyUnit* GetEnemyUnit(ICoreUnit::Id unitId) const;
 

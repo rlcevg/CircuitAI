@@ -39,6 +39,7 @@ public:
 	virtual ~CThreatMap();
 
 	void Init(const int roleSize, std::set<CCircuitDef::RoleT>&& modRoles);
+	void CopyDefs(CCircuitAI* ally);
 
 	void EnqueueUpdate();
 	bool IsUpdating() const { return isUpdating; }

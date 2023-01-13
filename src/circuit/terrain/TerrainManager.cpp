@@ -592,6 +592,13 @@ bool CTerrainManager::ResignAllyBuilding(CCircuitUnit* unit)
 	return false;
 }
 
+void CTerrainManager::ApplyAuthority()
+{
+	for (SStructure& building : markedAllies) {
+		building.cdef = circuit->GetCircuitDef(building.cdef->GetId());
+	}
+}
+
 void CTerrainManager::MarkAllyBuildings()
 {
 	if (markFrame /*+ FRAMES_PER_SEC*/ >= circuit->GetLastFrame()) {

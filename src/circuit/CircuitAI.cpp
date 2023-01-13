@@ -79,7 +79,7 @@ using namespace terrain;
  * Разрушать города,
  * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.6.2"};
+constexpr char version[]{"1.6.3"};
 constexpr uint32_t VERSION_SAVE = 3;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -679,15 +679,14 @@ int CCircuitAI::Release(int reason)
 		return 0;
 	}
 
+	scheduler->ProcessRelease();
+	scheduler = nullptr;
+
 	if (reason == RELEASE_RESIGN) {
 		factoryManager->Release();
 		builderManager->Release();
 		militaryManager->Release();
 	}
-
-	weaponDefs.clear();
-	defsById.clear();
-	defsByName.clear();
 
 	if (reason == 1) {  // @see SReleaseEvent
 		gameAttribute->SetGameEnd(true);
@@ -696,8 +695,9 @@ int CCircuitAI::Release(int reason)
 		terrainManager->OnAreaUsersUpdated();
 	}
 
-	scheduler->ProcessRelease();
-	scheduler = nullptr;
+	weaponDefs.clear();
+	defsById.clear();
+	defsByName.clear();
 
 	modules.clear();
 	scriptManager = nullptr;

@@ -141,6 +141,17 @@ void CThreatMap::Init(const int roleSize, std::set<CCircuitDef::RoleT>&& modRole
 	threatArray = threatData0.defThreat->surfThreat.data();
 }
 
+void CThreatMap::CopyDefs(CCircuitAI* ally)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	for (CCircuitDef& cdef : ally->GetCircuitDefs()) {
+		for (CCircuitDef::ThreatT tt = 0; tt < static_cast<CCircuitDef::ThreatT>(CCircuitDef::ThreatType::_SIZE_); ++tt) {
+			CCircuitDef::ThreatType type = static_cast<CCircuitDef::ThreatType>(tt);
+			cdef.SetThreatRange(type, circuit->GetCircuitDef(cdef.GetId())->GetThreatRange(type));
+		}
+	}
+}
+
 void CThreatMap::EnqueueUpdate()
 {
 //	if (isUpdating) {
