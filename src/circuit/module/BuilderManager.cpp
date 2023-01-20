@@ -20,6 +20,7 @@
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/RetreatTask.h"
+#include "task/builder/GenericTask.h"
 #include "task/builder/WaitTask.h"
 #include "task/builder/FactoryTask.h"
 #include "task/builder/NanoTask.h"
@@ -739,7 +740,6 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 			task = new CBBunkerTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
 		}
-		default:
 		case IBuilderTask::BuildType::BIG_GUN: {
 			task = new CBBigGunTask(this, priority, buildDef, position, cost, shake, timeout);
 			break;
@@ -756,6 +756,16 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 			task = new CBMexTask(this, priority, buildDef, position, cost, timeout);
 			break;
 		}
+		// NOTE: Tasks created by config "hub"
+//		case IBuilderTask::BuildType::FACTORY: {
+//			task = new CBFactoryTask(this, priority, buildDef, nullptr, position, cost, shake, false, timeout);
+//		} break;
+		default: {
+			// FIXME: CBGenericTask is a workaround and should be fixed to remain as crash handler.
+			//        Currently used by build_chain->hub config.
+			//        There's no way for AS to distinguish generic from real BuildType task. Save/Load gets confused.
+			task = new CBGenericTask(this, type, priority, buildDef, position, cost, shake, timeout);
+		} break;
 	}
 
 	if (isActive) {
