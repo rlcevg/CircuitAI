@@ -1850,7 +1850,7 @@ void CEconomyManager::UpdateEconomy()
 
 void CEconomyManager::ReclaimOldEnergy(const SEnergyExt* energyExt)
 {
-	if (GetAvgEnergyIncome() < energyExt->cond.energyIncome) {
+	if (circuit->IsLoadSave() || GetAvgEnergyIncome() < energyExt->cond.energyIncome) {
 		return;
 	}
 	auto ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(circuit->GetSetupManager()->GetBasePos(), 1000.f, false);

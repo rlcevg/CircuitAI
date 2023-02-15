@@ -79,7 +79,7 @@ using namespace terrain;
  * Разрушать города,
  * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.6.3"};
+constexpr char version[]{"1.6.4"};
 constexpr uint32_t VERSION_SAVE = 3;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -172,14 +172,20 @@ void CCircuitAI::MobileSlave(int newTeamId)
 	std::vector<CCircuitUnit*> clean;
 	for (auto& kv : teamUnits) {
 		CCircuitUnit* unit = kv.second;
-		if (unit->GetCircuitDef()->IsMobile() && !unit->GetCircuitDef()->IsRoleBuilder()) {
+		// NOTE: springai::Economy::SendUnits won't send unfinished nanoframes,
+		//       and it does cause issues when UnitFinished arrives
+		//       but UnitDestroyed already cleaned its data.
+		if (unit->GetCircuitDef()->IsMobile()
+			&& !unit->GetCircuitDef()->IsRoleBuilder()
+			&& !unit->GetUnit()->IsBeingBuilt())
+		{
 			migrants.push_back(unit->GetUnit());
 			clean.push_back(unit);
 		}
 	}
 	economy->SendUnits(migrants, newTeamId);
+	// NOTE: How to check actually sent units? see note above why it matters.
 	for (CCircuitUnit* unit : clean) {
-		// NOTE: won't send unfinished nanoframes, this may cause issues on UnitFinished.
 		UnitDestroyed(unit, nullptr);
 		UnregisterTeamUnit(unit);
 	}

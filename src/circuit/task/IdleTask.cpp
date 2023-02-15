@@ -41,7 +41,10 @@ void CIdleTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CIdleTask::Start(CCircuitUnit* unit)
 {
-	assert(false);
+	// NOTE: may happen when PathRequest wasn't finished in time,
+	//       then manager->AssignTask(ass) won't do anything and this->Start() is invoked.
+	//       @see CBuilderManager::DefaultMakeTask => return nullptr;
+//	assert(false);
 }
 
 void CIdleTask::Update()
