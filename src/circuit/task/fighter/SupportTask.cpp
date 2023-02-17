@@ -120,7 +120,7 @@ void CSupportTask::Update()
 			startPos, range, urgentPositions, nullptr, false, std::numeric_limits<float>::max(), true);
 	pathQueries[unit] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyPath(static_cast<const CQueryPathMulti*>(query));
 	});
 }

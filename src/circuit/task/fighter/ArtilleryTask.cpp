@@ -126,7 +126,7 @@ void CArtilleryTask::Execute(CCircuitUnit* unit)
 			pos, range, enemyPositions);
 	pathQueries[unit] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyTargetPath(static_cast<const CQueryPathMulti*>(query));
 	});
 }
@@ -289,7 +289,7 @@ void CArtilleryTask::FallbackSafePos(CCircuitUnit* unit)
 			startPos, pathRange, urgentPositions);
 	pathQueries[unit] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplySafePos(static_cast<const CQueryPathMulti*>(query));
 	});
 }

@@ -154,7 +154,7 @@ void IRepairTask::SetTarget(CAllyUnit* unit)
 //		CTerrainManager::CorrectPosition(buildPos);  // position will contain non-corrected value
 		targetId = unit->GetId();
 		if (unit->GetUnit()->IsBeingBuilt()) {
-			buildDef = unit->GetCircuitDef();
+			buildDef = circuit->GetCircuitDef(unit->GetCircuitDef()->GetId());
 		} else {
 			savedIncomeM = 0.f;
 			savedIncomeE = 0.f;

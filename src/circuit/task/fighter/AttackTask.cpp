@@ -210,7 +210,7 @@ void CAttackTask::Update()
 			startPos, endPos, pathRange, GetHitTest(), attackPower);
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }
@@ -360,7 +360,7 @@ void CAttackTask::FallbackFrontPos()
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyFrontPos(static_cast<const CQueryPathMulti*>(query));
 	});
 }
@@ -393,7 +393,7 @@ void CAttackTask::FallbackBasePos()
 			startPos, endPos, pathRange);
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyBasePos(static_cast<const CQueryPathSingle*>(query));
 	});
 }

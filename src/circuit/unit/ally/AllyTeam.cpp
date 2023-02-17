@@ -88,7 +88,7 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 	energyManager = std::make_shared<CEnergyManager>(circuit, &circuit->GetGameAttribute()->GetEnergyData());
 	energyGrid = std::make_shared<CEnergyGrid>(circuit);
 	defence = std::make_shared<CDefenceData>(circuit);
-	pathfinder = std::make_shared<CPathFinder>(circuit->GetScheduler(), &circuit->GetGameAttribute()->GetTerrainData());
+	pathfinder = std::make_shared<CPathFinder>(&circuit->GetGameAttribute()->GetTerrainData(), circuit->GetScheduler()->GetMaxWorkThreads());
 	factoryData = std::make_shared<CFactoryData>(circuit);
 
 	releaseTask = CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this);
@@ -203,9 +203,9 @@ void CAllyTeam::UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai)
 	enemyManager->UnregisterEnemyUnit(data);
 }
 
-void CAllyTeam::RegisterEnemyFake(CCircuitDef* cdef, const AIFloat3& pos, int timeout)
+void CAllyTeam::RegisterEnemyFake(CCircuitDef::Id unitDefId, const AIFloat3& pos, int timeout)
 {
-	CEnemyFake* data = enemyManager->RegisterEnemyFake(cdef, pos, timeout);
+	CEnemyFake* data = enemyManager->RegisterEnemyFake(unitDefId, pos, timeout);
 	mapManager->AddFakeEnemy(data);
 	quadField.MovedEnemyFake(data);
 }
@@ -425,7 +425,6 @@ void CAllyTeam::ApplyAuthority(CCircuitAI* newOwner)
 	UpdateFriendlyUnits();
 	enemyManager->ApplyAuthority(newOwner);
 	circuit->GetTerrainManager()->ApplyAuthority();
-	pathfinder->SetAuthority(newOwner->GetScheduler());
 
 	releaseTask = CScheduler::GameJob(&CAllyTeam::DelegateAuthority, this);
 	newOwner->GetScheduler()->RunOnRelease(releaseTask);

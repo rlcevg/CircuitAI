@@ -65,7 +65,7 @@ public:
 	std::pair<CEnemyUnit*, bool> RegisterEnemyUnit(ICoreUnit::Id unitId, bool isInLOS);
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e);
 
-	CEnemyFake* RegisterEnemyFake(CCircuitDef* cdef, const springai::AIFloat3& pos, int timeout);
+	CEnemyFake* RegisterEnemyFake(CCircuitDef::Id unitDefId, const springai::AIFloat3& pos, int timeout);
 	void UnregisterEnemyFake(CEnemyFake* data);
 
 	void UnregisterEnemyUnit(CEnemyUnit* data);

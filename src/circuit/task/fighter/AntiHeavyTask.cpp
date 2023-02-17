@@ -235,7 +235,7 @@ void CAntiHeavyTask::Update()
 			startPos, pathfinder->GetSquareSize(), enemyPositions);
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyTargetPath(static_cast<const CQueryPathMulti*>(query));
 	});
 }
@@ -388,7 +388,7 @@ void CAntiHeavyTask::FallbackAttackSafe()
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyAttackSafe(static_cast<const CQueryPathMulti*>(query));
 	});
 }
@@ -423,7 +423,7 @@ void CAntiHeavyTask::FallbackStaticSafe()
 			startPos, pathRange, urgentPositions);
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyStaticSafe(static_cast<const CQueryPathMulti*>(query));
 	});
 }
@@ -456,7 +456,7 @@ void CAntiHeavyTask::FallbackBasePos()
 			startPos, position, pathRange);
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyBasePos(static_cast<const CQueryPathSingle*>(query));
 	});
 }

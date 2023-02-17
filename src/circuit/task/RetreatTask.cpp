@@ -158,7 +158,7 @@ void CRetreatTask::Start(CCircuitUnit* unit)
 			startPos, endPos, range/*, nullptr, minThreat*/);
 	pathQueries[unit] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }
@@ -335,7 +335,7 @@ void CRetreatTask::CheckRepairer(CCircuitUnit* newRep)
 			unit, circuit->GetThreatMap(), startPos);
 
 	CCircuitUnit::Id newRepId = newRep->GetId();
-	pathfinder->RunQuery(costQuery, [this, newRepId](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), costQuery, [this, newRepId](const IPathQuery* query) {
 		CCircuitUnit* newRep = this->ValidateNewRepairer(query, newRepId);
 		if (newRep != nullptr) {
 			this->ApplyCostMap(static_cast<const CQueryCostMap*>(query), newRep);

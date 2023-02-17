@@ -527,7 +527,7 @@ void IBuilderTask::UpdatePath(CCircuitUnit* unit)
 			startPos, endPos, range);
 	pathQueries[unit] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }

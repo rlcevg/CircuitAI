@@ -40,10 +40,8 @@ public:
 	};
 	using PathCallback = std::function<void (const IPathQuery* query)>;
 
-	CPathFinder(const std::shared_ptr<CScheduler>& scheduler, terrain::CTerrainData* terrainData);
+	CPathFinder(terrain::CTerrainData* terrainData, int numThreads);
 	virtual ~CPathFinder();
-
-	void SetAuthority(const std::shared_ptr<CScheduler>& authority) { scheduler = authority; }
 
 	void UpdateAreaUsers(CTerrainManager* terrainMgr);
 	void SetAreaUpdated(bool value) { isAreaUpdated = value; }
@@ -75,7 +73,7 @@ public:
 	std::shared_ptr<IPathQuery> CreateLineMapQuery(CCircuitUnit* unit, CThreatMap* threatMap,
 			const springai::AIFloat3& startPos);
 
-	void RunQuery(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
+	void RunQuery(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
 
 	int GetSquareSize() const { return squareSize; }
 	int GetPathMapXSize() const { return pathMapXSize; }
@@ -103,10 +101,10 @@ private:
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, const CCircuitDef* cdef, float elevation);
 	void FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap* threatMap, float elevation);
 
-	void RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
-	void RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
-	void RunPathWide(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
-	void RunCostMap(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
+	void RunPathSingle(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
+	void RunPathMulti(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
+	void RunPathWide(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
+	void RunCostMap(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete = nullptr);
 
 	void MakePath(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
 	void FindBestPath(IPathQuery* query, NSMicroPather::CMicroPather* micropather);
@@ -134,7 +132,6 @@ private:
 	int pathMapYSize;
 
 	int queryId;
-	std::shared_ptr<CScheduler> scheduler;
 
 #ifdef DEBUG_VIS
 private:

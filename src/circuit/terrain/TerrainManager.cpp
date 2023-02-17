@@ -1208,7 +1208,7 @@ void CTerrainManager::MarkBusPath()
 		}
 		pQuery = circuit->GetPathfinder()->CreatePathWideQuery(kv.first, fpq.mobileDef, fpq.startPos, fpq.endPos, fpq.targets);
 
-		circuit->GetPathfinder()->RunQuery(pQuery, [this](const IPathQuery* query) {
+		circuit->GetPathfinder()->RunQuery(circuit->GetScheduler().get(), pQuery, [this](const IPathQuery* query) {
 			auto it = busPath.find(query->GetUnit());
 			if (it == busPath.end()) {
 				return;

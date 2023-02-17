@@ -85,6 +85,18 @@ void CEnemyManager::ApplyAuthority(CCircuitAI* authority)
 			enemy->SetCircuitDef(authority->GetCircuitDef(enemy->GetCircuitDef()->GetId()));
 		}
 	}
+	for (CEnemyUnit* enemy : enemyDying) {
+		delete enemy->GetUnit();
+		enemy->unit = WrappUnit::GetInstance(authority->GetSkirmishAIId(), enemy->GetId());
+		if (enemy->GetCircuitDef() != nullptr) {
+			enemy->SetCircuitDef(authority->GetCircuitDef(enemy->GetCircuitDef()->GetId()));
+		}
+	}
+	for (CEnemyFake* ef : enemyFakes) {
+		if (ef->GetCircuitDef() != nullptr) {
+			ef->SetCircuitDef(authority->GetCircuitDef(ef->GetCircuitDef()->GetId()));
+		}
+	}
 }
 
 CEnemyUnit* CEnemyManager::GetEnemyUnit(ICoreUnit::Id unitId) const
@@ -309,9 +321,9 @@ CEnemyUnit* CEnemyManager::RegisterEnemyUnit(Unit* e)
 	return data;
 }
 
-CEnemyFake* CEnemyManager::RegisterEnemyFake(CCircuitDef* cdef, const AIFloat3& pos, int timeout)
+CEnemyFake* CEnemyManager::RegisterEnemyFake(CCircuitDef::Id unitDefId, const AIFloat3& pos, int timeout)
 {
-	CEnemyFake* data = new CEnemyFake(cdef, pos, timeout);
+	CEnemyFake* data = new CEnemyFake(circuit->GetCircuitDef(unitDefId), pos, timeout);
 	enemyFakes.insert(data);
 	return data;
 }

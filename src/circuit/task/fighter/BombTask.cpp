@@ -193,7 +193,7 @@ void CBombTask::Update()
 			startPos, position, pathfinder->GetSquareSize(), GetHitTest());
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyTargetPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }
@@ -369,7 +369,7 @@ void CBombTask::FallbackBasePos()
 			startPos, endPos, pathRange);
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyBasePos(static_cast<const CQueryPathSingle*>(query));
 	});
 }

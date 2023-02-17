@@ -138,7 +138,7 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 			pos, range * 0.5f, enemyPositions, nullptr, false, attackPower);
 	pathQueries[unit] = query;
 
-	pathfinder->RunQuery(query, [this, isUpdating](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this, isUpdating](const IPathQuery* query) {
 		this->ApplyTargetPath(static_cast<const CQueryPathMulti*>(query), isUpdating);
 	});
 }
@@ -304,7 +304,7 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 			pos, position, pathfinder->GetSquareSize());
 	pathQueries[unit] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyScoutPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }

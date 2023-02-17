@@ -204,7 +204,7 @@ void CRaidTask::Update()
 			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, GetHitTest(), true, attackPower);
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyTargetPath(static_cast<const CQueryPathMulti*>(query));
 	});
 }
@@ -417,7 +417,7 @@ void CRaidTask::FallbackRaid()
 			pos, position, pathfinder->GetSquareSize());
 	pathQueries[leader] = query;
 
-	pathfinder->RunQuery(query, [this](const IPathQuery* query) {
+	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {
 		this->ApplyRaidPath(static_cast<const CQueryPathSingle*>(query));
 	});
 }

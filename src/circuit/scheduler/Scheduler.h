@@ -108,7 +108,7 @@ public:
 	 */
 	void RemoveReleaseJob(const std::shared_ptr<IMainJob>& task);
 
-	static int GetMaxWorkThreads()/* const*/ { return maxWorkThreads; }
+	static int GetMaxWorkThreads()/* const*/ { return gMaxWorkThreads; }
 
 private:
 	std::weak_ptr<CScheduler> self;
@@ -147,7 +147,7 @@ private:
 		std::weak_ptr<CScheduler> scheduler;
 		std::shared_ptr<IThreadJob> task;
 	};
-	static CMultiQueue<WorkTask> workTasks;
+	static CMultiQueue<WorkTask> gWorkTasks;
 
 	struct FinishTask: public BaseContainer {
 		FinishTask(const std::shared_ptr<IMainJob>& task)
@@ -158,10 +158,16 @@ private:
 	std::vector<std::shared_ptr<IMainJob>> initTasks;
 	std::vector<std::shared_ptr<IMainJob>> releaseTasks;
 
-	static std::vector<spring::thread> workThreads;
-	static int maxWorkThreads;
-	static std::atomic<bool> workerRunning;
-	static unsigned int counterInstance;
+	static std::vector<spring::thread> gWorkThreads;
+	static int gMaxWorkThreads;
+	static std::atomic<bool> gIsWorkerRunning;
+	static unsigned int gInstanceCount;
+
+	static std::atomic<bool> gIsWorkerPause;
+	static spring::mutex gPauseMutex;
+	static spring::condition_variable_any gPauseCV;
+	static spring::condition_variable_any gProceedCV;
+	static std::size_t gPauseCount;
 
 	static void WorkerThread(int num);
 };

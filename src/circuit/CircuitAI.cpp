@@ -1494,7 +1494,7 @@ void CCircuitAI::CreateFakeEnemy(int weaponId, const AIFloat3& startPos, const A
 			timeout += FRAMES_PER_SEC * 60 * 1;
 			defId = *wuDef.mobileIds.begin();
 		}
-		allyTeam->RegisterEnemyFake(GetCircuitDef(defId), enemyPos, timeout);
+		allyTeam->RegisterEnemyFake(defId, enemyPos, timeout);
 	} else if (enemy->IsBeingBuilt()) {
 		enemy->SetBeingBuilt(false);
 		enemy->SetHealth(enemy->GetCircuitDef()->GetHealth());

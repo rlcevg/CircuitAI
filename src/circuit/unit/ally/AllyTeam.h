@@ -79,7 +79,7 @@ public:
 	CEnemyUnit* RegisterEnemyUnit(springai::Unit* e, CCircuitAI* ai);
 	void UnregisterEnemyUnit(CEnemyUnit* data, CCircuitAI* ai);
 
-	void RegisterEnemyFake(CCircuitDef* cdef, const springai::AIFloat3& pos, int timeout);
+	void RegisterEnemyFake(CCircuitDef::Id unitDefId, const springai::AIFloat3& pos, int timeout);
 	void UnregisterEnemyFake(CEnemyFake* data);
 
 	void EnemyEnterLOS(CEnemyUnit* enemy, CCircuitAI* ai);

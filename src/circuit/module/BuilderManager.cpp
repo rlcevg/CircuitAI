@@ -1077,7 +1077,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	std::shared_ptr<IPathQuery> q = pathfinder->CreateCostMapQuery(unit, circuit->GetThreatMap(),
 			/*unit->IsAttrBase() ? circuit->GetSetupManager()->GetBasePos() : */pos, cdef->GetPower());
 	costQueries[unit] = q;
-	pathfinder->RunQuery(q);
+	pathfinder->RunQuery(circuit->GetScheduler().get(), q);
 
 	if (query == nullptr) {
 		return EnqueueWait(FRAMES_PER_SEC);  // 1st run

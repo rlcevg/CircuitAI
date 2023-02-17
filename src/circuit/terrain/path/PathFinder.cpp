@@ -36,13 +36,12 @@ using namespace NSMicroPather;
 
 std::vector<CPathFinder::SBlockCount> CPathFinder::blockArray;
 
-CPathFinder::CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainData* terrainData)
+CPathFinder::CPathFinder(CTerrainData* terrainData, int numThreads)
 		: terrainData(terrainData)
 		, pMoveData(&moveData0)
 		, airMoveArray(nullptr)
 		, isAreaUpdated(true)
 		, queryId(0)
-		, scheduler(scheduler)
 #ifdef DEBUG_VIS
 		, isVis(false)
 		, toggleFrame(-1)
@@ -58,7 +57,6 @@ CPathFinder::CPathFinder(const std::shared_ptr<CScheduler>& scheduler, CTerrainD
 	moveMapXSize = pathMapXSize + 2;  // +2 for passable edges
 	moveMapYSize = pathMapYSize + 2;  // +2 for passable edges
 
-	int numThreads = scheduler->GetMaxWorkThreads();
 	micropathers.reserve(numThreads);
 	for (int i = 0; i < numThreads; ++i) {
 		NSMicroPather::CMicroPather* micropather = new CMicroPather(*this,
@@ -331,20 +329,20 @@ std::shared_ptr<IPathQuery> CPathFinder::CreateLineMapQuery(
 	return pQuery;
 }
 
-void CPathFinder::RunQuery(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
+void CPathFinder::RunQuery(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	switch (query->GetType()) {
 		case IPathQuery::Type::SINGLE: {
-			RunPathSingle(query, std::move(onComplete));
+			RunPathSingle(scheduler, query, std::move(onComplete));
 		} break;
 		case IPathQuery::Type::MULTI: {
-			RunPathMulti(query, std::move(onComplete));
+			RunPathMulti(scheduler, query, std::move(onComplete));
 		} break;
 		case IPathQuery::Type::WIDE: {
-			RunPathWide(query, std::move(onComplete));
+			RunPathWide(scheduler, query, std::move(onComplete));
 		} break;
 		case IPathQuery::Type::COST: {
-			RunCostMap(query, std::move(onComplete));
+			RunCostMap(scheduler, query, std::move(onComplete));
 		} break;
 		default: break;
 	}
@@ -534,7 +532,7 @@ void CPathFinder::FillMapData(IPathQuery* query, CCircuitUnit* unit, CThreatMap*
 	query->Init(moveArray, threatArray, std::move(moveFun), std::move(threatFun), unit);
 }
 
-void CPathFinder::RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
+void CPathFinder::RunPathSingle(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	std::shared_ptr<IMainJob> finish = CScheduler::PathedJob(query,
@@ -555,7 +553,7 @@ void CPathFinder::RunPathSingle(const std::shared_ptr<IPathQuery>& query, PathCa
 	}));
 }
 
-void CPathFinder::RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
+void CPathFinder::RunPathMulti(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	std::shared_ptr<IMainJob> finish = CScheduler::PathedJob(query,
@@ -576,7 +574,7 @@ void CPathFinder::RunPathMulti(const std::shared_ptr<IPathQuery>& query, PathCal
 	}));
 }
 
-void CPathFinder::RunPathWide(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
+void CPathFinder::RunPathWide(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	std::shared_ptr<IMainJob> finish = CScheduler::PathedJob(query,
@@ -597,7 +595,7 @@ void CPathFinder::RunPathWide(const std::shared_ptr<IPathQuery>& query, PathCall
 	}));
 }
 
-void CPathFinder::RunCostMap(const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
+void CPathFinder::RunCostMap(CScheduler* scheduler, const std::shared_ptr<IPathQuery>& query, PathCallback&& onComplete)
 {
 	query->SetState(IPathQuery::State::PROCESS);
 	std::shared_ptr<IMainJob> finish = CScheduler::PathedJob(query, [onComplete](IPathQuery* query) {
