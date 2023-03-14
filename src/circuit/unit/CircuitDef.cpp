@@ -471,7 +471,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			}
 		}
 
-		if (wd->IsManualFire() && (reloadTime < bestDGunReload)) {
+		// FIXME: hasDGun is actually "manual command to fire required". There's "DGun" weapon type,
+		//        but game can make custom weapons and commands and there's no way to tell that it's
+		//        secondary manually fired weapon. @see ZK's Krow
+		if (hasDGun && wd->IsManualFire() && (reloadTime < bestDGunReload)) {
 			// NOTE: Disable commander's dgun, because no usage atm
 //			if (customParams.find("manualfire") == customParams.end()) {
 				bestDGunReload = reloadTime;

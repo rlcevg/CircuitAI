@@ -163,7 +163,7 @@ private:
 	static std::atomic<bool> gIsWorkerRunning;
 	static unsigned int gInstanceCount;
 
-	static std::atomic<bool> gIsWorkerPause;
+	static std::atomic<int> gWorkerPauseId;
 	static spring::mutex gPauseMutex;
 	static spring::condition_variable_any gPauseCV;
 	static spring::condition_variable_any gProceedCV;

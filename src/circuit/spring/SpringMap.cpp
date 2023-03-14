@@ -89,4 +89,12 @@ void CMap::GetResourceMapSpotsPositions(Resource* resource, F3Vec& spots) const
 	delete[] spots_AposF3;
 }
 
+void CMap::GetResourceMap(Resource* resource, ShortVec& metalMap) const
+{
+	if (metalMap.empty()) {
+		metalMap.resize(sAICallback->Map_getResourceMapRaw(map->GetSkirmishAIId(), resource->GetResourceId(), nullptr, -1));
+	}
+	sAICallback->Map_getResourceMapRaw(map->GetSkirmishAIId(), resource->GetResourceId(), metalMap.data(), metalMap.size());
+}
+
 } // namespace circuit

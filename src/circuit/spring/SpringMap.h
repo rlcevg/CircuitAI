@@ -48,6 +48,8 @@ public:
 
 	float GetExtractorRadius(springai::Resource* resource) { return map->GetExtractorRadius(resource); }
 	void GetResourceMapSpotsPositions(springai::Resource* resource, F3Vec& spots) const;
+	void GetResourceMap(springai::Resource* resource, ShortVec& metalMap) const;
+	float GetMaxResource(springai::Resource* resource) { return map->GetMaxResource(resource); }
 
 	springai::AIFloat3 GetMousePos() const { return map->GetMousePos(); }
 	springai::Drawer* GetDrawer() const { return map->GetDrawer(); }

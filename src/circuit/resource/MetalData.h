@@ -8,6 +8,7 @@
 #ifndef SRC_CIRCUIT_STATIC_METALDATA_H_
 #define SRC_CIRCUIT_STATIC_METALDATA_H_
 
+#include "util/Defines.h"
 #include "util/math/Geometry.h"
 #include "kdtree/nanoflann.hpp"
 #include "lemon/smart_graph.h"
@@ -19,7 +20,13 @@
 #include <memory>
 #include <set>
 
+namespace springai {
+	class Resource;
+}
+
 namespace circuit {
+
+class CMap;
 
 template <class T> class CRagMatrix;
 
@@ -79,6 +86,8 @@ public:
 	 */
 	void Clusterize(float maxDistance, CRagMatrix<float>& distmatrix);
 
+	void MakeResourcePoints(CMap* map, springai::Resource* res, F3Vec& vectoredSpots);
+
 	const SMetal& operator[](int idx) const { return spots[idx]; }
 
 	static void TriangulateGraph(const std::vector<double>& coords,
@@ -90,6 +99,7 @@ private:
 	void BuildClusterGraph();
 
 	bool isInitialized;
+	ShortVec metalMap;
 	Metals spots;
 	utils::SPointAdaptor<Metals> spotsAdaptor;
 	using MetalTree = nanoflann::KDTreeSingleIndexAdaptor<

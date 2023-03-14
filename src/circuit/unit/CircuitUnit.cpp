@@ -11,6 +11,7 @@
 #include "unit/action/TravelAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "setup/SetupManager.h"
+#include "terrain/TerrainManager.h"  // for CorrectPosition
 #include "CircuitAI.h"
 #include "util/Utils.h"
 #ifdef DEBUG_VIS
@@ -162,7 +163,9 @@ void CCircuitUnit::ManualFire(CEnemyInfo* target, int timeout)
 				unit->DGun(target->GetUnit(), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, timeout);
 			}
 		} else {
-			CmdMoveTo(target->GetPos() + target->GetVel() * FRAMES_PER_SEC * 2, UNIT_COMMAND_OPTION_ALT_KEY, timeout);
+			AIFloat3 leadPos = target->GetPos() + target->GetVel() * FRAMES_PER_SEC * 2;
+			CTerrainManager::CorrectPosition(leadPos);
+			CmdMoveTo(leadPos, UNIT_COMMAND_OPTION_ALT_KEY, timeout);
 			CmdManualFire(UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
 		}
 	)

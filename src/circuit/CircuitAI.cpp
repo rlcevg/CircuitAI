@@ -79,7 +79,7 @@ using namespace terrain;
  * Разрушать города,
  * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.6.4"};
+constexpr char version[]{"1.6.5"};
 constexpr uint32_t VERSION_SAVE = 3;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -962,7 +962,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 				endPos, pathfinder->GetSquareSize());
 		if (query != nullptr) {
 			pathfinder->SetDbgQuery(query);
-			pathfinder->RunQuery(query);
+			pathfinder->RunQuery(scheduler.get(), query);
 		}
 		LOG("%f, %f, %f, %i", endPos.x, endPos.y, endPos.z, pathfinder->GetDbgType());
 	}

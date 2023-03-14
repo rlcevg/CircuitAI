@@ -139,9 +139,10 @@ void CMetalManager::ParseMetalSpots()
 		// FIXME: Replace metal-map workaround by own grid-spot generator
 		CMap* map = circuit->GetMap();
 		Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
-		std::vector<AIFloat3> spotsPos;
+		F3Vec spotsPos;
 		// NOTE: Ignores spots with income less than ~20% (50/255) of max spot
-		map->GetResourceMapSpotsPositions(metalRes, spotsPos);
+//		map->GetResourceMapSpotsPositions(metalRes, spotsPos);
+		metalData->MakeResourcePoints(map, metalRes, spotsPos);
 		const unsigned width = map->GetWidth();
 		const unsigned height = map->GetHeight();
 		const float mapSize = (width / 64) * (height / 64);

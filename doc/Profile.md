@@ -12,7 +12,7 @@ its `profile` key contains list of available profiles. In order to add new profi
 },
 ```
 
-##### 2) BARb/satble/script/
+##### 2) BARb/stable/script/
 Contains per-profile scripts main entry points:
 * `<profile>/init.as` - describes low-level AI data for threat-maps, surface categories and json data parts to be used with this `<profile>`; typically `init.as` references such config parts as behaviour.json, block_map.json, build_chain.json, commander.json, economy.json, factory.json and response.json that will be used as its data source.
 ```
@@ -23,7 +23,7 @@ Contains per-profile scripts main entry points:
 Fastest way to create initial scripts for `customlol` is to copy `dev` folder and rename it to `customlol`.
 
 ##### 3) BARb/stable/config/
-Root contains fallback AI config parts. Folders contain configs for each `<profile>`. Parts listed in `data.profile` from `BARb/satble/script/<profile>/init.as` but not available in `BARb/stable/config/<profile>` folder are replaced by fallback part if such exists.
+Root contains fallback AI config parts. Folders contain configs for each `<profile>`. Parts listed in `data.profile` from `BARb/stable/script/<profile>/init.as` but not available in `BARb/stable/config/<profile>` folder are replaced by fallback part if such exists.
 `easy` for example has own `economy.json` and uses default fallback for other parts.
 As with script fastest way to create initial config parts for `customlol` is to copy `dev` folder and rename it to `customlol`.
 

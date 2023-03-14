@@ -17,7 +17,7 @@ std::vector<spring::thread> CScheduler::gWorkThreads;
 int CScheduler::gMaxWorkThreads = 2;
 std::atomic<bool> CScheduler::gIsWorkerRunning(false);
 unsigned int CScheduler::gInstanceCount = 0;
-std::atomic<bool> CScheduler::gIsWorkerPause(false);
+std::atomic<int> CScheduler::gWorkerPauseId(0);
 spring::mutex CScheduler::gPauseMutex;
 spring::condition_variable_any CScheduler::gPauseCV;
 spring::condition_variable_any CScheduler::gProceedCV;
@@ -88,7 +88,7 @@ void CScheduler::Release()
 			gPauseCount = gWorkThreads.size();
 			{
 				std::unique_lock<spring::mutex> lock(gPauseMutex);
-				gIsWorkerPause = true;
+				++gWorkerPauseId;
 				// At this point workTasks may be empty. Push dummy task in case worker stuck at Pop().
 				for (unsigned int i = 0; i < gWorkThreads.size(); ++i) {
 					gWorkTasks.PushBack({self, nullptr});
@@ -101,7 +101,7 @@ void CScheduler::Release()
 				return !scheduler.owner_before(item.scheduler) && !item.scheduler.owner_before(scheduler);
 			});
 
-			gIsWorkerPause = false;
+			++gWorkerPauseId;
 			gProceedCV.notify_all();
 		}
 	}
@@ -202,13 +202,18 @@ void CScheduler::RemoveReleaseJob(const std::shared_ptr<IMainJob>& task)
 
 void CScheduler::WorkerThread(int num)
 {
+	int workerPauseId = gWorkerPauseId;
+
 	while (gIsWorkerRunning.load()) {
-		if (gIsWorkerPause.load()) {
+
+		if (workerPauseId != gWorkerPauseId) {  // parking
 			std::unique_lock<spring::mutex> lock(gPauseMutex);
+			int pauseId = gWorkerPauseId;
+			workerPauseId = gWorkerPauseId + 1;
 			if (--gPauseCount == 0) {
 				gPauseCV.notify_one();
 			}
-			gProceedCV.wait(lock, [] { return !gIsWorkerPause.load(); });
+			gProceedCV.wait(lock, [pauseId] { return pauseId != gWorkerPauseId; });
 		}
 
 		WorkTask container = gWorkTasks.Pop();
