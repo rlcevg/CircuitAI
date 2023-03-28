@@ -1,23 +1,23 @@
 /*
- * TerrainAnalyzer.cpp
+ * GridAnalyzer.cpp
  *
  *  Created on: Feb 9, 2022
  *      Author: rlcevg
  */
 
-#include "terrain/TerrainAnalyzer.h"
+#include "map/GridAnalyzer.h"
 #include "terrain/TerrainData.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
 #include "Log.h"
 
-namespace terrain {
+namespace bwem {
 
 using namespace circuit;
 using namespace springai;
 
-CChokePoint::CChokePoint(const CTerrainAnalyzer& ta, Id idx, const CArea* area1, const CArea* area2, const std::deque<TilePosition>& geometry)
+CChokePoint::CChokePoint(const CGridAnalyzer& ta, Id idx, const CArea* area1, const CArea* area2, const std::deque<TilePosition>& geometry)
 		: id(idx), areas(area1, area2)
 {
 	assert(!geometry.empty());
@@ -87,7 +87,7 @@ void CArea::UpdateAccessibleNeighbours()
 	}
 }
 
-IGraph::IGraph()
+IGrid::IGrid()
 		: sectorXSize(0)
 		, sectorZSize(0)
 #ifdef DEBUG_VIS
@@ -98,7 +98,7 @@ IGraph::IGraph()
 {
 }
 
-IGraph::~IGraph()
+IGrid::~IGrid()
 {
 #ifdef DEBUG_VIS
 	if (debugDrawer != nullptr && tileWin.second != nullptr) {
@@ -111,7 +111,7 @@ IGraph::~IGraph()
 #endif
 }
 
-const std::vector<CChokePoint>& IGraph::GetChokePoints(CArea::Id a, CArea::Id b) const
+const std::vector<CChokePoint>& IGrid::GetChokePoints(CArea::Id a, CArea::Id b) const
 {
 	assert(IsValid(a));
 	assert(IsValid(b));
@@ -122,7 +122,7 @@ const std::vector<CChokePoint>& IGraph::GetChokePoints(CArea::Id a, CArea::Id b)
 	return chokePointsMatrix(b, a);
 }
 
-void IGraph::CreateAreas(const CTerrainAnalyzer& ta, const std::vector<std::pair<TilePosition, int>>& areasList)
+void IGrid::CreateAreas(const CGridAnalyzer& ta, const std::vector<std::pair<TilePosition, int>>& areasList)
 {
 	const int convertStoSM = ta.GetConfig().tileSize.x / sectorXSize;
 
@@ -135,7 +135,7 @@ void IGraph::CreateAreas(const CTerrainAnalyzer& ta, const std::vector<std::pair
 	}
 }
 
-void IGraph::CreateChokePoints(const CTerrainAnalyzer& ta)
+void IGrid::CreateChokePoints(const CGridAnalyzer& ta)
 {
 	auto queenWiseDist = [](TilePosition A, TilePosition B) { A -= B; return utils::queenWiseNorm(A.x, A.y); };
 	CChokePoint::Id newIndex = 0;
@@ -145,7 +145,7 @@ void IGraph::CreateChokePoints(const CTerrainAnalyzer& ta)
 
 	// 2) Dispatch the global raw frontier between all the relevant pairs of Areas:
 	std::map<std::pair<CArea::Id, CArea::Id>, std::vector<TilePosition>> rawFrontierByAreaPair;
-	for (const CTerrainAnalyzer::SFrontier& raw : ta.GetRawFrontier()) {
+	for (const CGridAnalyzer::SFrontier& raw : ta.GetRawFrontier()) {
 		CArea::Id a = raw.areaId1;
 		CArea::Id b = raw.areaId2;
 		if (a > b) std::swap(a, b);
@@ -222,7 +222,7 @@ void IGraph::CreateChokePoints(const CTerrainAnalyzer& ta)
 	}
 }
 
-void IGraph::SetAreaIdInSectors(const CTerrainAnalyzer& ta)
+void IGrid::SetAreaIdInSectors(const CGridAnalyzer& ta)
 {
 	const int convertStoSM = ta.GetConfig().tileSize.x / sectorXSize;
 
@@ -267,7 +267,7 @@ void IGraph::SetAreaIdInSectors(const CTerrainAnalyzer& ta)
 	}
 }
 
-void IGraph::CollectInformation()
+void IGrid::CollectInformation()
 {
 	for (CArea& area : GetAreas()) {
 		area.UpdateAccessibleNeighbours();
@@ -285,7 +285,7 @@ void IGraph::CollectInformation()
 	}
 }
 
-void IGraph::UpdateGroupIds()
+void IGrid::UpdateGroupIds()
 {
 	CArea::Id nextGroupId = 1;
 
@@ -311,7 +311,7 @@ void IGraph::UpdateGroupIds()
 }
 
 #ifdef DEBUG_VIS
-void IGraph::UpdateTAVis()
+void IGrid::UpdateTAVis()
 {
 	if ((debugDrawer == nullptr) || tileWin.second == nullptr) {
 		return;
@@ -321,7 +321,7 @@ void IGraph::UpdateTAVis()
 	debugDrawer->DrawTex(sectorWin.first, sectorWin.second);
 }
 
-void IGraph::ToggleTAVis(int frame)
+void IGrid::ToggleTAVis(int frame)
 {
 	if ((debugDrawer == nullptr) || (toggleFrame >= frame)) {
 		return;
@@ -351,7 +351,7 @@ void IGraph::ToggleTAVis(int frame)
 				tileWin.second[i * 3 + 2] = 0.4f;
 			}
 		}
-		for (const CTerrainAnalyzer::SFrontier& f : debugData->rawFrontier) {
+		for (const CGridAnalyzer::SFrontier& f : debugData->rawFrontier) {
 			int i = debugData->tileSize.x * f.pos.y + f.pos.x;
 			tileWin.second[i * 3 + 0] = 0.9f;
 			tileWin.second[i * 3 + 1] = 0.9f;
@@ -398,7 +398,7 @@ void IGraph::ToggleTAVis(int frame)
 		std::ostringstream cmd;
 		cmd << "ai_blk_data:";
 		char tmp[debugData->tileSize.x * debugData->tileSize.y] = {0};
-		for (const CTerrainAnalyzer::SFrontier& f : debugData->rawFrontier) {
+		for (const CGridAnalyzer::SFrontier& f : debugData->rawFrontier) {
 			tmp[debugData->tileSize.x * f.pos.y + f.pos.x] = 255;
 		}
 		cmd.write(&tmp[0], debugData->tileSize.x * debugData->tileSize.y);
@@ -420,35 +420,35 @@ void IGraph::ToggleTAVis(int frame)
 }
 #endif  // DEBUG_VIS
 
-CTerrainAnalyzer::CTerrainAnalyzer(IGraph* const graph, const SConfig& cfg)
-		: graph(graph)
+CGridAnalyzer::CGridAnalyzer(IGrid* const grid, const SConfig& cfg)
+		: grid(grid)
 		, config(cfg)
 		, maxAltitude(1)  // 1 for division
 {
 }
 
-CTerrainAnalyzer::~CTerrainAnalyzer()
+CGridAnalyzer::~CGridAnalyzer()
 {
 }
 
-void CTerrainAnalyzer::AnalyzeMap(CCircuitAI* circuit, const SMobileType& mt)
+void CGridAnalyzer::Analyze(CCircuitAI* circuit)
 {
 	tiles.resize(config.tileSize.x * config.tileSize.y);
 
-	LoadData(mt);
+	LoadData();
 	DecideSeasOrLakes();
-	ComputeAltitude(circuit);
-	circuit->LOG("  Maximum Altitude: %i", maxAltitude);
+	ComputeAltitude();
 	ComputeAreas();
-	graph->CreateChokePoints(*this);
-	graph->CollectInformation();
+	grid->CreateChokePoints(*this);
+	grid->CollectInformation();
 
 #ifdef DEBUG_VIS
-	graph->debugLua = circuit->GetLua();
-	graph->debugData->tileSize = config.tileSize;
-	graph->debugData->tiles = std::move(tiles);
-	graph->debugData->rawFrontier = std::move(rawFrontier);
-	graph->debugData->maxAltitude = maxAltitude;
+	grid->debugDrawer = circuit->GetDebugDrawer();
+	grid->debugLua = circuit->GetLua();
+	grid->debugData->tileSize = config.tileSize;
+	grid->debugData->tiles = std::move(tiles);
+	grid->debugData->rawFrontier = std::move(rawFrontier);
+	grid->debugData->maxAltitude = maxAltitude;
 #else  // DEBUG_VIS
 	tiles.clear();
 	rawFrontier.clear();
@@ -456,7 +456,7 @@ void CTerrainAnalyzer::AnalyzeMap(CCircuitAI* circuit, const SMobileType& mt)
 	areaPairCounter.clear();
 }
 
-bool CTerrainAnalyzer::IsSeaSide(const TilePosition p) const
+bool CGridAnalyzer::IsSeaSide(const TilePosition p) const
 {
 	if (!GetTile(p).IsSea()) {
 		return false;
@@ -472,12 +472,12 @@ bool CTerrainAnalyzer::IsSeaSide(const TilePosition p) const
 	return false;
 }
 
-void CTerrainAnalyzer::LoadData(const SMobileType& mt)
+void CGridAnalyzer::LoadData()
 {
 	// Mark unwalkable tiles (tiles are walkable by default)
 	for (int y = 0; y < config.tileSize.y; ++y) {
 		for (int x = 0; x < config.tileSize.x; ++x) {
-			if (graph->IsWalkable(x, y, mt)) {
+			if (grid->IsWalkable(x, y)) {
 				continue;
 			}
 #if 1
@@ -498,7 +498,7 @@ void CTerrainAnalyzer::LoadData(const SMobileType& mt)
 	}
 }
 
-void CTerrainAnalyzer::DecideSeasOrLakes()
+void CGridAnalyzer::DecideSeasOrLakes()
 {
 	for (int y = 0; y < config.tileSize.y; ++y) {
 		for (int x = 0; x < config.tileSize.x; ++x) {
@@ -545,7 +545,7 @@ void CTerrainAnalyzer::DecideSeasOrLakes()
 	}
 }
 
-void CTerrainAnalyzer::ComputeAltitude(CCircuitAI* circuit)
+void CGridAnalyzer::ComputeAltitude()
 {
 	// 1) Fill in and sort DeltasByAscendingAltitude
 	const int range = std::max(config.tileSize.x, config.tileSize.y) / 2 + 3;
@@ -621,9 +621,10 @@ void CTerrainAnalyzer::ComputeAltitude(CCircuitAI* circuit)
 class CTempAreaInfo
 {
 public:
-						CTempAreaInfo() : m_valid(false), m_id(0), m_top(0, 0), m_highestAltitude(0), m_size(0) { assert(!Valid());}
-						CTempAreaInfo(CArea::Id id, CTile* pTile, TilePosition pos)
-							: m_valid(true), m_id(id), m_top(pos), m_highestAltitude(pTile->GetAltitude()), m_size(0)
+						CTempAreaInfo() : m_valid(false), m_id(0), m_top(0, 0)
+							, m_highestAltitude(0), m_size(0), m_corridor(false) { assert(!Valid());}
+						CTempAreaInfo(CArea::Id id, CTile* pTile, TilePosition pos, bool isCorridor)
+							: m_valid(true), m_id(id), m_top(pos), m_highestAltitude(pTile->GetAltitude()), m_size(0), m_corridor(isCorridor)
 														{ Add(pTile); assert(Valid()); }
 
 	bool				Valid() const					{ return m_valid; }
@@ -631,6 +632,7 @@ public:
 	TilePosition		Top() const						{ assert(Valid()); return m_top; }
 	int					Size() const					{ assert(Valid()); return m_size; }
 	CArea::Altitude		HighestAltitude() const			{ assert(Valid()); return m_highestAltitude; }
+	bool				IsCorridor() const				{ return m_corridor; }
 
 	void				Add(CTile* pTile)				{ assert(Valid()); ++m_size; pTile->SetAreaId(m_id); }
 
@@ -650,6 +652,7 @@ private:
 	const TilePosition		m_top;
 	const CArea::Altitude	m_highestAltitude;
 	int						m_size;
+	bool					m_corridor;
 };
 
 // Assigns Tile::m_areaId for each tile having AreaIdMissing()
@@ -659,15 +662,15 @@ private:
 //   - involves the creation of a new area.
 //   - is added to some existing neighbouring area.
 //   - makes two neighbouring areas merge together.
-void CTerrainAnalyzer::ComputeAreas()
+void CGridAnalyzer::ComputeAreas()
 {
 	std::vector<std::pair<TilePosition, CTile*>> tilesByDescendingAltitude = SortTiles();
 	std::vector<CTempAreaInfo> tempAreaList = ComputeTempAreas(tilesByDescendingAltitude);
 	CreateAreas(tempAreaList);
-	graph->SetAreaIdInSectors(*this);
+	grid->SetAreaIdInSectors(*this);
 }
 
-std::vector<std::pair<TilePosition, CTile*>> CTerrainAnalyzer::SortTiles()
+std::vector<std::pair<TilePosition, CTile*>> CGridAnalyzer::SortTiles()
 {
 	std::vector<std::pair<TilePosition, CTile*>> tilesByDescendingAltitude;
 	for (int y = 0; y < config.tileSize.y; ++y) {
@@ -680,15 +683,20 @@ std::vector<std::pair<TilePosition, CTile*>> CTerrainAnalyzer::SortTiles()
 		}
 	}
 
+	int2 center = config.tileSize / 2;
 	std::sort(tilesByDescendingAltitude.begin(), tilesByDescendingAltitude.end(),
-	[](const std::pair<TilePosition, CTile*>& a, const std::pair<TilePosition, CTile*>& b) {
+	[center](const std::pair<TilePosition, CTile*>& a, const std::pair<TilePosition, CTile*>& b) {
+		if (a.second->GetAltitude() == b.second->GetAltitude()) {
+			// manhaten distance comparison
+			return std::abs(a.first.x - center.x) + std::abs(a.first.y - center.y) > std::abs(b.first.x - center.x) + std::abs(b.first.y - center.y);
+		}
 		return a.second->GetAltitude() > b.second->GetAltitude();
 	});
 
 	return tilesByDescendingAltitude;
 }
 
-std::pair<CArea::Id, CArea::Id> CTerrainAnalyzer::FindNeighboringAreas(TilePosition p) const
+std::pair<CArea::Id, CArea::Id> CGridAnalyzer::FindNeighboringAreas(TilePosition p) const
 {
 	std::pair<CArea::Id, CArea::Id> result(0, 0);
 
@@ -707,13 +715,13 @@ std::pair<CArea::Id, CArea::Id> CTerrainAnalyzer::FindNeighboringAreas(TilePosit
 	return result;
 }
 
-CArea::Id CTerrainAnalyzer::ChooseNeighboringArea(CArea::Id a, CArea::Id b)
+CArea::Id CGridAnalyzer::ChooseNeighboringArea(CArea::Id a, CArea::Id b)
 {
 	if (a > b) std::swap(a, b);
 	return (areaPairCounter[std::make_pair(a, b)]++ % 2 == 0) ? a : b;
 }
 
-std::vector<CTempAreaInfo> CTerrainAnalyzer::ComputeTempAreas(const std::vector<std::pair<TilePosition, CTile*>>& tilesByDescendingAltitude)
+std::vector<CTempAreaInfo> CGridAnalyzer::ComputeTempAreas(const std::vector<std::pair<TilePosition, CTile*>>& tilesByDescendingAltitude)
 {
 	std::vector<CTempAreaInfo> tempAreaList(1);  // TempAreaList[0] left unused, as AreaIds are > 0
 	for (const auto& tCurrent : tilesByDescendingAltitude) {
@@ -723,7 +731,7 @@ std::vector<CTempAreaInfo> CTerrainAnalyzer::ComputeTempAreas(const std::vector<
 		std::pair<CArea::Id, CArea::Id> neighboringAreas = FindNeighboringAreas(pos);
 		if (!neighboringAreas.first) {  // no neighboring area : creates of a new area
 
-			tempAreaList.emplace_back((CArea::Id)tempAreaList.size(), cur, pos);
+			tempAreaList.emplace_back((CArea::Id)tempAreaList.size(), cur, pos, false);
 
 		} else if (!neighboringAreas.second) {  // one neighboring area : adds cur to the existing area
 
@@ -736,13 +744,13 @@ std::vector<CTempAreaInfo> CTerrainAnalyzer::ComputeTempAreas(const std::vector<
 			if (tempAreaList[smaller].Size() > tempAreaList[bigger].Size()) std::swap(smaller, bigger);
 
 			// Condition for the neighboring areas to merge:
-			if ((tempAreaList[smaller].Size() < config.areasMergeSize) ||
-				(tempAreaList[smaller].HighestAltitude() < config.areasMergeAltitude) ||
-				(cur->GetAltitude() / (float)tempAreaList[bigger].HighestAltitude() >= 0.90) ||
-				(cur->GetAltitude() / (float)tempAreaList[smaller].HighestAltitude() >= 0.90) ||
-//				any_of(StartingLocations().begin(), StartingLocations().end(), [&pos](const TilePosition & startingLoc)
-//					{ return dist(TilePosition(pos), startingLoc + TilePosition(2, 1)) <= 3;}) ||
-				false)
+			if ((tempAreaList[smaller].Size() < config.areasMergeSize)
+				|| (tempAreaList[smaller].HighestAltitude() < config.areasMergeAltitude)
+				|| (cur->GetAltitude() / (float)tempAreaList[bigger].HighestAltitude() >= 0.90f)
+				|| (cur->GetAltitude() / (float)tempAreaList[smaller].HighestAltitude() >= 0.90f)
+//				|| any_of(StartingLocations().begin(), StartingLocations().end(), [&pos](const TilePosition & startingLoc)
+//					{ return dist(TilePosition(pos), startingLoc + TilePosition(2, 1)) <= 3;})
+				|| false)
 			{
 				// adds cur to the absorbing area:
 				tempAreaList[bigger].Add(cur);
@@ -767,7 +775,7 @@ std::vector<CTempAreaInfo> CTerrainAnalyzer::ComputeTempAreas(const std::vector<
 	return tempAreaList;
 }
 
-void CTerrainAnalyzer::ReplaceAreaIds(TilePosition p, CArea::Id newAreaId)
+void CGridAnalyzer::ReplaceAreaIds(TilePosition p, CArea::Id newAreaId)
 {
 	CTile& tOrigin = GetTile(p);
 	CArea::Id oldAreaId = tOrigin.GetAreaId();
@@ -803,8 +811,8 @@ void CTerrainAnalyzer::ReplaceAreaIds(TilePosition p, CArea::Id newAreaId)
 	}
 }
 
-// Initializes m_Graph with the valid and big enough areas in TempAreaList.
-void CTerrainAnalyzer::CreateAreas(const std::vector<CTempAreaInfo>& tempAreaList)
+// Initializes m_Grid with the valid and big enough areas in TempAreaList.
+void CGridAnalyzer::CreateAreas(const std::vector<CTempAreaInfo>& tempAreaList)
 {
 	std::vector<std::pair<TilePosition, int>> areasList;
 
@@ -828,7 +836,7 @@ void CTerrainAnalyzer::CreateAreas(const std::vector<CTempAreaInfo>& tempAreaLis
 		}
 	}
 
-	graph->CreateAreas(*this, areasList);
+	grid->CreateAreas(*this, areasList);
 }
 
 } // namespace circuit

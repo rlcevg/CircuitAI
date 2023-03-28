@@ -1248,6 +1248,15 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 	const AIFloat3& pos = unit->GetPos(frame);
 //	CTerrainManager::CorrectPosition(pos);
 
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	if (factoryMgr->IsAssistRequired() && !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty()) {
+		CCircuitUnit* vip = *factoryMgr->GetTasks().front()->GetAssignees().begin();
+		if (vip->GetPos(frame).SqDistance2D(pos) < SQUARE(1000.f)) {
+			factoryMgr->ClearAssistRequired();
+			return EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * 10);
+		}
+	}
+
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	economyMgr->MakeEconomyTasks(pos, unit);
 	const bool isNotReady = !economyMgr->IsExcessed();
@@ -1462,9 +1471,10 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 		CCircuitUnit* vip = *factoryMgr->GetTasks().front()->GetAssignees().begin();
 		if (vip->GetPos(frame).SqDistance2D(pos) < SQUARE(1000.f)) {
 			factoryMgr->ClearAssistRequired();
-			return EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * 30);
+			return EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * 10);
 		}
 	}
+
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	// FIXME: MakeEconomyTasks doesn't check CanAssignTo() and may create task irrelevant for unit
 	/*task = */economyMgr->MakeEconomyTasks(pos, unit);

@@ -212,8 +212,8 @@ public:
 		return areaData->sector[GetSectorIndex(position)].isWater;
 	}
 
-	const terrain::CArea* GetTAArea(const springai::AIFloat3& pos) const;
-	const std::vector<terrain::CChokePoint*>& GetTAChokePoints() const { return terrainData->GetChokePoints(); }
+	const bwem::CArea* GetTAArea(const springai::AIFloat3& pos) const;
+	const std::vector<bwem::CChokePoint*>& GetTAChokePoints() const { return terrainData->GetChokePoints(); }
 
 	terrain::SAreaData* GetAreaData() const { return areaData; }
 	void UpdateAreaUsers(int interval);

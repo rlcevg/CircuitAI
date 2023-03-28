@@ -8,6 +8,7 @@
 #ifndef SRC_CIRCUIT_STATIC_METALDATA_H_
 #define SRC_CIRCUIT_STATIC_METALDATA_H_
 
+#include "map/GridAnalyzer.h"
 #include "util/Defines.h"
 #include "util/math/Geometry.h"
 #include "kdtree/nanoflann.hpp"
@@ -26,11 +27,12 @@ namespace springai {
 
 namespace circuit {
 
+class CCircuitAI;
 class CMap;
 
 template <class T> class CRagMatrix;
 
-class CMetalData {
+class CMetalData final: public bwem::IGrid {
 public:
 	using ClusterGraph = lemon::SmartGraph;
 	using ClusterCostMap = ClusterGraph::EdgeMap<float>;
@@ -86,6 +88,8 @@ public:
 	 */
 	void Clusterize(float maxDistance, CRagMatrix<float>& distmatrix);
 
+	void AnalyzeMap(CCircuitAI* circuit, CMap* map, springai::Resource* res, bwem::IGrid* ter, F3Vec& outSpots);
+	virtual bool IsWalkable(int xSlope, int ySlope) const;  // x, y in slope map
 	void MakeResourcePoints(CMap* map, springai::Resource* res, F3Vec& vectoredSpots);
 
 	const SMetal& operator[](int idx) const { return spots[idx]; }
@@ -100,6 +104,7 @@ private:
 
 	bool isInitialized;
 	ShortVec metalMap;
+	bwem::IGrid* terrain;
 	Metals spots;
 	utils::SPointAdaptor<Metals> spotsAdaptor;
 	using MetalTree = nanoflann::KDTreeSingleIndexAdaptor<

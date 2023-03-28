@@ -24,7 +24,6 @@ public:
 	friend class CFactoryScript;
 
 	struct SSideInfo {
-		CCircuitDef* airpadDef;
 		CCircuitDef* assistDef;
 	};
 
@@ -86,8 +85,6 @@ public:
 	const SSideInfo& GetSideInfo() const;
 	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
 
-	CCircuitDef* GetAirpadDef(CCircuitDef* builderDef) { return airpadDefs[builderDef->GetId()]; }
-
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* builder, bool isActive);
 	CRecruitTask* UpdateFirePower(CCircuitUnit* builder);
 	bool IsHighPriority(CAllyUnit* unit) const;
@@ -132,8 +129,6 @@ private:
 	float facModE;
 
 	std::vector<SSideInfo> sideInfos;
-
-	std::unordered_map<CCircuitDef::Id, CCircuitDef*> airpadDefs;  // builder: pad
 
 	struct SAssistToFactory {
 		std::set<CCircuitUnit*> factories;

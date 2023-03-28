@@ -249,13 +249,20 @@ void CAntiAirTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 
 NSMicroPather::HitFunc CAntiAirTask::GetHitTest() const
 {
+	CCircuitDef* cdef = leader->GetCircuitDef();
+	if (cdef->IsAbleToFly() || cdef->IsSurfer()) {
+		return nullptr;
+	}
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const std::vector<SSector>& sectors = terrainMgr->GetAreaData()->sector;
 	const int sectorXSize = terrainMgr->GetSectorXSize();
-	CCircuitDef* cdef = leader->GetCircuitDef();
-	if (cdef->IsAbleToFly() || cdef->IsSurfer()) {
-		return nullptr;
+	const AIFloat3& ePos = GetTarget()->GetPos();
+	if (GetTarget()->GetCircuitDef()->IsInWater(circuit->GetMap()->GetElevationAt(ePos.x, ePos.z), ePos.y)) {
+		return [&sectors, sectorXSize, cdef](int2 start, int2 end) {  // cdef->IsAmphibious()
+			const float elevation = sectors[start.y * sectorXSize + start.x].minElevation;
+			return cdef->IsPredictInWater(elevation) ? cdef->HasSubToWater() : cdef->HasSurfToWater();
+		};
 	}
 	return [&sectors, sectorXSize, cdef](int2 start, int2 end) {  // cdef->IsAmphibious()
 		const float elevation = sectors[start.y * sectorXSize + start.x].minElevation;
@@ -266,6 +273,7 @@ NSMicroPather::HitFunc CAntiAirTask::GetHitTest() const
 void CAntiAirTask::FindTarget()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
+	CMap* map = circuit->GetMap();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
@@ -283,24 +291,41 @@ void CAntiAirTask::FindTarget()
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
 		CEnemyInfo* enemy = kv.second;
-		if (enemy->IsHidden()
-			|| (maxPower <= threatMap->GetThreatAt(enemy->GetPos())/* - enemy->GetThreat(role)*/)
-			|| !terrainMgr->CanMoveToPos(area, enemy->GetPos()))
+		if (enemy->IsHidden()) {
+			continue;
+		}
+
+		const AIFloat3& ePos = enemy->GetPos();
+		if ((maxPower <= threatMap->GetThreatAt(ePos)/* - enemy->GetThreat(role)*/)
+			|| !terrainMgr->CanMoveToPos(area, ePos))
 		{
 			continue;
 		}
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
-		if ((edef == nullptr)
+		if ((edef == nullptr)  // TODO: for edef == nullptr check elevation and speed
 			|| ((edef->GetCategory() & canTargetCat) == 0)
 			|| ((edef->GetCategory() & noChaseCat) != 0))
 		{
 			continue;
 		}
-		// TODO: for edef == nullptr check elevation and speed
-		// FIXME: List of targets with future IsInWater test of near-enemy position
+		const float elevation = map->GetElevationAt(ePos.x, ePos.z);
+		const bool IsInWater = cdef->IsPredictInWater(elevation);
+		if (edef->IsInWater(elevation, ePos.y)) {
+			if (!(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater())) {  // notAW
+				continue;
+			}
+		} else if (edef->IsAbleToFly()) {
+			if (!(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())) {  // notAA
+				continue;
+			}
+		} else {
+			if (!(IsInWater ? cdef->HasSubToLand() : cdef->HasSurfToLand())) {  // notAL
+				continue;
+			}
+		}
 
-		const float sqDist = pos.SqDistance2D(enemy->GetPos());
+		const float sqDist = pos.SqDistance2D(ePos);
 		if (minSqDist > sqDist) {
 			minSqDist = sqDist;
 			bestTarget = enemy;

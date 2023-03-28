@@ -11,6 +11,7 @@
 #include "scheduler/Scheduler.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
+#include "util/GameAttribute.h"
 #include "util/math/RagMatrix.h"
 #include "util/math/Region.h"
 #include "util/Utils.h"
@@ -140,6 +141,7 @@ void CMetalManager::ParseMetalSpots()
 		CMap* map = circuit->GetMap();
 		Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
 		F3Vec spotsPos;
+		metalData->AnalyzeMap(circuit, map, metalRes, &circuit->GetGameAttribute()->GetTerrainData(), spotsPos);
 		// NOTE: Ignores spots with income less than ~20% (50/255) of max spot
 //		map->GetResourceMapSpotsPositions(metalRes, spotsPos);
 		metalData->MakeResourcePoints(map, metalRes, spotsPos);
@@ -159,16 +161,16 @@ void CMetalManager::ParseMetalSpots()
 			spots.reserve(spotsPos.size());
 		}
 		CCircuitDef* mexDef = circuit->GetEconomyManager()->GetSideInfo().mexDef;
-		const float extrRange = SQUARE_SIZE * 2;  // map->GetExtractorRadius(metalRes) / 2;  // mexDef->GetExtrRangeM();
+//		const float extrRange = SQUARE_SIZE * 2;  // map->GetExtractorRadius(metalRes) / 2;  // mexDef->GetExtrRangeM();
 //		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 		const int xsize = mexDef->GetDef()->GetXSize();
 		const int zsize = mexDef->GetDef()->GetZSize();
 		for (unsigned i = 0; i < spotsPos.size(); i += inc) {
 			AIFloat3& pos = spotsPos[i];
 			// move position closer to center
-			pos.x += extrRange;  // xsize * SQUARE_SIZE / 2;
-			pos.z += extrRange;  // zsize * SQUARE_SIZE / 2;
-			CTerrainManager::SnapPosition(pos);
+//			pos.x += extrRange;  // xsize * SQUARE_SIZE / 2;
+//			pos.z += extrRange;  // zsize * SQUARE_SIZE / 2;
+//			CTerrainManager::SnapPosition(pos);
 			const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
 			const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;
 			if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height)

@@ -13,7 +13,7 @@
 				"factory": {
 					"armlab": [
 						// [<weight>, [<role>, <role>, ...]]
-						[0.9, ["raider", "scout", "builder", "raider", "builder", "raider", "raider", "raider", "builder", "support", "raider"]],
+						[0.9, ["raider", "builder", "scout", "raider", "builder", "raider", "raider", "raider", "builder", "support", "raider"]],
 						[0.1, ["raider", "builder", "riot", "builder", "raider", "raider", "raider", "raider", "builder", "raider", "support"]]
 					],
 					"armalab": [
@@ -26,7 +26,7 @@
 						[1.0, ["builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "builderT2", "artillery", "anti_air", "builderT2"]]
 					],
 					"armap": [
-						[1.0, ["anti_air", "raider", "builder", "bomber", "scout"]]
+						[1.0, ["builder", "anti_air", "raider", "bomber", "scout"]]
 					]
 				},
 				"default": ["builder", "scout", "raider", "raider", "raider", "builder", "raider", "builder", "raider"]
@@ -57,7 +57,7 @@
 				"factory": {
 					"corlab": [
 						// [<weight>, [<role>, <role>, ...]]
-						[0.9, ["raider", "scout", "builder", "raider", "builder", "raider", "raider", "raider", "builder", "support", "raider"]],
+						[0.9, ["raider", "builder", "scout", "raider", "builder", "raider", "raider", "raider", "builder", "support", "raider"]],
 						[0.1, ["raider", "builder", "riot", "builder", "raider", "raider", "raider", "raider", "builder", "raider", "support"]]
 					],
 					"coralab": [
@@ -68,6 +68,9 @@
 					],
 					"corasy": [
 						[1.0, ["builderT2", "skirmish", "skirmish", "builderT2", "skirmish", "builderT2", "artillery", "anti_air", "builderT2"]]
+					],
+					"corap": [
+						[1.0, ["builder", "anti_air", "raider", "bomber", "scout"]]
 					]
 				},
 				"default": ["builder", "raider", "raider", "raider", "builder", "raider", "support", "raider"]

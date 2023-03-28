@@ -1,5 +1,5 @@
 /*
- * TerrainAnalyzer.h
+ * GridAnalyzer.h
  *
  *  Created on: Feb 9, 2022
  *      Author: rlcevg
@@ -34,8 +34,8 @@
 // other dealings in this Software without prior written authorization from
 // the copyright holders.
 
-#ifndef SRC_CIRCUIT_TERRAIN_TERRAINANALYZER_H_
-#define SRC_CIRCUIT_TERRAIN_TERRAINANALYZER_H_
+#ifndef SRC_CIRCUIT_MAP_GRIDANALYZER_H_
+#define SRC_CIRCUIT_MAP_GRIDANALYZER_H_
 
 #include "util/Defines.h"
 #include "util/math/RagMatrix.h"
@@ -66,7 +66,7 @@ namespace circuit {
 #endif
 }
 
-namespace terrain {
+namespace bwem {
 
 #define ALTITUDE_SCALE	8
 
@@ -74,9 +74,8 @@ class CSector;
 class CTile;
 class CArea;
 class CTempAreaInfo;
-class CTerrainAnalyzer;
-class IGraph;
-struct SMobileType;
+class CGridAnalyzer;
+class IGrid;
 #ifdef DEBUG_VIS
 struct DebugDrawData;
 #endif
@@ -93,7 +92,7 @@ public:
 	// It is guaranteed that, among all the Tiles of Geometry(), ChokePoint::middle has the highest altitude value.
 	enum node {end1, middle, end2, node_count};
 
-	CChokePoint(const CTerrainAnalyzer& ta, Id idx, const CArea* area1, const CArea* area2, const std::deque<TilePosition>& geometry);
+	CChokePoint(const CGridAnalyzer& ta, Id idx, const CArea* area1, const CArea* area2, const std::deque<TilePosition>& geometry);
 	CChokePoint& operator=(const CChokePoint&) = delete;
 	~CChokePoint() {}
 
@@ -127,8 +126,8 @@ public:
 	CArea& operator=(const CArea&) = delete;
 	~CArea() {}
 
-	// Unique id > 0 of this Area. Range = 1 .. IGraph::Areas().size()
-	// this == IGraph::GetArea(Id())
+	// Unique id > 0 of this Area. Range = 1 .. IGrid::Areas().size()
+	// this == IGrid::GetArea(Id())
 	// Id() == CTerrainAnalyzer::GetTile(w).AreaId() for each walkable Tile w in this Area.
 	// Area::ids are guaranteed to remain unchanged.
 	Id GetId() const { return id; }
@@ -269,15 +268,15 @@ private:
 	CArea::Id areaId = 0;
 };
 
-class IGraph {
+class IGrid {
 protected:
-	IGraph();
-	IGraph(const IGraph&) = delete;
-	IGraph& operator=(const IGraph&) = delete;
+	IGrid();
+	IGrid(const IGrid&) = delete;
+	IGrid& operator=(const IGrid&) = delete;
 public:
-	virtual ~IGraph();
+	virtual ~IGrid();
 
-	virtual bool IsWalkable(int xSlope, int ySlope, const SMobileType& mt) const = 0;
+	virtual bool IsWalkable(int xSlope, int ySlope) const = 0;
 
 	const CArea* GetArea(CArea::Id id) const { assert(IsValid(id)); return &areas[id - 1]; }
 	const std::vector<CChokePoint*>& GetChokePoints() const { return chokePointList; }
@@ -290,23 +289,23 @@ public:
 	const std::vector<CArea>& GetAreas() const { return areas; }
 
 protected:
-	friend class CTerrainAnalyzer;
+	friend class CGridAnalyzer;
 
 	CArea* GetArea(CArea::Id id) { assert(IsValid(id)); return &areas[id - 1]; }
 	std::vector<CChokePoint>& GetChokePoints(CArea::Id a, CArea::Id b) {
-		return const_cast<std::vector<CChokePoint>&>(static_cast<const IGraph&>(*this).GetChokePoints(a, b));
+		return const_cast<std::vector<CChokePoint>&>(static_cast<const IGrid&>(*this).GetChokePoints(a, b));
 	}
 	std::vector<CChokePoint>& GetChokePoints(const CArea* a, const CArea* b) {
 		return GetChokePoints(a->GetId(), b->GetId());
 	}
-	CSector& GetSector(const SectorPosition p) { return const_cast<CSector&>(static_cast<const IGraph&>(*this).GetSector(p)); }
+	CSector& GetSector(const SectorPosition p) { return const_cast<CSector&>(static_cast<const IGrid&>(*this).GetSector(p)); }
 	std::vector<CArea>& GetAreas() { return areas; }
 	int AreasCount() const { return (int)areas.size(); }
 	bool IsValid(CArea::Id id) const { return (1 <= id) && (id <= AreasCount()); }
 
-	void CreateAreas(const CTerrainAnalyzer& ta, const std::vector<std::pair<TilePosition, int>>& areasList);
-	void CreateChokePoints(const CTerrainAnalyzer& ta);
-	void SetAreaIdInSectors(const CTerrainAnalyzer& ta);
+	void CreateAreas(const CGridAnalyzer& ta, const std::vector<std::pair<TilePosition, int>>& areasList);
+	void CreateChokePoints(const CGridAnalyzer& ta);
+	void SetAreaIdInSectors(const CGridAnalyzer& ta);
 	void CollectInformation();
 	void UpdateGroupIds();
 
@@ -332,7 +331,7 @@ public:
 #endif  // DEBUG_VIS
 };
 
-class CTerrainAnalyzer final {
+class CGridAnalyzer final {
 public:
 	struct SConfig {
 		std::string unitName;
@@ -349,12 +348,12 @@ public:
 		TilePosition pos;
 	};
 
-	CTerrainAnalyzer(IGraph* const graph, const SConfig& cfg);
-	CTerrainAnalyzer(const CTerrainAnalyzer&) = delete;
-	CTerrainAnalyzer& operator=(const CTerrainAnalyzer&) = delete;
-	~CTerrainAnalyzer();
+	CGridAnalyzer(IGrid* const grid, const SConfig& cfg);
+	CGridAnalyzer(const CGridAnalyzer&) = delete;
+	CGridAnalyzer& operator=(const CGridAnalyzer&) = delete;
+	~CGridAnalyzer();
 
-	void AnalyzeMap(circuit::CCircuitAI* circuit, const SMobileType& mt);
+	void Analyze(circuit::CCircuitAI* circuit);
 	const std::vector<SFrontier>& GetRawFrontier() const { return rawFrontier; }
 
 	const SConfig& GetConfig() const { return config; }
@@ -365,15 +364,15 @@ public:
 	}
 
 private:
-	CTile& GetTile(const TilePosition p) { return const_cast<CTile&>(static_cast<const CTerrainAnalyzer&>(*this).GetTile(p)); }
+	CTile& GetTile(const TilePosition p) { return const_cast<CTile&>(static_cast<const CGridAnalyzer&>(*this).GetTile(p)); }
 	bool IsValid(const TilePosition p) const {
 		return (p.x >= 0) && (p.x < config.tileSize.x) && (p.y >= 0) && (p.y < config.tileSize.y);
 	}
 	bool IsSeaSide(const TilePosition p) const;
 
-	void LoadData(const SMobileType& mt);
+	void LoadData();
 	void DecideSeasOrLakes();
-	void ComputeAltitude(circuit::CCircuitAI* circuit);  // Depth of passable tile from edge of outer contour
+	void ComputeAltitude();  // Depth of passable tile from edge of outer contour
 	void ComputeAreas();
 	std::vector<std::pair<TilePosition, CTile*>> SortTiles();
 	std::pair<CArea::Id, CArea::Id> FindNeighboringAreas(TilePosition p) const;
@@ -382,7 +381,7 @@ private:
 	void ReplaceAreaIds(TilePosition p, CArea::Id newAreaId);
 	void CreateAreas(const std::vector<CTempAreaInfo>& tempAreaList);
 
-	IGraph* const graph;
+	IGrid* const grid;  // graph
 
 	const SConfig config;
 	std::vector<CTile> tiles;
@@ -396,11 +395,11 @@ private:
 struct DebugDrawData {
 	int2 tileSize;
 	std::vector<CTile> tiles;
-	std::vector<CTerrainAnalyzer::SFrontier> rawFrontier;
+	std::vector<CGridAnalyzer::SFrontier> rawFrontier;
 	CArea::Altitude maxAltitude;
 };
 #endif  // DEBUG_VIS
 
-} // namespace terrain
+} // namespace bwem
 
-#endif // SRC_CIRCUIT_TERRAIN_TERRAINANALYZER_H_
+#endif // SRC_CIRCUIT_MAP_GRIDANALYZER_H_

@@ -6,6 +6,7 @@
  */
 
 #include "resource/MetalData.h"
+#include "CircuitAI.h"
 #include "util/math/HierarchCluster.h"
 #include "util/math/EncloseCircle.h"
 #include "util/Utils.h"
@@ -22,6 +23,7 @@ using namespace nanoflann;
 
 CMetalData::CMetalData()
 		: isInitialized(false)
+		, terrain(nullptr)
 		, spotsAdaptor(spots)
 		, metalTree(2 /*dim*/, spotsAdaptor, KDTreeSingleIndexAdaptorParams(4 /*max leaf*/))
 		, minIncome(std::numeric_limits<float>::max())
@@ -155,6 +157,34 @@ void CMetalData::Clusterize(float maxDistance, CRagMatrix<float>& distMatrix)
 	BuildClusterGraph();
 
 	isClusterizing = false;
+}
+
+void CMetalData::AnalyzeMap(CCircuitAI* circuit, CMap* map, Resource* res, bwem::IGrid* ter, F3Vec& outSpots)
+{
+	map->GetResourceMap(res, metalMap);
+	terrain = ter;
+
+	// ReadConfig();
+	bwem::CGridAnalyzer::SConfig cfg;
+	cfg.lakeMaxTiles = 10; // 300
+	cfg.lakeMaxWidthInTiles = 10;  // 32
+	cfg.areaMinTiles = 8;  // 32;  // 64
+	cfg.areasMergeSize = 8;  // 64;  // 80
+	cfg.areasMergeAltitude = 8;  // 64;  // 80
+
+	sectorXSize = map->GetWidth() / 2;  // SLOPE_TILE
+	sectorZSize = map->GetHeight() / 2;  // SLOPE_TILE
+	sectors.resize(sectorXSize * sectorZSize);
+	cfg.tileSize = int2(sectorXSize, sectorZSize);
+
+	bwem::CGridAnalyzer(this, cfg).Analyze(circuit);
+
+	ShortVec().swap(metalMap);
+}
+
+bool CMetalData::IsWalkable(int xSlope, int ySlope) const
+{
+	return metalMap[sectorXSize * ySlope + xSlope] > 0 && terrain->IsWalkable(xSlope, ySlope);
 }
 
 void CMetalData::MakeResourcePoints(CMap* map, Resource* res, F3Vec& vectoredSpots)

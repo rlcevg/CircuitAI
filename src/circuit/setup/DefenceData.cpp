@@ -69,7 +69,7 @@ void CDefenceData::Init(CCircuitAI* circuit)
 
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	defPoints.reserve(terrainMgr->GetTAChokePoints().size() + clusters.size());
-	for (CChokePoint* ch : terrainMgr->GetTAChokePoints()) {
+	for (bwem::CChokePoint* ch : terrainMgr->GetTAChokePoints()) {
 		defPoints.push_back({ch->GetCenter(), .0f});
 	}
 

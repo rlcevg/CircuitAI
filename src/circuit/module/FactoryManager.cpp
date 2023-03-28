@@ -283,12 +283,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				economyMgr->AddAssistDef(&cdef);
 			}
 		}
-
-		for (SSideInfo& sideInfo : sideInfos) {
-			if (cdef.CanBuild(sideInfo.airpadDef)) {
-				airpadDefs[cdef.GetId()] = sideInfo.airpadDef;
-			}
-		}
 	}
 
 	factoryData = circuit->GetAllyTeam()->GetFactoryData().get();
@@ -310,18 +304,9 @@ void CFactoryManager::ReadConfig()
 	sideInfos.resize(sideMasker.GetMasks().size());
 
 	const Json::Value& econom = root["economy"];
-	const Json::Value& airpad = econom["airpad"];
 	const Json::Value& nanotc = econom["assist"];
 	for (const auto& kv : sideMasker.GetMasks()) {
 		SSideInfo& sideInfo = sideInfos[kv.second.type];
-
-		const std::string& padName = airpad.get(kv.first, "").asString();
-		CCircuitDef* airpadDef = circuit->GetCircuitDef(padName.c_str());
-		if (airpadDef == nullptr) {
-			airpadDef = circuit->GetEconomyManager()->GetSideInfo().defaultDef;
-			circuit->LOG("CONFIG %s: has unknown airpadDef '%s'", cfgName.c_str(), padName.c_str());
-		}
-		sideInfo.airpadDef = airpadDef;
 
 		const std::string& nanoName = nanotc.get(kv.first, "").asString();
 		CCircuitDef* assistDef = circuit->GetCircuitDef(nanoName.c_str());

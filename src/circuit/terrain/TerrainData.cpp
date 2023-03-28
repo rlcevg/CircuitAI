@@ -55,6 +55,7 @@ CTerrainData::CTerrainData()
 		, aiToUpdate(0)
 		, isInitialized(false)
 		, isAnalyzed(false)
+		, rmt(nullptr)
 {
 }
 
@@ -575,26 +576,25 @@ void CTerrainData::AnalyzeMap(CCircuitAI* circuit)
 		return;
 	}
 
-	CTerrainAnalyzer::SConfig cfg = ReadConfig(circuit);
+	bwem::CGridAnalyzer::SConfig cfg = ReadConfig(circuit);
 
-	const SMobileType* mobileType = nullptr;
 	CCircuitDef* cdef = circuit->GetCircuitDef(cfg.unitName.c_str());
 	if (cdef == nullptr) {
 		for (const SMobileType& mt : areaData0.mobileType) {
 			if (mt.typeUsable) {
-				mobileType = &mt;
+				rmt = &mt;
 				break;
 			}
 		}
 	} else {
-		mobileType = &areaData0.mobileType[cdef->GetMobileId()];
+		rmt = &areaData0.mobileType[cdef->GetMobileId()];
 	}
 
 	sectors.resize(sectorXSize * sectorZSize);
-	if (mobileType != nullptr) {
+	if (rmt != nullptr) {
 		const int convertStoSM = GetConvertStoSM();  // * for conversion, / for reverse conversion
 		cfg.tileSize = int2(sectorXSize * convertStoSM, sectorZSize * convertStoSM);
-		CTerrainAnalyzer(this, cfg).AnalyzeMap(circuit, *mobileType);
+		bwem::CGridAnalyzer(this, cfg).Analyze(circuit);
 	}
 
 	isAnalyzed = true;
@@ -669,11 +669,11 @@ AIFloat3 CTerrainData::CorrectPosition(const AIFloat3& pos, const AIFloat3& dir,
 //	return 0;
 //}
 
-CTerrainAnalyzer::SConfig CTerrainData::ReadConfig(CCircuitAI* circuit)
+bwem::CGridAnalyzer::SConfig CTerrainData::ReadConfig(CCircuitAI* circuit)
 {
 	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
 	const Json::Value& terrain = root["terrain"];
-	CTerrainAnalyzer::SConfig outCfg;
+	bwem::CGridAnalyzer::SConfig outCfg;
 	outCfg.unitName = terrain.get("analyze", "").asString();
 	outCfg.lakeMaxTiles = terrain.get("lake_tiles", 300).asInt();
 	outCfg.lakeMaxWidthInTiles = terrain.get("lake_width_tiles", 32).asInt();
@@ -1018,13 +1018,13 @@ void CTerrainData::OnAreaUsersUpdated()
 #endif
 }
 
-bool CTerrainData::IsWalkable(int xSlope, int ySlope, const SMobileType& mt) const
+bool CTerrainData::IsWalkable(int xSlope, int ySlope) const
 {
 	const float elevation = areaData0.heightMap[areaData0.heightMapXSize * (ySlope * 2) + (xSlope * 2)];
 	const float slope = slopeMap[slopeMapXSize * ySlope + xSlope];
-	return (mt.canHover && (mt.maxElevation >= elevation) && !waterIsAVoid && ((elevation <= 0) || (mt.maxSlope >= slope)))
-		|| (mt.canFloat && (mt.maxElevation >= elevation) && !waterIsHarmful && ((elevation <= 0) || (mt.maxSlope >= slope)))
-		|| ((mt.maxSlope >= slope) && (mt.minElevation <= elevation) && (mt.maxElevation >= elevation) && (!waterIsHarmful || (elevation >= 0)));
+	return (rmt->canHover && (rmt->maxElevation >= elevation) && !waterIsAVoid && ((elevation <= 0) || (rmt->maxSlope >= slope)))
+		|| (rmt->canFloat && (rmt->maxElevation >= elevation) && !waterIsHarmful && ((elevation <= 0) || (rmt->maxSlope >= slope)))
+		|| ((rmt->maxSlope >= slope) && (rmt->minElevation <= elevation) && (rmt->maxElevation >= elevation) && (!waterIsHarmful || (elevation >= 0)));
 }
 
 #ifdef DEBUG_VIS

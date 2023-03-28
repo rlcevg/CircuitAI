@@ -3,6 +3,9 @@
 
 namespace Economy {
 
+// To not reset army requirement on factory switch, @see Factory::AiIsSwitchAllowed
+bool isSwitchAssist = false;
+
 void AiOpenStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos)
 {
 }
@@ -26,11 +29,16 @@ void AiUpdateEconomy()
 		aiEconomyMgr.isEnergyStalling = (energy.income < energy.pull) && (energy.current < energy.storage * 0.3f);
 	} else {
 		aiEconomyMgr.isEnergyEmpty = energy.current < energy.storage * 0.2f;
-		aiEconomyMgr.isEnergyStalling = aiEconomyMgr.isEnergyEmpty || ((energy.income < energy.pull) && (energy.current < energy.storage * 0.6f));
+		aiEconomyMgr.isEnergyStalling = aiEconomyMgr.isEnergyEmpty
+			|| ((energy.income < energy.pull) && (energy.current < energy.storage * 0.6f));
 	}
 	// NOTE: Default energy-to-metal conversion TeamRulesParam "mmLevel" = 0.75
 	aiEconomyMgr.isEnergyFull = energy.current > energy.storage * 0.88f;
 //	aiEconomyMgr.isEnergyStalling = aiMin(metal.income - metal.pull, .0f)/* * 0.98f*/ > aiMin(energy.income - energy.pull, .0f);
+
+	isSwitchAssist = isSwitchAssist && aiFactoryMgr.isAssistRequired;
+	aiFactoryMgr.isAssistRequired = isSwitchAssist
+		|| (metal.current > metal.storage * 0.1f && energy.current > energy.storage * 0.7f);
 }
 
 }  // namespace Economy

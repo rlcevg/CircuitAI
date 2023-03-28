@@ -265,7 +265,7 @@ public:
 	bool IsTurnLarge()       const { return isTurnLarge; }
 	bool IsAbleToFly()       const { return isAbleToFly; }
 	bool IsAbleToSwim()      const { return isAbleToSwim; }
-	bool IsAbleToDive()      const { return isAbleToDive; }
+	bool IsAbleToDive()      const { return isAbleToDive; }  // for any aircraft = false
 	bool IsAbleToCloak()     const { return isAbleToCloak; }
 	bool IsAbleToJump()      const { return isAbleToJump; }
 	bool IsAbleToRepair()    const { return isAbleToRepair; }

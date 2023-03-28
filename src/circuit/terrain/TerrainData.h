@@ -19,7 +19,7 @@
 #ifndef SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 #define SRC_CIRCUIT_TERRAIN_TERRAINDATA_H_
 
-#include "terrain/TerrainAnalyzer.h"
+#include "map/GridAnalyzer.h"
 #include "util/Defines.h"
 
 #include "AIFloat3.h"
@@ -176,7 +176,7 @@ struct SAreaData {
 
 #define BOUND_EXT	3e3f
 
-class CTerrainData final: public IGraph {
+class CTerrainData final: public bwem::IGrid {
 public:
 	CTerrainData();
 	virtual ~CTerrainData();
@@ -215,7 +215,7 @@ private:
 //	int GetFileValue(int& fileSize, char*& file, std::string entry);
 // <<< RAI's GlobalTerrainMap ---- END
 
-	CTerrainAnalyzer::SConfig ReadConfig(circuit::CCircuitAI* circuit);
+	bwem::CGridAnalyzer::SConfig ReadConfig(circuit::CCircuitAI* circuit);
 
 	void DelegateAuthority(circuit::CCircuitAI* curOwner);
 
@@ -241,7 +241,7 @@ private:
 // <<< Threaded areas updater ---- END
 
 public:
-	virtual bool IsWalkable(int xSlope, int ySlope, const SMobileType& mt) const;  // x, y in slope map
+	virtual bool IsWalkable(int xSlope, int ySlope) const;  // x, y in slope map
 
 	int GetConvertStoSM() const { return convertStoP / SLOPE_TILE; }  // sector to slope map
 	int GetConvertStoHM() const { return convertStoP / HEIGHT_TILE; }  // sector to height map
@@ -251,6 +251,7 @@ public:
 private:
 	bool isInitialized;
 	bool isAnalyzed;
+	SMobileType const* rmt;  // reference mobileType to analyze
 
 #ifdef DEBUG_VIS
 private:

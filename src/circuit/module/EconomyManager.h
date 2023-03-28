@@ -78,6 +78,7 @@ public:
 	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
 
 	const std::vector<CCircuitDef*> GetMexDefs(CCircuitDef* builderDef) { return mexDefs[builderDef->GetId()]; }
+	const std::vector<CCircuitDef*> GetPadDefs(CCircuitDef* builderDef) { return padDefs[builderDef->GetId()]; }
 	CCircuitDef* GetDefaultDef(CCircuitDef* builderDef) { return defaultDefs[builderDef->GetId()]; }
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 
@@ -139,6 +140,7 @@ public:
 	void OpenStrategy(const CCircuitDef* facDef, const springai::AIFloat3& pos);
 
 private:
+	bool CheckAirpadRequired(const springai::AIFloat3& position, CCircuitUnit* unit, IBuilderTask*& outTask);
 	bool CheckAssistRequired(const springai::AIFloat3& position, CCircuitUnit* unit, IBuilderTask*& outTask);
 	float GetStorage(springai::Resource* res);
 	void UpdateEconomy();
@@ -181,10 +183,10 @@ private:
 	int mexCount;
 	std::vector<bool> geoSpots;
 
-	struct SMetalExt {
-		float speed;
-	};
-	CAvailList<SMetalExt> metalDefs;
+//	struct SMetalExt {
+//		float speed;
+//	};
+//	CAvailList<SMetalExt> metalDefs;
 
 	struct SConvertExt {
 		float make;
@@ -263,6 +265,12 @@ private:
 		float income;
 	} metal, energy;
 	float energyUse;
+
+	struct SAirpadExt {
+	};
+	CAvailList<SAirpadExt> airpadDefs;
+	std::unordered_map<CCircuitDef::Id, std::vector<CCircuitDef*>> padDefs;  // builder: pad
+	int airpadCount;
 
 	struct SAssistExt {
 	};

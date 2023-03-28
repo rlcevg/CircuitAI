@@ -777,9 +777,11 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	CMetalManager* mm = circuit->GetMetalManager();
 	bool isPorc = mm->GetMaxIncome() > mm->GetAvgIncome() * 1.2f;
 	if (isPorc) {
-		const float income = (mm->GetAvgIncome() + mm->GetMaxIncome()) * 0.5f;
 		int spotId = mm->FindNearestSpot(pos);
-		isPorc = mm->GetSpots()[spotId].income > income;
+		const CMetalData::SMetal& spot = mm->GetSpots()[spotId];
+		const float income = (mm->GetAvgIncome() + mm->GetMaxIncome()) * 0.5f;
+		isPorc = (spot.position.SqDistance2D(circuit->GetSetupManager()->GetBasePos()) > SQUARE(1000.f))
+			&& spot.income > income;
 	}
 	if (!isPorc) {
 		unsigned threatCount = 0;
@@ -796,7 +798,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 			}
 			// check if there is enemy neighbor
 			for (int idx : clusters[idx0].idxSpots) {
-				if (threatMap->GetBuilderThreatAt(spots[idx].position) > THREAT_MIN * 2) {
+				if (threatMap->GetBuilderThreatAt(spots[idx].position) > THREAT_MIN * 8) {
 					threatCount++;
 					break;
 				}

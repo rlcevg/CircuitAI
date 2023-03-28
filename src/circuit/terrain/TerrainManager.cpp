@@ -1619,7 +1619,7 @@ bool CTerrainManager::CanMobileReachAtSafe(SArea* area, const AIFloat3& destinat
 	return CanMobileReachAt(area, destination, range);
 }
 
-const CArea* CTerrainManager::GetTAArea(const springai::AIFloat3& pos) const
+const bwem::CArea* CTerrainManager::GetTAArea(const springai::AIFloat3& pos) const
 {
 	int iS = terrainData->GetSectorIndex(pos);
 	int id = terrainData->GetTASector(iS).GetAreaId();

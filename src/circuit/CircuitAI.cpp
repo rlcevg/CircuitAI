@@ -806,6 +806,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	const char cmdLog[]     = "~log";
 	const char cmdBTask[]   = "~btask";
 	const char cmdChoke[]   = "~choke";
+	const char cmdMetal[]   = "~metal";
 
 	const char cmdThreat[]  = "~threat";
 	const char cmdWTDraw[]  = "~wtdraw";  // widget threat draw
@@ -890,6 +891,9 @@ int CCircuitAI::Message(int playerId, const char* message)
 	}
 	else if (strncmp(message, cmdChoke, 6) == 0) {
 		gameAttribute->GetTerrainData().ToggleTAVis(lastFrame);
+	}
+	else if (strncmp(message, cmdMetal, 6) == 0) {
+		gameAttribute->GetMetalData().ToggleTAVis(lastFrame);
 	}
 
 	else if (strncmp(message, cmdThreat, 7) == 0) {

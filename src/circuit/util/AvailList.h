@@ -40,10 +40,8 @@ public:
 	bool HasAvail() const { return !infos.empty(); }
 	const T* GetAvailInfo(const CCircuitDef* cdef) const;
 	CCircuitDef* GetFirstDef() const { return infos.front().cdef; }
-	template <typename F>
-	CCircuitDef* GetBestDef(F filterFunc) const;
-	template <typename F>
-	CCircuitDef* GetWorstDef(F filterFunc) const;
+	template <typename F> CCircuitDef* GetBestDef(F filterFunc) const;
+	template <typename F> CCircuitDef* GetWorstDef(F filterFunc) const;
 	const std::vector<SAvailInfo>& GetInfos() const { return infos; }
 
 private:

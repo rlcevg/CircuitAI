@@ -1,4 +1,5 @@
 #include "../../define.as"
+#include "economy.as"
 
 
 namespace Factory {
@@ -42,9 +43,9 @@ bool AiIsSwitchTime(int lastSwitchFrame)
 
 bool AiIsSwitchAllowed(CCircuitDef@ facDef)
 {
-	const bool isOK = aiMilitaryMgr.armyCost > 3000.f;
+	const bool isOK = aiMilitaryMgr.armyCost > facDef.costM;
 	if (!isOK) {
-		aiFactoryMgr.isAssistRequired = true;
+		aiFactoryMgr.isAssistRequired = Economy::isSwitchAssist = true;
 	}
 	return isOK;
 }
