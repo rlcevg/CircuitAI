@@ -46,6 +46,7 @@ public:
 
 private:
 	void ReadConfig();
+	void InitEconomyScores(const std::vector<CCircuitDef*>&& builders);
 	void Init();
 public:
 	void Release();

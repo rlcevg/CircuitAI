@@ -237,6 +237,7 @@ void CMetalManager::ClusterizeMetal(CCircuitDef* commDef)
 	}
 
 	metalData->Clusterize(maxDistance, distmatrix);
+	metalData->Statistics();
 }
 
 void CMetalManager::FindWithinRangeSpots(const AIFloat3& posFrom, const AIFloat3& posTo,

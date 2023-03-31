@@ -232,8 +232,13 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	const float fighterRet = (float)rand() / RAND_MAX * (maxRet - minRet) + minRet;
 	const float retMod = retreat.get((unsigned)2, 1.0f).asFloat();
 	const float commMod = root["quota"]["thr_mod"].get("comm", 1.f).asFloat();
+	std::vector<CCircuitDef*> builders;
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		if (!cdef.GetBuildOptions().empty()) {
+			builders.push_back(&cdef);
+		}
+
 		CCircuitDef::Id unitDefId = cdef.GetId();
 		if (cdef.IsRoleComm()) {
 			cdef.ModDefThreat(commMod);
@@ -295,6 +300,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			destroyedHandler[cdef->GetId()] = defenceDestroyedHandler;
 		}
 	}
+
+	InitEconomyScores(std::move(builders));
 
 	defence = circuit->GetAllyTeam()->GetDefenceData().get();
 
@@ -469,6 +476,22 @@ void CMilitaryManager::ReadConfig()
 			sideInfo.defaultPorc = circuit->GetEconomyManager()->GetSideInfos()[kv.second.type].defaultDef;
 		}
 	}
+}
+
+void CMilitaryManager::InitEconomyScores(const std::vector<CCircuitDef*>&& builders)
+{
+	auto scoreFunc = [](CCircuitDef* cdef, const SSensorExt& data) {
+		return M_PI * SQUARE(data.radius) / cdef->GetCostM();  // area / cost
+//		return data.radius - cdef->GetCostM() * 0.1f;  // absolutely no physical meaning
+	};
+	radarDefs.Init(builders, [scoreFunc](CCircuitDef* cdef, SSensorExt& data) {
+		data.radius = cdef->GetDef()->GetRadarRadius();
+		return scoreFunc(cdef, data);
+	});
+	sonarDefs.Init(builders, [scoreFunc](CCircuitDef* cdef, SSensorExt& data) {
+		data.radius = cdef->GetDef()->GetSonarRadius();
+		return scoreFunc(cdef, data);
+	});
 }
 
 void CMilitaryManager::Init()
@@ -697,6 +720,9 @@ void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 
 void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 {
+	// TODO: Rework, depends on mex cluster
+	assert(cluster >= 0);
+
 	const int frame = circuit->GetLastFrame();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
@@ -775,18 +801,16 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 
 	// Front-line porc
 	CMetalManager* mm = circuit->GetMetalManager();
-	bool isPorc = mm->GetMaxIncome() > mm->GetAvgIncome() * 1.2f;
+	const CMetalData::Clusters& clusters = mm->GetClusters();
+	bool isPorc = mm->GetClusterStdDeviation() > 0.3f * mm->GetClusterAvgIncome();
 	if (isPorc) {
-		int spotId = mm->FindNearestSpot(pos);
-		const CMetalData::SMetal& spot = mm->GetSpots()[spotId];
-		const float income = (mm->GetAvgIncome() + mm->GetMaxIncome()) * 0.5f;
-		isPorc = (spot.position.SqDistance2D(circuit->GetSetupManager()->GetBasePos()) > SQUARE(1000.f))
-			&& spot.income > income;
+		const float income = (mm->GetClusterAvgIncome() + mm->GetClusterMaxIncome()) * 0.5f;
+		isPorc = (clusters[cluster].position.SqDistance2D(circuit->GetSetupManager()->GetBasePos()) > SQUARE(1000.f))
+			&& clusters[cluster].income > income;
 	}
 	if (!isPorc) {
 		unsigned threatCount = 0;
 		CThreatMap* threatMap = circuit->GetThreatMap();
-		const CMetalData::Clusters& clusters = mm->GetClusters();
 		const CMetalData::Metals& spots = mm->GetSpots();
 		const CMetalData::ClusterGraph& clusterGraph = mm->GetClusterGraph();
 		CMetalData::ClusterGraph::Node node = clusterGraph.nodeFromId(cluster);
@@ -798,7 +822,7 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 			}
 			// check if there is enemy neighbor
 			for (int idx : clusters[idx0].idxSpots) {
-				if (threatMap->GetBuilderThreatAt(spots[idx].position) > THREAT_MIN * 8) {
+				if (threatMap->GetBuilderThreatAt(spots[idx].position) > THREAT_MIN * 4) {
 					threatCount++;
 					break;
 				}
@@ -1470,18 +1494,8 @@ void CMilitaryManager::MakeBaseDefence(const AIFloat3& pos)
 
 void CMilitaryManager::AddSensorDefs(const std::set<CCircuitDef*>& buildDefs)
 {
-	auto scoreFunc = [](CCircuitDef* cdef, const SSensorExt& data) {
-		return M_PI * SQUARE(data.radius) / cdef->GetCostM();  // area / cost
-//		return data.radius - cdef->GetCostM() * 0.1f;  // absolutely no physical meaning
-	};
-	radarDefs.AddDefs(buildDefs, [scoreFunc](CCircuitDef* cdef, SSensorExt& data) {
-		data.radius = cdef->GetDef()->GetRadarRadius();
-		return scoreFunc(cdef, data);
-	});
-	sonarDefs.AddDefs(buildDefs, [scoreFunc](CCircuitDef* cdef, SSensorExt& data) {
-		data.radius = cdef->GetDef()->GetSonarRadius();
-		return scoreFunc(cdef, data);
-	});
+	radarDefs.AddDefs(buildDefs);
+	sonarDefs.AddDefs(buildDefs);
 
 	// DEBUG
 //	std::vector<std::pair<std::string, CAvailList<SSensorExt>*>> vec = {{"Radar", &radarDefs}, {"Sonar", &sonarDefs}};

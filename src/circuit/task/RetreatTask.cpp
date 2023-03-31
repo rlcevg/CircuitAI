@@ -85,6 +85,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	if (unit->GetCircuitDef()->IsAbleToCloak()) {
 		TRY_UNIT(manager->GetCircuit(), unit,
 			unit->CmdCloak(true);
+			unit->GetUnit()->SetFireState(CCircuitDef::FireType::RETURN);
 		)
 	}
 
@@ -351,13 +352,14 @@ void CRetreatTask::Dead()
 
 void CRetreatTask::Recovered(CCircuitUnit* unit)
 {
-	if (unit->GetCircuitDef()->IsAbleToCloak()
-		&& unit->GetCircuitDef()->GetCloakCost() > manager->GetCircuit()->GetEconomyManager()->GetAvgEnergyIncome() * 0.1f)
-	{
-		TRY_UNIT(manager->GetCircuit(), unit,
+	TRY_UNIT(manager->GetCircuit(), unit,
+		if (unit->GetCircuitDef()->IsAbleToCloak()
+			&& unit->GetCircuitDef()->GetCloakCost() > manager->GetCircuit()->GetEconomyManager()->GetAvgEnergyIncome() * 0.1f)
+		{
 			unit->CmdCloak(false);
-		)
-	}
+		}
+		unit->GetUnit()->SetFireState(unit->GetCircuitDef()->GetFireState());
+	)
 
 	RemoveAssignee(unit);
 }

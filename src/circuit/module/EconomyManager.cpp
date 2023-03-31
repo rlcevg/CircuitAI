@@ -194,9 +194,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 
 	float maxAreaDivCost = .0f;
 	const float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
-	std::vector<CCircuitDef*> metalDefs;
+	std::vector<CCircuitDef*> builders;
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		if (!cdef.GetBuildOptions().empty()) {
+			builders.push_back(&cdef);
+		}
+
 		const std::map<std::string, std::string>& customParams = cdef.GetDef()->GetCustomParams();
 
 		if (!cdef.IsMobile()) {
@@ -233,7 +237,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			// FIXME: BA
 			if (cdef.GetExtractsM() > 0.f) {
 				finishedHandler[cdef.GetId()] = mexFinishedHandler;
-				metalDefs.push_back(&cdef);  // metalDefs.AddDef(&cdef);
+				metalDefs.AddDef(&cdef);
 				cdef.SetIsMex(true);
 			}
 			if (((it = customParams.find("energyconv_capacity")) != customParams.end()) && (utils::string_to_float(it->second) > 0.f)
@@ -282,35 +286,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	}
 
-	// FIXME: BA
-	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
-		if (cdef.GetBuildOptions().empty()) {
-			continue;
-		}
-		for (CCircuitDef* mexDef : metalDefs) {  // metalDefs.GetAll()
-			if (cdef.CanBuild(mexDef)) {
-				mexDefs[cdef.GetId()].push_back(mexDef);
-			}
-		}
-		auto it = mexDefs.find(cdef.GetId());
-		if (it != mexDefs.end()) {
-			std::sort(it->second.begin(), it->second.end(), [](const CCircuitDef* c1, const CCircuitDef* c2) {
-				return c1->GetCostM() < c2->GetCostM();
-			});
-		}
+	// NOTE: Uses values from ReadConfig
+	InitEconomyScores(std::move(builders));
 
-		for (CCircuitDef* padDef : airpadDefs.GetAll()) {
-			if (cdef.CanBuild(padDef)) {
-				padDefs[cdef.GetId()].push_back(padDef);
-			}
-		}
-		auto it2 = padDefs.find(cdef.GetId());
-		if (it2 != padDefs.end()) {
-			std::sort(it2->second.begin(), it2->second.end(), [](const CCircuitDef* c1, const CCircuitDef* c2) {
-				return c1->GetBuildSpeed() / c1->GetCostM() > c2->GetBuildSpeed() / c2->GetCostM();
-			});
-		}
-	}
+	// FIXME: BA
 	for (SSideInfo& sideInfo : sideInfos) {
 		if (sideInfo.mexDef == nullptr) {
 			sideInfo.mexDef = sideInfo.defaultDef;
@@ -438,6 +417,89 @@ void CEconomyManager::ReadConfig(float& outMinEInc)
 			throw CException("economy.default");
 		}
 	}
+}
+
+void CEconomyManager::InitEconomyScores(const std::vector<CCircuitDef*>&& builders)
+{
+	metalDefs.Init(builders, [this](CCircuitDef* cdef, SMetalExt& data) -> float {
+//		data.speed = cdef->GetExtractsM();
+//		return data.speed * 1e+6f - cdef->GetCostM();
+		return 1.f / cdef->GetCostM();
+	});
+	convertDefs.Init(builders, [this](CCircuitDef* cdef, SConvertExt& data) -> float {
+		// old engine way: cdef->GetDef()->GetMakesResource(metalRes)
+		auto customParams = cdef->GetDef()->GetCustomParams();
+		const float energy = utils::string_to_float(customParams.find("energyconv_capacity")->second);  // validated on init
+		const float ratio = utils::string_to_float(customParams.find("energyconv_efficiency")->second);  // validated on init
+		data.make = energy * ratio;
+		return data.make;
+	});
+
+	energyDefs.Init(builders, [this](CCircuitDef* cdef, SEnergyExt& data) -> float {
+		auto customParams = cdef->GetDef()->GetCustomParams();
+		auto it = customParams.find("income_energy");
+		data.make = (it != customParams.end())
+				? utils::string_to_float(it->second)
+				: cdef->GetDef()->GetResourceMake(energyRes) - cdef->GetUpkeepE() - cdef->GetCloakCost();
+		if (data.make < 1) {
+			data.make = cdef->GetDef()->GetWindResourceGenerator(energyRes);
+			if (data.make < 1) {
+				data.make = cdef->GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength();
+			} else {
+				float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
+				data.make = std::min(avgWind, data.make);
+			}
+		}
+
+		const std::unordered_map<CCircuitDef*, SEnergyCond>& list = GetSideInfo().engyLimits;
+		auto lit = list.find(cdef);
+		if (lit != list.end()) {
+			data.cond = lit->second;
+		}
+		if (data.cond.score < .0f) {
+			// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
+			data.cond.score = SQUARE(data.make) / ((cdef->GetCostM()/* + cdef->GetCostE() * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize());
+		}
+		if (data.cond.metalIncome < 0.f) {
+			// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
+			//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
+			//       solar       geothermal    fusion         singu           ...
+			//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
+			data.cond.metalIncome = sqrtf(cdef->GetCostM() * 16.0f / MAX_BUILD_SEC);
+		}
+		if (data.cond.energyIncome < 0.f) {
+			data.cond.energyIncome = cdef->GetCostE() * costRatio;
+		}
+
+		return data.cond.score;
+	});
+	geoDefs.Init(builders, [this](CCircuitDef* cdef, SGeoExt& data) -> float {
+		data.make = cdef->GetDef()->GetResourceMake(energyRes) - cdef->GetUpkeepE() - cdef->GetCloakCost();
+		return data.make / cdef->GetCostM();
+	});
+
+	auto scoreFunc = [](CCircuitDef* cdef, const SStoreExt& data) {
+		return data.storage / cdef->GetCostM();
+	};
+	storeMDefs.Init(builders, [this, scoreFunc](CCircuitDef* cdef, SStoreExt& data) -> float {
+		data.storage = cdef->GetDef()->GetStorage(metalRes);
+		return scoreFunc(cdef, data);
+	});
+	storeEDefs.Init(builders, [this, scoreFunc](CCircuitDef* cdef, SStoreExt& data) -> float {
+		data.storage = cdef->GetDef()->GetStorage(energyRes);
+		return scoreFunc(cdef, data);
+	});
+
+	airpadDefs.Init(builders, [](CCircuitDef* cdef, SAirpadExt& data) -> float {
+		return cdef->GetBuildSpeed() / cdef->GetCostM();
+	});
+	assistDefs.Init(builders, [](CCircuitDef* cdef, SAssistExt& data) -> float {
+		return cdef->GetBuildSpeed() / cdef->GetCostM();
+	});
+	factoryDefs.Init(builders, [](CCircuitDef* cdef, SFactoryExt& data) -> float {
+		// FIXME: Factory sorting is not used anywhere, hence placeholder:
+		return cdef->GetBuildSpeed() / cdef->GetCostM();
+	});
 }
 
 void CEconomyManager::Init()
@@ -591,84 +653,15 @@ CCircuitDef* CEconomyManager::GetLowEnergy(const AIFloat3& pos, float& outMake, 
 
 void CEconomyManager::AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 {
-//	metalDefs.AddDefs(buildDefs, [this](CCircuitDef* cdef, SMetalExt& data) -> float {
-//		data.speed = cdef->GetExtractsM();
-//		return data.speed * 1e+6f - cdef->GetCostM();
-//	});
-	convertDefs.AddDefs(buildDefs, [this](CCircuitDef* cdef, SConvertExt& data) -> float {
-		// old engine way: cdef->GetDef()->GetMakesResource(metalRes)
-		auto customParams = cdef->GetDef()->GetCustomParams();
-		const float energy = utils::string_to_float(customParams.find("energyconv_capacity")->second);  // validated on init
-		const float ratio = utils::string_to_float(customParams.find("energyconv_efficiency")->second);  // validated on init
-		data.make = energy * ratio;
-		return data.make;
-	});
-
-	const std::unordered_map<CCircuitDef*, SEnergyCond>& list = GetSideInfo().engyLimits;
-	energyDefs.AddDefs(buildDefs, [this, &list](CCircuitDef* cdef, SEnergyExt& data) -> float {
-		auto customParams = cdef->GetDef()->GetCustomParams();
-		auto it = customParams.find("income_energy");
-		data.make = (it != customParams.end())
-				? utils::string_to_float(it->second)
-				: cdef->GetDef()->GetResourceMake(energyRes) - cdef->GetUpkeepE() - cdef->GetCloakCost();
-		if (data.make < 1) {
-			data.make = cdef->GetDef()->GetWindResourceGenerator(energyRes);
-			if (data.make < 1) {
-				data.make = cdef->GetDef()->GetTidalResourceGenerator(energyRes) * circuit->GetMap()->GetTidalStrength();
-			} else {
-				float avgWind = (circuit->GetMap()->GetMaxWind() + circuit->GetMap()->GetMinWind()) * 0.5f;
-				data.make = std::min(avgWind, data.make);
-			}
-		}
-
-		auto lit = list.find(cdef);
-		if (lit != list.end()) {
-			data.cond = lit->second;
-		}
-		if (data.cond.score < .0f) {
-			// TODO: Instead of plain sizeX, sizeZ use AI's yardmap size
-			data.cond.score = SQUARE(data.make) / ((cdef->GetCostM()/* + cdef->GetCostE() * 0.05f*/) * cdef->GetDef()->GetXSize() * cdef->GetDef()->GetZSize());
-		}
-		if (data.cond.metalIncome < 0.f) {
-			// TODO: Select proper scale/quadratic function (x*x) and smoothing coefficient (8).
-			//       МЕТОД НАИМЕНЬШИХ КВАДРАТОВ ! (income|buildPower, make/cost) - points
-			//       solar       geothermal    fusion         singu           ...
-			//       (10, 2/70), (15, 25/500), (20, 35/1000), (30, 225/4000), ...
-			data.cond.metalIncome = sqrtf(cdef->GetCostM() * 16.0f / MAX_BUILD_SEC);
-		}
-		if (data.cond.energyIncome < 0.f) {
-			data.cond.energyIncome = cdef->GetCostE() * costRatio;
-		}
-
-		return data.cond.score;
-	});
-	geoDefs.AddDefs(buildDefs, [this](CCircuitDef* cdef, SGeoExt& data) -> float {
-		data.make = cdef->GetDef()->GetResourceMake(energyRes) - cdef->GetUpkeepE() - cdef->GetCloakCost();
-		return data.make / cdef->GetCostM();
-	});
-
-	auto scoreFunc = [](CCircuitDef* cdef, const SStoreExt& data) {
-		return data.storage / cdef->GetCostM();
-	};
-	storeMDefs.AddDefs(buildDefs, [this, scoreFunc](CCircuitDef* cdef, SStoreExt& data) -> float {
-		data.storage = cdef->GetDef()->GetStorage(metalRes);
-		return scoreFunc(cdef, data);
-	});
-	storeEDefs.AddDefs(buildDefs, [this, scoreFunc](CCircuitDef* cdef, SStoreExt& data) -> float {
-		data.storage = cdef->GetDef()->GetStorage(energyRes);
-		return scoreFunc(cdef, data);
-	});
-
-	airpadDefs.AddDefs(buildDefs, [](CCircuitDef* cdef, SAirpadExt& data) -> float {
-		return cdef->GetBuildSpeed() / cdef->GetCostM();
-	});
-	assistDefs.AddDefs(buildDefs, [](CCircuitDef* cdef, SAssistExt& data) -> float {
-		return cdef->GetBuildSpeed() / cdef->GetCostM();
-	});
-	factoryDefs.AddDefs(buildDefs, [](CCircuitDef* cdef, SFactoryExt& data) -> float {
-		// FIXME: Factory sorting is not used anywhere, hence placeholder:
-		return cdef->GetBuildSpeed() / cdef->GetCostM();
-	});
+	metalDefs.AddDefs(buildDefs);
+	convertDefs.AddDefs(buildDefs);
+	energyDefs.AddDefs(buildDefs);
+	geoDefs.AddDefs(buildDefs);
+	storeMDefs.AddDefs(buildDefs);
+	storeEDefs.AddDefs(buildDefs);
+	airpadDefs.AddDefs(buildDefs);
+	assistDefs.AddDefs(buildDefs);
+	factoryDefs.AddDefs(buildDefs);
 
 	// DEBUG
 //	circuit->LOG("----Metal----");
@@ -718,7 +711,7 @@ void CEconomyManager::AddEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 
 void CEconomyManager::RemoveEconomyDefs(const std::set<CCircuitDef*>& buildDefs)
 {
-//	metalDefs.RemoveDefs(buildDefs);
+	metalDefs.RemoveDefs(buildDefs);
 	convertDefs.RemoveDefs(buildDefs);
 	energyDefs.RemoveDefs(buildDefs);
 	geoDefs.RemoveDefs(buildDefs);
@@ -965,24 +958,24 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 
 	if ((builderMgr->GetTasks(IBuilderTask::BuildType::MEXUP).size() < numMexUp) && (GetAvgMetalIncome() > 10.f)) {
-		const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
-		std::vector<std::pair<CCircuitDef*, float>> mxDefs;
+		const std::vector<CCircuitDef*>& mexDefOptions = metalDefs.GetBuildDefs(unit->GetCircuitDef());
+		std::vector<std::pair<CCircuitDef*, float>> mexDefs;
 		float maxRange = 0.f;
 		for (auto it = mexDefOptions.begin(); it != mexDefOptions.end(); ++it){
 			CCircuitDef* mDef = *it;
 			if (mDef->IsAvailable(frame)) {
-				mxDefs.push_back(std::make_pair(mDef, mDef->GetExtractsM()));
+				mexDefs.push_back(std::make_pair(mDef, mDef->GetExtractsM()));
 				const float range = mDef->GetExtrRangeM();
 				if (maxRange < range) {
 					maxRange = range;
 				}
 			}
 		}
-		if (!mxDefs.empty()) {
+		if (!mexDefs.empty()) {
 			CMetalManager* metalMgr = circuit->GetMetalManager();
 			const CMetalData::Metals& spots = metalMgr->GetSpots();
 			CCircuitDef* mexDef = nullptr;
-			CMetalData::PointPredicate predicate = [this, &spots, &mxDefs, maxRange, terrainMgr, unit, &mexDef](int index) {
+			CMetalData::PointPredicate predicate = [this, &spots, &mexDefs, maxRange, terrainMgr, unit, &mexDef](int index) {
 				const AIFloat3& pos = spots[index].position;
 				if (!IsOpenMexSpot(index)
 					&& !IsUpgradingMexSpot(index)
@@ -1003,7 +996,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 					if (curExtract <= 0.f) {
 						return false;
 					}
-					for (const auto& pair : mxDefs) {
+					for (const auto& pair : mexDefs) {
 						if ((curExtract < pair.second) && terrainMgr->CanBeBuiltAt(pair.first, pos)) {
 							mexDef = pair.first;
 							return true;
@@ -1027,23 +1020,23 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	CCircuitDef* mexDef = nullptr;
 	const unsigned int mexTaskSize = builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size();
 	if (mexTaskSize < (unsigned)mexMax/*builderMgr->GetWorkerCount() * 2 + 1*/ && !builderMgr->CanUpMex(unit->GetCircuitDef())) {
-		const std::vector<CCircuitDef*>& mexDefOptions = GetMexDefs(unit->GetCircuitDef());
-		std::vector<CCircuitDef*> mxDefs;
+		const std::vector<CCircuitDef*>& mexDefOptions = metalDefs.GetBuildDefs(unit->GetCircuitDef());
+		std::vector<CCircuitDef*> mexDefs;
 		for (CCircuitDef* mDef : mexDefOptions) {
 			if (mDef->IsAvailable(frame)) {
-				mxDefs.push_back(mDef);
+				mexDefs.push_back(mDef);
 			}
 		}
-		if (!mxDefs.empty()) {
+		if (!mexDefs.empty()) {
 			const CMetalData::Metals& spots = metalMgr->GetSpots();
 			CMap* map = circuit->GetMap();
 			// NOTE: threatmap type is set outside
-			CMetalData::PointPredicate predicate = [this, &spots, map, &mxDefs, terrainMgr, unit, &mexDef](int index) {
+			CMetalData::PointPredicate predicate = [this, &spots, map, &mexDefs, terrainMgr, unit, &mexDef](int index) {
 				const AIFloat3& pos = spots[index].position;
 				if (IsAllyOpenMexSpot(index)
 					&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
 				{
-					for (CCircuitDef* mDef : mxDefs) {
+					for (CCircuitDef* mDef : mexDefs) {
 						if (terrainMgr->CanBeBuiltAt(mDef, pos)
 							&& map->IsPossibleToBuildAt(mDef->GetDef(), pos, UNIT_NO_FACING))
 						{
@@ -1073,7 +1066,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 		});
 		if (convertDef != nullptr) {
 			const SConvertExt* convertExt = convertDefs.GetAvailInfo(convertDef);
-			if ((mexDef == nullptr) || (convertExt->make / convertDef->GetCostM() >= metalMgr->GetAvgIncome() * mexDef->GetExtractsM() / mexDef->GetCostM())) {
+			if ((mexDef == nullptr) || (convertExt->make / convertDef->GetCostM() >= metalMgr->GetSpotAvgIncome() * mexDef->GetExtractsM() / mexDef->GetCostM())) {
 				task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT, 0.f, true);
 				return task;
 			}
@@ -1179,7 +1172,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 	// check energy / metal ratio
 	float metalIncome = GetAvgMetalIncome();
-	const float energyIncome = GetAvgEnergyIncome();
+	float energyIncome = GetAvgEnergyIncome();
 	bool isEnergyStalling = IsEnergyStalling();
 	// TODO: e-stalling needs separate array of energy-defs sorted by cost
 
@@ -1190,22 +1183,25 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	metalIncome = std::min(metalIncome, energyIncome) * energyFactor;
 	const float buildPower = std::min(builderMgr->GetBuildPower(), metalIncome);
 	const int taskSize = builderMgr->GetTasks(IBuilderTask::BuildType::ENERGY).size();
-	const float buildTimeMod = isEnergyStalling ? 0.25f : 1.f;
+	energyIncome *= isEnergyStalling ? 0.25f : 1.f;
 	isEnergyStalling |= isEnergyRequired;
 	bool isLastHope = isEnergyStalling;
 	const int frame = circuit->GetLastFrame();
 
 	const auto& infos = energyDefs.GetInfos();
 	const float curWind = circuit->GetMap()->GetCurWind();
-	auto checkWind = [curWind, terrainMgr, position, &infos](unsigned i) {
+	auto checkWind = [curWind, terrainMgr, position, metalIncome, energyIncome, &infos](unsigned i) {
 		int lowerIdx = -1;
 		for (unsigned j = i + 1; j < infos.size(); ++j) {
-			if (terrainMgr->CanBeBuiltAtSafe(infos[j].cdef, position)) {
+			if ((infos[j].data.cond.metalIncome < metalIncome)
+				&& (infos[j].data.cond.energyIncome < energyIncome)
+				&& terrainMgr->CanBeBuiltAtSafe(infos[j].cdef, position))
+			{
 				lowerIdx = j;
 				break;
 			}
 		}
-		return (lowerIdx < 0) || (curWind * infos[i].score > infos[lowerIdx].data.make * infos[lowerIdx].score);
+		return (lowerIdx < 0) || (SQUARE(curWind) / SQUARE(infos[i].data.make) * infos[i].score > infos[lowerIdx].score);
 	};
 
 	for (unsigned i = 0; i < infos.size(); ++i) {  // sorted by high-tech first
@@ -1220,13 +1216,13 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 			isLastHope = false;
 			if (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 4 + 1)) {
 				bestDef = engy.cdef;
-				if ((engy.data.cond.metalIncome < buildTimeMod * metalIncome)
+				if ((engy.data.cond.metalIncome < metalIncome)
 					&& (engy.data.cond.energyIncome < energyIncome)
 					&& (!engy.cdef->IsWind() || checkWind(i)))
 				{
 					break;
 				}
-			} else if ((engy.data.cond.metalIncome < buildTimeMod * metalIncome)
+			} else if ((engy.data.cond.metalIncome < metalIncome)
 				&& (engy.data.cond.energyIncome < energyIncome))
 			{
 				bestDef = nullptr;
@@ -1252,7 +1248,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// TODO: Add place finder
 	// 1) at very this position
 	// 2) near mex
-	// 3) at resource base (separate metla / energy)
+	// 3) at resource base (separate metal / energy)
 	// 4) at production base
 	AIFloat3 buildPos = -RgtVector;
 	if (bestDef->GetCostM() < 200.0f) {
@@ -1753,7 +1749,7 @@ bool CEconomyManager::CheckAirpadRequired(const AIFloat3& position, CCircuitUnit
 			return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, buildPos);
 		});
 	} else {
-		const std::vector<CCircuitDef*>& padDefOptions = GetPadDefs(unit->GetCircuitDef());
+		const std::vector<CCircuitDef*>& padDefOptions = airpadDefs.GetBuildDefs(unit->GetCircuitDef());
 		for (CCircuitDef* apDef : padDefOptions) {
 			if (apDef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(apDef, buildPos)) {
 				airpadDef = apDef;

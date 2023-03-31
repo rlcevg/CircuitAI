@@ -26,11 +26,16 @@ CMetalData::CMetalData()
 		, terrain(nullptr)
 		, spotsAdaptor(spots)
 		, metalTree(2 /*dim*/, spotsAdaptor, KDTreeSingleIndexAdaptorParams(4 /*max leaf*/))
-		, minIncome(std::numeric_limits<float>::max())
-		, avgIncome(0.f)
-		, maxIncome(0.f)
+		, spotMinIncome(std::numeric_limits<float>::max())
+		, spotAvgIncome(0.f)
+		, spotMaxIncome(0.f)
+		, spotStdDeviation(0.f)
 		, clustersAdaptor(clusters)
 		, clusterTree(2 /*dim*/, clustersAdaptor, KDTreeSingleIndexAdaptorParams(2 /*max leaf*/))
+		, clusterMinIncome(std::numeric_limits<float>::max())
+		, clusterAvgIncome(0.f)
+		, clusterMaxIncome(0.f)
+		, clusterStdDeviation(0.f)
 		, clusterEdgeCosts(clusterGraph)
 		, isClusterizing(false)
 {
@@ -43,14 +48,7 @@ CMetalData::~CMetalData()
 void CMetalData::Init(const Metals&& spots)
 {
 	this->spots = spots;
-	for (SMetal& spot : this->spots) {
-		minIncome = std::min(minIncome, spot.income);
-		maxIncome = std::max(maxIncome, spot.income);
-		avgIncome += spot.income;
-	}
-	if (!spots.empty()) {
-		avgIncome /= spots.size();
-	}
+
 	metalTree.buildIndex();
 
 	isInitialized = true;
@@ -157,6 +155,41 @@ void CMetalData::Clusterize(float maxDistance, CRagMatrix<float>& distMatrix)
 	BuildClusterGraph();
 
 	isClusterizing = false;
+}
+
+void CMetalData::Statistics()
+{
+	if (spots.empty()) {
+		return;
+	}
+	for (const SMetal& spot : spots) {
+		spotMinIncome = std::min(spotMinIncome, spot.income);
+		spotMaxIncome = std::max(spotMaxIncome, spot.income);
+		spotAvgIncome += spot.income;
+	}
+	spotAvgIncome /= spots.size();
+	float spVariance = 0.f;
+	for (const SMetal& spot : spots) {
+		spVariance += SQUARE(spot.income - spotAvgIncome);
+	}
+	spVariance /= spots.size();
+	spotStdDeviation = sqrtf(spVariance);
+
+	if (clusters.empty()) {
+		return;
+	}
+	for (const SCluster& c : clusters) {
+		clusterMinIncome = std::min(clusterMinIncome, c.income);
+		clusterMaxIncome = std::max(clusterMaxIncome, c.income);
+		clusterAvgIncome += c.income;
+	}
+	clusterAvgIncome /= clusters.size();
+	float clVariance = 0.f;
+	for (const SCluster& c : clusters) {
+		clVariance += SQUARE(c.income - clusterAvgIncome);
+	}
+	clVariance /= clusters.size();
+	clusterStdDeviation = sqrtf(clVariance);
 }
 
 void CMetalData::AnalyzeMap(CCircuitAI* circuit, CMap* map, Resource* res, bwem::IGrid* ter, F3Vec& outSpots)

@@ -65,9 +65,15 @@ public:
 	bool IsClusterizing() const { return isClusterizing.load(); }
 	void SetClusterizing(bool value) { isClusterizing = value; }
 
-	float GetMinIncome() const { return minIncome; }
-	float GetAvgIncome() const { return avgIncome; }
-	float GetMaxIncome() const { return maxIncome; }
+	float GetSpotMinIncome() const { return spotMinIncome; }
+	float GetSpotAvgIncome() const { return spotAvgIncome; }
+	float GetSpotMaxIncome() const { return spotMaxIncome; }
+	float GetSpotStdDeviation() const { return spotStdDeviation; }
+
+	float GetClusterMinIncome() const { return clusterMinIncome; }
+	float GetClusterAvgIncome() const { return clusterAvgIncome; }
+	float GetClusterMaxIncome() const { return clusterMaxIncome; }
+	float GetClusterStdDeviation() const { return clusterStdDeviation; }
 
 	const Metals& GetSpots() const { return spots; }
 
@@ -87,6 +93,7 @@ public:
 	 * Hierarchical clusterization. Not reusable. Metric: complete link. Thread-unsafe
 	 */
 	void Clusterize(float maxDistance, CRagMatrix<float>& distmatrix);
+	void Statistics();
 
 	void AnalyzeMap(CCircuitAI* circuit, CMap* map, springai::Resource* res, bwem::IGrid* ter, F3Vec& outSpots);
 	virtual bool IsWalkable(int xSlope, int ySlope) const;  // x, y in slope map
@@ -112,9 +119,10 @@ private:
 			utils::SPointAdaptor<Metals>,
 			2 /* dim */, int>;
 	MetalTree metalTree;
-	float minIncome;
-	float avgIncome;
-	float maxIncome;
+	float spotMinIncome;
+	float spotAvgIncome;
+	float spotMaxIncome;
+	float spotStdDeviation;
 
 	Clusters clusters;
 	utils::SPointAdaptor<Clusters> clustersAdaptor;
@@ -123,6 +131,10 @@ private:
 			utils::SPointAdaptor<Clusters>,
 			2 /* dim */, int>;
 	ClusterTree clusterTree;
+	float clusterMinIncome;
+	float clusterAvgIncome;
+	float clusterMaxIncome;
+	float clusterStdDeviation;
 
 	ClusterGraph clusterGraph;
 	ClusterCostMap clusterEdgeCosts;

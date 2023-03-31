@@ -84,9 +84,15 @@ public:
 
 	bool IsSpotValid(int index, const springai::AIFloat3& pos) const;
 
-	float GetMinIncome() const { return metalData->GetMinIncome(); }
-	float GetAvgIncome() const { return metalData->GetAvgIncome(); }
-	float GetMaxIncome() const { return metalData->GetMaxIncome(); }
+	float GetSpotMinIncome() const { return metalData->GetSpotMinIncome(); }
+	float GetSpotAvgIncome() const { return metalData->GetSpotAvgIncome(); }
+	float GetSpotMaxIncome() const { return metalData->GetSpotMaxIncome(); }
+	float GetSpotStdDeviation() const { return metalData->GetSpotStdDeviation(); }
+
+	float GetClusterMinIncome() const { return metalData->GetClusterMinIncome(); }
+	float GetClusterAvgIncome() const { return metalData->GetClusterAvgIncome(); }
+	float GetClusterMaxIncome() const { return metalData->GetClusterMaxIncome(); }
+	float GetClusterStdDeviation() const { return metalData->GetClusterStdDeviation(); }
 
 private:
 	class SafeCluster;

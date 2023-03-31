@@ -8,6 +8,7 @@
 #include "task/builder/GuardTask.h"
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
+#include "terrain/TerrainManager.h"  // for CorrectPosition
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -75,14 +76,24 @@ bool CBGuardTask::Execute(CCircuitUnit* unit)
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitUnit* vip = circuit->GetTeamUnit(vipId);
 	if (vip != nullptr) {
+		const int frame = circuit->GetLastFrame();
+		const AIFloat3& vipPos = vip->GetPos(frame);
+		const AIFloat3& unitPos = unit->GetPos(frame);
 		TRY_UNIT(circuit, unit,
 			unit->CmdPriority(ClampPriority());
+			short options = UNIT_CMD_OPTION;
 			// FIXME: it's not "Smooth area" and is broken when waterlevel is changed
-//			const bool isRestore = unit->GetCircuitDef()->IsAbleToRestore();
-//			if (isRestore) {
+//			if (unit->GetCircuitDef()->IsAbleToRestore()) {
 //				unit->GetUnit()->RestoreArea(vip->GetPos(circuit->GetLastFrame()), 128.f);
+//				options = UNIT_COMMAND_OPTION_SHIFT_KEY;
 //			}
-			unit->GetUnit()->Guard(vip->GetUnit(), /*isRestore ? UNIT_COMMAND_OPTION_SHIFT_KEY : */0);
+			if ((unit->GetCircuitDef()->GetBuildDistance() > 80.f) && (vipPos.SqDistance2D(unitPos) < SQUARE(48.f))) {
+				AIFloat3 pos = vipPos + (unitPos - vipPos).Normalize2D() * 64.f;
+				CTerrainManager::CorrectPosition(pos);
+				unit->CmdMoveTo(pos, options | UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
+				options = UNIT_COMMAND_OPTION_SHIFT_KEY;
+			}
+			unit->GetUnit()->Guard(vip->GetUnit(), options);
 		)
 	} else {
 		manager->AbortTask(this);
