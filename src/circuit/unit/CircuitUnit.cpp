@@ -195,7 +195,8 @@ bool CCircuitUnit::IsWeaponReady(int frame)
 
 bool CCircuitUnit::IsDGunReady(int frame, float energy)
 {
-	return (dgun->GetReloadFrame() <= frame) && (dgunDef->GetCostE() < energy);
+	return (dgun->GetReloadFrame() <= frame) && (dgunDef->GetCostE() < energy)
+		&& (!dgunDef->IsStockpile() || (unit->GetStockpile() > 0));
 }
 
 bool CCircuitUnit::IsShieldCharged(float percent)

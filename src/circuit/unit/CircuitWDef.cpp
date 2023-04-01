@@ -21,7 +21,8 @@ CWeaponDef::CWeaponDef(WeaponDef* def, Resource* resM, Resource* resE)
 	aoe = def->GetAreaOfEffect();
 	costM = def->GetCost(resM);
 	costE = def->GetCost(resE);
-	if (def->IsStockpileable()) {
+	isStockpile = def->IsStockpileable();
+	if (isStockpile) {
 		const float stockTime = def->GetStockpileTime() / FRAMES_PER_SEC;
 		costM /= stockTime;
 		costE /= stockTime;

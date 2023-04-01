@@ -35,6 +35,8 @@ protected:
 	virtual bool Reevaluate(CCircuitUnit* unit);
 
 private:
+	bool IsTargetBuilder() const;
+
 	ICoreUnit::Id vipId;
 	bool isInterrupt;
 };

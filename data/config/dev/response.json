@@ -106,6 +106,13 @@
 		"importance": [ 0.00],
 		"max_percent": 0.00,
 		"eps_step": 0.00
+	},
+	"rezzer": {
+		"vs":         ["static", "builder", "assault"],
+		"ratio":      [ 1.00,     1.00,      1.00],
+		"importance": [ 1000.00,  1000.00,   1000.00],
+		"max_percent": 0.1,
+		"eps_step": 0.1
 	}
 }
 }

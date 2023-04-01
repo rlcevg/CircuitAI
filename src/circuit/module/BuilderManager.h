@@ -189,6 +189,9 @@ public:
 	void SetCanUpGeo(CCircuitDef* cdef, bool value);
 	bool CanUpGeo(CCircuitDef* cdef) const;
 
+	void IncGuardCount() { ++guardCount; }
+	void DecGuardCount() { --guardCount; }
+
 private:
 	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) override;
 	IBuilderTask* MakeEnergizerTask(CCircuitUnit* unit, const CQueryCostMap* query);
@@ -214,6 +217,7 @@ private:
 	std::map<ICoreUnit::Id, CBRepairTask*> repairUnits;
 	std::map<CAllyUnit*, CBReclaimTask*> reclaimUnits;
 	std::vector<std::set<IBuilderTask*>> buildTasks;  // UnitDef based tasks
+	unsigned int guardCount;
 	unsigned int buildTasksCount;
 	float buildPower;
 	std::vector<IUnitTask*> buildUpdates;  // owner

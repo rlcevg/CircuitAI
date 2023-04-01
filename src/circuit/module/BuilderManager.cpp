@@ -59,6 +59,7 @@ using namespace springai;
 
 CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		: IUnitModule(circuit, new CBuilderScript(circuit->GetScriptManager(), this))
+		, guardCount(0)
 		, buildTasksCount(0)
 		, buildPower(.0f)
 		, buildIterator(0)
@@ -1248,11 +1249,13 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 	const AIFloat3& pos = unit->GetPos(frame);
 //	CTerrainManager::CorrectPosition(pos);
 
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
-	if (factoryMgr->IsAssistRequired() && !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty()) {
+	if (factoryMgr->IsAssistRequired() && cdef->IsAbleToAssist() && (guardCount <= GetWorkerCount() / 2)
+		&& !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty())
+	{
 		CCircuitUnit* vip = *factoryMgr->GetTasks().front()->GetAssignees().begin();
 		if (vip->GetPos(frame).SqDistance2D(pos) < SQUARE(1000.f)) {
-			factoryMgr->ClearAssistRequired();
 			return EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * 10);
 		}
 	}
@@ -1268,7 +1271,6 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 
-	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	const float buildSqDistance = SQUARE(buildDistance);
@@ -1466,11 +1468,13 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 	const AIFloat3& pos = unit->GetPos(frame);
 //	CTerrainManager::CorrectPosition(pos);
 
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
-	if (factoryMgr->IsAssistRequired() && !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty()) {
+	if (factoryMgr->IsAssistRequired() && cdef->IsAbleToAssist() && (guardCount <= GetWorkerCount() / 2)
+		&& !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty())
+	{
 		CCircuitUnit* vip = *factoryMgr->GetTasks().front()->GetAssignees().begin();
 		if (vip->GetPos(frame).SqDistance2D(pos) < SQUARE(1000.f)) {
-			factoryMgr->ClearAssistRequired();
 			return EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * 10);
 		}
 	}
@@ -1491,7 +1495,6 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 
-	CCircuitDef* cdef = unit->GetCircuitDef();
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const float maxThreat = threatMap->GetUnitPower(unit);
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());

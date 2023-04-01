@@ -13,7 +13,7 @@
 				"factory": {
 					"armlab": [
 						// [<weight>, [<role>, <role>, ...]]
-						[0.9, ["raider", "builder", "scout", "raider", "builder", "raider", "raider", "raider", "builder", "support", "raider"]],
+						[0.9, ["builder", "raider", "scout", "raider", "builder", "raider", "raider", "raider", "builder", "support", "raider"]],
 						[0.1, ["raider", "builder", "riot", "builder", "raider", "raider", "raider", "raider", "builder", "raider", "support"]]
 					],
 					"armalab": [
@@ -57,7 +57,7 @@
 				"factory": {
 					"corlab": [
 						// [<weight>, [<role>, <role>, ...]]
-						[0.9, ["raider", "builder", "scout", "raider", "builder", "raider", "raider", "raider", "builder", "support", "raider"]],
+						[0.9, ["builder", "raider", "scout", "raider", "builder", "raider", "raider", "raider", "builder", "support", "raider"]],
 						[0.1, ["raider", "builder", "riot", "builder", "raider", "raider", "raider", "raider", "builder", "raider", "support"]]
 					],
 					"coralab": [

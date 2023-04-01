@@ -383,9 +383,8 @@
 		"retreat": 0.1
 	},
 	"armrectr": {
-		"role": ["raider"],
-		"limit": 10,
-		"since": 200
+		"role": ["rezzer"],
+		"limit": 10
 	},
 	"armrock": {
 		"role": ["skirmish"]
@@ -721,9 +720,8 @@
 		"retreat": 0.1
 	},
 	"cornecro": {
-		"role": ["raider"],
-		"limit": 10,
-		"since": 200
+		"role": ["rezzer"],
+		"limit": 10
 	},
 	"corstorm": {
 		"role": ["skirmish"]

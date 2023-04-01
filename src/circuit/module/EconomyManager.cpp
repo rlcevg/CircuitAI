@@ -1183,7 +1183,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	metalIncome = std::min(metalIncome, energyIncome) * energyFactor;
 	const float buildPower = std::min(builderMgr->GetBuildPower(), metalIncome);
 	const int taskSize = builderMgr->GetTasks(IBuilderTask::BuildType::ENERGY).size();
-	energyIncome *= isEnergyStalling ? 0.25f : 1.f;
+	energyIncome *= isEnergyStalling ? 0.5f : 1.f;
 	isEnergyStalling |= isEnergyRequired;
 	bool isLastHope = isEnergyStalling;
 	const int frame = circuit->GetLastFrame();

@@ -70,7 +70,6 @@ public:
 	bool CanEnqueueTask() const { return factoryTasks.size() < factories.size() * 2; }
 	const std::vector<CRecruitTask*>& GetTasks() const { return factoryTasks; }
 	bool IsAssistRequired() const { return isAssistRequired; }
-	void ClearAssistRequired() { isAssistRequired = false; }
 	void ApplySwitchFrame();
 	bool IsSwitchTime();
 	void RaiseSwitchTime() { isSwitchTime = true; }

@@ -52,9 +52,9 @@ bool CBMexTask::CanAssignTo(CCircuitUnit* unit) const
 		return false;
 	}
 	CCircuitAI* circuit = manager->GetCircuit();
-//	if (circuit->GetEconomyManager()->IsEnergyStalling()) {
-//		return false;
-//	}
+	if (circuit->GetEconomyManager()->IsEnergyStalling() && circuit->GetBuilderManager()->GetWorkerCount() <= 2) {
+		return false;
+	}
 	if (unit->GetCircuitDef()->IsAttacker()) {
 		return true;
 	}

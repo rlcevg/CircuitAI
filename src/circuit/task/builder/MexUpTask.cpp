@@ -135,7 +135,7 @@ bool CBMexUpTask::Execute(CCircuitUnit* unit)
 			break;
 		}
 	}
-	if (oldMex != nullptr) {
+	if ((oldMex != nullptr) && !circuit->GetBuilderManager()->IsReclaimUnit(oldMex)) {
 		state = State::ENGAGE;  // reclaim finished => UnitIdle => build on 2nd try
 		reclaimMex = oldMex;
 		circuit->GetBuilderManager()->RegisterReclaim(reclaimMex);
