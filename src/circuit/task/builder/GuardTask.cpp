@@ -39,7 +39,7 @@ void CBGuardTask::AssignTo(CCircuitUnit* unit)
 
 	if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
 		static_cast<CBuilderManager*>(manager)->IncGuardCount();
-		if (IsTargetBuilder()) {
+		if (!IsTargetBuilder()) {
 			static_cast<CBuilderManager*>(manager)->DelBuildPower(unit);
 		}
 	}
@@ -58,7 +58,7 @@ void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
 
 	if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
 		static_cast<CBuilderManager*>(manager)->DecGuardCount();
-		if (IsTargetBuilder()) {
+		if (!IsTargetBuilder()) {
 			static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
 		}
 	}
@@ -66,11 +66,11 @@ void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
 
 void CBGuardTask::Stop(bool done)
 {
-	const bool isVIPBuilder = IsTargetBuilder();
+	const bool isVIPnotBuilder = !IsTargetBuilder();
 	for (CCircuitUnit* unit : units) {
 		if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
 			static_cast<CBuilderManager*>(manager)->DecGuardCount();
-			if (isVIPBuilder) {
+			if (isVIPnotBuilder) {
 				static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
 			}
 		}

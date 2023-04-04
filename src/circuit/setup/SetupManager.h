@@ -79,6 +79,7 @@ public:
 	void ReadConfig();
 	float GetEmptyShield() const { return emptyShield; }
 	float GetFullShield() const { return fullShield; }
+	int GetAssistFac() const { return assistFac; }
 
 	bool HasModules(const CCircuitDef* cdef, unsigned level) const;
 	const std::vector<float>& GetModules(const CCircuitDef* cdef, unsigned level) const;
@@ -116,6 +117,7 @@ private:
 
 	float emptyShield;
 	float fullShield;
+	int assistFac;
 
 	std::string commPrefix;
 	std::string commSuffix;

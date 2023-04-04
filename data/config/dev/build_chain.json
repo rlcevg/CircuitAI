@@ -188,10 +188,16 @@
 	},
 	"defence": {
 		"armanni": {
-			"hub": [[{"unit": "armjamt", "category": "defence", "offset": {"back": 80}}]]
+			"hub": [[
+				{"unit": "armjamt", "category": "defence", "offset": {"back": 80}, "condition": {"chance": 0.8}},
+				{"unit": "armgate", "category": "defence", "offset": {"back": 160}, "condition": {"chance": 0.8}}
+			]]
 		},
 		"cordoom" : {
-			"hub": [[{"unit": "corjamt", "category": "defence", "offset": {"back": 80}}]]
+			"hub": [[
+				{"unit": "corjamt", "category": "defence", "offset": {"back": 80}, "condition": {"chance": 0.8}},
+				{"unit": "corgate", "category": "defence", "offset": {"back": 160}, "condition": {"chance": 0.8}}
+			]]
 		}
 	},
 	"factory": {

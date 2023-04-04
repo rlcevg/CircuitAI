@@ -49,6 +49,8 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, energyBase(-RgtVector)
 		, energyBase2(-RgtVector)
 		, emptyShield(0.f)
+		, fullShield(0.f)
+		, assistFac(0)
 		, commChoice(nullptr)
 		, isSideSelected(false)
 {
@@ -422,6 +424,7 @@ void CSetupManager::ReadConfig()
 		sides[commDef->GetId()] = commSide;
 		if (circuit->GetSideName() == commSide) {
 			commChoice = commDef;
+			assistFac = comm.get("assist_fac", 0).asInt();
 		}
 	}
 

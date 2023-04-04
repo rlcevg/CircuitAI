@@ -38,7 +38,7 @@ void AiUpdateEconomy()
 
 	isSwitchAssist = isSwitchAssist && aiFactoryMgr.isAssistRequired;
 	aiFactoryMgr.isAssistRequired = isSwitchAssist
-		|| (metal.current > metal.storage * 0.2f && (energy.current > energy.storage * 0.7f || !aiEconomyMgr.isEnergyStalling));
+		|| (metal.current > metal.storage * 0.2f && energy.current > energy.storage * 0.4f && !aiEconomyMgr.isEnergyStalling);
 }
 
 }  // namespace Economy

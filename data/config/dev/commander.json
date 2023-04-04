@@ -46,6 +46,7 @@
 				"task_rad": [3300.0, 1000.0]  // [<peace_radius>, <danger_radius>]
 			},
 
+			"assist_fac": 4,
 			"side": "armada"
 		},
 		"corcom": {
@@ -90,6 +91,7 @@
 				"task_rad": [3300.0, 1000.0]  // [<peace_radius>, <danger_radius>]
 			},
 
+			"assist_fac": 4,
 			"side": "cortex"
 		}
 	}

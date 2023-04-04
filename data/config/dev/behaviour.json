@@ -473,7 +473,8 @@
 	},
 	"armvang": {
 		"role": ["artillery", "heavy"],
-		"power": 2.0
+		"power": 2.0,
+		"threat": 0.2
 	},
 	"armbanth": {
 		"role": ["assault", "heavy"],
@@ -558,7 +559,7 @@
 		"limit": 1
 	},
 	"armgremlin": {
-		"role": ["assault"]
+		"role": ["scout"]
 	},
 
 	// aircraft - armap

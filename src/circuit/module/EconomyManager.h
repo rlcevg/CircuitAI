@@ -190,6 +190,7 @@ private:
 		float make;
 	};
 	CAvailList<SConvertExt> convertDefs;
+	void ReclaimOldConvert(const SConvertExt* convertExt);
 
 	struct SGeoExt {
 		float make;

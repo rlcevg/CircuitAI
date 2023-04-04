@@ -1136,6 +1136,8 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	const float buildSqDistance = SQUARE(buildDistance);
+	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	const float maxSqBaseDist = pos.SqDistance2D(basePos);
 	float metric = std::numeric_limits<float>::max();
 
 	std::array<std::pair<IBuilderTask::BuildType, float>, static_cast<int>(IBuilderTask::BuildType::_SIZE_)> prioTasks = {
@@ -1160,6 +1162,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	};
 
 	for (const std::pair<IBuilderTask::BuildType, float>& pair : prioTasks) {
+		const float maxSqTaskDist = std::max(maxSqBaseDist, pair.second);
 		for (const IBuilderTask* candidate : GetTasks(pair.first)) {
 			if (!candidate->CanAssignTo(unit)) {
 				continue;
@@ -1180,6 +1183,7 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 				int index = metalMgr->FindNearestCluster(buildPos);
 				const AIFloat3& testPos = (index < 0) ? buildPos : clusters[index].position;
 				if ((pos.SqDistance2D(testPos) > pair.second)
+					|| (basePos.SqDistance2D(testPos) > maxSqTaskDist)  // take task closer to base, related to con created out of base. TODO: use query->GetCostAt()?
 					|| !terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
 					|| (inflMap->GetInfluenceAt(testPos) < -INFL_EPS))  // safety check
 				{
@@ -1251,7 +1255,9 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
-	if (factoryMgr->IsAssistRequired() && cdef->IsAbleToAssist() && (guardCount <= GetWorkerCount() / 2)
+	CSetupManager* setupMgr = circuit->GetSetupManager();
+	if (factoryMgr->IsAssistRequired() && cdef->IsAbleToAssist() && !cdef->IsAttrSolo()
+		&& (guardCount <= GetWorkerCount() / 4) && (!cdef->IsRoleComm() || ((int)GetWorkerCount() <= setupMgr->GetAssistFac()))
 		&& !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty())
 	{
 		CCircuitUnit* vip = *factoryMgr->GetTasks().front()->GetAssignees().begin();
@@ -1274,7 +1280,7 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	const float buildSqDistance = SQUARE(buildDistance);
-	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
+	const AIFloat3& basePos = setupMgr->GetBasePos();
 	float metric = std::numeric_limits<float>::max();
 	for (const std::set<IBuilderTask*>& tasks : buildTasks) {
 		for (const IBuilderTask* candidate : tasks) {
@@ -1470,7 +1476,9 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
-	if (factoryMgr->IsAssistRequired() && cdef->IsAbleToAssist() && (guardCount <= GetWorkerCount() / 2)
+	CSetupManager* setupMgr = circuit->GetSetupManager();
+	if (factoryMgr->IsAssistRequired() && cdef->IsAbleToAssist() && !cdef->IsAttrSolo()
+		&& (guardCount <= GetWorkerCount() / 4) && (!cdef->IsRoleComm() || ((int)GetWorkerCount() <= setupMgr->GetAssistFac()))
 		&& !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty())
 	{
 		CCircuitUnit* vip = *factoryMgr->GetTasks().front()->GetAssignees().begin();
@@ -1495,8 +1503,18 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 	CInfluenceMap* inflMap = circuit->GetInflMap();
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 
-	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const float maxThreat = threatMap->GetUnitPower(unit);
+	std::function<bool (const AIFloat3&)> checkThreat;
+	if (cdef->IsAbleToFly()) {
+		checkThreat = [threatMap, maxThreat](const AIFloat3& pos) {
+			return threatMap->GetThreatAt(pos) > maxThreat;
+		};
+	} else {
+		checkThreat = [threatMap, maxThreat](const AIFloat3& pos) {
+			return threatMap->GetThreatAt(pos) > maxThreat || threatMap->GetBuilderThreatAt(pos) > maxThreat;
+		};
+	}
+	const float maxSpeed = cdef->GetSpeed() / pathfinder->GetSquareSize() * COST_BASE;
 	const int buildDistance = std::max<int>(cdef->GetBuildDistance(), pathfinder->GetSquareSize());
 	const float buildSqDistance = SQUARE(buildDistance);
 	float metric = std::numeric_limits<float>::max();
@@ -1526,8 +1544,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 				CCircuitDef* buildDef = candidate->GetBuildDef();
 				const float buildThreat = (buildDef != nullptr) ? buildDef->GetPower() : 0.f;
 				if (!terrainMgr->CanReachAt(unit, buildPos, cdef->GetBuildDistance())  // ensure that path always exists
-					|| (((buildThreat < THREAT_MIN) && (threatMap->GetThreatAt(buildPos) > maxThreat))
-						&& (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS)))  // safety check
+					|| ((buildThreat < THREAT_MIN) && checkThreat(buildPos) && (inflMap->GetInfluenceAt(buildPos) < -INFL_EPS)))  // safety check
 				{
 					continue;
 				}

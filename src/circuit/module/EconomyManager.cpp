@@ -113,6 +113,13 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 		metal.income += income;
 	};
+	auto convertFinishedHandler = [this](CCircuitUnit* unit) {
+		const SConvertExt* convertExt = convertDefs.GetAvailInfo(unit->GetCircuitDef());
+		if (convertExt == nullptr) {
+			return;
+		}
+		ReclaimOldConvert(convertExt);
+	};
 
 	/*
 	 * morph & plop
@@ -243,6 +250,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			if (((it = customParams.find("energyconv_capacity")) != customParams.end()) && (utils::string_to_float(it->second) > 0.f)
 				&& ((it = customParams.find("energyconv_efficiency")) != customParams.end()) && (utils::string_to_float(it->second) > 0.f))
 			{
+				finishedHandler[cdef.GetId()] = convertFinishedHandler;
 				convertDefs.AddDef(&cdef);
 			}
 
@@ -1921,9 +1929,27 @@ void CEconomyManager::UpdateEconomy()
 	pullMtoS *= circuit->GetMilitaryManager()->ClampMobileCostRatio();
 }
 
+void CEconomyManager::ReclaimOldConvert(const SConvertExt* convertExt)
+{
+	if (circuit->IsLoadSave() || (IsEnergyFull() && !IsEnergyStalling())) {
+		return;
+	}
+	auto ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(circuit->GetSetupManager()->GetMetalBase(), 1000.f, false);
+	for (int id : ids) {
+		CCircuitUnit* unit = circuit->GetTeamUnit(id);
+		if ((unit == nullptr) || !convertDefs.IsAvail(unit->GetCircuitDef())) {
+			continue;
+		}
+		auto info = convertDefs.GetAvailInfo(unit->GetCircuitDef());
+		if (convertExt->make > info->make * 2.f) {
+			circuit->GetBuilderManager()->EnqueueReclaim(IUnitTask::Priority::HIGH, unit, FRAMES_PER_SEC * 1200);
+		}
+	}
+}
+
 void CEconomyManager::ReclaimOldEnergy(const SEnergyExt* energyExt)
 {
-	if (circuit->IsLoadSave() || GetAvgEnergyIncome() < energyExt->cond.energyIncome) {
+	if (circuit->IsLoadSave() || (GetAvgEnergyIncome() < energyExt->cond.energyIncome)) {
 		return;
 	}
 	auto ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(circuit->GetSetupManager()->GetBasePos(), 1000.f, false);
