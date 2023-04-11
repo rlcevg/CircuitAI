@@ -230,6 +230,8 @@ public:
 	//      Note: negative Area::ids start from -2
 	CArea::Id GetAreaId() const { return areaId; }
 
+	TilePosition GetSource() const { return source; }
+
 	////////////////////////////////////////////////////////////////////////////
 	//	Details: The functions below are used by the BWEM's internals
 	void SetWalkable(bool walkable) { areaId = (walkable ? -1 : 0); altitude = (walkable ? -1 : 1); }
@@ -237,7 +239,7 @@ public:
 	void SetSea() { assert(!IsWalkable() && IsSeaOrLake()); altitude = 0; }
 	void SetLake() { assert(!IsWalkable() && IsSea()); altitude = -1; }
 	bool IsAltitudeMissing() const { return altitude == -1; }
-	void SetAltitude(CArea::Altitude a) { assert(IsAltitudeMissing() && (a > 0)); altitude = a; }
+	void SetAltitude(CArea::Altitude a, TilePosition origin) { assert(IsAltitudeMissing() && (a > 0)); altitude = a; source = origin; }
 	bool IsAreaIdMissing() const { return areaId == -1; }
 	void SetAreaId(CArea::Id id) { assert(IsAreaIdMissing() && (id >= 1)); areaId = id; }
 	void ReplaceAreaId(CArea::Id id) { assert((areaId > 0) && ((id >= 1) || (id <= -2)) && (id != areaId)); areaId = id; }
@@ -245,6 +247,7 @@ public:
 private:
 	CArea::Altitude altitude = -1;  // 0 for seas;  != 0 for terrain and lakes (-1 = not computed yet);  1 = SeaOrLake intermediate value
 	CArea::Id       areaId   = -1;  // 0 -> unwalkable;  > 0 -> index of some Area;  < 0 -> some walkable terrain, but too small to be part of an Area
+	TilePosition    source;
 };
 
 class CSector {  // NxN CTile
@@ -313,6 +316,8 @@ protected:
 	std::vector<CChokePoint*> chokePointList;
 	circuit::CRagMatrix<std::vector<CChokePoint>> chokePointsMatrix;  // index == Area::id x Area::id
 
+	circuit::CRagMatrix<std::vector<SectorPosition>> veinsMatrix;
+
 	std::vector<CSector> sectors;
 public:
 	int sectorXSize;
@@ -378,6 +383,7 @@ private:
 	std::pair<CArea::Id, CArea::Id> FindNeighboringAreas(TilePosition p) const;
 	CArea::Id ChooseNeighboringArea(CArea::Id a, CArea::Id b);
 	std::vector<CTempAreaInfo> ComputeTempAreas(const std::vector<std::pair<TilePosition, CTile*>>& tilesByDescendingAltitude);
+	void ComputeCorridors(std::vector<CTempAreaInfo>& tempAreas);
 	void ReplaceAreaIds(TilePosition p, CArea::Id newAreaId);
 	void CreateAreas(const std::vector<CTempAreaInfo>& tempAreaList);
 

@@ -382,20 +382,13 @@ void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 #endif
 }
 
-void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& pos, const CCircuitDef* mobileDef)
+void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& toPos, const CCircuitDef* mobileDef)
 {
-	const int iS = GetSectorIndex(pos);
+	const int iS = GetSectorIndex(toPos);
 	constexpr int altitude = 4 * 2 * ALTITUDE_SCALE;  // 4 - tiles in sector, side
 	SAreaSector* CAS = GetClosestSectorWithAltitude(unit->GetArea(), iS, altitude);
 	if (CAS == nullptr) {
 		return;
-	}
-
-	IndexVec targets;
-	for (const auto& kv : busPath) {
-		if (kv.second != nullptr) {
-			targets.insert(targets.end(), kv.second->path.begin(), kv.second->path.end());
-		}
 	}
 
 	AIFloat3 startPos = unit->GetPos(circuit->GetLastFrame());
@@ -416,6 +409,16 @@ void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& pos, const 
 	}
 	const AIFloat3& endPos = CAS->S->position;
 
+	IndexVec targets;
+	for (const auto& kv : busPath) {
+		if (kv.second != nullptr) {
+			// targets will have many duplicates, but performance hit shouldn't
+			// worth an effort to store additional array of only unique sectors
+			// @see FillParentBusNodes
+			targets.insert(targets.end(), kv.second->path.begin(), kv.second->path.end());
+		}
+	}
+
 	FactoryPathQuery& fpq = busQueries[unit];
 	fpq.mobileDef = mobileDef;
 	fpq.startPos = startPos;
@@ -430,28 +433,56 @@ void CTerrainManager::DelBusPath(CCircuitUnit* unit)
 	if (it == busPath.end()) {
 		return;
 	}
-	// TODO: Path for new factories contains only part that connects to 1st built path.
-	//       Hence removing it leaves others with short leftover.
-	//       Place it to AllyTeam and count or copy common path nodes.
-//	CPathFinder* pathfinder = circuit->GetPathfinder();
-//	const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
-//	for (int index : it->second.path->path) {
-//		int ix, iz;
-//		pathfinder->PathIndex2PathXY(index, &ix, &iz);
-//
-//		ix = ix * granularity + granularity / 2;
-//		iz = iz * granularity + granularity / 2;
-//		int2 m1(ix - 4, iz - 4);
-//		int2 m2(ix + 4, iz + 4);
-//		blockingMap.Bound(m1, m2);
-//		for (int z = m1.y; z < m2.y; ++z) {
-//			for (int x = m1.x; x < m2.x; ++x) {
-//				blockingMap.DelBlocker(x, z, SBlockingMap::StructType::TERRA);
-//			}
-//		}
-//	}
+
+	if (it->second != nullptr) {
+		// TODO: Path for new factories contains only part that connects to 1st built path.
+		//       Hence removing it leaves others with short leftover.
+		//       Place it to AllyTeam and count or copy common path nodes.
+		CPathFinder* pathfinder = circuit->GetPathfinder();
+		const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
+		for (int index : it->second->path) {
+			int ix, iz;
+			pathfinder->PathIndex2PathXY(index, &ix, &iz);
+
+			ix = ix * granularity + granularity / 2;
+			iz = iz * granularity + granularity / 2;
+			int2 m1(ix - 4, iz - 4);
+			int2 m2(ix + 4, iz + 4);
+			blockingMap.Bound(m1, m2);
+			for (int z = m1.y; z < m2.y; ++z) {
+				for (int x = m1.x; x < m2.x; ++x) {
+					blockingMap.DelBlocker(x, z, SBlockingMap::StructType::TERRA);
+				}
+			}
+		}
+	}
 	busPath.erase(it);
 	busQueries.erase(unit);
+}
+
+AIFloat3 CTerrainManager::GetBusPos(const AIFloat3& pos)
+{
+	CCircuitUnit* unit = nullptr;
+	CPathInfo* pathInfo = nullptr;
+	const int frame = circuit->GetLastFrame();
+	float minSqDist = std::numeric_limits<float>::max();
+	for (auto& kv : busPath) {
+		const float sqDist = kv.first->GetPos(frame).SqDistance2D(pos);
+		if ((minSqDist > sqDist) && (kv.second != nullptr)) {
+			minSqDist = sqDist;
+			unit = kv.first;
+			pathInfo = kv.second.get();
+		}
+	}
+	if (unit == nullptr) {
+		return pos;
+	}
+	// 4 steps ahead for normal size map where sector is 64x64.
+	const int index = std::min<int>(256 / GetConvertStoP(), pathInfo->path.size()) - 1;
+	if (index < 0) {
+		return pos;
+	}
+	return circuit->GetPathfinder()->PathIndex2Pos(pathInfo->path[index]);
 }
 
 AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, bool isIgnore)
@@ -1214,6 +1245,7 @@ void CTerrainManager::MarkBusPath()
 				return;
 			}
 			const CQueryPathWide* q = static_cast<const CQueryPathWide*>(query);
+			FillParentBusNodes(q->GetPathInfo().get());
 			CPathFinder* pathfinder = circuit->GetPathfinder();
 			const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
 			for (int index : q->GetPathInfo()->path) {
@@ -1234,6 +1266,24 @@ void CTerrainManager::MarkBusPath()
 			it->second = q->GetPathInfo();
 			busQueries.erase(query->GetUnit());
 		});
+	}
+}
+
+void CTerrainManager::FillParentBusNodes(CPathInfo* pathInfo)
+{
+	for (const auto& kv : busPath) {
+		if (kv.second == nullptr) {
+			continue;
+		}
+		const IndexVec& path = kv.second->path;
+		auto it = path.begin();
+		while ((it != path.end()) && (pathInfo->path.back() != *it)) {
+			++it;
+		}
+		if ((it != path.end()) && (++it != path.end())) {
+			pathInfo->path.insert(pathInfo->path.end(), it, path.end());
+			return;
+		}
 	}
 }
 

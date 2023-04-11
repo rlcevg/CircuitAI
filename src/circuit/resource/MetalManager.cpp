@@ -324,10 +324,12 @@ void CMetalManager::MarkAllyMexes(const std::vector<CAllyUnit*>& mexes)
 			mex.unitId = unit->GetId();
 			*d_first++ = mex;
 			clusterInfos[metalInfos[mex.index].clusterId].finishedCount++;
+			SetOpenSpot(mex.index, false);
 		}
 	};
 	auto delMex = [this](const SMex& mex) {
 		clusterInfos[metalInfos[mex.index].clusterId].finishedCount--;
+		SetOpenSpot(mex.index, true);
 	};
 
 	// @see std::set_symmetric_difference + std::set_intersection

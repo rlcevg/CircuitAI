@@ -16,6 +16,7 @@ namespace bwem {
 
 using namespace circuit;
 using namespace springai;
+springai::Lua* gDebugLua;
 
 CChokePoint::CChokePoint(const CGridAnalyzer& ta, Id idx, const CArea* area1, const CArea* area2, const std::deque<TilePosition>& geometry)
 		: id(idx), areas(area1, area2)
@@ -319,6 +320,17 @@ void IGrid::UpdateTAVis()
 
 	debugDrawer->DrawTex(tileWin.first, tileWin.second);
 	debugDrawer->DrawTex(sectorWin.first, sectorWin.second);
+
+	std::ostringstream cmd;
+	cmd << "ai_thr_data:";
+	std::vector<float> dataArray;
+	dataArray.reserve(sectors.size());
+	for (int i = 0; i < debugData->tileSize.x * debugData->tileSize.y; ++i) {
+		dataArray.push_back(debugData->tiles[i].GetAltitude());
+	}
+	cmd.write(reinterpret_cast<const char*>(dataArray.data()), sectors.size() * sizeof(float));
+	std::string s = cmd.str();
+	debugLua->CallRules(s.c_str(), s.size());
 }
 
 void IGrid::ToggleTAVis(int frame)
@@ -328,8 +340,10 @@ void IGrid::ToggleTAVis(int frame)
 	}
 	toggleFrame = frame;
 
-	std::string cmd("ai_thr_draw:");
+	std::string cmd("ai_thr_print:");
 	debugLua->CallRules(cmd.c_str(), cmd.size());
+//	std::string cmd("ai_thr_draw:");
+//	debugLua->CallRules(cmd.c_str(), cmd.size());
 	cmd = "ai_thr_size:16 0";
 	debugLua->CallRules(cmd.c_str(), cmd.size());
 
@@ -384,26 +398,26 @@ void IGrid::ToggleTAVis(int frame)
 
 		UpdateTAVis();
 
-		for (CArea::Id a = 1; a <= AreasCount(); ++a) {
-			for (CArea::Id b = 1; b < a; ++b) {
-				const auto& chokes = GetChokePoints(a, b);
-				for (const CChokePoint& cp : chokes) {
-					AIFloat3 pos = cp.GetCenter();
-					std::string cmd("ai_mrk_add:");
-					cmd += utils::int_to_string(pos.x) + " " + utils::int_to_string(pos.z) + " 16 0.2 0.2 0.9 9";
-					debugLua->CallRules(cmd.c_str(), cmd.size());
-				}
-			}
-		}
-		std::ostringstream cmd;
-		cmd << "ai_blk_data:";
-		char tmp[debugData->tileSize.x * debugData->tileSize.y] = {0};
-		for (const CGridAnalyzer::SFrontier& f : debugData->rawFrontier) {
-			tmp[debugData->tileSize.x * f.pos.y + f.pos.x] = 255;
-		}
-		cmd.write(&tmp[0], debugData->tileSize.x * debugData->tileSize.y);
-		std::string s = cmd.str();
-		debugLua->CallRules(s.c_str(), s.size());
+//		for (CArea::Id a = 1; a <= AreasCount(); ++a) {
+//			for (CArea::Id b = 1; b < a; ++b) {
+//				const auto& chokes = GetChokePoints(a, b);
+//				for (const CChokePoint& cp : chokes) {
+//					AIFloat3 pos = cp.GetCenter();
+//					std::string cmd("ai_mrk_add:");
+//					cmd += utils::int_to_string(pos.x) + " " + utils::int_to_string(pos.z) + " 16 0.2 0.2 0.9 9";
+//					debugLua->CallRules(cmd.c_str(), cmd.size());
+//				}
+//			}
+//		}
+//		std::ostringstream cmd;
+//		cmd << "ai_blk_data:";
+//		char tmp[debugData->tileSize.x * debugData->tileSize.y] = {0};
+//		for (const CGridAnalyzer::SFrontier& f : debugData->rawFrontier) {
+//			tmp[debugData->tileSize.x * f.pos.y + f.pos.x] = 255;
+//		}
+//		cmd.write(&tmp[0], debugData->tileSize.x * debugData->tileSize.y);
+//		std::string s = cmd.str();
+//		debugLua->CallRules(s.c_str(), s.size());
 
 	} else {
 
@@ -433,6 +447,7 @@ CGridAnalyzer::~CGridAnalyzer()
 
 void CGridAnalyzer::Analyze(CCircuitAI* circuit)
 {
+gDebugLua = circuit->GetLua();
 	tiles.resize(config.tileSize.x * config.tileSize.y);
 
 	LoadData();
@@ -604,7 +619,7 @@ void CGridAnalyzer::ComputeAltitude()
 					if (IsValid(w)) {
 						CTile& tile = GetTile(w);
 						if (tile.IsAltitudeMissing()) {
-							tile.SetAltitude(maxAltitude = current.lastAltitudeGenerated = altitude);
+							tile.SetAltitude(maxAltitude = current.lastAltitudeGenerated = altitude, current.origin);
 						}
 					}
 				}
@@ -666,6 +681,7 @@ void CGridAnalyzer::ComputeAreas()
 {
 	std::vector<std::pair<TilePosition, CTile*>> tilesByDescendingAltitude = SortTiles();
 	std::vector<CTempAreaInfo> tempAreaList = ComputeTempAreas(tilesByDescendingAltitude);
+	ComputeCorridors(tempAreaList);
 	CreateAreas(tempAreaList);
 	grid->SetAreaIdInSectors(*this);
 }
@@ -701,15 +717,15 @@ std::pair<CArea::Id, CArea::Id> CGridAnalyzer::FindNeighboringAreas(TilePosition
 	std::pair<CArea::Id, CArea::Id> result(0, 0);
 
 	for (TilePosition delta : {TilePosition(0, -1), TilePosition(-1, 0), TilePosition(+1, 0), TilePosition(0, +1)}) {
-		if (IsValid(p + delta)) {
-			CArea::Id areaId = GetTile(p + delta).GetAreaId();
-			if (areaId > 0) {
-				if (!result.first) result.first = areaId;
-				else if (result.first != areaId)
-					if (!result.second || (areaId < result.second))
-						result.second = areaId;
-			}
-		}
+		if (!IsValid(p + delta))
+			continue;
+		CArea::Id areaId = GetTile(p + delta).GetAreaId();
+		if (areaId <= 0)
+			continue;
+		if (!result.first) result.first = areaId;
+		else if (result.first != areaId)
+			if (!result.second || (areaId < result.second))
+				result.second = areaId;
 	}
 
 	return result;
@@ -773,6 +789,66 @@ std::vector<CTempAreaInfo> CGridAnalyzer::ComputeTempAreas(const std::vector<std
 		{ return f.areaId1 == f.areaId2; });
 
 	return tempAreaList;
+}
+
+void CGridAnalyzer::ComputeCorridors(std::vector<CTempAreaInfo>& tempAreas)
+{
+/*
+	for (CTempAreaInfo& tmpArea: tempAreas) {
+		tmpArea.Top() => adjacent area?
+	}
+	// vein test
+	bool isVein = (cur->GetAltitude() <= ALTITUDE_SCALE * 20);
+	if (isVein) {
+		for (TilePosition delta : {TilePosition(0, -1), TilePosition(-1, 0), TilePosition(+1, 0), TilePosition(0, +1)}) {
+			TilePosition neigh = pos + delta;
+			if (!IsValid(neigh)) {
+				continue;
+			}
+			CTile& tNeigh = GetTile(neigh);
+			if (tNeigh.IsSea()) {
+				continue;
+			}
+			if ((cur->GetAltitude() < tNeigh.GetAltitude()) && (tNeigh.GetAltitude() - cur->GetAltitude() > ALTITUDE_SCALE / 4)) {
+				isVein = false;
+				break;
+			}
+		}
+	}
+	if (isVein && !tempAreaList[neighboringAreas.first].IsCorridor()) {
+		std::array<TilePosition, 8> deltas = {
+			TilePosition(-2, -2), TilePosition( 0, -3), TilePosition(+2, -2),
+			TilePosition(-3,  0),                       TilePosition(+3,  0),
+			TilePosition(-2, +2), TilePosition( 0, +3), TilePosition(+2, +2)
+		};
+		CArea::Altitude maxAlt = -1;
+		for (int i = 0; i < 8; ++i) {
+			TilePosition test = pos + deltas[i];
+			if (!IsValid(test)) {
+				continue;
+			}
+			CTile& tTest = GetTile(test);
+			if (tTest.IsSea() || tTest.IsAreaIdMissing()) {
+				continue;
+			}
+			if (maxAlt < tTest.GetAltitude()) {
+				maxAlt = tTest.GetAltitude();
+			}
+		}
+		if (std::fabs(cur->GetAltitude() - maxAlt) < ALTITUDE_SCALE / 2) {  // isCorridor
+			CArea::Id areaId = tempAreaList.size();
+			tempAreaList.emplace_back(areaId, cur, pos, true);
+			rawFrontier.emplace_back(SFrontier{neighboringAreas.first, areaId, pos});
+
+std::string cmd("ai_mrk_add:");
+cmd += utils::int_to_string(pos.x * 16 + 8) + " " + utils::int_to_string(pos.y * 16 + 8) + " 16 0.2 0.2 0.9 9";
+gDebugLua->CallRules(cmd.c_str(), cmd.size());
+cmd = std::string("ai_mrk_add:") + utils::int_to_string(cur->GetSource().x * 16 + 8) + " " + utils::int_to_string(cur->GetSource().y * 16 + 8) + " 16 0.9 0.9 0.2 9";
+gDebugLua->CallRules(cmd.c_str(), cmd.size());
+			continue;
+		}
+	}
+*/
 }
 
 void CGridAnalyzer::ReplaceAreaIds(TilePosition p, CArea::Id newAreaId)

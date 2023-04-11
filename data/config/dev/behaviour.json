@@ -17,7 +17,7 @@
 		"static": 0.5,  // additional 64-elmo-cells for static units
 		"speed": [0.75, 4.0]  // [<64elmo_cells_speed_mod>, <max_64elmo_cells>]
 	},
-	"num_batch": 5  // quantity of mobile units in build-batch
+	"num_batch": 10  // quantity of mobile units in build-batch
 },
 
 // If unit's health drops below specified percent it will retreat

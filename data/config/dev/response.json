@@ -61,7 +61,7 @@
 	"anti_air": {
 		"vs":         ["air"],
 		"ratio":      [ 0.75],
-		"importance": [ 150.0],
+		"importance": [ 950.0],
 		"max_percent": 0.5,
 		"eps_step": 0.8
 	},

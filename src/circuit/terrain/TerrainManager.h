@@ -59,8 +59,9 @@ public:
 	void Init();
 	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
 	void DelBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
-	void AddBusPath(CCircuitUnit* unit, const springai::AIFloat3& pos, const CCircuitDef* mobileDef);
+	void AddBusPath(CCircuitUnit* unit, const springai::AIFloat3& toPos, const CCircuitDef* mobileDef);
 	void DelBusPath(CCircuitUnit* unit);
+	springai::AIFloat3 GetBusPos(const springai::AIFloat3& pos);  // return pos few steps ahead of start
 	void ResetBuildFrame() { markFrame = -FRAMES_PER_SEC; }
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	// TODO: Based on map complexity use BFS or circle to calculate build offset
@@ -144,6 +145,7 @@ private:
 	std::map<CCircuitUnit*, std::shared_ptr<CPathInfo>> busPath;
 	std::map<CCircuitUnit*, FactoryPathQuery> busQueries;
 	void MarkBusPath();
+	void FillParentBusNodes(CPathInfo* pathInfo);
 
 public:
 	int GetConvertStoP() const { return terrainData->convertStoP; }
@@ -208,9 +210,8 @@ public:
 	float GetPercentLand() const { return areaData->percentLand; }
 	float GetMinLandPercent() const { return minLandPercent; }
 	bool IsWaterMap() const { return areaData->percentLand < minLandPercent; }
-	bool IsWaterSector(const springai::AIFloat3& position) const {
-		return areaData->sector[GetSectorIndex(position)].isWater;
-	}
+	bool IsWaterSector(const springai::AIFloat3& position) const { return IsWaterSector(GetSectorIndex(position)); }
+	bool IsWaterSector(const int sIndex) const { return areaData->sector[sIndex].isWater; }
 
 	const bwem::CArea* GetTAArea(const springai::AIFloat3& pos) const;
 	const std::vector<bwem::CChokePoint*>& GetTAChokePoints() const { return terrainData->GetChokePoints(); }

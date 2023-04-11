@@ -123,6 +123,24 @@ bool CBMexTask::Execute(CCircuitUnit* unit)
 	return true;
 }
 
+bool CBMexTask::Reevaluate(CCircuitUnit* unit)
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	auto& ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(buildPos, buildDef->GetExtrRangeM(), false);
+	for (ICoreUnit::Id id : ids) {
+		CAllyUnit* au = circuit->GetFriendlyUnit(id);
+		if ((au != nullptr) && au->GetCircuitDef()->IsMex()
+			&& (au->GetUnit()->GetTeam() != circuit->GetTeamId()))
+		{
+			circuit->GetEconomyManager()->SetOpenMexSpot(spotId, true);
+			spotId = 0;  // prevent spot opening on Cancel
+			manager->AbortTask(this);
+			return false;
+		}
+	}
+	return IBuilderTask::Reevaluate(unit);
+}
+
 void CBMexTask::OnUnitIdle(CCircuitUnit* unit)
 {
 	if ((target == nullptr) && (State::ENGAGE == state)) {

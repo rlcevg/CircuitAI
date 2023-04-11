@@ -27,6 +27,8 @@ protected:
 
 	virtual bool Execute(CCircuitUnit* unit) override;
 
+	virtual bool Reevaluate(CCircuitUnit* unit) override;
+
 public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 

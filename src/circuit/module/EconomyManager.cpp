@@ -1413,8 +1413,11 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	} else {
 		const AIFloat3& enemyPos = circuit->GetEnemyManager()->GetEnemyPos();
 		float offset = 200.0f;
-		if (isStart || facDef->IsRoleSupport()) {
+		if (isStart) {
 			buildPos = circuit->GetSetupManager()->GetBasePos();
+		} else if (facDef->IsRoleSupport()) {
+			buildPos = terrainMgr->GetBusPos(circuit->GetSetupManager()->GetBasePos());
+			offset = 0.f;
 		} else {
 			CMetalManager* metalMgr = circuit->GetMetalManager();
 			AIFloat3 pos(circuit->GetSetupManager()->GetBasePos());
