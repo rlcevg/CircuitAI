@@ -83,7 +83,9 @@ void CBFactoryTask::Activate()
 
 void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)
 {
-	FindFacing(pos);
+	if (facing == UNIT_NO_FACING) {
+		FindFacing(pos);
+	}
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();

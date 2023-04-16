@@ -75,8 +75,8 @@
 
 #define FLT_BIG (FLT_MAX / 2.0)
 #define COST_BASE		1.0f
-#define COST_RESERVE	10.0f
-#define COST_STRUCT		100.f
+#define COST_RESERVE	40.0f
+#define COST_STRUCT		400.f
 #define COST_BLOCKED	1000.f
 #define COST_BLOCK		(COST_BLOCKED + 1.f)
 
@@ -247,7 +247,7 @@ namespace NSMicroPather {
 					IndexVec* path, float* cost);
 			int FindBestPathToPointOnRadius(void* startNode, void* endNode, int radius, float maxThreat, HitFunc hitTest,
 					IndexVec* path, float* cost);
-			int FindWidePathToBus(void* startNode, VoidVec& endNodes, const bool isWide,
+			int FindWidePathToBus(void* startNode, VoidVec& endNodes, const int howWide,
 					IndexVec* path, float* cost);
 			void MakeCostMap(void* startNode, float maxThreat, std::vector<float>& costMap);
 

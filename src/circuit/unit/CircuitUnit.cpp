@@ -616,7 +616,8 @@ void CCircuitUnit::Log()
 	if (travelAct != nullptr) {
 		travelAct->Log(circuit);
 	}
-	circuit->LOG("unit: %lx | id: %i | %s", this, id, circuitDef->GetDef()->GetName());
+	GetPos(circuit->GetLastFrame());
+	circuit->LOG("unit: %lx | id: %i | %f, %f, %f | %s", this, id, position.x, position.y, position.z, circuitDef->GetDef()->GetName());
 	auto commands = unit->GetCurrentCommands();
 	for (springai::Command* c : commands) {
 		circuit->LOG("command: %i | type: %i | id: %i", c->GetCommandId(), c->GetType(), c->GetId());

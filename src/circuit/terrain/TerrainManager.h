@@ -59,9 +59,10 @@ public:
 	void Init();
 	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
 	void DelBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
-	void AddBusPath(CCircuitUnit* unit, const springai::AIFloat3& toPos, const CCircuitDef* mobileDef);
+	bool IsObstruct(const springai::AIFloat3& pos) const;
+	void AddBusPath(CCircuitUnit* unit, const springai::AIFloat3& toPos, CCircuitDef* mobileDef);
 	void DelBusPath(CCircuitUnit* unit);
-	springai::AIFloat3 GetBusPos(const springai::AIFloat3& pos);  // return pos few steps ahead of start
+	springai::AIFloat3 GetBusPos(CCircuitDef* facDef, const springai::AIFloat3& pos, int& outFacing);
 	void ResetBuildFrame() { markFrame = -FRAMES_PER_SEC; }
 	// TODO: Use IsInBounds test and Bound operation only if mask or search offsets (endr) are out of bounds
 	// TODO: Based on map complexity use BFS or circle to calculate build offset

@@ -262,8 +262,8 @@ bool IBuilderTask::Execute(CCircuitUnit* unit)
 
 	// FIXME: Move to Reevaluate
 	circuit->GetThreatMap()->SetThreatType(unit);
-	// FIXME: Replace const 999.0f with build time?
-	if (circuit->IsAllyAware() && (cost > 999.0f)) {
+	// FIXME: Replace const 1000.f with build time?
+	if (circuit->IsAllyAware() && (cost >= 1000.f)) {
 		circuit->UpdateFriendlyUnits();
 		auto& friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(position, cost);
 		CAllyUnit* alu = FindSameAlly(unit, friendlies);
@@ -431,7 +431,6 @@ void IBuilderTask::Update(CCircuitUnit* unit)
 bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	// TODO: Check for open build site, push mobile units away or temporary block position.
 
 	// FIXME: Replace const 1000.0f with build time?
 	CEconomyManager* ecoMgr = circuit->GetEconomyManager();
@@ -448,7 +447,8 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 	/*
 	 * Reassign task if required
 	 */
-	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& pos = unit->GetPos(frame);
 	const float sqDist = pos.SqDistance2D(GetPosition());
 	if (sqDist <= SQUARE(unit->GetCircuitDef()->GetBuildDistance() + circuit->GetPathfinder()->GetSquareSize())
 		&& (circuit->GetInflMap()->GetInfluenceAt(pos) > -INFL_EPS))
@@ -460,6 +460,19 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 //		} else {
 //			return true;
 //		}
+
+		if (circuit->GetTerrainManager()->IsObstruct(pos)) {
+			if (unit->GetTaskFrame() + FRAMES_PER_SEC * 5 < frame) {
+				unit->SetTaskFrame(frame);  // re-use taskFrame
+				TRY_UNIT(circuit, unit,
+					AIFloat3 awayPos = utils::get_radial_pos(pos, 64.f);
+					CTerrainManager::CorrectPosition(awayPos);
+					unit->CmdMoveTo(awayPos, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
+				)
+			}
+			return true;
+		}
+
 		if ((buildType != BuildType::GUARD)
 			&& ((executors.size() < 2) || !unit->IsAttrBase()))
 		{

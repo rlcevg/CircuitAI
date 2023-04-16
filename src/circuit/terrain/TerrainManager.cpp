@@ -382,33 +382,66 @@ void CTerrainManager::DelBlocker(CCircuitDef* cdef, const AIFloat3& pos, int fac
 #endif
 }
 
-void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& toPos, const CCircuitDef* mobileDef)
+bool CTerrainManager::IsObstruct(const AIFloat3& pos) const
 {
+	const int x = int(pos.x + 0.5f) / (SQUARE_SIZE * 2);
+	const int z = int(pos.z + 0.5f) / (SQUARE_SIZE * 2);
+
+	return blockingMap.IsStruct(x, z);
+}
+
+void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& toPos, CCircuitDef* mobileDef)
+{
+	AIFloat3 startPos = unit->GetPos(circuit->GetLastFrame());
+	bool isOK;
+	SArea* area;
+	std::tie(area, isOK) = GetCurrentMapArea(mobileDef, startPos);
+	if (!isOK) {
+		return;
+	}
 	const int iS = GetSectorIndex(toPos);
+	// FIXME: altitude works only for armcom (amphibious) move-type;
+	//        create additional for land, and for water?
 	constexpr int altitude = 4 * 2 * ALTITUDE_SCALE;  // 4 - tiles in sector, side
-	SAreaSector* CAS = GetClosestSectorWithAltitude(unit->GetArea(), iS, altitude);
+	SAreaSector* CAS = GetClosestSectorWithAltitude(area, iS, altitude);
 	if (CAS == nullptr) {
 		return;
 	}
 
-	AIFloat3 startPos = unit->GetPos(circuit->GetLastFrame());
+	AIFloat3 sectorStep;
 	switch (unit->GetUnit()->GetBuildingFacing()) {
 		default:
-		case UNIT_FACING_SOUTH:
-			startPos += AIFloat3(0.f, 0.f, 128.f);
-			break;
-		case UNIT_FACING_EAST:
-			startPos += AIFloat3(128.f, 0.f, 0.f);
-			break;
-		case UNIT_FACING_NORTH:
-			startPos += AIFloat3(0.f, 0.f, -128.f);
-			break;
-		case UNIT_FACING_WEST:
-			startPos += AIFloat3(-128.f, 0.f, 0.f);
-			break;
+		case UNIT_FACING_SOUTH: {
+			// FIXME: startPos is aimpoint, not center
+			const int edgeZH = unit->GetCircuitDef()->GetDef()->GetZSize() * (SQUARE_SIZE / 2) + SQUARE_SIZE * 5;
+			sectorStep = AIFloat3(0.f, 0.f, GetConvertStoP());
+			startPos += AIFloat3(0.f, 0.f, edgeZH);
+		} break;
+		case UNIT_FACING_EAST: {
+			const int edgeXH = unit->GetCircuitDef()->GetDef()->GetXSize() * (SQUARE_SIZE / 2) + SQUARE_SIZE * 5;
+			sectorStep = AIFloat3(GetConvertStoP(), 0.f, 0.f);
+			startPos += AIFloat3(edgeXH, 0.f, 0.f);
+		} break;
+		case UNIT_FACING_NORTH: {
+			const int edgeZH = unit->GetCircuitDef()->GetDef()->GetZSize() * (SQUARE_SIZE / 2) + SQUARE_SIZE * 5;
+			sectorStep = AIFloat3(0.f, 0.f, -GetConvertStoP());
+			startPos += AIFloat3(0.f, 0.f, -edgeZH);
+		} break;
+		case UNIT_FACING_WEST: {
+			const int edgeXH = unit->GetCircuitDef()->GetDef()->GetXSize() * (SQUARE_SIZE / 2) + SQUARE_SIZE * 5;
+			sectorStep = AIFloat3(-GetConvertStoP(), 0.f, 0.f);
+			startPos += AIFloat3(-edgeXH, 0.f, 0.f);
+		} break;
 	}
+	if (!utils::is_in_map(startPos) || !CanMoveToPos(area, startPos)) {
+		startPos -= sectorStep;
+	}
+
 	const AIFloat3& endPos = CAS->S->position;
 
+	// NOTE: heuristic in micropather may lead not to closest node, but a bit further,
+	//       as it tests only single distance.
+	//       Reduce end nodes in half (interleave) and test manhattan distance to each?
 	IndexVec targets;
 	for (const auto& kv : busPath) {
 		if (kv.second != nullptr) {
@@ -440,14 +473,15 @@ void CTerrainManager::DelBusPath(CCircuitUnit* unit)
 		//       Place it to AllyTeam and count or copy common path nodes.
 		CPathFinder* pathfinder = circuit->GetPathfinder();
 		const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
+		const int howWide = pathfinder->GetSquareSize() / 32;
 		for (int index : it->second->path) {
 			int ix, iz;
 			pathfinder->PathIndex2PathXY(index, &ix, &iz);
 
 			ix = ix * granularity + granularity / 2;
 			iz = iz * granularity + granularity / 2;
-			int2 m1(ix - 4, iz - 4);
-			int2 m2(ix + 4, iz + 4);
+			int2 m1 = (howWide & 1) ? int2(ix - 0, iz - 0) : int2(ix - 3, iz - 3);
+			int2 m2 = (howWide & 1) ? int2(ix + 6, iz + 6) : int2(ix + 3, iz + 3);
 			blockingMap.Bound(m1, m2);
 			for (int z = m1.y; z < m2.y; ++z) {
 				for (int x = m1.x; x < m2.x; ++x) {
@@ -460,8 +494,10 @@ void CTerrainManager::DelBusPath(CCircuitUnit* unit)
 	busQueries.erase(unit);
 }
 
-AIFloat3 CTerrainManager::GetBusPos(const AIFloat3& pos)
+AIFloat3 CTerrainManager::GetBusPos(CCircuitDef* facDef, const AIFloat3& pos, int& outFacing)
 {
+	outFacing = UNIT_NO_FACING;
+
 	CCircuitUnit* unit = nullptr;
 	CPathInfo* pathInfo = nullptr;
 	const int frame = circuit->GetLastFrame();
@@ -474,15 +510,40 @@ AIFloat3 CTerrainManager::GetBusPos(const AIFloat3& pos)
 			pathInfo = kv.second.get();
 		}
 	}
-	if (unit == nullptr) {
+	if ((unit == nullptr) || pathInfo->path.empty()) {
 		return pos;
 	}
-	// 4 steps ahead for normal size map where sector is 64x64.
-	const int index = std::min<int>(256 / GetConvertStoP(), pathInfo->path.size()) - 1;
-	if (index < 0) {
-		return pos;
+
+	/// TODO: make sorted offsets pattern for this specific case, instead of circle
+	CPathFinder* pathfinder = circuit->GetPathfinder();
+	const int incr = 128 / GetConvertStoP();  // convertStoP ~= 32, 64, 128
+	const int maxIdx = std::min<int>(pathInfo->path.size(), 16 * incr);
+	AIFloat3 prevPos = pathfinder->PathIndex2Pos(pathInfo->path[0]);
+	const std::array<AIFloat3, 4> faceOffs = {
+		AIFloat3(0, 0, -GetConvertStoP() * incr),  // UNIT_FACING_SOUTH
+		AIFloat3(-GetConvertStoP() * incr, 0, 0),  // UNIT_FACING_EAST
+		AIFloat3(0, 0, GetConvertStoP() * incr),  // UNIT_FACING_NORTH
+		AIFloat3(GetConvertStoP() * incr, 0, 0)  // UNIT_FACING_WEST
+	};
+	for (int index = incr; index < maxIdx; index += incr) {
+		const AIFloat3& pathPos = pathfinder->PathIndex2Pos(pathInfo->path[index]);
+		std::array<int, 2> testFaces;
+		if (std::fabs(pathPos.x - prevPos.x) > std::fabs(pathPos.z - prevPos.z)) {
+			testFaces = {UNIT_FACING_SOUTH, UNIT_FACING_NORTH};
+		} else {
+			testFaces = {UNIT_FACING_EAST, UNIT_FACING_WEST};
+		}
+		for (int facing : testFaces) {
+			AIFloat3 buildPos = pathPos + faceOffs[facing];
+			CTerrainManager::CorrectPosition(buildPos);
+			buildPos = FindBuildSite(facDef, buildPos, SQUARE_SIZE * 16, facing);
+			if (utils::is_valid(buildPos)) {
+				outFacing = facing;
+				return buildPos;
+			}
+		}
 	}
-	return circuit->GetPathfinder()->PathIndex2Pos(pathInfo->path[index]);
+	return pos;
 }
 
 AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, bool isIgnore)
@@ -656,14 +717,14 @@ void CTerrainManager::MarkAllyBuildings()
 		building.facing = unit->GetUnit()->GetBuildingFacing();
 		building.pos = unit->GetPos(frame) + building.cdef->GetMidPosOffset(building.facing);
 		*d_first++ = building;
-		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
+//		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, true);
-		}
+//		}
 	};
 	auto delStructure = [this](const SStructure& building) {
-		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
+//		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, false);
-		}
+//		}
 	};
 
 	// @see std::set_symmetric_difference + std::set_intersection
@@ -1248,14 +1309,15 @@ void CTerrainManager::MarkBusPath()
 			FillParentBusNodes(q->GetPathInfo().get());
 			CPathFinder* pathfinder = circuit->GetPathfinder();
 			const int granularity = pathfinder->GetSquareSize() / (SQUARE_SIZE * 2);
+			const int howWide = pathfinder->GetSquareSize() / 32;
 			for (int index : q->GetPathInfo()->path) {
 				int ix, iz;
 				pathfinder->PathIndex2PathXY(index, &ix, &iz);
 
 				ix = ix * granularity + granularity / 2;
 				iz = iz * granularity + granularity / 2;
-				int2 m1(ix - 4, iz - 4);
-				int2 m2(ix + 4, iz + 4);
+				int2 m1 = (howWide & 1) ? int2(ix - 0, iz - 0) : int2(ix - 3, iz - 3);
+				int2 m2 = (howWide & 1) ? int2(ix + 6, iz + 6) : int2(ix + 3, iz + 3);
 				blockingMap.Bound(m1, m2);
 				for (int z = m1.y; z < m2.y; ++z) {
 					for (int x = m1.x; x < m2.x; ++x) {

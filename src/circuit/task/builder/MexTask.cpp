@@ -126,16 +126,18 @@ bool CBMexTask::Execute(CCircuitUnit* unit)
 bool CBMexTask::Reevaluate(CCircuitUnit* unit)
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	auto& ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(buildPos, buildDef->GetExtrRangeM(), false);
-	for (ICoreUnit::Id id : ids) {
-		CAllyUnit* au = circuit->GetFriendlyUnit(id);
-		if ((au != nullptr) && au->GetCircuitDef()->IsMex()
-			&& (au->GetUnit()->GetTeam() != circuit->GetTeamId()))
-		{
-			circuit->GetEconomyManager()->SetOpenMexSpot(spotId, true);
-			spotId = 0;  // prevent spot opening on Cancel
-			manager->AbortTask(this);
-			return false;
+	if (circuit->IsAllyAware()) {
+		auto& ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(buildPos, buildDef->GetExtrRangeM(), false);
+		for (ICoreUnit::Id id : ids) {
+			CAllyUnit* au = circuit->GetFriendlyUnit(id);
+			if ((au != nullptr) && au->GetCircuitDef()->IsMex()
+				&& (au->GetUnit()->GetTeam() != circuit->GetTeamId()))
+			{
+				circuit->GetEconomyManager()->SetOpenMexSpot(spotId, true);
+				spotId = 0;  // prevent spot opening on Cancel
+				manager->AbortTask(this);
+				return false;
+			}
 		}
 	}
 	return IBuilderTask::Reevaluate(unit);

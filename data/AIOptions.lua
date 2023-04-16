@@ -24,14 +24,6 @@ local options = {
 		def     = false,
 	},
 	{ -- bool
-		key     = 'ally_aware',
-		name    = 'Alliance awareness',
-		desc    = 'Consider allies presence while making expansion desicions',
-		type    = 'bool',
-		section = 'performance',
-		def     = true,
-	},
-	{ -- bool
 		key     = 'comm_merge',
 		name    = 'Merge neighbour BARbarIAns',
 		desc    = 'Merge spatially close BARbarIAn ally commanders',

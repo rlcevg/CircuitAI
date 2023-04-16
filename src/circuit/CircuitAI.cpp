@@ -1596,11 +1596,6 @@ std::string CCircuitAI::InitOptions()
 		isCheating = StringToBool(value);
 	}
 
-	value = options->GetValueByKey("ally_aware");
-	if (value != nullptr) {
-		isAllyAware = StringToBool(value);
-	}
-
 	value = options->GetValueByKey("comm_merge");
 	if (value != nullptr) {
 		isCommMerge = StringToBool(value);

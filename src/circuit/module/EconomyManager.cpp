@@ -1411,16 +1411,19 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	if (factoryTask->IsPlop()) {
 		buildPos = -RgtVector;
 	} else {
+		const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 		const AIFloat3& enemyPos = circuit->GetEnemyManager()->GetEnemyPos();
 		float offset = 200.0f;
 		if (isStart) {
-			buildPos = circuit->GetSetupManager()->GetBasePos();
+			buildPos = basePos;
 		} else if (facDef->IsRoleSupport()) {
-			buildPos = terrainMgr->GetBusPos(circuit->GetSetupManager()->GetBasePos());
+			int facing;
+			buildPos = terrainMgr->GetBusPos(facDef, basePos, facing);
+			factoryTask->SetFacing(facing);
 			offset = 0.f;
 		} else {
 			CMetalManager* metalMgr = circuit->GetMetalManager();
-			AIFloat3 pos(circuit->GetSetupManager()->GetBasePos());
+			AIFloat3 pos(basePos);
 			AIFloat3 center = (pos + enemyPos) * 0.5f;
 			float minSqDist = std::numeric_limits<float>::max();
 			const CMetalData::Clusters& clusters = metalMgr->GetClusters();
@@ -1444,7 +1447,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			}
 			buildPos = clusters[index].position;
 
-			const float sqStartDist = enemyPos.SqDistance2D(circuit->GetSetupManager()->GetStartPos());
+			const float sqStartDist = enemyPos.SqDistance2D(basePos);
 			const float sqBuildDist = enemyPos.SqDistance2D(buildPos);
 			offset = (sqStartDist > sqBuildDist) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
 		}

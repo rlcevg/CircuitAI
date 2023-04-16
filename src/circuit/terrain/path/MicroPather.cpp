@@ -906,7 +906,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 }
 
 int CMicroPather::FindWidePathToBus(void* startNode, VoidVec& endNodes,
-		const bool isWide, IndexVec* path, float* cost)
+		const int howWide, IndexVec* path, float* cost)
 {
 	assert(!isRunning);
 	isRunning = true;
@@ -983,10 +983,21 @@ int CMicroPather::FindWidePathToBus(void* startNode, VoidVec& endNodes,
 				if (CantMoveTo(indexEnd)) {
 					continue;
 				}
-				if (isWide && (CantMoveTo(indexEnd - 1) || CantMoveTo(indexEnd + 1)
-						|| CantMoveTo(indexEnd - mapSizeX) || CantMoveTo(indexEnd + mapSizeX)))  // offsets[0..3]
-				{
-					continue;
+				switch (howWide) {
+					case 0:
+						if (CantMoveTo(indexEnd - 1) || CantMoveTo(indexEnd + 1)
+							|| CantMoveTo(indexEnd - mapSizeX) || CantMoveTo(indexEnd + mapSizeX))  // offsets[0..3]
+						{
+							continue;
+						}
+						break;
+					case 1:
+						if (CantMoveTo(indexEnd + 1) || CantMoveTo(indexEnd + mapSizeX)) {
+							continue;
+						}
+						break;
+					default:
+						break;
 				}
 
 				PathNode* directNode = &pathNodeMem[indexEnd];
@@ -1009,8 +1020,15 @@ int CMicroPather::FindWidePathToBus(void* startNode, VoidVec& endNodes,
 
 				float newCost = nodeCostFromStart;
 				float nodeCost = canMoveArray[indexEnd] + moveFun(directNode->index2);
-				if (isWide) {
-					nodeCost += canMoveArray[indexEnd - 1] + canMoveArray[indexEnd + 1] + canMoveArray[indexEnd - mapSizeX] + canMoveArray[indexEnd + mapSizeX];
+				switch (howWide) {
+					case 0:
+						nodeCost += canMoveArray[indexEnd - 1] + canMoveArray[indexEnd + 1] + canMoveArray[indexEnd - mapSizeX] + canMoveArray[indexEnd + mapSizeX];
+						break;
+					case 1:
+						nodeCost += canMoveArray[indexEnd + 1] + canMoveArray[indexEnd + mapSizeX];
+						break;
+					default:
+						break;
 				}
 
 				#ifdef USE_ASSERTIONS

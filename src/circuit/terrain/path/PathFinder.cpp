@@ -136,6 +136,7 @@ CPathFinder::~CPathFinder()
 
 void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainMgr)
 {
+	// NOTE: random teamId, according to std::unordered_set<CCircuitAI*> in CGameAttribute
 	if (isAreaUpdated) {
 		return;
 	}
@@ -160,7 +161,8 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainMgr)
 	std::vector<float*>& moveArrays = GetNextMoveData()->moveArrays;
 	areaData = terrainData->GetNextAreaData();
 	const std::vector<SMobileType>& moveTypes = areaData->mobileType;
-	const int blockThreshold = granularity * granularity / 4;  // 25% - blocked tile
+	const float costStruct = COST_STRUCT / (granularity * granularity);
+	const float costReserve = COST_RESERVE / (granularity * granularity);
 	for (unsigned j = 0; j < moveTypes.size(); ++j) {
 		const SMobileType& mt = moveTypes[j];
 		float* moveArray = moveArrays[j];
@@ -171,8 +173,7 @@ void CPathFinder::UpdateAreaUsers(CTerrainManager* terrainMgr)
 				int index = z * moveMapXSize + x;
 				// NOTE: Not all passable sectors have area
 				moveArray[index] = (mt.sector[k].area == nullptr) ? COST_BLOCK
-						: (blockArray[k].structs >= blockThreshold) ? COST_STRUCT
-								: (blockArray[k].reserve >= blockThreshold) ? COST_RESERVE : COST_BASE;
+						: (blockArray[k].structs * costStruct + blockArray[k].reserve * costReserve + COST_BASE);
 				++k;
 			}
 		}
@@ -806,7 +807,7 @@ void CPathFinder::MakePathWide(IPathQuery* query, NSMicroPather::CMicroPather* m
 	AIFloat3& startPos = q->GetStartPosRef();
 	AIFloat3& endPos = q->GetEndPosRef();
 	IndexVec& targets = q->GetTargetsRef();
-	const bool isWide = squareSize <= 64;  // FIXME
+	const int howWide = squareSize / 32;  // squareSize ~= 32, 64, 128
 
 	CPathInfo& iPath = q->GetPathInfoRef();
 	float& pathCost = q->GetPathCostRef();
@@ -827,9 +828,10 @@ void CPathFinder::MakePathWide(IPathQuery* query, NSMicroPather::CMicroPather* m
 			endNodes.push_back(node);
 		}
 	}
-	void* node = Pos2MoveNode(endPos);
+	void* endNode = Pos2MoveNode(endPos);
 	for (int i = 0; i < 4; ++i) {
-		NSMicroPather::PathNode* pn = micropather->GetNode((void*)((size_t)node + micropather->offsets[i]));
+		void* node = (void*)((size_t)endNode + micropather->offsets[i]);
+		NSMicroPather::PathNode* pn = micropather->GetNode(node);
 		if (pn->isEndNode == 0) {
 			pn->isEndNode = 1;  // target node, avoid duplicates
 			endNodes.push_back(node);
@@ -837,7 +839,7 @@ void CPathFinder::MakePathWide(IPathQuery* query, NSMicroPather::CMicroPather* m
 	}
 
 	micropather->SetMapData(canMoveArray, nullptr, moveFun, nullptr, areaData);
-	micropather->FindWidePathToBus(Pos2MoveNode(startPos), endNodes, isWide, &iPath.path, &pathCost);
+	micropather->FindWidePathToBus(Pos2MoveNode(startPos), endNodes, howWide, &iPath.path, &pathCost);
 
 	endNodes.clear();
 }
