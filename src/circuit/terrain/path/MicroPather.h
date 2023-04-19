@@ -266,6 +266,9 @@ namespace NSMicroPather {
 			inline float LeastCostEstimateLocal(int nodeStartIndex);
 			inline float LeastCostEstimateLocal(int xStart, int yStart);
 			static inline float DiagonalDistance(int xStart, int yStart, int xEnd, int yEnd);
+			inline float AxisCostEstimate(int nodeStartIndex);
+			inline float AxisCostEstimate(int xStart, int yStart);
+			static inline float AxisDistance(int xStart, int yStart, int xEnd, int yEnd);
 			void FixStartEndNode(void** startNode, void** endNode);
 			void FixNode(void** Node);
 

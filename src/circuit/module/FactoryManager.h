@@ -85,7 +85,7 @@ public:
 	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
 
 	CRecruitTask* UpdateBuildPower(CCircuitUnit* builder, bool isActive);
-	CRecruitTask* UpdateFirePower(CCircuitUnit* builder);
+	CRecruitTask* UpdateFirePower(CCircuitUnit* builder, bool isActive);
 	bool IsHighPriority(CAllyUnit* unit) const;
 
 	CCircuitDef* GetFactoryToBuild(springai::AIFloat3 position = -RgtVector,
@@ -207,7 +207,7 @@ private:
 		CCircuitDef::Id id;
 		CRecruitTask::Priority priority;
 	};
-	SRecruitDef RequiredFireDef(CCircuitUnit* builder);
+	SRecruitDef RequiredFireDef(CCircuitUnit* builder, bool isActive);
 
 	const std::vector<float>& GetFacTierProbs(const SFactoryDef& facDef) const;
 	CCircuitDef* GetFacRoleDef(CCircuitDef::RoleT role, const SFactoryDef& facDef) const;

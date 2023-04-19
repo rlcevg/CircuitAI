@@ -1032,14 +1032,14 @@ CRecruitTask* CFactoryManager::UpdateBuildPower(CCircuitUnit* unit, bool isActiv
 	return nullptr;
 }
 
-CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* builder)
+CRecruitTask* CFactoryManager::UpdateFirePower(CCircuitUnit* builder, bool isActive)
 {
 	if (!CanEnqueueTask()) {
 		return nullptr;
 	}
 
 	CFactoryManager* factoryMgr = circuit->IsSlave() ? circuit->GetAllyTeam()->GetLeader()->GetFactoryManager() : this;
-	SRecruitDef result = factoryMgr->RequiredFireDef(builder);
+	SRecruitDef result = factoryMgr->RequiredFireDef(builder, isActive);
 	if (result.id < 0) {
 		return nullptr;
 	}
@@ -1377,16 +1377,12 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 		return task;
 	}
 
-	if (!isActive) {
-		return EnqueueWait(false, FRAMES_PER_SEC * 10);
-	}
-
-	task = UpdateFirePower(unit);
+	task = UpdateFirePower(unit, isActive);
 	if (task != nullptr) {
 		return task;
 	}
 
-	return EnqueueWait(false, FRAMES_PER_SEC * 3);
+	return EnqueueWait(false, isActive ? (FRAMES_PER_SEC * 3) : (FRAMES_PER_SEC * 10));
 }
 
 IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
@@ -1537,7 +1533,7 @@ std::pair<CCircuitDef*, bool> CFactoryManager::GetLastRequiredDef(CCircuitDef::I
 	return std::make_pair(nullptr, false);
 }
 
-CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* builder)
+CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* builder, bool isActive)
 {
 	auto it = factoryDefs.find(builder->GetCircuitDef()->GetId());
 	if (it == factoryDefs.end()) {
@@ -1566,6 +1562,7 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 	auto isAvailableDef = [&](CCircuitDef* bd) {
 		return (((bd->GetCloakCost() < .1f) || (energyNet > bd->GetCloakCost()))
 			&& bd->IsAvailable(frame)
+			&& (isActive || bd->IsAttrRare())
 			&& terrainMgr->CanBeBuiltAt(bd, pos, range)
 			&& isEnemyInArea(bd));
 	};
@@ -1608,6 +1605,8 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 				reason = "no energy";
 			} else if (!bd->IsAvailable(frame)) {
 				reason = "limit exceeded or frame < since";
+			} else if (!isActive && !bd->IsAttrRare()) {
+				reason = "non-rare from inactive factory";
 			} else if (!terrainMgr->CanBeBuiltAt(bd, pos, range)) {
 				reason = "can't build unit at unusable map position";
 			} else if (!isEnemyInArea(bd)) {

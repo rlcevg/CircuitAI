@@ -1417,10 +1417,15 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		if (isStart) {
 			buildPos = basePos;
 		} else if (facDef->IsRoleSupport()) {
-			int facing;
-			buildPos = terrainMgr->GetBusPos(facDef, basePos, facing);
-			factoryTask->SetFacing(facing);
-			offset = 0.f;
+			if (facDef->GetMobileId() < 0) {  // air factory
+				buildPos = basePos;
+				offset = -200.0f;
+			} else {
+				int facing;
+				buildPos = terrainMgr->GetBusPos(facDef, basePos, facing);
+				factoryTask->SetFacing(facing);
+				offset = 0.f;
+			}
 		} else {
 			CMetalManager* metalMgr = circuit->GetMetalManager();
 			AIFloat3 pos(basePos);
@@ -1452,11 +1457,15 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			offset = (sqStartDist > sqBuildDist) ? -200.0f : 200.0f;  // std::max(facUDef->GetXSize(), facUDef->GetZSize()) * SQUARE_SIZE;
 		}
 
-		buildPos.x += (buildPos.x > enemyPos.x) ? -offset : offset;
-		buildPos.z += (buildPos.z > enemyPos.z) ? -offset : offset;
+		if (factoryTask->GetFacing() != UNIT_NO_FACING) {
+			factoryTask->SetBuildPos(buildPos);
+		} else {
+			buildPos.x += (buildPos.x > enemyPos.x) ? -offset : offset;
+			buildPos.z += (buildPos.z > enemyPos.z) ? -offset : offset;
 
-		CTerrainManager::CorrectPosition(buildPos);
-		buildPos = terrainMgr->GetBuildPosition(reprDef, buildPos);
+			CTerrainManager::CorrectPosition(buildPos);
+			buildPos = terrainMgr->GetBuildPosition(reprDef, buildPos);
+		}
 	}
 
 	factoryTask->SetPosition(buildPos);

@@ -48,6 +48,8 @@ TypeMask RET_FIGHT = aiAttrMasker.GetTypeMask("ret_fight");
 TypeMask SOLO      = aiAttrMasker.GetTypeMask("solo");
 TypeMask BASE      = aiAttrMasker.GetTypeMask("base");
 TypeMask VAMPIRE   = aiAttrMasker.GetTypeMask("vampire");
+TypeMask ONOFF     = aiAttrMasker.GetTypeMask("onoff");
+TypeMask RARE      = aiAttrMasker.GetTypeMask("rare");
 }  // namespace Attr
 
 }  // namespace Unit

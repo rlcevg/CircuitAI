@@ -374,6 +374,32 @@ inline float CMicroPather::DiagonalDistance(int xStart, int yStart, int xEnd, in
 	return (dx + dy) - 0.5858f * std::min(dx, dy);
 }
 
+inline float CMicroPather::AxisCostEstimate(int nodeStartIndex)
+{
+	const int yStart = nodeStartIndex / mapSizeX;
+	const int xStart = nodeStartIndex - yStart * mapSizeX;
+
+	return AxisCostEstimate(xStart, yStart);
+}
+
+inline float CMicroPather::AxisCostEstimate(int xStart, int yStart)
+{
+	return AxisDistance(xStart, yStart, xEndNode, yEndNode);
+}
+
+inline float CMicroPather::AxisDistance(int xStart, int yStart, int xEnd, int yEnd)
+{
+	const int dx = abs(xStart - xEnd);
+	const int dy = abs(yStart - yEnd);
+	if ((dx > 0) && (dy > 0)) {
+		return std::min(dx, dy);
+	} else if (dx > 0) {
+		return dx;
+	} else {
+		return dy;
+	}
+}
+
 void CMicroPather::FixStartEndNode(void** startNode, void** endNode)
 {
 	size_t index = (size_t) *startNode;
@@ -937,7 +963,7 @@ int CMicroPather::FindWidePathToBus(void* startNode, VoidVec& endNodes,
 	OpenQueueBH open(heapArrayMem);
 
 	{
-		const float estToGoal = LeastCostEstimateLocal((size_t)startNode);
+		const float estToGoal = AxisCostEstimate((size_t)startNode);
 
 		PathNode* tempStartNode = &pathNodeMem[(size_t)startNode];
 		tempStartNode->Reuse(frame);
@@ -1045,7 +1071,7 @@ int CMicroPather::FindWidePathToBus(void* startNode, VoidVec& endNodes,
 				// it's better, update its data
 				directNode->parent = node;
 				directNode->costFromStart = newCost;
-				directNode->totalCost = newCost + LeastCostEstimateLocal(directNode->x2, directNode->y2);
+				directNode->totalCost = newCost + AxisCostEstimate(directNode->x2, directNode->y2);
 
 				#ifdef USE_ASSERTIONS
 				assert((size_t)indexEnd == ((size_t)directNode - (size_t)pathNodeMem) / sizeof(PathNode));

@@ -83,11 +83,15 @@ void CBFactoryTask::Activate()
 
 void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, float searchRadius)
 {
-	if (facing == UNIT_NO_FACING) {
-		FindFacing(pos);
+	CCircuitAI* circuit = manager->GetCircuit();
+	CMap* map = circuit->GetMap();
+	if ((facing != UNIT_NO_FACING) && map->IsPossibleToBuildAt(buildDef->GetDef(), pos, facing)) {
+		SetBuildPos(pos);
+		return;
 	}
 
-	CCircuitAI* circuit = manager->GetCircuit();
+	FindFacing(pos);
+
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CTerrainManager::TerrainPredicate predicate;
 	if (reprDef == nullptr) {
@@ -101,7 +105,6 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 					&& terrainMgr->CanBeBuiltAt(reprDef, p);
 		};
 	}
-	CMap* map = circuit->GetMap();
 	const float testSize = std::max(buildDef->GetDef()->GetXSize(), buildDef->GetDef()->GetZSize()) * SQUARE_SIZE;
 	auto checkFacing = [this, map, terrainMgr, testSize, &predicate, &pos, searchRadius]() {
 		AIFloat3 bp = terrainMgr->FindBuildSite(buildDef, pos, searchRadius, facing, predicate);

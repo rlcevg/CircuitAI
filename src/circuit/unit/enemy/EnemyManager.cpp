@@ -19,6 +19,7 @@
 #include "util/Utils.h"
 
 #include "spring/SpringCallback.h"
+#include "spring/SpringMap.h"
 
 #include "WrappUnit.h"
 #include "Cheats.h"
@@ -439,7 +440,15 @@ void CEnemyManager::ReadConfig()
 
 	initThrMod.inMobile = qthrMod.get("mobile", 1.f).asFloat();
 	initThrMod.inStatic = qthrMod.get("static", 0.f).asFloat();
-	maxAAThreat = quotas.get("aa_threat", 42.f).asFloat();
+
+	const Json::Value& aathr = quotas["aa_threat"];
+	const float size0 = aathr[0].get((unsigned)0, 8.f).asFloat();
+	const float size1 = aathr[1].get((unsigned)0, 24.f).asFloat();
+	const float thr0 = aathr[0].get((unsigned)1, 42.f).asFloat();
+	const float thr1 = aathr[1].get((unsigned)1, 420.f).asFloat();
+	// NOTE: instead of map-area consider min(width, height)
+	const float mapSize = (circuit->GetMap()->GetWidth() / 64) * (circuit->GetMap()->GetHeight() / 64);
+	maxAAThreat = (thr1 - thr0) / (SQUARE(size1) - SQUARE(size0)) * (mapSize - SQUARE(size0)) + thr0;
 }
 
 /*

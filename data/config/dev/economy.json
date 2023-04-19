@@ -12,14 +12,14 @@
 					"armsolar": [8, 12],
 					"armadvsol": [8, 12],
 					"armfus": [3, 4],
-					"armafus": [4, 5]
+					"armafus": [20, 30]
 				},
 				"water": {
 					"armtide": [14, 25],
 					"armwin": [10, 20],
 					"armsolar": [1],
 					"armadvsol": [12, 16],
-					"armuwfus": [1, 2]
+					"armuwfus": [10, 20]
 				}
 			},
 			"cortex": {
@@ -30,14 +30,14 @@
 					"corsolar": [8, 12],
 					"coradvsol": [8, 12],
 					"corfus": [3, 4],
-					"corafus": [4, 5]
+					"corafus": [20, 30]
 				},
 				"water": {
 					"cortide": [14, 25],
 					"corwin": [10, 20],
 					"corsolar": [1],
 					"coradvsol": [12, 16],
-					"coruwfus": [1, 2]
+					"coruwfus": [10, 20]
 				}
 			}
 		},

@@ -70,9 +70,11 @@ public:
 	 * SIEGE:     mobile units use Fight instead of Move; arty ignores siege buildings
 	 * RET_HOLD:  hold fire on retreat
 	 * RET_FIGHT: fight on retreat
-	 * SOLO:      single unit per build-task
+	 * SOLO:      construction initiator, won't join task if already started
 	 * BASE:      base builder, high priority for energy and storage tasks
 	 * VAMPIRE:   reclaim enemy units without threat check
+	 * ONOFF:     toggle weapon state, for mobile targets - state1, for static - state2
+	 * RARE:      build unit from T1 factory even when T2+ factory is available
 	 */
 	enum class AttrType: RoleT {NONE = -1,
 		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
@@ -81,7 +83,8 @@ public:
 	enum AttrMask: RoleM {
 		MELEE = 0x00000001, BOOST = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
 		STOCK = 0x00000010, SIEGE = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080,
-		SOLO  = 0x00000100, BASE  = 0x00000200, VAMPIRE  = 0x00000400, ONOFF     = 0x00000800};
+		SOLO  = 0x00000100, BASE  = 0x00000200, VAMPIRE  = 0x00000400, ONOFF     = 0x00000800,
+		RARE  = 0x00001000};
 	using AttrT = std::underlying_type<AttrType>::type;
 	using AttrM = std::underlying_type<AttrMask>::type;
 
@@ -155,6 +158,7 @@ public:
 	bool IsAttrSolo()     const { return attr & AttrMask::SOLO; }
 	bool IsAttrVampire()  const { return attr & AttrMask::VAMPIRE; }
 	bool IsAttrOnOff()    const { return attr & AttrMask::ONOFF; }
+	bool IsAttrRare()     const { return attr & AttrMask::RARE; }
 
 	bool IsHoldFire()   const { return fireState == FireType::HOLD; }
 	bool IsReturnFire() const { return fireState == FireType::RETURN; }

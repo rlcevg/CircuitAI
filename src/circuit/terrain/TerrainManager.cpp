@@ -440,8 +440,8 @@ void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& toPos, CCir
 	const AIFloat3& endPos = CAS->S->position;
 
 	// NOTE: heuristic in micropather may lead not to closest node, but a bit further,
-	//       as it tests only single distance.
-	//       Reduce end nodes in half (interleave) and test manhattan distance to each?
+	//       as it tests only single end-node.
+	//       Reduce end-nodes in half (interleave) and test manhattan distance to each?
 	IndexVec targets;
 	for (const auto& kv : busPath) {
 		if (kv.second != nullptr) {
@@ -516,9 +516,10 @@ AIFloat3 CTerrainManager::GetBusPos(CCircuitDef* facDef, const AIFloat3& pos, in
 
 	/// TODO: make sorted offsets pattern for this specific case, instead of circle
 	CPathFinder* pathfinder = circuit->GetPathfinder();
-	const int incr = 128 / GetConvertStoP();  // convertStoP ~= 32, 64, 128
-	const int maxIdx = std::min<int>(pathInfo->path.size(), 16 * incr);
+	const int incr = std::max(1, 64 / GetConvertStoP());  // convertStoP ~= 32, 64, 128
+	const int maxIdx = std::min<int>(pathInfo->path.size(), 32 * incr);
 	AIFloat3 prevPos = pathfinder->PathIndex2Pos(pathInfo->path[0]);
+	const float searchRadius = std::max(facDef->GetDef()->GetZSize() * SQUARE_SIZE, GetConvertStoP()) / 2;
 	const std::array<AIFloat3, 4> faceOffs = {
 		AIFloat3(0, 0, -GetConvertStoP() * incr),  // UNIT_FACING_SOUTH
 		AIFloat3(-GetConvertStoP() * incr, 0, 0),  // UNIT_FACING_EAST
@@ -536,12 +537,13 @@ AIFloat3 CTerrainManager::GetBusPos(CCircuitDef* facDef, const AIFloat3& pos, in
 		for (int facing : testFaces) {
 			AIFloat3 buildPos = pathPos + faceOffs[facing];
 			CTerrainManager::CorrectPosition(buildPos);
-			buildPos = FindBuildSite(facDef, buildPos, SQUARE_SIZE * 16, facing);
+			buildPos = FindBuildSite(facDef, buildPos, searchRadius, facing);
 			if (utils::is_valid(buildPos)) {
 				outFacing = facing;
 				return buildPos;
 			}
 		}
+		prevPos = pathPos;
 	}
 	return pos;
 }
