@@ -60,6 +60,7 @@ public:
 	void AddBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
 	void DelBlocker(CCircuitDef* cdef, const springai::AIFloat3& pos, int facing, bool isOffset = false);
 	bool IsObstruct(const springai::AIFloat3& pos) const;
+//	springai::AIFloat3 CheckObstruct(CCircuitUnit* unit) const;
 	void AddBusPath(CCircuitUnit* unit, const springai::AIFloat3& toPos, CCircuitDef* mobileDef);
 	void DelBusPath(CCircuitUnit* unit);
 	springai::AIFloat3 GetBusPos(CCircuitDef* facDef, const springai::AIFloat3& pos, int& outFacing);

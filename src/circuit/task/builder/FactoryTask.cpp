@@ -31,7 +31,7 @@ static int opposite[] = {
 
 CBFactoryTask::CBFactoryTask(ITaskManager* mgr, Priority priority,
 							 CCircuitDef* buildDef, CCircuitDef* reprDef, const AIFloat3& position,
-							 float cost, float shake, bool isPlop, int timeout)
+							 SResource cost, float shake, bool isPlop, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::FACTORY, cost, shake, timeout)
 		, reprDef(reprDef)
 		, isPlop(isPlop)

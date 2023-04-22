@@ -46,8 +46,8 @@ public:
 	template <typename F> CCircuitDef* GetWorstDef(F filterFunc) const;
 	const std::vector<SAvailInfo>& GetInfos() const { return infos; }
 
-	const std::vector<CCircuitDef*>& GetBuildDefs(CCircuitDef* builderDef) {
-		return builderInfos[builderDef->GetId()];
+	const std::vector<CCircuitDef*>& GetBuildDefs(CCircuitDef* conDef) {
+		return builderInfos[conDef->GetId()];
 	}
 
 private:

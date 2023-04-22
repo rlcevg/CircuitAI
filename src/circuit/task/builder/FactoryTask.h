@@ -16,7 +16,7 @@ class CBFactoryTask: public IBuilderTask {
 public:
 	CBFactoryTask(ITaskManager* mgr, Priority priority,
 				  CCircuitDef* buildDef, CCircuitDef* reprDef, const springai::AIFloat3& position,
-				  float cost, float shake, bool isPlop, int timeout);
+				  SResource cost, float shake, bool isPlop, int timeout);
 	CBFactoryTask(ITaskManager* mgr);  // Load
 	virtual ~CBFactoryTask();
 

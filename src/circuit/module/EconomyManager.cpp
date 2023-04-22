@@ -59,7 +59,10 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, isEnergyRequired(false)
 		, metal(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energy(SResourceInfo {-1, .0f, .0f, .0f, .0f})
-		, energyUse(.0f)
+		, metalPullCorFrame(-1)
+		, metalPullCor(.0f)
+		, energyPullCorFrame(-1)
+		, energyPullCor(.0f)
 		, airpadCount(0)
 		, factoryTask(nullptr)
 {
@@ -204,7 +207,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 	std::vector<CCircuitDef*> builders;
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
-		if (!cdef.GetBuildOptions().empty()) {
+		if (cdef.IsBuilder()) {
 			builders.push_back(&cdef);
 		}
 
@@ -518,7 +521,7 @@ void CEconomyManager::Init()
 	clusterInfos.resize(clSize, {nullptr, -FRAMES_PER_SEC});
 	const size_t spSize = circuit->GetMetalManager()->GetSpots().size();
 	mexSpots.resize(spSize, {true, false});
-	geoSpots.resize(circuit->GetEnergyManager()->GetSpots().size(), true);
+	geoSpots.resize(circuit->GetEnergyManager()->GetSpots().size(), {true, false});
 
 	const Json::Value& econ = circuit->GetSetupManager()->GetConfig()["economy"];
 	const float mm = econ.get("mex_max", 2.f).asFloat();
@@ -818,9 +821,13 @@ float CEconomyManager::GetMetalStore()
 
 float CEconomyManager::GetMetalPull()
 {
-	if (metal.pullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+	if (metal.pullFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
 		metal.pullFrame = circuit->GetLastFrame();
 		metal.pull = economy->GetPull(metalRes) + circuit->GetTeam()->GetRulesParamFloat("extraMetalPull", 0.f);
+		if (metalPullCorFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
+			metalPullCorFrame = -1;
+			metalPullCor = 0.f;
+		}
 	}
 	return metal.pull;
 }
@@ -837,7 +844,7 @@ float CEconomyManager::GetEnergyStore()
 
 float CEconomyManager::GetEnergyPull()
 {
-	if (energy.pullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
+	if (energy.pullFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
 		energy.pullFrame = circuit->GetLastFrame();
 		float extraEnergyPull = circuit->GetTeam()->GetRulesParamFloat("extraEnergyPull", 0.f);
 //		float oddEnergyOverdrive = circuit->GetTeam()->GetRulesParamFloat("OD_energyOverdrive", 0.f);
@@ -849,13 +856,12 @@ float CEconomyManager::GetEnergyPull()
 //			numAllies = 1.f;
 //		}
 		energy.pull = economy->GetPull(energyRes) + extraEnergyPull/* + extraChange - teamEnergyWaste / numAllies*/;
+		if (energyPullCorFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
+			energyPullCorFrame = -1;
+			energyPullCor = 0.f;
+		}
 	}
 	return energy.pull;
-}
-
-float CEconomyManager::GetEnergyUse()
-{
-	return energyUse = economy->GetUsage(energyRes);
 }
 
 bool CEconomyManager::IsMetalEmpty()
@@ -923,6 +929,38 @@ bool CEconomyManager::IsIgnoreStallingPull(const IBuilderTask* task) const
 	}
 	return ((task->GetBuildType() == IBuilderTask::BuildType::ENERGY) &&
 			circuit->GetEconomyManager()->IsEnergyStalling());
+}
+
+void CEconomyManager::CorrectResourcePull(float metal, float energy)
+{
+	metalPullCor += metal;
+	if (metalPullCorFrame == -1) {
+		metalPullCorFrame = circuit->GetLastFrame();
+	}
+	energyPullCor += energy;
+	if (energyPullCorFrame == -1) {
+		energyPullCorFrame = circuit->GetLastFrame();
+	}
+}
+
+bool CEconomyManager::IsEnoughEnergy(IBuilderTask const* task, CCircuitDef const* conDef) const
+{
+	if (task->GetBuildType() == IBuilderTask::BuildType::ENERGY) {
+		return true;
+	}
+	CCircuitDef const* buildDef = task->GetBuildDef();
+	const float buildTime = buildDef->GetBuildTime() / conDef->GetWorkerTime();
+	const float deficit = metal.current - ((GetMetalPullCor() - GetAvgMetalIncome()) * buildTime + buildDef->GetCostM());
+	if (deficit >= 0.f) {
+		return energy.current > (GetEnergyPullCor() - GetAvgEnergyIncome()) * buildTime + buildDef->GetCostE();
+	}
+	const float miRequire = buildDef->GetCostM() / buildTime;
+	const float timeToDeficit = metal.current / (GetMetalPullCor() + miRequire - GetAvgMetalIncome());
+	const float deficitTime = buildTime - timeToDeficit;
+	const float invAvailFraction = (GetMetalPullCor() + miRequire) / GetAvgMetalIncome();
+	const float eiRequire = buildDef->GetCostE() / buildTime;
+	return energy.current > (GetEnergyPullCor() + eiRequire - GetAvgEnergyIncome()) * timeToDeficit
+			+ (GetEnergyPullCor() + eiRequire - GetAvgEnergyIncome() * invAvailFraction) * deficitTime;
 }
 
 IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircuitUnit* unit)
@@ -1066,18 +1104,18 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 
 	if (convertDefs.HasAvail() && IsEnergyFull()
 		&& (builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2)
-		&& ((mexTaskSize == 0) || (builderMgr->GetWorkerCount() > circuit->GetMilitaryManager()->GetGuardTaskNum() + 2)))
+		&& ((mexTaskSize == 0) || (builderMgr->GetWorkerCount() > circuit->GetMilitaryManager()->GetGuardTaskNum() + 1)))
 	{
 		const AIFloat3& pos = circuit->GetSetupManager()->GetMetalBase();
 		CCircuitDef* convertDef = convertDefs.GetBestDef([frame, terrainMgr, &pos](CCircuitDef* cdef, const SConvertExt& data) {
 			return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, pos);
 		});
 		if (convertDef != nullptr) {
-			const SConvertExt* convertExt = convertDefs.GetAvailInfo(convertDef);
-			if ((mexDef == nullptr) || (convertExt->make / convertDef->GetCostM() >= metalMgr->GetSpotAvgIncome() * mexDef->GetExtractsM() / mexDef->GetCostM())) {
+//			const SConvertExt* convertExt = convertDefs.GetAvailInfo(convertDef);
+//			if ((mexDef == nullptr) || (convertExt->make / convertDef->GetCostM() >= metalMgr->GetSpotAvgIncome() * mexDef->GetExtractsM() / mexDef->GetCostM())) {
 				task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT, 0.f, true);
 				return task;
-			}
+//			}
 		}
 	}
 
@@ -1587,6 +1625,32 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 		}, energyGrid), FRAMES_PER_SEC * 120);
 	}
 
+	return nullptr;
+}
+
+IBuilderTask* CEconomyManager::CheckMobileAssistRequired(const AIFloat3& position, CCircuitUnit* unit)
+{
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
+	CBuilderManager* builderMgr = circuit->GetBuilderManager();
+	if (factoryMgr->IsAssistRequired() && builderMgr->HasFreeAssists(cdef)
+		&& !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty())
+	{
+		CRecruitTask* recrTask = factoryMgr->GetTasks().front();
+		CCircuitUnit* vip = *recrTask->GetAssignees().begin();
+		if (vip->GetPos(circuit->GetLastFrame()).SqDistance2D(position) < SQUARE(1000.f)) {
+			constexpr int SEC = 10;  // are there enough resources for 8-10 seconds?
+			CCircuitDef* recrDef = recrTask->GetBuildDef();
+			const float buildTime = recrDef->GetBuildTime() / cdef->GetWorkerTime();
+			const float miRequire = recrDef->GetCostM() / buildTime;  // + recrTask->GetBuildPowerM();
+			const float eiRequire = recrDef->GetCostE() / buildTime;  // + recrTask->GetBuildPowerE();
+			if ((metal.current > (metal.pull + miRequire - GetAvgMetalIncome()) * (SEC - 2))
+				&& (energy.current > (energy.pull + eiRequire - GetAvgEnergyIncome()) * (SEC - 2)))
+			{
+				return builderMgr->EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * SEC);
+			}
+		}
+	}
 	return nullptr;
 }
 

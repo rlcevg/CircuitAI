@@ -22,6 +22,11 @@ class CAllyUnit;
 
 struct SBuildChain;
 
+struct SResource {
+	float metal;
+	float energy;
+};
+
 class IBuilderTask: public IUnitTask {
 public:
 	enum class BuildType: char {
@@ -58,7 +63,7 @@ private:
 protected:
 	IBuilderTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
-				 Type type, BuildType buildType, float cost, float shake = SQUARE_SIZE * 32, int timeout = ASSIGN_TIMEOUT);
+				 Type type, BuildType buildType, SResource cost, float shake = SQUARE_SIZE * 32, int timeout = ASSIGN_TIMEOUT);
 	IBuilderTask(ITaskManager* mgr, Type type, BuildType buildType);  // Load
 public:
 	virtual ~IBuilderTask();
@@ -91,8 +96,10 @@ public:
 
 	virtual bool IsGeneric() const { return false; }
 	BuildType GetBuildType() const { return buildType; }
-	float GetBuildPower() const { return buildPower; }
-	float GetCost() const { return cost; }
+	float GetBuildPowerM() const { return buildPower.metal; }
+	float GetBuildPowerE() const { return buildPower.energy; }
+	float GetCostM() const { return cost.metal; }
+	float GetCostE() const { return cost.energy; }
 
 	virtual void SetBuildPos(const springai::AIFloat3& pos);
 	const springai::AIFloat3& GetBuildPos() const { return buildPos; }
@@ -134,16 +141,15 @@ protected:
 	float shake;  // Alter/randomize position by offset
 	CCircuitDef* buildDef;
 
-	float buildPower;  // task's metal per second expenditure
-	float cost;
+	SResource buildPower;  // task's metal and energy per second expenditure
+	SResource cost;
 	CCircuitUnit* target;  // FIXME: Replace target with unitId
 	springai::AIFloat3 buildPos;
 	int facing;
 	IBuilderTask* nextTask;  // old list style
 	CCircuitUnit* initiator;
 
-	float savedIncomeM;
-	float savedIncomeE;
+	SResource savedIncome;
 	int buildFails;
 
 	decltype(units)::const_iterator unitIt;  // update iterator

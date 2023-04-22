@@ -30,7 +30,7 @@ using namespace springai;
 
 CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 							 const AIFloat3& position,
-							 float cost, int timeout, float radius, bool isMetal)
+							 SResource cost, int timeout, float radius, bool isMetal)
 		: IReclaimTask(mgr, priority, Type::BUILDER, position, cost, timeout, radius, isMetal)
 {
 }

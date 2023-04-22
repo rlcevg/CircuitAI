@@ -22,7 +22,7 @@ using namespace springai;
 
 CSReclaimTask::CSReclaimTask(ITaskManager* mgr, Priority priority,
 							 const springai::AIFloat3& position,
-							 float cost, int timeout, float radius)
+							 SResource cost, int timeout, float radius)
 		: IReclaimTask(mgr, priority, Type::FACTORY, position, cost, timeout, radius)
 {
 }

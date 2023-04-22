@@ -54,7 +54,7 @@
 		},
 		"fac_air": {
 			"type": ["rectangle", "factory"],
-			"yard": [8, 8]
+			"yard": [-4, 42]
 		},
 		"fac_water": {
 			"type": ["rectangle", "factory"],

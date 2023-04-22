@@ -78,7 +78,7 @@ public:
 	const SSideInfo& GetSideInfo() const;
 	const std::vector<SSideInfo>& GetSideInfos() const { return sideInfos; }
 
-	CCircuitDef* GetDefaultDef(CCircuitDef* builderDef) { return defaultDefs[builderDef->GetId()]; }
+	CCircuitDef* GetDefaultDef(CCircuitDef* conDef) { return defaultDefs[conDef->GetId()]; }
 	CCircuitDef* GetPylonDef() const { return pylonDef; }
 
 	void AddAssistDef(CCircuitDef* cdef) { assistDefs.AddDef(cdef); cdef->SetIsAssist(true); }
@@ -97,7 +97,6 @@ public:
 	float GetEnergyCur();
 	float GetEnergyStore();
 	float GetEnergyPull();
-	float GetEnergyUse();
 	bool IsMetalEmpty();
 	bool IsMetalFull();
 	bool IsEnergyStalling();
@@ -113,10 +112,16 @@ public:
 	void SetOpenMexSpot(int spotId, bool value);
 	bool IsUpgradingMexSpot(int spotId) const { return mexSpots[spotId].isUp; }
 	void SetUpgradingMexSpot(int spotId, bool value) { mexSpots[spotId].isUp = value; }
-	bool IsOpenGeoSpot(int spotId) const { return geoSpots[spotId]; }
-	void SetOpenGeoSpot(int spotId, bool value) { geoSpots[spotId] = value; }
+	bool IsOpenGeoSpot(int spotId) const { return geoSpots[spotId].isOpen; }
+	void SetOpenGeoSpot(int spotId, bool value) { geoSpots[spotId].isOpen = value; }
+	bool IsUpgradingGeoSpot(int spotId) const { return geoSpots[spotId].isUp; }
+	void SetUpgradingGeoSpot(int spotId, bool value) { geoSpots[spotId].isUp = value; }
 	bool IsIgnorePull(const IBuilderTask* task) const;
 	bool IsIgnoreStallingPull(const IBuilderTask* task) const;
+	void CorrectResourcePull(float metal, float energy);
+	float GetMetalPullCor() const { return metal.pull - metalPullCor; }
+	float GetEnergyPullCor() const { return energy.pull - energyPullCor; }
+	bool IsEnoughEnergy(IBuilderTask const* task, CCircuitDef const* conDef) const;
 
 	IBuilderTask* MakeEconomyTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
@@ -127,6 +132,7 @@ public:
 	IBuilderTask* UpdateFactoryTasks();
 	IBuilderTask* UpdateStorageTasks();
 	IBuilderTask* UpdatePylonTasks();
+	IBuilderTask* CheckMobileAssistRequired(const springai::AIFloat3& position, CCircuitUnit* unit);
 	void StartFactoryJob(const float seconds);
 	CBFactoryTask* PickNextFactory(const springai::AIFloat3& position, bool isStart);
 
@@ -173,13 +179,13 @@ private:
 
 	// NOTE: MetalManager::SetOpenSpot used by whole allyTeam. Therefore
 	//       local spot's state descriptor needed for better expansion
-	struct SMSpot {
+	struct SResSpot {
 		bool isOpen : 1;
 		bool isUp : 1;  // spot being upgraded
 	};
-	std::vector<SMSpot> mexSpots;  // AI-local metal info
+	std::vector<SResSpot> mexSpots;  // AI-local metal info
 	int mexCount;
-	std::vector<bool> geoSpots;
+	std::vector<SResSpot> geoSpots;
 
 	struct SMetalExt {
 		float speed;
@@ -263,7 +269,10 @@ private:
 		float pull;
 		float income;
 	} metal, energy;
-	float energyUse;
+	int metalPullCorFrame;
+	float metalPullCor;
+	int energyPullCorFrame;
+	float energyPullCor;
 
 	struct SAirpadExt {
 	};

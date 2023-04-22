@@ -390,6 +390,73 @@ bool CTerrainManager::IsObstruct(const AIFloat3& pos) const
 	return blockingMap.IsStruct(x, z);
 }
 
+//AIFloat3 CTerrainManager::CheckObstruct(CCircuitUnit* unit) const
+//{
+//	/*
+//	 * Check 4 directions WRT unit radius and find shortest direction out of struct
+//	 */
+//	// FIXME: false positives on solars: no way to distinguish between plan and building.
+//	//        Short path out of struct isn't towards build-target or in free space -
+//	//        may stuck going back and forth between 2 close buildings.
+//	if (unit->GetCircuitDef()->GetMobileId() < 0) {
+//		return -RgtVector;
+//	}
+//
+//	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
+//	const int2 c(int(pos.x + 0.5f) / (SQUARE_SIZE * 2), int(pos.z + 0.5f) / (SQUARE_SIZE * 2));
+//	const int radius = unit->GetCircuitDef()->GetRadius() / (SQUARE_SIZE * 2);
+//	const std::array<int2, 4> exts = {
+//		int2(0, radius),  // UNIT_FACING_SOUTH
+//		int2(radius, 0),  // UNIT_FACING_EAST
+//		int2(0, -radius),  // UNIT_FACING_NORTH
+//		int2(-radius, 0)  // UNIT_FACING_WEST
+//	};
+//	const std::array<int2, 4> dirs = {
+//		int2(0, -1),  // UNIT_FACING_SOUTH
+//		int2(-1, 0),  // UNIT_FACING_EAST
+//		int2(0, 1),  // UNIT_FACING_NORTH
+//		int2(1, 0)  // UNIT_FACING_WEST
+//	};
+//
+//	std::array<int2, 4> cs = {
+//		c + exts[UNIT_FACING_SOUTH],
+//		c + exts[UNIT_FACING_EAST],
+//		c + exts[UNIT_FACING_NORTH],
+//		c + exts[UNIT_FACING_WEST]
+//	};
+//	std::vector<int> facings;
+//	facings.reserve(4);
+//	for (int facing = 0; facing < 4; ++facing) {
+//		const int2 t = cs[facing];
+//		if (blockingMap.IsInBounds(t.x, t.y) && blockingMap.IsStruct(t.x, t.y)) {
+//			facings.push_back(facing);
+//		}
+//	}
+//	if (facings.empty()) {
+//		return -RgtVector;
+//	}
+//
+//	int facing = UNIT_NO_FACING;
+//	int numTry = 0;
+//	constexpr int NUM_TRIES = 32;
+//	do {
+//		for (int f : facings) {
+//			const int2 t = (cs[f] += dirs[f]);
+//			if (blockingMap.IsInBounds(t.x, t.y) && !blockingMap.IsStruct(t.x, t.y)) {
+//				facing = f;
+//				break;
+//			}
+//		}
+//	} while ((facing == UNIT_NO_FACING) && (++numTry < NUM_TRIES));
+//
+//	const int2 t = cs[facing] - exts[facing] + dirs[facing];  // +dirs[facing] is slack, engine ignores short move-order
+//	if ((numTry >= NUM_TRIES) || !blockingMap.IsInBounds(t.x, t.y)) {
+//		return utils::get_radial_pos(pos, 64.f);
+//	}
+//
+//	return AIFloat3(t.x * (SQUARE_SIZE * 2) + SQUARE_SIZE, 0, t.y * (SQUARE_SIZE * 2) + SQUARE_SIZE);
+//}
+
 void CTerrainManager::AddBusPath(CCircuitUnit* unit, const AIFloat3& toPos, CCircuitDef* mobileDef)
 {
 	AIFloat3 startPos = unit->GetPos(circuit->GetLastFrame());

@@ -15,7 +15,7 @@ using namespace springai;
 
 CBRadarTask::CBRadarTask(ITaskManager* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
-						 float cost, float shake, int timeout)
+						 SResource cost, float shake, int timeout)
 		: ISensorTask(mgr, priority, [](CCircuitDef* cdef) { return cdef->IsRadar(); },
 				buildDef, position, BuildType::RADAR, cost, shake, timeout)
 {

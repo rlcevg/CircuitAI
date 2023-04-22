@@ -18,7 +18,7 @@ class CBPylonTask: public IBuilderTask {
 public:
 	CBPylonTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
-				IGridLink* link, float cost, int timeout);
+				IGridLink* link, SResource cost, int timeout);
 	CBPylonTask(ITaskManager* mgr);  // Load
 	virtual ~CBPylonTask();
 

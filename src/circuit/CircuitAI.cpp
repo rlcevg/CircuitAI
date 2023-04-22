@@ -79,8 +79,8 @@ using namespace terrain;
  * Разрушать города,
  * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.6.5"};
-constexpr uint32_t VERSION_SAVE = 3;
+constexpr char version[]{"1.6.6"};
+constexpr uint32_t VERSION_SAVE = 4;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;

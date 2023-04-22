@@ -47,6 +47,7 @@ struct SBlockingMap {
 	inline void DelStruct(int x, int z, StructType structType, SM notIgnoreMask);
 
 	inline bool IsInBounds(const int2& r1, const int2& r2) const;
+	inline bool IsInBounds(int x, int z) const;
 	inline bool IsInBoundsLow(int x, int z) const;
 	inline void Bound(int2& r1, int2& r2);
 

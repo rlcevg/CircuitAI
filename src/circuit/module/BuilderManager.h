@@ -55,8 +55,8 @@ public:
 
 	float GetGoalExecTime() const { return goalExecTime; }
 	unsigned int GetWorkerCount() const { return workers.size(); }
-	void AddBuildPower(CCircuitUnit* unit, bool isBuilder = true);
-	void DelBuildPower(CCircuitUnit* unit, bool isBuilder = true);
+	void AddBuildPower(CCircuitUnit* unit);
+	void DelBuildPower(CCircuitUnit* unit);
 	float GetBuildPower() const { return buildPower; }
 	bool CanEnqueueTask(const unsigned mod = 8) const { return buildTasksCount < workers.size() * mod; }
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type) const;
@@ -148,7 +148,7 @@ private:
 						  CCircuitDef* buildDef,
 						  const springai::AIFloat3& position,
 						  IBuilderTask::BuildType type,
-						  float cost,
+						  SResource cost,
 						  float shake,
 						  bool isActive,
 						  int timeout);
@@ -168,8 +168,8 @@ public:
 	}
 
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position) const;  // Check if build-area has proper builder
-
-	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef);
+	bool HasFreeAssists(CCircuitDef* conDef) const;
+	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef) const;
 
 	IBuilderTask* GetRepairTask(ICoreUnit::Id unitId) const;
 	IBuilderTask* GetReclaimFeatureTask(const springai::AIFloat3& pos, float radius) const;
@@ -217,7 +217,8 @@ private:
 	std::map<ICoreUnit::Id, CBRepairTask*> repairUnits;
 	std::map<CAllyUnit*, CBReclaimTask*> reclaimUnits;
 	std::vector<std::set<IBuilderTask*>> buildTasks;  // UnitDef based tasks
-	unsigned int guardCount;
+	unsigned int assistCount;  // builders that can assist
+	unsigned int guardCount;  // assist guards
 	unsigned int buildTasksCount;
 	float buildPower;
 	std::vector<IUnitTask*> buildUpdates;  // owner

@@ -26,7 +26,7 @@ using namespace springai;
 CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
 						   RecruitType type, float radius)
-		: IBuilderTask(mgr, priority, buildDef, position, Type::FACTORY, BuildType::RECRUIT, .0f, .0f, -1)
+		: IBuilderTask(mgr, priority, buildDef, position, Type::FACTORY, BuildType::RECRUIT, {0.f, 0.f}, 0.f, -1)
 		, recruitType(type)
 		, sqradius(radius * radius)
 {

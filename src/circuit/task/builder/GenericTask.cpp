@@ -14,7 +14,7 @@ using namespace springai;
 
 CBGenericTask::CBGenericTask(ITaskManager* mgr, BuildType buildType, Priority priority,
 							 CCircuitDef* buildDef, const AIFloat3& position,
-							 float cost, float shake, int timeout)
+							 SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, buildType, cost, shake, timeout)
 {
 }

@@ -16,7 +16,7 @@ class CBDefenceTask: public IBuilderTask {
 public:
 	CBDefenceTask(ITaskManager* mgr, Priority priority,
 				  CCircuitDef* buildDef, const springai::AIFloat3& position,
-				  float cost, float shake, int timeout);
+				  SResource cost, float shake, int timeout);
 	CBDefenceTask(ITaskManager* mgr);  // Load
 	virtual ~CBDefenceTask();
 
@@ -33,7 +33,7 @@ protected:
 	virtual void Save(std::ostream& os) const override;
 
 	bool isUrgent;
-	float normalCost;
+	float normalCostM;
 	int defPointId;
 };
 

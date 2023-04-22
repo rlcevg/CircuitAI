@@ -23,7 +23,7 @@ namespace circuit {
 using namespace springai;
 
 IRepairTask::IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyUnit* target, int timeout)
-		: IBuilderTask(mgr, priority, nullptr, -RgtVector, type, BuildType::REPAIR, 1000.0f, 0.f, timeout)
+		: IBuilderTask(mgr, priority, nullptr, -RgtVector, type, BuildType::REPAIR, {1000.f, 0.f}, 0.f, timeout)
 {
 	SetTarget(target);
 }
@@ -43,7 +43,7 @@ bool IRepairTask::CanAssignTo(CCircuitUnit* unit) const
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	return cdef->IsAbleToRepair() && !cdef->IsAttrSolo()
-			&& (target != nullptr) && (target != unit) && (cost > buildPower * static_cast<CBuilderManager*>(manager)->GetGoalExecTime())
+			&& (target != nullptr) && (target != unit) && (cost.metal > buildPower.metal * static_cast<CBuilderManager*>(manager)->GetGoalExecTime())
 			&& (circuit->GetInflMap()->GetInfluenceAt(unit->GetPos(circuit->GetLastFrame())) > INFL_EPS);
 }
 
@@ -79,7 +79,7 @@ void IRepairTask::Start(CCircuitUnit* unit)
 			manager->FallbackTask(unit);
 			return;
 		}
-		cost = repTarget->GetCircuitDef()->GetCostM();
+		cost.metal = repTarget->GetCircuitDef()->GetCostM();
 		targetId = repTarget->GetId();
 	}
 }
@@ -149,19 +149,18 @@ void IRepairTask::SetTarget(CAllyUnit* unit)
 	if (unit != nullptr) {
 		CCircuitAI* circuit = manager->GetCircuit();
 		target = circuit->GetTeamUnit(unit->GetId());  // can be nullptr, using targetId
-		cost = unit->GetCircuitDef()->GetCostM();
+		cost.metal = unit->GetCircuitDef()->GetCostM();
 		position = buildPos = unit->GetPos(circuit->GetLastFrame());
 //		CTerrainManager::CorrectPosition(buildPos);  // position will contain non-corrected value
 		targetId = unit->GetId();
 		if (unit->GetUnit()->IsBeingBuilt()) {
 			buildDef = circuit->GetCircuitDef(unit->GetCircuitDef()->GetId());
 		} else {
-			savedIncomeM = 0.f;
-			savedIncomeE = 0.f;
+			savedIncome = {0.f, 0.f};
 		}
 	} else {
 		target = nullptr;
-		cost = 1000.0f;
+		cost.metal = 1000.f;
 		position = buildPos = -RgtVector;
 		targetId = -1;
 		buildDef = nullptr;

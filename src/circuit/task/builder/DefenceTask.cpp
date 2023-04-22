@@ -24,10 +24,10 @@ using namespace springai;
 
 CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 							 CCircuitDef* buildDef, const AIFloat3& position,
-							 float cost, float shake, int timeout)
+							 SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::DEFENCE, cost, shake, timeout)
 		, isUrgent(false)
-		, normalCost(cost)
+		, normalCostM(cost.metal)
 		, defPointId(-1)
 {
 }
@@ -35,7 +35,7 @@ CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 CBDefenceTask::CBDefenceTask(ITaskManager* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::DEFENCE)
 		, isUrgent(false)
-		, normalCost(.0f)
+		, normalCostM(.0f)
 		, defPointId(-1)
 {
 }
@@ -67,10 +67,10 @@ void CBDefenceTask::Update()
 	isUrgent = isUnderEnemy;
 	if (isUnderEnemy) {
 		priority = IBuilderTask::Priority::HIGH;
-		cost *= 8.f;  // attract more builders
+		cost.metal *= 8.f;  // attract more builders
 	} else {
 		priority = IBuilderTask::Priority::NORMAL;
-		cost = normalCost;
+		cost.metal = normalCostM;
 	}
 	TRY_UNIT(circuit, target,
 		target->CmdPriority(ClampPriority());
@@ -103,7 +103,7 @@ void CBDefenceTask::Cancel()
 
 #define SERIALIZE(stream, func)	\
 	utils::binary_##func(stream, isUrgent);		\
-	utils::binary_##func(stream, normalCost);
+	utils::binary_##func(stream, normalCostM);
 
 bool CBDefenceTask::Load(std::istream& is)
 {
@@ -111,7 +111,7 @@ bool CBDefenceTask::Load(std::istream& is)
 	SERIALIZE(is, read)
 	// TODO: Save DefenceData::defPoints cost, otherwise save-loading defPointId makes no sense
 #ifdef DEBUG_SAVELOAD
-	manager->GetCircuit()->LOG("%s | isUrgent=%i | normalCost=%f", __PRETTY_FUNCTION__, isUrgent, normalCost);
+	manager->GetCircuit()->LOG("%s | isUrgent=%i | normalCostM=%f", __PRETTY_FUNCTION__, isUrgent, normalCostM);
 #endif
 	return true;
 }
@@ -121,7 +121,7 @@ void CBDefenceTask::Save(std::ostream& os) const
 	IBuilderTask::Save(os);
 	SERIALIZE(os, write)
 #ifdef DEBUG_SAVELOAD
-	manager->GetCircuit()->LOG("%s | isUrgent=%i | normalCost=%f", __PRETTY_FUNCTION__, isUrgent, normalCost);
+	manager->GetCircuit()->LOG("%s | isUrgent=%i | normalCostM=%f", __PRETTY_FUNCTION__, isUrgent, normalCostM);
 #endif
 }
 

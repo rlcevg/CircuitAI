@@ -43,7 +43,7 @@ bool AiIsSwitchTime(int lastSwitchFrame)
 
 bool AiIsSwitchAllowed(CCircuitDef@ facDef)
 {
-	const bool isOK = (aiMilitaryMgr.armyCost > facDef.costM * aiFactoryMgr.GetFactoryCount())
+	const bool isOK = (aiMilitaryMgr.armyCost > 1.2f * facDef.costM * aiFactoryMgr.GetFactoryCount())
 		|| (aiEconomyMgr.metal.current > facDef.costM);
 	aiFactoryMgr.isAssistRequired = Economy::isSwitchAssist = !isOK;
 	return isOK;

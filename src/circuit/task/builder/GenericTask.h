@@ -16,7 +16,7 @@ class CBGenericTask: public IBuilderTask {
 public:
 	CBGenericTask(ITaskManager* mgr, BuildType buildType, Priority priority,
 				  CCircuitDef* buildDef, const springai::AIFloat3& position,
-				  float cost, float shake, int timeout);
+				  SResource cost, float shake, int timeout);
 	CBGenericTask(ITaskManager* mgr, BuildType buildType);  // Load
 	virtual ~CBGenericTask();
 

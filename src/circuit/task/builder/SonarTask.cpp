@@ -15,7 +15,7 @@ using namespace springai;
 
 CBSonarTask::CBSonarTask(ITaskManager* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
-						 float cost, float shake, int timeout)
+						 SResource cost, float shake, int timeout)
 		: ISensorTask(mgr, priority, [](CCircuitDef* cdef) { return cdef->IsSonar(); },
 				buildDef, position, BuildType::SONAR, cost, shake, timeout)
 {

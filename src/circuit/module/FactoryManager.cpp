@@ -245,7 +245,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			setRoles(ROLE_TYPE(AIR));
 		} else if (!cdef.IsMobile() && cdef.IsAttacker() && cdef.HasSurfToLand()) {
 			setRoles(ROLE_TYPE(STATIC));
-		} else if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty() && !cdef.IsRoleComm()) {
+		} else if (cdef.GetDef()->IsBuilder() && cdef.IsBuilder() && !cdef.IsRoleComm()) {
 			setRoles(ROLE_TYPE(BUILDER));
 		}
 		if (cdef.IsRoleComm()) {
@@ -267,7 +267,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		if (!cdef.IsMobile()) {
 			CCircuitDef::Id unitDefId = cdef.GetId();
 			// FIXME: Caretaker can be factory. Make attributes?
-			if (!cdef.GetBuildOptions().empty() && (factoryDefs.find(unitDefId) != factoryDefs.end())) {
+			if (cdef.IsBuilder() && (factoryDefs.find(unitDefId) != factoryDefs.end())) {
 				createdHandler[unitDefId] = factoryCreatedHandler;
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
@@ -787,7 +787,7 @@ IBuilderTask* CFactoryManager::EnqueueReclaim(IBuilderTask::Priority priority,
 											  float radius,
 											  int timeout)
 {
-	IBuilderTask* task = new CSReclaimTask(this, priority, position, .0f, timeout, radius);
+	IBuilderTask* task = new CSReclaimTask(this, priority, position, {0.f, 0.f}, timeout, radius);
 	updateTasks.push_back(task);
 	TaskCreated(task);
 	return task;
@@ -1545,7 +1545,9 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const int frame = circuit->GetLastFrame();
 	const bool isMetalFull = economyMgr->IsMetalFull();
-	const float energyNet = economyMgr->GetAvgEnergyIncome() - economyMgr->GetEnergyUse();
+	// spoiled by metal converters, using isEnergyStalling
+//	const float energyNet = economyMgr->GetAvgEnergyIncome() - economyMgr->GetEnergyPull();
+	const bool isEnergyStalling = economyMgr->IsEnergyStalling();
 	const float range = builder->GetCircuitDef()->GetBuildDistance();
 	const AIFloat3& pos = builder->GetPos(frame);
 
@@ -1560,7 +1562,7 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 		return isValid && ((area == nullptr) || terrainMgr->IsEnemyInArea(area));
 	};
 	auto isAvailableDef = [&](CCircuitDef* bd) {
-		return (((bd->GetCloakCost() < .1f) || (energyNet > bd->GetCloakCost()))
+		return (((bd->GetCloakCost() < .1f)/* || (energyNet > bd->GetCloakCost())*/ || !isEnergyStalling)
 			&& bd->IsAvailable(frame)
 			&& (isActive || bd->IsAttrRare())
 			&& terrainMgr->CanBeBuiltAt(bd, pos, range)
@@ -1601,7 +1603,7 @@ CFactoryManager::SRecruitDef CFactoryManager::RequiredFireDef(CCircuitUnit* buil
 		if (!isAvailableDef(bd)) {
 #ifdef FACTORY_CHOICE
 			std::string reason;
-			if ((bd->GetCloakCost() > .1f) && (energyNet < bd->GetCloakCost())) {
+			if ((bd->GetCloakCost() > .1f)/* && (energyNet < bd->GetCloakCost())*/ && isEnergyStalling) {
 				reason = "no energy";
 			} else if (!bd->IsAvailable(frame)) {
 				reason = "limit exceeded or frame < since";

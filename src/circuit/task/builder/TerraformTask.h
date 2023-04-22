@@ -15,8 +15,8 @@ namespace circuit {
 
 class CBTerraformTask: public IBuilderTask {
 public:
-	CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, float cost = 1.0f, int timeout = 0);
-	CBTerraformTask(ITaskManager* mgr, Priority priority, const springai::AIFloat3& position, float cost = 1.0f, int timeout = 0);
+	CBTerraformTask(ITaskManager* mgr, Priority priority, CCircuitUnit* target, SResource cost = {1.f, 0.f}, int timeout = 0);
+	CBTerraformTask(ITaskManager* mgr, Priority priority, const springai::AIFloat3& position, SResource cost = {1.f, 0.f}, int timeout = 0);
 	CBTerraformTask(ITaskManager* mgr);  // Load
 	virtual ~CBTerraformTask();
 

@@ -16,7 +16,7 @@ class CBBunkerTask: public IBuilderTask {
 public:
 	CBBunkerTask(ITaskManager* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
-				 float cost, float shake, int timeout);
+				 SResource cost, float shake, int timeout);
 	CBBunkerTask(ITaskManager* mgr);  // Load
 	virtual ~CBBunkerTask();
 };

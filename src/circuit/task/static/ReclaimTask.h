@@ -16,7 +16,7 @@ class CSReclaimTask: public IReclaimTask {
 public:
 	CSReclaimTask(ITaskManager* mgr, Priority priority,
 				  const springai::AIFloat3& position,
-				  float cost, int timeout, float radius = .0f);
+				  SResource cost, int timeout, float radius = .0f);
 	virtual ~CSReclaimTask();
 
 	virtual void AssignTo(CCircuitUnit* unit) override;

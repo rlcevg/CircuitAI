@@ -14,7 +14,7 @@ using namespace springai;
 
 CBStoreTask::CBStoreTask(ITaskManager* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
-						 float cost, float shake, int timeout)
+						 SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::STORE, cost, shake, timeout)
 {
 }

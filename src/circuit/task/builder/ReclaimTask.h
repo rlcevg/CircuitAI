@@ -16,7 +16,7 @@ class CBReclaimTask: public IReclaimTask {
 public:
 	CBReclaimTask(ITaskManager* mgr, Priority priority,
 				  const springai::AIFloat3& position,
-				  float cost, int timeout, float radius = .0f, bool isMetal = true);
+				  SResource cost, int timeout, float radius = .0f, bool isMetal = true);
 	CBReclaimTask(ITaskManager* mgr, Priority priority,
 				  CCircuitUnit* target,
 				  int timeout);

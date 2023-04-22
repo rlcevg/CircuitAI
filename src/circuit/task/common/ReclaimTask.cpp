@@ -19,7 +19,7 @@ using namespace springai;
 
 IReclaimTask::IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
 						   const AIFloat3& position,
-						   float cost, int timeout, float radius, bool isMetal)
+						   SResource cost, int timeout, float radius, bool isMetal)
 		: IBuilderTask(mgr, priority, nullptr, position, type, BuildType::RECLAIM, cost, 0.f, timeout)
 		, radius(radius)
 		, isMetal(isMetal)
@@ -29,7 +29,7 @@ IReclaimTask::IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
 IReclaimTask::IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
 						   CCircuitUnit* target,
 						   int timeout)
-		: IBuilderTask(mgr, priority, nullptr, -RgtVector, type, BuildType::RECLAIM, 1000.0f, 0.f, timeout)
+		: IBuilderTask(mgr, priority, nullptr, -RgtVector, type, BuildType::RECLAIM, {1000.f, 0.f}, 0.f, timeout)
 		, radius(0.f)
 		, isMetal(false)
 {
@@ -49,7 +49,7 @@ IReclaimTask::~IReclaimTask()
 
 bool IReclaimTask::CanAssignTo(CCircuitUnit* unit) const
 {
-	return unit->GetCircuitDef()->IsAbleToReclaim() && (cost > buildPower * MAX_BUILD_SEC);
+	return unit->GetCircuitDef()->IsAbleToReclaim() && (cost.metal > buildPower.metal * MAX_BUILD_SEC);
 }
 
 void IReclaimTask::RemoveAssignee(CCircuitUnit* unit)

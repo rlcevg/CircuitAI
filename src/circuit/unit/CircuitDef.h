@@ -79,7 +79,7 @@ public:
 	enum class AttrType: RoleT {NONE = -1,
 		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
 		STOCK, SIEGE, RET_HOLD, RET_FIGHT,
-		SOLO, BASE, VAMPIRE, ONOFF, _SIZE_};
+		SOLO, BASE, VAMPIRE, ONOFF, RARE, _SIZE_};
 	enum AttrMask: RoleM {
 		MELEE = 0x00000001, BOOST = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
 		STOCK = 0x00000010, SIEGE = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080,
@@ -281,6 +281,7 @@ public:
 	bool IsAssistable()      const { return buildTime < 1e6f; }
 	bool IsReclaimable()     const { return isReclaimable; }
 	bool IsCapturable()      const { return isCapturable; }
+	bool IsBuilder()         const { return !buildOptions.empty(); }
 
 	void SetIsMex(bool value) { isMex = value; }
 	bool IsMex() const { return isMex; }

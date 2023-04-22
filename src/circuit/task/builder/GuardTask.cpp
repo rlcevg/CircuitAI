@@ -18,7 +18,7 @@ namespace circuit {
 
 CBGuardTask::CBGuardTask(ITaskManager* mgr, Priority priority, CCircuitUnit* vip, bool isInterrupt, int timeout)
 		: IBuilderTask(mgr, priority, nullptr, vip->GetPos(mgr->GetCircuit()->GetLastFrame()),
-					   Type::BUILDER, BuildType::GUARD, 0.f, 0.f, timeout)
+					   Type::BUILDER, BuildType::GUARD, {0.f, 0.f}, 0.f, timeout)
 		, vipId(vip->GetId())
 		, isInterrupt(isInterrupt)
 {
@@ -37,11 +37,14 @@ void CBGuardTask::AssignTo(CCircuitUnit* unit)
 {
 	IBuilderTask::AssignTo(unit);
 
-	if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
-		static_cast<CBuilderManager*>(manager)->IncGuardCount();
-		if (!IsTargetBuilder()) {
-			static_cast<CBuilderManager*>(manager)->DelBuildPower(unit);
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (IsTargetBuilder()) {
+		if (cdef->IsAbleToAssist()) {
+			static_cast<CBuilderManager*>(manager)->IncGuardCount();
 		}
+	} else if (cdef->IsBuilder()) {
+		// not testing IsAbleToAssist as AddBuildPower applied only to IsBuilder in CBuilderManager
+		static_cast<CBuilderManager*>(manager)->DelBuildPower(unit);
 	}
 
 	if (!isInterrupt) {
@@ -56,23 +59,27 @@ void CBGuardTask::RemoveAssignee(CCircuitUnit* unit)
 		manager->AbortTask(this);
 	}
 
-	if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
-		static_cast<CBuilderManager*>(manager)->DecGuardCount();
-		if (!IsTargetBuilder()) {
-			static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	if (IsTargetBuilder()) {
+		if (cdef->IsAbleToAssist()) {
+			static_cast<CBuilderManager*>(manager)->DecGuardCount();
 		}
+	} else if (cdef->IsBuilder()) {
+		static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
 	}
 }
 
 void CBGuardTask::Stop(bool done)
 {
-	const bool isVIPnotBuilder = !IsTargetBuilder();
+	const bool isVIPBuilder = IsTargetBuilder();
 	for (CCircuitUnit* unit : units) {
-		if (!unit->GetCircuitDef()->GetBuildOptions().empty()) {
-			static_cast<CBuilderManager*>(manager)->DecGuardCount();
-			if (isVIPnotBuilder) {
-				static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
+		CCircuitDef* cdef = unit->GetCircuitDef();
+		if (isVIPBuilder) {
+			if (cdef->IsAbleToAssist()) {
+				static_cast<CBuilderManager*>(manager)->DecGuardCount();
 			}
+		} else if (cdef->IsBuilder()) {
+			static_cast<CBuilderManager*>(manager)->AddBuildPower(unit);
 		}
 	}
 
@@ -136,7 +143,7 @@ bool CBGuardTask::Reevaluate(CCircuitUnit* unit)
 bool CBGuardTask::IsTargetBuilder() const
 {
 	CCircuitUnit* vip = manager->GetCircuit()->GetTeamUnit(vipId);
-	return (vip != nullptr) && !vip->GetCircuitDef()->GetBuildOptions().empty();
+	return (vip != nullptr) && vip->GetCircuitDef()->IsBuilder();
 }
 
 } // namespace circuit

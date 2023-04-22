@@ -17,7 +17,7 @@ class IReclaimTask: public IBuilderTask {
 public:
 	IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
 				 const springai::AIFloat3& position,
-				 float cost, int timeout, float radius = .0f, bool isMetal = true);
+				 SResource cost, int timeout, float radius = .0f, bool isMetal = true);
 	IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
 				 CCircuitUnit* target,
 				 int timeout);

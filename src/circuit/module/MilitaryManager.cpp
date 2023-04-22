@@ -235,7 +235,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	std::vector<CCircuitDef*> builders;
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
-		if (!cdef.GetBuildOptions().empty()) {
+		if (cdef.IsBuilder()) {
 			builders.push_back(&cdef);
 		}
 
@@ -247,7 +247,7 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			}
 			cdef.ModPower(commMod);
 		}
-		if (cdef.GetDef()->IsBuilder() && (!cdef.GetBuildOptions().empty() || cdef.IsAbleToResurrect())) {
+		if (cdef.GetDef()->IsBuilder() && (cdef.IsBuilder() || cdef.IsAbleToResurrect())) {
 //			damagedHandler[unitDefId] = structDamagedHandler;
 			continue;
 		}
@@ -975,7 +975,7 @@ void CMilitaryManager::AbortDefence(const CBDefenceTask* task, int defPointId)
 	}
 	IBuilderTask* next = task->GetNextTask();
 	while (next != nullptr) {
-		defCost = (next->GetBuildDef() != nullptr) ? next->GetBuildDef()->GetCostM() : next->GetCost();
+		defCost = (next->GetBuildDef() != nullptr) ? next->GetBuildDef()->GetCostM() : next->GetCostM();
 		if (point->cost >= defCost) {
 			point->cost -= defCost;
 		}

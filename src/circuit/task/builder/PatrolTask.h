@@ -16,7 +16,7 @@ class CBPatrolTask: public IBuilderTask {
 public:
 	CBPatrolTask(ITaskManager* mgr, Priority priority,
 				 const springai::AIFloat3& position,
-				 float cost, int timeout);
+				 SResource cost, int timeout);
 	virtual ~CBPatrolTask();
 
 	virtual void AssignTo(CCircuitUnit* unit) override;

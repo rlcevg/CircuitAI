@@ -54,13 +54,13 @@ IBuilderTask::BuildName IBuilderTask::buildNames = {
 
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
-						   Type type, BuildType buildType, float cost, float shake, int timeout)
+						   Type type, BuildType buildType, SResource cost, float shake, int timeout)
 		: IUnitTask(mgr, priority, type, timeout)
 		, buildType(buildType)
 		, position(position)
 		, shake(shake)
 		, buildDef(buildDef)
-		, buildPower(.0f)
+		, buildPower({0.f, 0.f})
 		, cost(cost)
 		, target(nullptr)
 		, buildPos(-RgtVector)
@@ -71,25 +71,24 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 		, unitIt(units.end())
 {
 	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
-	savedIncomeM = economyMgr->GetAvgMetalIncome();
-	savedIncomeE = economyMgr->GetAvgEnergyIncome();
+	savedIncome.metal = economyMgr->GetAvgMetalIncome();
+	savedIncome.energy = economyMgr->GetAvgEnergyIncome();
 }
 
 IBuilderTask::IBuilderTask(ITaskManager* mgr, Type type, BuildType buildType)
 		: IUnitTask(mgr, type)
 		, buildType(buildType)
 		, position(-RgtVector)
-		, shake(.0f)
+		, shake(0.f)
 		, buildDef(nullptr)
-		, buildPower(.0f)
-		, cost(.0f)
+		, buildPower({0.f, 0.f})
+		, cost({0.f, 0.f})
 		, target(nullptr)
 		, buildPos(-RgtVector)
 		, facing(UNIT_NO_FACING)
 		, nextTask(nullptr)
 		, initiator(nullptr)
-		, savedIncomeM(.0f)
-		, savedIncomeE(.0f)
+		, savedIncome({0.f, 0.f})
 		, buildFails(0)
 		, unitIt(units.end())
 {
@@ -103,11 +102,14 @@ IBuilderTask::~IBuilderTask()
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	// is extra buildpower required?
-	const float metalIncome = manager->GetCircuit()->GetEconomyManager()->GetAvgMetalIncome();
-	if (cost < buildPower * buildDef->GetGoalBuildTime(metalIncome)) {
+	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
+	if (cost.metal < buildPower.metal * buildDef->GetGoalBuildTime(economyMgr->GetAvgMetalIncome())) {  // upper metal bound
 		return false;
 	}
 	const CCircuitDef* cdef = unit->GetCircuitDef();
+	if (!economyMgr->IsEnoughEnergy(this, cdef)) {  // lower energy bound
+		return false;
+	}
 	// can unit build at all
 	if (!cdef->CanBuild(buildDef) && ((target == nullptr) || !cdef->IsAbleToAssist() || cdef->IsAttrSolo())) {
 		return false;
@@ -194,9 +196,11 @@ void IBuilderTask::Stop(bool done)
 	traveled.clear();
 	executors.clear();
 
-	if ((buildDef != nullptr) && !manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
-		manager->DelMetalPull(buildPower);
+	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
+	if ((buildDef != nullptr) && !economyMgr->IsIgnorePull(this)) {
+		manager->DelMetalPull(buildPower.metal);
 	}
+	economyMgr->CorrectResourcePull(buildPower.metal, buildPower.energy);
 }
 
 void IBuilderTask::Finish()
@@ -263,9 +267,9 @@ bool IBuilderTask::Execute(CCircuitUnit* unit)
 	// FIXME: Move to Reevaluate
 	circuit->GetThreatMap()->SetThreatType(unit);
 	// FIXME: Replace const 1000.f with build time?
-	if (circuit->IsAllyAware() && (cost >= 1000.f)) {
+	if (circuit->IsAllyAware() && (cost.metal > 1000.f)) {
 		circuit->UpdateFriendlyUnits();
-		auto& friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(position, cost);
+		auto& friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(position, cost.metal);
 		CAllyUnit* alu = FindSameAlly(unit, friendlies);
 		utils::free(friendlies);
 		if (alu != nullptr) {
@@ -434,10 +438,10 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 
 	// FIXME: Replace const 1000.0f with build time?
 	CEconomyManager* ecoMgr = circuit->GetEconomyManager();
-	if ((cost > 1000.0f)
+	if ((cost.metal > 1000.f)
 		&& (target == nullptr)
-		&& (((ecoMgr->GetAvgMetalIncome() < savedIncomeM * 0.6f) && (ecoMgr->GetAvgMetalIncome() * 2.0f < ecoMgr->GetMetalPull()))
-			|| ((ecoMgr->GetAvgEnergyIncome() < savedIncomeE * 0.6f) && (ecoMgr->GetAvgEnergyIncome() * 2.0f < ecoMgr->GetEnergyPull())))
+		&& (((ecoMgr->GetAvgMetalIncome() < savedIncome.metal * 0.6f) && (ecoMgr->GetAvgMetalIncome() * 2.0f < ecoMgr->GetMetalPull()))
+			|| ((ecoMgr->GetAvgEnergyIncome() < savedIncome.energy * 0.6f) && (ecoMgr->GetAvgEnergyIncome() * 2.0f < ecoMgr->GetEnergyPull())))
 		)
 	{
 		manager->AbortTask(this);
@@ -461,7 +465,9 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 //			return true;
 //		}
 
-		if (circuit->GetTerrainManager()->IsObstruct(pos)) {
+		// NOTE: helps with obstructed factory, but not with blocked building plan.
+		//       @see CTerrainManager::CheckObstruct and its issues.
+		if ((unit->GetCircuitDef()->GetMobileId() >= 0) && circuit->GetTerrainManager()->IsObstruct(pos)) {
 			if (unit->GetTaskFrame() + FRAMES_PER_SEC * 5 < frame) {
 				unit->SetTaskFrame(frame);  // re-use taskFrame
 				TRY_UNIT(circuit, unit,
@@ -559,13 +565,18 @@ void IBuilderTask::ApplyPath(const CQueryPathSingle* query)
 
 void IBuilderTask::HideAssignee(CCircuitUnit* unit)
 {
+	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
 	if (buildDef == nullptr) {
-		buildPower -= unit->GetBuildSpeed();
+		const float buildSpeed = unit->GetBuildSpeed();
+		buildPower.metal -= buildSpeed;
+		buildPower.energy -= buildSpeed * economyMgr->GetEcoEM();
 	} else {
 		const float buildTime = buildDef->GetBuildTime() / unit->GetWorkerTime();
 		const float metalRequire = buildDef->GetCostM() / buildTime;
-		buildPower -= metalRequire;
-		if (!manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
+		const float energyRequire = buildDef->GetCostE() / buildTime;
+		buildPower.metal -= metalRequire;
+		buildPower.energy -= energyRequire;
+		if (!economyMgr->IsIgnorePull(this)) {
 			manager->DelMetalPull(metalRequire);
 		}
 	}
@@ -573,13 +584,18 @@ void IBuilderTask::HideAssignee(CCircuitUnit* unit)
 
 void IBuilderTask::ShowAssignee(CCircuitUnit* unit)
 {
+	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
 	if (buildDef == nullptr) {
-		buildPower += unit->GetBuildSpeed();
+		const float buildSpeed = unit->GetBuildSpeed();
+		buildPower.metal += buildSpeed;
+		buildPower.energy += buildSpeed * economyMgr->GetEcoEM();
 	} else {
 		const float buildTime = buildDef->GetBuildTime() / unit->GetWorkerTime();
 		const float metalRequire = buildDef->GetCostM() / buildTime;
-		buildPower += metalRequire;
-		if (!manager->GetCircuit()->GetEconomyManager()->IsIgnorePull(this)) {
+		const float energyRequire = buildDef->GetCostE() / buildTime;
+		buildPower.metal += metalRequire;
+		buildPower.energy += energyRequire;
+		if (!economyMgr->IsIgnorePull(this)) {
 			manager->AddMetalPull(metalRequire);
 		}
 	}
@@ -827,15 +843,16 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 }
 
 #define SERIALIZE(stream, func)	\
-	utils::binary_##func(stream, positionF3);	\
-	utils::binary_##func(stream, shake);		\
-	utils::binary_##func(stream, bdefId);		\
-	utils::binary_##func(stream, cost);			\
-	utils::binary_##func(stream, targetId);		\
-	utils::binary_##func(stream, buildPosF3);	\
-	utils::binary_##func(stream, facing);		\
-	utils::binary_##func(stream, savedIncomeM);	\
-	utils::binary_##func(stream, savedIncomeE);	\
+	utils::binary_##func(stream, positionF3);			\
+	utils::binary_##func(stream, shake);				\
+	utils::binary_##func(stream, bdefId);				\
+	utils::binary_##func(stream, cost.metal);			\
+	utils::binary_##func(stream, cost.energy);			\
+	utils::binary_##func(stream, targetId);				\
+	utils::binary_##func(stream, buildPosF3);			\
+	utils::binary_##func(stream, facing);				\
+	utils::binary_##func(stream, savedIncome.metal);	\
+	utils::binary_##func(stream, savedIncome.energy);	\
 	utils::binary_##func(stream, buildFails);
 
 bool IBuilderTask::Load(std::istream& is)
@@ -858,8 +875,8 @@ bool IBuilderTask::Load(std::istream& is)
 		circuit->GetBuilderManager()->MarkUnfinishedUnit(target, this);
 	}
 #ifdef DEBUG_SAVELOAD
-	manager->GetCircuit()->LOG("%s | position=%f,%f,%f | shake=%f | bdefId=%i | cost=%f | targetId=%i | buildPos=%f,%f,%f | facing=%i | savedIncomeM=%f | savedIncomeE=%f | buildFails=%i | buildDef=%p | target=%p",
-			__PRETTY_FUNCTION__, position.x, position.y, position.z, shake, bdefId, cost, targetId, buildPos.x, buildPos.y, buildPos.z, facing, savedIncomeM, savedIncomeE, buildFails, buildDef, target);
+	manager->GetCircuit()->LOG("%s | position=%f,%f,%f | shake=%f | bdefId=%i | costM=%f | costE=%f | targetId=%i | buildPos=%f,%f,%f | facing=%i | savedIncomeM=%f | savedIncomeE=%f | buildFails=%i | buildDef=%p | target=%p",
+			__PRETTY_FUNCTION__, position.x, position.y, position.z, shake, bdefId, cost.metal, cost.energy, targetId, buildPos.x, buildPos.y, buildPos.z, facing, savedIncome.metal, savedIncome.energy, buildFails, buildDef, target);
 #endif
 	return true;
 }
@@ -876,8 +893,8 @@ void IBuilderTask::Save(std::ostream& os) const
 	IUnitTask::Save(os);
 	SERIALIZE(os, write)
 #ifdef DEBUG_SAVELOAD
-	manager->GetCircuit()->LOG("%s | positionF3=%f,%f,%f | shake=%f | bdefId=%i | cost=%f | targetId=%i | buildPosF3=%f,%f,%f | facing=%i | savedIncomeM=%f | savedIncomeE=%f | buildFails=%i",
-			__PRETTY_FUNCTION__, positionF3[0], positionF3[1], positionF3[2], shake, bdefId, cost, targetId, buildPosF3[0], buildPosF3[1], buildPosF3[2], facing, savedIncomeM, savedIncomeE, buildFails);
+	manager->GetCircuit()->LOG("%s | positionF3=%f,%f,%f | shake=%f | bdefId=%i | costM=%f | costE=%f | targetId=%i | buildPosF3=%f,%f,%f | facing=%i | savedIncomeM=%f | savedIncomeE=%f | buildFails=%i",
+			__PRETTY_FUNCTION__, positionF3[0], positionF3[1], positionF3[2], shake, bdefId, cost.metal, cost.energy, targetId, buildPosF3[0], buildPosF3[1], buildPosF3[2], facing, savedIncome.metal, savedIncome.energy, buildFails);
 #endif
 }
 

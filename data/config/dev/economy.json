@@ -8,7 +8,7 @@
 				"land": {
 					// "<energy_def>": [<lower limit>, <upper limit>, <m-income>, <e-income>, <efficiency>]
 					// limit = random(<lower limit>..<upper limit>)
-					"armwin": [10, 20],
+					"armwin": [20, 30],
 					"armsolar": [8, 12],
 					"armadvsol": [8, 12],
 					"armfus": [3, 4],
@@ -26,7 +26,7 @@
 				"land": {
 					// "<energy_def>": [<lower limit>, <upper limit>]
 					// limit = random(<lower limit>..<upper limit>)
-					"corwin": [10, 20],
+					"corwin": [20, 30],
 					"corsolar": [8, 12],
 					"coradvsol": [8, 12],
 					"corfus": [3, 4],

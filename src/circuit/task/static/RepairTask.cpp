@@ -70,7 +70,7 @@ void CSRepairTask::Update()
 		return;
 	}
 
-	if ((economyMgr->GetAvgMetalIncome() < savedIncomeM * 0.6f) || (economyMgr->GetAvgEnergyIncome() < savedIncomeE * 0.6f)) {
+	if ((economyMgr->GetAvgMetalIncome() < savedIncome.metal * 0.6f) || (economyMgr->GetAvgEnergyIncome() < savedIncome.energy * 0.6f)) {
 		manager->AbortTask(this);
 	} else if ((++updCount % 4 == 0) && !units.empty()) {
 		const float radius = (*units.begin())->GetCircuitDef()->GetBuildDistance();

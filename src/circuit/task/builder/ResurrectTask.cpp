@@ -25,8 +25,8 @@ namespace circuit {
 using namespace springai;
 
 CBResurrectTask::CBResurrectTask(ITaskManager* mgr, Priority priority,
-							   const AIFloat3& position,
-							   float cost, int timeout, float radius)
+								 const AIFloat3& position,
+								 SResource cost, int timeout, float radius)
 		: IBuilderTask(mgr, priority, nullptr, position, Type::BUILDER, BuildType::RESURRECT, cost, 0.f, timeout)
 		, radius(radius)
 {

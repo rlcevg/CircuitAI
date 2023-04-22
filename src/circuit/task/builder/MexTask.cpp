@@ -26,7 +26,7 @@ using namespace springai;
 
 CBMexTask::CBMexTask(ITaskManager* mgr, Priority priority,
 					 CCircuitDef* buildDef, int spotId, const AIFloat3& position,
-					 float cost, int timeout)
+					 SResource cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::MEX, cost, 0.f, timeout)
 		, spotId(spotId)
 		, blockCount(0)

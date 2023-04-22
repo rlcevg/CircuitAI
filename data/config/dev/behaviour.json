@@ -328,36 +328,6 @@
 		"role": ["support"],
 		"build_speed": 8.0
 	},
-	"armmakr": {
-		"role": ["static"],
-		"since": 30
-	},
-	"cormakr": {
-		"role": ["static"],
-		"since": 30
-	},
-	"armmstor" : {
-		"role": ["static"],
-		"since": 300,
-		"cooldown": 10,
-		"limit": 2
-	},
-	"cormstor" : {
-		"role": ["static"],
-		"since": 300,
-		"cooldown": 10,
-		"limit": 2
-	},
-	"armuwadvms" : {
-		"role": ["static"],
-		"cooldown": 10,
-		"limit": 2
-	},
-	"coruwadvms" : {
-		"role": ["static"],
-		"cooldown": 10,
-		"limit": 2
-	},
 	"armrad": {
 		"role": ["static"],
 		"since": 120
@@ -366,14 +336,6 @@
 		"role": ["static"],
 		"since": 120
 	},
-	"armgeo": {
-		"role": ["static"],
-		"midposoffset": [0, 0, -2]
-	},
-//	"corgeo": {
-//		"role": ["static"],
-//		"midposoffset": [0, 0, 0]
-//	},
 
 	// bot - armlab
 	"armck": {
@@ -470,11 +432,15 @@
 
 	// T3 bot - armshltx
 	"armmar": {
-		"role": ["raider", "heavy"]
+		"role": ["raider", "heavy"],
+		"threat": {"air": 0.5, "water": 0.0, "surf": 0.5}
 	},
 	"armraz": {
-		"role": ["skirmish", "heavy"],
-		"power": 2.5
+		"role": ["riot", "heavy"],
+		"attribute": ["melee"],
+		"threat": {"air": 0.5, "water": 0.0, "surf": 1.0},
+		"power": 1.0,
+		"retreat": 0.6
 	},
 	"armvang": {
 		"role": ["artillery", "heavy"],
@@ -484,9 +450,20 @@
 	"armbanth": {
 		"role": ["assault", "heavy"],
 		"attribute": ["melee"],
-		"power": 2.0
+		"threat": {"air": 0.0, "water": 0.0, "surf": 1.0},
+		"power": 1.2,
+		"retreat": 0.3
 	},
-
+	"armlun": {
+		"role": ["skirmish", "heavy"],
+		"threat": {"air": 0.0, "water": 1.0}
+	},
+	"armthor":{
+		"role":["super"],
+		"threat": {"air": 0.0, "water": 0.0, "surf": 1.0},
+		"power": 0.1, //cause of its paralyzer weaponry
+		"retreat": 0.4
+	},
 
 	// vehicles - armvp
 	"armcv": {
@@ -547,7 +524,10 @@
 	},
 	"armmanni": {
 		"role": ["anti_heavy"],
-		"attribute": ["artillery"]
+		"attribute": ["artillery"],
+		"threat": {"air": 0.0, "water": 0.0,
+			"vs": {"anti_air": 2.0, "raider": 0.5, "heavy": 2.0}
+		}
 	},
 	"armmart": {
 		"role": ["artillery"]
@@ -572,7 +552,7 @@
 		"role": ["builder", "air"],
 		"retreat": 0.6,
 		"limit": 25,
-		"build_speed": 5.0
+		"build_speed": 3.0
 	},
 	"armpeep": {
 		"role": ["scout", "air"]
@@ -600,7 +580,7 @@
 		"role": ["builder", "air"],
 		"retreat": 0.6,
 		"limit": 2,
-		"build_speed": 10.0
+		"build_speed": 5.0
 	},
 	"armawac": {
 		"role": ["scout", "air"]
@@ -635,6 +615,11 @@
 		"retreat": 0.6,
 		"limit": 6,
 		"build_speed": 7.0
+	},
+	"armrecl": {
+		"role": ["rezzer"],
+		"attribute": ["rare"],
+		"limit": 20
 	},
 	"armpt": {
 		"role": ["scout", "anti_air", "raider"]
@@ -799,24 +784,32 @@
 
 	// T3 bot - corgant
 	"corshiva": {
-		"role": ["riot", "heavy"]
+		"role": ["assault", "heavy"],
+		"retreat": 0.6
 	},
 	"corkarg": {
 		"role": ["raider", "heavy"]
 	},
 	"corcat": {
 		"role": ["artillery", "heavy"],
-		"power": 2.0
+		"threat": {"surf": 0.5, "vs": {"static": 4.0, "artillery": 4.0}},
+		"power": 0.5
 	},
 	"corkorg": {
 		"role": ["assault", "heavy"],
 		"attribute": ["melee"],
-		"power": 2.2
+		"power": 1.5,
+		"retreat": 0.00
 	},
 	"corjugg": {
 		"role": ["heavy"],
 		"attribute": ["melee"],
-		"power": 2.5
+		"power": 1.5,
+		"retreat": 0.00
+	},
+	"corsok": {
+		"role": ["skirmish"],
+		"retreat": 0.6
 	},
 
 	// vehicles - corvp
@@ -898,6 +891,11 @@
 		"retreat": 0.6,
 		"limit": 6,
 		"build_speed": 7.0
+	},
+	"correcl": {
+		"role": ["rezzer"],
+		"attribute": ["rare"],
+		"limit": 20
 	},
 	"corpt": {
 		"role": ["scout", "anti_air", "raider"]
@@ -985,7 +983,7 @@
 		"role": ["builder", "air"],
 		"retreat": 0.6,
 		"limit": 25,
-		"build_speed": 5.0
+		"build_speed": 3.0
 	},
 	"corfink": {
 		"role": ["scout", "air"]
@@ -1013,7 +1011,7 @@
 		"role": ["builder", "air"],
 		"retreat": 0.6,
 		"limit": 2,
-		"build_speed": 10.0
+		"build_speed": 5.0
 	},
 	"corawac": {
 		"role": ["scout", "air"]
@@ -1102,14 +1100,127 @@
 	},
 
 	// ECO (energy & metal)
+	"armmakr": {
+		"role": ["static"],
+		"since": 30
+	},
 	"armmmkr" : {
 		"role": ["static"],
 		"build_mod": 300
+	},
+	"armmex" : {
+		"role": ["static"],
+		"build_mod": 300
+	},
+	"armmoho" : {
+		"role": ["static"],
+		"build_mod": 200
+	},
+	"armsolar" : {
+		"role": ["static"],
+		"build_mod": 300
+	},
+	"armgeo": {
+		"role": ["static"],
+		"midposoffset": [0, 0, -2]
+	},
+	"armfus" : {
+		"role": ["static"],
+		"build_mod": 2000,
+		"cooldown": 3
+	},
+	"armafus" : {
+		"role": ["static"],
+		"build_mod": 4000
+	},
+	"armuwfus" : {
+		"role": ["static"],
+		"build_mod": 4000
+	},
+//	"armestor" : {
+//		"role": ["static"],
+//		"since": 240,
+//		"limit": 1
+//	},
+//	"armuwes" : {
+//		"role": ["static"],
+//		"since": 240,
+//		"limit": 1
+//	},
+	"armmstor" : {
+		"role": ["static"],
+		"since": 300,
+		"cooldown": 10,
+		"limit": 2
+	},
+	"armuwadvms" : {
+		"role": ["static"],
+		"cooldown": 10,
+		"limit": 2
+	},
+	"armuwms" : {
+		"role": ["static"],
+		"since": 300,
+		"cooldown": 10,
+		"limit": 2
+	},
+	"cormakr": {
+		"role": ["static"],
+		"since": 30
 	},
 	"cormmkr" : {
 		"role": ["static"],
 		"build_mod": 300
 	},
+	"cormex" : {
+		"role": ["static"],
+		"build_mod": 300
+	},
+	"cormoho" : {
+		"role": ["static"],
+		"build_mod": 200
+	},
+//	"cormexp" : {
+//		"role": ["static"],
+//		"build_mod": 500,
+//		"limit":0
+//	},
+	"corfus" : {
+		"role": ["static"],
+		"build_mod": 4000,
+		"cooldown": 3
+	},
+	"coruwfus" : {
+		"role": ["static"],
+		"build_mod": 4000
+	},
+	"cormstor" : {
+		"role": ["static"],
+		"since": 300,
+		"cooldown": 10,
+		"limit": 2
+	},
+	"coruwms" : {
+		"role": ["static"],
+		"since": 300,
+		"cooldown": 10,
+		"limit": 2
+	},
+	"coruwadvms" : {
+		"role": ["static"],
+		"cooldown": 10,
+		"limit": 2
+	},
+//	"corestor" : {
+//		"role": ["static"],
+//		"since": 240,
+//		"limit": 1
+//	},
+//	"coruwes" : {
+//		"role": ["static"],
+//		"since": 240,
+//		"limit": 1
+//	},
 
 	// FIXME: temporary factory buildSpeed
 	"armlab": {

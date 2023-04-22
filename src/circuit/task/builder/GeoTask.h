@@ -16,7 +16,7 @@ class CBGeoTask: public IBuilderTask {
 public:
 	CBGeoTask(ITaskManager* mgr, Priority priority,
 			  CCircuitDef* buildDef, int spotId, const springai::AIFloat3& position,
-			  float cost, int timeout);
+			  SResource cost, int timeout);
 	CBGeoTask(ITaskManager* mgr);  // Load
 	virtual ~CBGeoTask();
 

@@ -16,7 +16,7 @@ class CBMexUpTask: public IBuilderTask {
 public:
 	CBMexUpTask(ITaskManager* mgr, Priority priority,
 				CCircuitDef* buildDef, int spotId, const springai::AIFloat3& position,
-				float cost, int timeout);
+				SResource cost, int timeout);
 	CBMexUpTask(ITaskManager* mgr);  // Load
 	virtual ~CBMexUpTask();
 

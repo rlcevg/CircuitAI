@@ -18,7 +18,7 @@ using namespace springai;
 
 ISensorTask::ISensorTask(ITaskManager* mgr, Priority priority, std::function<bool (CCircuitDef*)> isSensor,
 						 CCircuitDef* buildDef, const AIFloat3& position, BuildType buildType,
-						 float cost, float shake, int timeout)
+						 SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, buildType, cost, shake, timeout)
 		, isSensorTest(isSensor)
 {
