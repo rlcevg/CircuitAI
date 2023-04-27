@@ -821,7 +821,7 @@ float CEconomyManager::GetMetalStore()
 
 float CEconomyManager::GetMetalPull()
 {
-	if (metal.pullFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
+	if (metal.pullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
 		metal.pullFrame = circuit->GetLastFrame();
 		metal.pull = economy->GetPull(metalRes) + circuit->GetTeam()->GetRulesParamFloat("extraMetalPull", 0.f);
 		if (metalPullCorFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
@@ -844,7 +844,7 @@ float CEconomyManager::GetEnergyStore()
 
 float CEconomyManager::GetEnergyPull()
 {
-	if (energy.pullFrame + TEAM_SLOWUPDATE_RATE < circuit->GetLastFrame()) {
+	if (energy.pullFrame/* + TEAM_SLOWUPDATE_RATE*/ < circuit->GetLastFrame()) {
 		energy.pullFrame = circuit->GetLastFrame();
 		float extraEnergyPull = circuit->GetTeam()->GetRulesParamFloat("extraEnergyPull", 0.f);
 //		float oddEnergyOverdrive = circuit->GetTeam()->GetRulesParamFloat("OD_energyOverdrive", 0.f);
@@ -945,6 +945,8 @@ void CEconomyManager::CorrectResourcePull(float metal, float energy)
 
 bool CEconomyManager::IsEnoughEnergy(IBuilderTask const* task, CCircuitDef const* conDef) const
 {
+	// NOTE: Doesn't count time to travel and high priority.
+	//       invAvailFraction is for equal distribution.
 	if (task->GetBuildType() == IBuilderTask::BuildType::ENERGY) {
 		return true;
 	}
@@ -1102,7 +1104,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 		}
 	}
 
-	if (convertDefs.HasAvail() && IsEnergyFull()
+	if (convertDefs.HasAvail() && IsEnergyFull() && !IsMetalFull()
 		&& (builderMgr->GetTasks(IBuilderTask::BuildType::CONVERT).size() < 2)
 		&& ((mexTaskSize == 0) || (builderMgr->GetWorkerCount() > circuit->GetMilitaryManager()->GetGuardTaskNum() + 1)))
 	{
@@ -1296,12 +1298,17 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	// 2) near mex
 	// 3) at resource base (separate metal / energy)
 	// 4) at production base
+	CSetupManager* setupMgr = circuit->GetSetupManager();
 	AIFloat3 buildPos = -RgtVector;
 	if (bestDef->GetCostM() < 200.0f) {
-		buildPos = position + (position - terrainMgr->GetTerrainCenter()).Normalize2D() * (bestDef->GetRadius() + SQUARE_SIZE * 6);  // utils::get_radial_pos(position, bestDef->GetRadius() + SQUARE_SIZE * 6);
+		if ((circuit->GetFactoryManager()->GetFactoryCount() > 0) && (position.SqDistance2D(setupMgr->GetBasePos()) < SQUARE(600.f))) {
+			buildPos = setupMgr->GetSmallEnergyPos();
+		} else {
+			buildPos = position + (position - terrainMgr->GetTerrainCenter()).Normalize2D() * (bestDef->GetRadius() + SQUARE_SIZE * 6);  // utils::get_radial_pos(position, bestDef->GetRadius() + SQUARE_SIZE * 6);
+		}
 		CTerrainManager::CorrectPosition(buildPos);
 	} else {
-		buildPos = (bestDef->GetCostM() < 1000.0f) ? circuit->GetSetupManager()->GetEnergyBase() : circuit->GetSetupManager()->GetEnergyBase2();
+		buildPos = (bestDef->GetCostM() < 1000.0f) ? setupMgr->GetEnergyBase() : setupMgr->GetEnergyBase2();
 		CCircuitDef* bdef = (unit == nullptr) ? bestDef : unit->GetCircuitDef();
 		buildPos = circuit->GetTerrainManager()->GetBuildPosition(bdef, buildPos);
 	}
@@ -1633,23 +1640,25 @@ IBuilderTask* CEconomyManager::CheckMobileAssistRequired(const AIFloat3& positio
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
-	if (factoryMgr->IsAssistRequired() && builderMgr->HasFreeAssists(cdef)
-		&& !factoryMgr->GetTasks().empty() && !factoryMgr->GetTasks().front()->GetAssignees().empty())
+	if (!factoryMgr->IsAssistRequired() || !builderMgr->HasFreeAssists(cdef)
+		|| factoryMgr->GetTasks().empty() || factoryMgr->GetTasks().front()->GetAssignees().empty())
 	{
-		CRecruitTask* recrTask = factoryMgr->GetTasks().front();
-		CCircuitUnit* vip = *recrTask->GetAssignees().begin();
-		if (vip->GetPos(circuit->GetLastFrame()).SqDistance2D(position) < SQUARE(1000.f)) {
-			constexpr int SEC = 10;  // are there enough resources for 8-10 seconds?
-			CCircuitDef* recrDef = recrTask->GetBuildDef();
-			const float buildTime = recrDef->GetBuildTime() / cdef->GetWorkerTime();
-			const float miRequire = recrDef->GetCostM() / buildTime;  // + recrTask->GetBuildPowerM();
-			const float eiRequire = recrDef->GetCostE() / buildTime;  // + recrTask->GetBuildPowerE();
-			if ((metal.current > (metal.pull + miRequire - GetAvgMetalIncome()) * (SEC - 2))
-				&& (energy.current > (energy.pull + eiRequire - GetAvgEnergyIncome()) * (SEC - 2)))
-			{
-				return builderMgr->EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * SEC);
-			}
-		}
+		return nullptr;
+	}
+	CRecruitTask* recrTask = factoryMgr->GetTasks().front();
+	CCircuitUnit* vip = *recrTask->GetAssignees().begin();
+	if (vip->GetPos(circuit->GetLastFrame()).SqDistance2D(position) > SQUARE(600.f)) {
+		return nullptr;
+	}
+	constexpr int SEC = 10;  // are there enough resources for 8-10 seconds?
+	CCircuitDef* recrDef = recrTask->GetBuildDef();
+	const float buildTime = recrDef->GetBuildTime() / cdef->GetWorkerTime();
+	const float miRequire = recrDef->GetCostM() / buildTime;  // + recrTask->GetBuildPowerM();
+	const float eiRequire = recrDef->GetCostE() / buildTime;  // + recrTask->GetBuildPowerE();
+	if ((metal.current > (metal.pull + miRequire - GetAvgMetalIncome()) * (SEC - 2))
+		&& (energy.current > (energy.pull + eiRequire - GetAvgEnergyIncome()) * (SEC - 2)))
+	{
+		return builderMgr->EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * SEC);
 	}
 	return nullptr;
 }

@@ -48,6 +48,7 @@ CSetupManager::CSetupManager(CCircuitAI* circuit, CSetupData* setupData)
 		, metalBase(-RgtVector)
 		, energyBase(-RgtVector)
 		, energyBase2(-RgtVector)
+		, smallEnergyPos(-RgtVector)
 		, emptyShield(0.f)
 		, fullShield(0.f)
 		, assistFac(0)
@@ -223,7 +224,8 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 void CSetupManager::SetBasePos(const AIFloat3& pos)
 {
 	basePos = pos;
-	const AIFloat3 mapCenter = circuit->GetTerrainManager()->GetTerrainCenter();
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	const AIFloat3 mapCenter = terrainMgr->GetTerrainCenter();
 	AIFloat3 refPos;
 //	if (circuit->GetMetalManager()->GetClusters().empty()) {
 		refPos = pos;
@@ -240,6 +242,12 @@ void CSetupManager::SetBasePos(const AIFloat3& pos)
 	CTerrainManager::CorrectPosition(metalBase);
 	CTerrainManager::CorrectPosition(energyBase);
 	CTerrainManager::CorrectPosition(energyBase2);
+
+	AIFloat3 smallPos1 = basePos + normal * 200.f;
+	AIFloat3 smallPos2 = basePos - normal * 200.f;
+	CTerrainManager::CorrectPosition(smallPos1);
+	CTerrainManager::CorrectPosition(smallPos2);
+	smallEnergyPos = (terrainMgr->GetTAMinAltitude(smallPos1) > terrainMgr->GetTAMinAltitude(smallPos2)) ? smallPos1 : smallPos2;
 }
 
 void CSetupManager::FindNewBase(CCircuitUnit* unit)

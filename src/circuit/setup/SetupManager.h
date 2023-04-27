@@ -66,6 +66,7 @@ public:
 	const springai::AIFloat3& GetMetalBase() const { return metalBase; }
 	const springai::AIFloat3& GetEnergyBase() const { return energyBase; }
 	const springai::AIFloat3& GetEnergyBase2() const { return energyBase2; }
+	const springai::AIFloat3& GetSmallEnergyPos() const { return smallEnergyPos; }
 	void FindNewBase(CCircuitUnit* unit);
 	void ExecOnFindStart(StartFunc& func) { startFuncs.push_back(func); }
 
@@ -112,6 +113,7 @@ private:
 	springai::AIFloat3 metalBase;
 	springai::AIFloat3 energyBase;
 	springai::AIFloat3 energyBase2;
+	springai::AIFloat3 smallEnergyPos;
 	std::shared_ptr<IMainJob> findStart;
 	std::vector<StartFunc> startFuncs;
 

@@ -1144,8 +1144,9 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 		assert((ystart != 0) && (ystart != mapSizeY - 1));
 		#endif
 
-		float nodeCostFromStart = node->costFromStart;
-		costMap[node->index2] = nodeCostFromStart;
+		float nodeCostFromStart = node->totalCost;  // replacing costFromStart by totalCost as there's no heuristic
+		float travelNumFromStart = node->costFromStart;  // re-purpose to hold only travel distance
+		costMap[node->index2] = travelNumFromStart;
 
 		for (int i = 0; i < 8; ++i) {
 			const int indexEnd = offsets[i] + indexStart;
@@ -1163,6 +1164,7 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 
 			if (directNode->frame != frame) {
 				directNode->Reuse(frame);
+				directNode->totalCost = directNode->costFromStart;
 			}
 
 			#ifdef USE_ASSERTIONS
@@ -1186,14 +1188,15 @@ void CMicroPather::MakeCostMap(void* startNode, float maxThreat, std::vector<flo
 
 			newCost += (i > 3) ? nodeCost * SQRT_2 : nodeCost;
 
-			if (directNode->costFromStart <= newCost) {
+			if (directNode->totalCost <= newCost) {
 				// do nothing, this path is not better than existing one
 				continue;
 			}
 
 			// it's better, update its data
 			directNode->parent = node;
-			directNode->costFromStart = newCost;
+			const float travelCost = ((canMoveArray[indexEnd] >= COST_STRUCT * 3 / 4) ? canMoveArray[indexEnd] : COST_BASE) + threat;
+			directNode->costFromStart = travelNumFromStart + ((i > 3) ? travelCost * SQRT_2 : travelCost);
 			directNode->totalCost = newCost;
 			#ifdef USE_ASSERTIONS
 			assert((size_t)indexEnd == ((size_t)directNode - (size_t)pathNodeMem) / sizeof(PathNode));

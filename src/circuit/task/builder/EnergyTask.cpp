@@ -55,7 +55,11 @@ void CBEnergyTask::Update()
 
 void CBEnergyTask::Finish()
 {
-	manager->GetCircuit()->GetEconomyManager()->ClearEnergyRequired();
+	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
+	economyMgr->ClearEnergyRequired();
+	if (economyMgr->IsEnergyStalling()) {
+		economyMgr->UpdateEnergyTasks(buildPos, initiator);
+	}
 
 	IBuilderTask::Finish();
 }

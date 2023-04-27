@@ -1011,7 +1011,9 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 
 bool CBuilderManager::HasFreeAssists(CCircuitDef* conDef) const
 {
-	return conDef->IsAbleToAssist() && !conDef->IsAttrSolo() && (guardCount <= assistCount / 2)
+	const auto conTaskCnt = GetTasks(IBuilderTask::BuildType::FACTORY).size() + GetTasks(IBuilderTask::BuildType::NANO).size();
+	return (guardCount <= (conTaskCnt == 0 ? assistCount / 2 : 2))
+			&& conDef->IsAbleToAssist() && !conDef->IsAttrSolo()
 			&& (!conDef->IsRoleComm() || ((int)assistCount <= circuit->GetSetupManager()->GetAssistFac()));
 }
 
@@ -1114,6 +1116,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	}
 
 	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
+	circuit->GetEconomyManager()->IsEnergyStalling();  // Only for UpdateEconomy
 
 	if (cdef->IsRoleComm() && (circuit->GetFactoryManager()->GetFactoryCount() > 0)) {  // hide commander?
 		CEnemyManager* enemyMgr = circuit->GetEnemyManager();
@@ -1593,7 +1596,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 					valid = (((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost);
 				}
 			} else {
-				valid = (distCost * weight < metric)/* && (distCost < MAX_TRAVEL_SEC * maxSpeed)*/;
+				valid = (distCost * weight < metric)/* && (distCost < MAX_TRAVEL_SEC * maxSpeed)*/;  // NOTE: distCost was too high in sectors occupied by structure
 			}
 
 			if (valid) {

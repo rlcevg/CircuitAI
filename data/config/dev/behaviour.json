@@ -314,18 +314,22 @@
 	},
 	"armnanotc": {
 		"role": ["support"],
+		"build_mod": 500,
 		"build_speed": 8.0
 	},
 	"cornanotc": {
 		"role": ["support"],
+		"build_mod": 500,
 		"build_speed": 8.0
 	},
 	"armnanotcplat": {
 		"role": ["support"],
+		"build_mod": 500,
 		"build_speed": 8.0
 	},
 	"cornanotcplat": {
 		"role": ["support"],
+		"build_mod": 500,
 		"build_speed": 8.0
 	},
 	"armrad": {
@@ -335,6 +339,14 @@
 	"corrad": {
 		"role": ["static"],
 		"since": 120
+	},
+	"armemp": {
+		"role": ["static"],
+		"limit": 1
+	},
+	"cortron": {
+		"role": ["static"],
+		"limit": 1
 	},
 
 	// bot - armlab
@@ -1102,23 +1114,24 @@
 	// ECO (energy & metal)
 	"armmakr": {
 		"role": ["static"],
-		"since": 30
+		"since": 30,
+		"build_mod": 500
 	},
 	"armmmkr" : {
 		"role": ["static"],
 		"build_mod": 300
 	},
-	"armmex" : {
-		"role": ["static"],
-		"build_mod": 300
-	},
+//	"armmex" : {
+//		"role": ["static"],
+//		"build_mod": 500
+//	},
 	"armmoho" : {
 		"role": ["static"],
 		"build_mod": 200
 	},
 	"armsolar" : {
 		"role": ["static"],
-		"build_mod": 300
+		"build_mod": 400
 	},
 	"armgeo": {
 		"role": ["static"],
@@ -1166,19 +1179,24 @@
 	},
 	"cormakr": {
 		"role": ["static"],
-		"since": 30
+		"since": 30,
+		"build_mod": 500
 	},
 	"cormmkr" : {
 		"role": ["static"],
 		"build_mod": 300
 	},
-	"cormex" : {
-		"role": ["static"],
-		"build_mod": 300
-	},
+//	"cormex" : {
+//		"role": ["static"],
+//		"build_mod": 500
+//	},
 	"cormoho" : {
 		"role": ["static"],
 		"build_mod": 200
+	},
+	"corsolar" : {
+		"role": ["static"],
+		"build_mod": 400
 	},
 //	"cormexp" : {
 //		"role": ["static"],

@@ -1802,8 +1802,8 @@ bool CTerrainManager::CanMobileReachAtSafe(SArea* area, const AIFloat3& destinat
 
 const bwem::CArea* CTerrainManager::GetTAArea(const springai::AIFloat3& pos) const
 {
-	int iS = terrainData->GetSectorIndex(pos);
-	int id = terrainData->GetTASector(iS).GetAreaId();
+	const int iS = terrainData->GetSectorIndex(pos);
+	const int id = terrainData->GetTASector(iS).GetAreaId();
 	if (id <= 0) {
 		return nullptr;
 	}

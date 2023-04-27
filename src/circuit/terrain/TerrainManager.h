@@ -217,6 +217,9 @@ public:
 
 	const bwem::CArea* GetTAArea(const springai::AIFloat3& pos) const;
 	const std::vector<bwem::CChokePoint*>& GetTAChokePoints() const { return terrainData->GetChokePoints(); }
+	const int GetTAMinAltitude(const springai::AIFloat3& pos) const {
+		return terrainData->GetTASector(terrainData->GetSectorIndex(pos)).GetMinAltitude();
+	}
 
 	terrain::SAreaData* GetAreaData() const { return areaData; }
 	void UpdateAreaUsers(int interval);

@@ -137,7 +137,7 @@
 
 	// ARMADA Aircraft
 	"armap": {
-		"importance": [10.5, 0.1],
+		"importance": [0.5, 0.1],
 		"require_energy": false,
 		"income_tier": [30],
 		"unit":      ["armca", "armfig", "armpeep", "armthund", "armkam"],
