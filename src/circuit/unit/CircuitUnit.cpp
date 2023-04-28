@@ -51,7 +51,7 @@ CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitD
 		, isSelfD(false)
 		, target(nullptr)
 		, targetTile(-1)
-		, attr(CCircuitDef::NONE)
+		, attr(cdef->GetInitAttributes())
 {
 	command = springai::WrappCurrentCommand::GetInstance(unit->GetSkirmishAIId(), id, 0);
 

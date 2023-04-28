@@ -175,6 +175,7 @@ public:
 
 	void AddAttribute(CCircuitDef::AttrType type) { attr |= CCircuitDef::GetMask(static_cast<CCircuitDef::AttrT>(type)); }
 	bool IsAttrAny(CCircuitDef::AttrM value) const { return (attr & value) != 0; }
+	bool IsAttrSolo() const { return attr & CCircuitDef::AttrMask::SOLO; }
 	bool IsAttrBase() const { return attr & CCircuitDef::AttrMask::BASE; }
 
 private:

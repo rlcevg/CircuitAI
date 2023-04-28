@@ -42,7 +42,7 @@ bool IRepairTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	return cdef->IsAbleToRepair() && !cdef->IsAttrSolo()
+	return cdef->IsAbleToRepair() && !unit->IsAttrSolo()
 			&& (target != nullptr) && (target != unit) && (cost.metal > buildPower.metal * static_cast<CBuilderManager*>(manager)->GetGoalExecTime())
 			&& (circuit->GetInflMap()->GetInfluenceAt(unit->GetPos(circuit->GetLastFrame())) > INFL_EPS);
 }

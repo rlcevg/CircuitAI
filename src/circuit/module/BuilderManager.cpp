@@ -1009,11 +1009,12 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 	return false;
 }
 
-bool CBuilderManager::HasFreeAssists(CCircuitDef* conDef) const
+bool CBuilderManager::HasFreeAssists(CCircuitUnit* builder) const
 {
+	CCircuitDef* conDef = builder->GetCircuitDef();
 	const auto conTaskCnt = GetTasks(IBuilderTask::BuildType::FACTORY).size() + GetTasks(IBuilderTask::BuildType::NANO).size();
 	return (guardCount <= (conTaskCnt == 0 ? assistCount / 2 : 2))
-			&& conDef->IsAbleToAssist() && !conDef->IsAttrSolo()
+			&& conDef->IsAbleToAssist() && !builder->IsAttrSolo()
 			&& (!conDef->IsRoleComm() || ((int)assistCount <= circuit->GetSetupManager()->GetAssistFac()));
 }
 

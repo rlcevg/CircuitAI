@@ -111,11 +111,11 @@ bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 		return false;
 	}
 	// can unit build at all
-	if (!cdef->CanBuild(buildDef) && ((target == nullptr) || !cdef->IsAbleToAssist() || cdef->IsAttrSolo())) {
+	if (!cdef->CanBuild(buildDef) && ((target == nullptr) || !cdef->IsAbleToAssist() || unit->IsAttrSolo())) {
 		return false;
 	}
 	// solo/initiator check
-	return !cdef->IsAttrSolo() || (initiator == unit) || ((initiator == nullptr) && (target == nullptr));
+	return !unit->IsAttrSolo() || (initiator == unit) || ((initiator == nullptr) && (target == nullptr));
 }
 
 void IBuilderTask::AssignTo(CCircuitUnit* unit)
@@ -127,7 +127,7 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 	if (!utils::is_valid(position)) {
 		position = unit->GetPos(circuit->GetLastFrame());
 	}
-	if (unit->GetCircuitDef()->IsAttrSolo()) {
+	if (unit->IsAttrSolo()) {
 		initiator = unit;
 	}
 

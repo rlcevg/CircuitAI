@@ -1637,10 +1637,9 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 IBuilderTask* CEconomyManager::CheckMobileAssistRequired(const AIFloat3& position, CCircuitUnit* unit)
 {
-	CCircuitDef* cdef = unit->GetCircuitDef();
 	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
-	if (!factoryMgr->IsAssistRequired() || !builderMgr->HasFreeAssists(cdef)
+	if (!factoryMgr->IsAssistRequired() || !builderMgr->HasFreeAssists(unit)
 		|| factoryMgr->GetTasks().empty() || factoryMgr->GetTasks().front()->GetAssignees().empty())
 	{
 		return nullptr;
@@ -1652,7 +1651,7 @@ IBuilderTask* CEconomyManager::CheckMobileAssistRequired(const AIFloat3& positio
 	}
 	constexpr int SEC = 10;  // are there enough resources for 8-10 seconds?
 	CCircuitDef* recrDef = recrTask->GetBuildDef();
-	const float buildTime = recrDef->GetBuildTime() / cdef->GetWorkerTime();
+	const float buildTime = recrDef->GetBuildTime() / unit->GetCircuitDef()->GetWorkerTime();
 	const float miRequire = recrDef->GetCostM() / buildTime;  // + recrTask->GetBuildPowerM();
 	const float eiRequire = recrDef->GetCostE() / buildTime;  // + recrTask->GetBuildPowerE();
 	if ((metal.current > (metal.pull + miRequire - GetAvgMetalIncome()) * (SEC - 2))

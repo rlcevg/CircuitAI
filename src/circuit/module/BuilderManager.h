@@ -168,7 +168,7 @@ public:
 	}
 
 	bool IsBuilderInArea(CCircuitDef* buildDef, const springai::AIFloat3& position) const;  // Check if build-area has proper builder
-	bool HasFreeAssists(CCircuitDef* conDef) const;
+	bool HasFreeAssists(CCircuitUnit* builder) const;
 	SBuildChain* GetBuildChain(IBuilderTask::BuildType buildType, CCircuitDef* cdef) const;
 
 	IBuilderTask* GetRepairTask(ICoreUnit::Id unitId) const;

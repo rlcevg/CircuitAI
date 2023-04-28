@@ -118,6 +118,7 @@ public:
 	void AddEnemyRoles(RoleM mask) { enemyRole |= mask; }
 	bool IsEnemyRoleAny(RoleM value) const { return (enemyRole & value) != 0; }
 
+	AttrM GetInitAttributes() const { return attr; }
 	void AddAttribute(AttrT type) { attr |= GetMask(type); }
 	void AddRole(RoleT type) { AddRole(type, type); }
 	void AddRole(RoleT type, RoleT bindType);
@@ -155,7 +156,8 @@ public:
 	bool IsAttrSiege()    const { return attr & AttrMask::SIEGE; }
 	bool IsAttrRetHold()  const { return attr & AttrMask::RET_HOLD; }
 	bool IsAttrRetFight() const { return attr & AttrMask::RET_FIGHT; }
-	bool IsAttrSolo()     const { return attr & AttrMask::SOLO; }
+//	bool IsAttrSolo()     const { return attr & AttrMask::SOLO; }  // per-unit
+//	bool IsAttrBase()     const { return attr & AttrMask::BASE; }  // per-unit
 	bool IsAttrVampire()  const { return attr & AttrMask::VAMPIRE; }
 	bool IsAttrOnOff()    const { return attr & AttrMask::ONOFF; }
 	bool IsAttrRare()     const { return attr & AttrMask::RARE; }
