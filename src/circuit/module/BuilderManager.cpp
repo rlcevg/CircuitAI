@@ -101,7 +101,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		AddBuildList(unit, 0);
 
-		static_cast<CBuilderScript*>(script)->WorkerCreated(unit);
+		// NOTE: circuit->IsLoadSave() safe?
+		static_cast<CBuilderScript*>(script)->BuilderCreated(unit);
 
 		if (!unit->GetCircuitDef()->IsAttacker()
 			&& !unit->GetCircuitDef()->IsAbleToFly()
@@ -143,7 +144,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		RemoveBuildList(unit, 0);
 
-		static_cast<CBuilderScript*>(script)->WorkerDestroyed(unit);
+		static_cast<CBuilderScript*>(script)->BuilderDestroyed(unit);
 
 		militaryMgr->DelGuardTask(unit);
 	};

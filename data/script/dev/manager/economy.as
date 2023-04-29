@@ -6,10 +6,6 @@ namespace Economy {
 // To not reset army requirement on factory switch, @see Factory::AiIsSwitchAllowed
 bool isSwitchAssist = false;
 
-void AiOpenStrategy(const CCircuitDef@ facDef, const AIFloat3& in pos)
-{
-}
-
 /*
  * struct SResourceInfo {
  *   const float current;

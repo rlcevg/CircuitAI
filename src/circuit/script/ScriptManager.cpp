@@ -104,7 +104,7 @@ void CScriptManager::Init()
 	// necessary to implement the registration yourself if you don't want to.
 	RegisterStdString(engine);
 	RegisterScriptArray(engine, true);
-//	RegisterStdStringUtils(engine);  // optional
+	RegisterStdStringUtils(engine);  // optional
 	RegisterScriptDictionary(engine);
 	RegisterScriptMath(engine);
 	aatc::RegisterAllContainers(engine);

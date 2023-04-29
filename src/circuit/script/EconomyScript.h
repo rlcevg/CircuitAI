@@ -29,14 +29,12 @@ public:
 	bool Init() override;
 
 public:
-	void OpenStrategy(const CCircuitDef* facDef, const springai::AIFloat3& pos);
 	void UpdateEconomy();
 
 private:
 	struct SScriptInfo {
-		asIScriptFunction* openStrategy = nullptr;
 		asIScriptFunction* updateEconomy = nullptr;
-	} info;
+	} economyInfo;
 };
 
 } // namespace circuit

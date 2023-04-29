@@ -1796,34 +1796,6 @@ void CEconomyManager::DelFactoryInfo(CCircuitUnit* unit)
 	}
 }
 
-void CEconomyManager::OpenStrategy(const CCircuitDef* facDef, const AIFloat3& pos)
-{
-	if (circuit->IsLoadSave()) {
-		return;
-	}
-	const std::vector<CCircuitDef::RoleT>* opener = circuit->GetSetupManager()->GetOpener(facDef);
-	if (opener == nullptr) {
-		return;
-	}
-	CFactoryManager* factoryMgr = circuit->GetFactoryManager();
-	for (CCircuitDef::RoleT type : *opener) {
-		CCircuitDef* buildDef = factoryMgr->GetRoleDef(facDef, type);
-		if ((buildDef == nullptr) || !buildDef->IsAvailable(circuit->GetLastFrame())) {
-			continue;
-		}
-		CRecruitTask::Priority priotiry;
-		CRecruitTask::RecruitType recruit;
-		if (type == ROLE_TYPE(BUILDER)) {
-			priotiry = CRecruitTask::Priority::NORMAL;
-			recruit  = CRecruitTask::RecruitType::BUILDPOWER;
-		} else {
-			priotiry = CRecruitTask::Priority::HIGH;
-			recruit  = CRecruitTask::RecruitType::FIREPOWER;
-		}
-		factoryMgr->EnqueueTask(priotiry, buildDef, pos, recruit, 64.f);
-	}
-}
-
 bool CEconomyManager::CheckAirpadRequired(const AIFloat3& position, CCircuitUnit* unit, IBuilderTask*& outTask)
 {
 	outTask = nullptr;

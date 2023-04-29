@@ -345,7 +345,6 @@ void CSetupManager::ReadConfig()
 	float magnitude = 0.f;
 	std::vector<float> weight;
 	weight.reserve(items.size());
-	CCircuitDef::RoleName& roleNames = CCircuitDef::GetRoleNames();
 
 	for (const std::string& commName : items.getMemberNames()) {
 		CCircuitDef* cdef = circuit->GetCircuitDef((commPrefix + commName + commSuffix).c_str());
@@ -360,45 +359,6 @@ void CSetupManager::ReadConfig()
 		const float imp = comm.get("importance", 0.f).asFloat();
 		magnitude += imp;
 		weight.push_back(imp);
-
-		const Json::Value& strt = comm["start"];
-		const Json::Value& defStrt = strt["default"];
-		SStart& facStart = start[cdef->GetId()];
-		facStart.defaultStart.reserve(defStrt.size());
-		for (const Json::Value& role : defStrt) {
-			auto it = roleNames.find(role.asString());
-			if (it == roleNames.end()) {
-				circuit->LOG("CONFIG %s: default start has unknown role '%s'", cfgName.c_str(), role.asCString());
-			} else {
-				facStart.defaultStart.push_back(it->second.type);
-			}
-		}
-		const Json::Value& facStrt = strt["factory"];
-		for (const std::string& defName : facStrt.getMemberNames()) {
-			CCircuitDef* fdef = circuit->GetCircuitDef(defName.c_str());
-			if (fdef == nullptr) {
-				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), defName.c_str());
-				continue;
-			}
-			const Json::Value& multiStrt = facStrt[defName];
-			std::vector<SOpener>& facOpeners = facStart.openers[fdef->GetId()];
-			facOpeners.reserve(multiStrt.size());
-			for (const Json::Value& opener : multiStrt) {
-				const float prob = opener.get((unsigned)0, 1.f).asFloat();
-				const Json::Value& roles = opener[1];
-				std::vector<CCircuitDef::RoleT> queue;
-				queue.reserve(roles.size());
-				for (const Json::Value& role : roles) {
-					auto it = roleNames.find(role.asString());
-					if (it == roleNames.end()) {
-						circuit->LOG("CONFIG %s: %s start has unknown role '%s'", cfgName.c_str(), defName.c_str(), role.asCString());
-					} else {
-						queue.push_back(it->second.type);
-					}
-				}
-				facOpeners.emplace_back(prob, queue);
-			}
-		}
 
 		const Json::Value& mrph = comm["upgrade"];
 		SCommInfo& commInfo = commInfos[commName];
@@ -483,32 +443,6 @@ int CSetupManager::GetMorphFrame(const CCircuitDef* cdef) const
 		}
 	}
 	return -1;
-}
-
-const std::vector<CCircuitDef::RoleT>* CSetupManager::GetOpener(const CCircuitDef* facDef) const
-{
-	auto its = start.find(commChoice->GetId());
-	if (its == start.end()) {
-		return nullptr;
-	}
-
-	auto ito = its->second.openers.find(facDef->GetId());
-	if (ito == its->second.openers.end()) {
-		return &its->second.defaultStart;
-	}
-
-	float magnitude = 0.f;
-	for (const SOpener& opener : ito->second) {
-		magnitude += opener.prob;
-	}
-	float dice = (float)rand() / RAND_MAX * magnitude;
-	for (const SOpener& opener : ito->second) {
-		dice -= opener.prob;
-		if (dice < 0.f) {
-			return &opener.queue;
-		}
-	}
-	return &its->second.defaultStart;
 }
 
 const CSetupManager::SCommInfo::SHide* CSetupManager::GetHide(const CCircuitDef* cdef) const

@@ -44,29 +44,16 @@ bool CEconomyScript::Init()
 {
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Economy"); ASSERT(r >= 0);
-	info.openStrategy = script->GetFunc(mod, "void AiOpenStrategy(const CCircuitDef@, const AIFloat3& in)");
-	info.updateEconomy = script->GetFunc(mod, "void AiUpdateEconomy()");
+	economyInfo.updateEconomy = script->GetFunc(mod, "void AiUpdateEconomy()");
 	return true;
-}
-
-void CEconomyScript::OpenStrategy(const CCircuitDef* facDef, const AIFloat3& pos)
-{
-	if (info.openStrategy == nullptr) {
-		return;
-	}
-	asIScriptContext* ctx = script->PrepareContext(info.openStrategy);
-	ctx->SetArgObject(0, const_cast<CCircuitDef*>(facDef));
-	ctx->SetArgAddress(1, &const_cast<AIFloat3&>(pos));
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
 }
 
 void CEconomyScript::UpdateEconomy()
 {
-	if (info.updateEconomy == nullptr) {
+	if (economyInfo.updateEconomy == nullptr) {
 		return;
 	}
-	asIScriptContext* ctx = script->PrepareContext(info.updateEconomy);
+	asIScriptContext* ctx = script->PrepareContext(economyInfo.updateEconomy);
 	script->Exec(ctx);
 	script->ReturnContext(ctx);
 }

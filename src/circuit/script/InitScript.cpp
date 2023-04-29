@@ -315,12 +315,13 @@ bool CInitScript::InitConfig(const std::string& profile,
 				}
 			}
 		}
-		ctx->Unprepare();
-		script->ReturnContext(ctx);
+//		ctx->Unprepare();
+//		script->ReturnContext(ctx);
+		ctx->Release();
 	}
 
-	mod->Discard();
-	r = script->GetEngine()->RemoveConfigGroup("init"); ASSERT(r >= 0);
+//	mod->Discard();
+//	r = script->GetEngine()->RemoveConfigGroup("init"); ASSERT(r >= 0);
 	return true;
 }
 
@@ -356,6 +357,7 @@ void CInitScript::RegisterMgr()
 	r = engine->RegisterGlobalProperty("CTerrainManager aiTerrainMgr", terrainMgr); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("int AiTerrainWidth()", asFUNCTION(CTerrainManager::GetTerrainWidth), asCALL_CDECL); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("int AiTerrainHeight()", asFUNCTION(CTerrainManager::GetTerrainHeight), asCALL_CDECL); ASSERT(r >= 0);
+	// todo: add map name
 
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 	r = engine->RegisterObjectType("CSetupManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);

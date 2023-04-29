@@ -34,28 +34,28 @@ bool CBuilderScript::Init()
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Builder"); ASSERT(r >= 0);
 	InitModule(mod);
-	info.workerCreated = script->GetFunc(mod, "void AiWorkerCreated(CCircuitUnit@)");
-	info.workerDestroyed = script->GetFunc(mod, "void AiWorkerDestroyed(CCircuitUnit@)");
+	builderInfo.builderCreated = script->GetFunc(mod, "void AiBuilderCreated(CCircuitUnit@)");
+	builderInfo.builderDestroyed = script->GetFunc(mod, "void AiBuilderDestroyed(CCircuitUnit@)");
 	return true;
 }
 
-void CBuilderScript::WorkerCreated(CCircuitUnit* unit)
+void CBuilderScript::BuilderCreated(CCircuitUnit* unit)
 {
-	if (info.workerCreated == nullptr) {
+	if (builderInfo.builderCreated == nullptr) {
 		return;
 	}
-	asIScriptContext* ctx = script->PrepareContext(info.workerCreated);
+	asIScriptContext* ctx = script->PrepareContext(builderInfo.builderCreated);
 	ctx->SetArgObject(0, unit);
 	script->Exec(ctx);
 	script->ReturnContext(ctx);
 }
 
-void CBuilderScript::WorkerDestroyed(CCircuitUnit* unit)
+void CBuilderScript::BuilderDestroyed(CCircuitUnit* unit)
 {
-	if (info.workerDestroyed == nullptr) {
+	if (builderInfo.builderDestroyed == nullptr) {
 		return;
 	}
-	asIScriptContext* ctx = script->PrepareContext(info.workerDestroyed);
+	asIScriptContext* ctx = script->PrepareContext(builderInfo.builderDestroyed);
 	ctx->SetArgObject(0, unit);
 	script->Exec(ctx);
 	script->ReturnContext(ctx);

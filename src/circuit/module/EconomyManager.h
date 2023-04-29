@@ -142,7 +142,6 @@ public:
 
 	void AddFactoryInfo(CCircuitUnit* unit);
 	void DelFactoryInfo(CCircuitUnit* unit);
-	void OpenStrategy(const CCircuitDef* facDef, const springai::AIFloat3& pos);
 
 private:
 	bool CheckAirpadRequired(const springai::AIFloat3& position, CCircuitUnit* unit, IBuilderTask*& outTask);

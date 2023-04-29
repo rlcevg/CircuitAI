@@ -11,6 +11,7 @@ CCircuitUnit@ energizer2 = null;
 
 IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 {
+	// TODO: Add API to create any tasks
 // 	AiDelPoint(lastPos);
 // 	lastPos = unit.GetPos(ai.frame);
 // 	AiAddPoint(lastPos, "task");
@@ -107,7 +108,7 @@ void AiTaskClosed(IUnitTask@ task, bool done)
 // 	}
 }
 
-void AiWorkerCreated(CCircuitUnit@ unit)
+void AiBuilderCreated(CCircuitUnit@ unit)
 {
 	const CCircuitDef@ cdef = unit.circuitDef;
 	if (cdef.IsRoleAny(Unit::Role::COMM.mask))
@@ -129,7 +130,7 @@ void AiWorkerCreated(CCircuitUnit@ unit)
 	}
 }
 
-void AiWorkerDestroyed(CCircuitUnit@ unit)
+void AiBuilderDestroyed(CCircuitUnit@ unit)
 {
 	if (energizer1 is unit) {
 		@energizer1 = null;

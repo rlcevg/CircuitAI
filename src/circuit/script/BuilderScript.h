@@ -22,14 +22,14 @@ public:
 	bool Init() override;
 
 public:
-	void WorkerCreated(CCircuitUnit* unit);
-	void WorkerDestroyed(CCircuitUnit* unit);
+	void BuilderCreated(CCircuitUnit* unit);
+	void BuilderDestroyed(CCircuitUnit* unit);
 
 private:
 	struct SScriptInfo {
-		asIScriptFunction* workerCreated = nullptr;
-		asIScriptFunction* workerDestroyed = nullptr;
-	} info;
+		asIScriptFunction* builderCreated = nullptr;
+		asIScriptFunction* builderDestroyed = nullptr;
+	} builderInfo;
 };
 
 } // namespace circuit

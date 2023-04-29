@@ -10,6 +10,10 @@
 
 #include "script/UnitModuleScript.h"
 
+namespace springai {
+	class AIFloat3;
+}
+
 namespace circuit {
 
 class CFactoryManager;
@@ -23,11 +27,15 @@ public:
 	bool Init() override;
 
 public:
+	void FactoryCreated(CCircuitUnit* unit);
+	void FactoryDestroyed(CCircuitUnit* unit);
 	bool IsSwitchTime(int lastSwitchFrame);
 	bool IsSwitchAllowed(CCircuitDef* facDef);
 
 private:
 	struct SScriptInfo {
+		asIScriptFunction* factoryCreated = nullptr;
+		asIScriptFunction* factoryDestroyed = nullptr;
 		asIScriptFunction* isSwitchTime = nullptr;
 		asIScriptFunction* isSwitchAllowed = nullptr;
 	} factoryInfo;
