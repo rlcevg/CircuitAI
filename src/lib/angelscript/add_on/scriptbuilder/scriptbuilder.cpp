@@ -19,7 +19,7 @@ BEGIN_AS_NAMESPACE
 
 // Helper functions
 static string GetCurrentDir();
-static string GetAbsolutePath(const string &path, const bool isVFS);
+static string GetAbsolutePath(const string &path);
 
 
 CScriptBuilder::CScriptBuilder()
@@ -95,11 +95,11 @@ int CScriptBuilder::AddSectionFromFile(const char *filename)
 {
 	// The file name stored in the set should be the fully resolved name because
 	// it is possible to name the same file in multiple ways using relative paths.
-	string fullpath = GetAbsolutePath(filename, readFunc != nullptr);
+	string fullpath = GetAbsolutePath(filename);
 
 	if( IncludeIfNotAlreadyIncluded(fullpath.c_str()) )
 	{
-		int r = readFunc == nullptr ? LoadScriptSection(fullpath.c_str()) : LoadScriptSectionVFS(fullpath.c_str());
+		int r = LoadScriptSection(fullpath.c_str());
 		if( r < 0 )
 			return r;
 		else
@@ -183,7 +183,7 @@ int CScriptBuilder::LoadScriptSection(const char *filename)
 	if( f == 0 )
 	{
 		// Write a message to the engine's message callback
-		string msg = "Failed to open script file '" + GetAbsolutePath(scriptFile, readFunc != nullptr) + "'";
+		string msg = "Failed to open script file '" + GetAbsolutePath(scriptFile) + "'";
 		engine->WriteMessage(filename, 0, 0, asMSGTYPE_ERROR, msg.c_str());
 
 		// TODO: Write the file where this one was included from
@@ -213,24 +213,7 @@ int CScriptBuilder::LoadScriptSection(const char *filename)
 	if( c == 0 && len > 0 )
 	{
 		// Write a message to the engine's message callback
-		string msg = "Failed to load script file '" + GetAbsolutePath(scriptFile, readFunc != nullptr) + "'";
-		engine->WriteMessage(filename, 0, 0, asMSGTYPE_ERROR, msg.c_str());
-		return -1;
-	}
-
-	// Process the script section even if it is zero length so that the name is registered
-	return ProcessScriptSection(code.c_str(), (unsigned int)(code.length()), filename, 0);
-}
-
-int CScriptBuilder::LoadScriptSectionVFS(const char *filename)
-{
-	string scriptFile = filename;
-	string code = readFunc(scriptFile);
-
-	if( code.empty() )
-	{
-		// Write a message to the engine's message callback
-		string msg = "Failed to load script file '" + GetAbsolutePath(scriptFile, readFunc != nullptr) + "'";
+		string msg = "Failed to load script file '" + GetAbsolutePath(scriptFile) + "'";
 		engine->WriteMessage(filename, 0, 0, asMSGTYPE_ERROR, msg.c_str());
 		return -1;
 	}
@@ -489,11 +472,22 @@ int CScriptBuilder::ProcessScriptSection(const char *script, unsigned int length
 						includefile.assign(&modifiedScript[pos + 1], len - 2);
 						pos += len;
 
-						// Store it for later processing
-						includes.push_back(includefile);
+						// Make sure the includeFile doesn't contain any line breaks
+						size_t p = includefile.find('\n');
+						if (p != string::npos)
+						{
+							// TODO: Show the correct line number for the error
+							string str = "Invalid file name for #include; it contains a line-break: '" + includefile.substr(0, p) + "'";
+							engine->WriteMessage(sectionname, 0, 0, asMSGTYPE_ERROR, str.c_str());
+						}
+						else
+						{
+							// Store it for later processing
+							includes.push_back(includefile);
 
-						// Overwrite the include directive with space characters to avoid compiler error
-						OverwriteCode(start, pos - start);
+							// Overwrite the include directive with space characters to avoid compiler error
+							OverwriteCode(start, pos - start);
+						}
 					}
 				}
 				else if (token == "pragma")
@@ -1109,13 +1103,12 @@ vector<string> CScriptBuilder::GetMetadataForTypeMethod(int typeId, asIScriptFun
 }
 #endif
 
-string GetAbsolutePath(const string &file, const bool isVFS)
+string GetAbsolutePath(const string &file)
 {
 	string str = file;
 
 	// If this is a relative path, complement it with the current path
-	if( !isVFS &&
-		!((str.length() > 0 && (str[0] == '/' || str[0] == '\\')) ||
+	if( !((str.length() > 0 && (str[0] == '/' || str[0] == '\\')) ||
 		  str.find(":") != string::npos) )
 	{
 		str = GetCurrentDir() + "/" + str;

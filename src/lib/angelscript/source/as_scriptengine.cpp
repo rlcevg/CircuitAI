@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2021 Andreas Jonsson
+   Copyright (c) 2003-2023 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -447,6 +447,10 @@ int asCScriptEngine::SetEngineProperty(asEEngineProp property, asPWORD value)
 		ep.ignoreDuplicateSharedIntf = value ? true : false;
 		break;
 
+	case asEP_NO_DEBUG_OUTPUT:
+		ep.noDebugOutput = value ? true : false;
+		break;
+
 	default:
 		return asINVALID_ARG;
 	}
@@ -555,6 +559,9 @@ asPWORD asCScriptEngine::GetEngineProperty(asEEngineProp property) const
 	case asEP_IGNORE_DUPLICATE_SHARED_INTF:
 		return ep.ignoreDuplicateSharedIntf;
 
+	case asEP_NO_DEBUG_OUTPUT:
+		return ep.noDebugOutput;
+
 	default:
 		return 0;
 	}
@@ -625,6 +632,7 @@ asCScriptEngine::asCScriptEngine()
 		ep.initCallStackSize             = 10;        // 10 levels of calls
 		ep.maxCallStackSize              = 0;         // 0 = no limit
 		ep.ignoreDuplicateSharedIntf     = false;
+		ep.noDebugOutput                 = false;
 	}
 
 	gc.engine = this;
@@ -1091,6 +1099,7 @@ asSNameSpace *asCScriptEngine::AddNameSpace(const char *name)
 	}
 	ns->name = name;
 
+	// TODO: thread-safety: This can potentially be called from multiple threads so it must be protected with critical section
 	nameSpaces.PushLast(ns);
 
 	return ns;
@@ -1669,7 +1678,7 @@ int asCScriptEngine::RegisterObjectType(const char *name, int byteSize, asDWORD 
 {
 	int r;
 
-	isPrepared = false;
+	isPrepared = false; // TODO: Only set this after the validations have been completed, to avoid unnecessary Prepare in case no change was made
 
 	// Verify flags
 	// Must have either asOBJ_REF or asOBJ_VALUE
@@ -2032,7 +2041,7 @@ int asCScriptEngine::RegisterBehaviourToObjectType(asCObjectType *objectType, as
 		}
 	}
 
-	isPrepared = false;
+	isPrepared = false; // TODO: Only set this after the validations have been completed, to avoid unnecessary Prepare in case no change was made
 
 	asSTypeBehaviour *beh = &objectType->beh;
 
@@ -2812,7 +2821,7 @@ int asCScriptEngine::RegisterMethodToObjectType(asCObjectType *objectType, const
 		}
 	}
 
-	isPrepared = false;
+	isPrepared = false; // TODO: Only set this after the validations have been completed, to avoid unnecessary Prepare in case no change was made
 
 	// Put the system function in the list of system functions
 	asSSystemFunctionInterface *newInterface = asNEW(asSSystemFunctionInterface)(internal);
@@ -2937,7 +2946,7 @@ int asCScriptEngine::RegisterGlobalFunction(const char *declaration, const asSFu
 	if( r < 0 )
 		return ConfigError(r, "RegisterGlobalFunction", declaration, 0);
 
-	isPrepared = false;
+	isPrepared = false; // TODO: Only set this after the validations have been completed, to avoid unnecessary Prepare in case no change was made
 
 	// Put the system function in the list of system functions
 	asSSystemFunctionInterface *newInterface = asNEW(asSSystemFunctionInterface)(internal);
@@ -3472,7 +3481,7 @@ asCObjectType *asCScriptEngine::GetTemplateInstanceType(asCObjectType *templateT
 	else
 	{
 		// If the template type is not requested directly from a module, then set the ownership
-		// of it to the same module as one of the subtypes. If none of the subtypes are owned by]
+		// of it to the same module as one of the subtypes. If none of the subtypes are owned by
 		// any module, the template instance will be without ownership and can be removed from the
 		// engine at any time (unless the application holds an external reference).
 		for( n = 0; n < subTypes.GetLength(); n++ )
@@ -3910,7 +3919,6 @@ asCScriptFunction *asCScriptEngine::GenerateTemplateFactoryStub(asCObjectType *t
 		func->inOutFlags[p-1] = factory->inOutFlags[p];
 		func->defaultArgs[p-1] = factory->defaultArgs[p] ? asNEW(asCString)(*factory->defaultArgs[p]) : 0;
 	}
-	func->scriptData->objVariablesOnHeap = 0;
 
 	// Generate the bytecode for the factory stub
 	asUINT bcLength = asBCTypeSize[asBCInfo[asBC_OBJTYPE].type] +
@@ -4959,9 +4967,10 @@ const char *asCScriptEngine::GetTypeDeclaration(int typeId, bool includeNamespac
 {
 	asCDataType dt = GetDataTypeFromTypeId(typeId);
 
-	asCString *tempString = &asCThreadManager::GetLocalData()->string;
-	*tempString = dt.Format(defaultNamespace, includeNamespace);
+	asCString str = dt.Format(defaultNamespace, includeNamespace);
 
+	asCString *tempString = &asCThreadManager::GetLocalData()->string;
+	*tempString = str;
 	return tempString->AddressOf();
 }
 
@@ -5421,21 +5430,28 @@ int asCScriptEngine::AssignScriptObject(void *dstObj, void *srcObj, const asITyp
 	}
 
 	// Must not copy if the opAssign is not available and the object is not a POD object
-	if( objType->beh.copy )
+	if (objType->beh.copy)
 	{
-		asCScriptFunction *func = scriptFunctions[objType->beh.copy];
-		if( func->funcType == asFUNC_SYSTEM )
+		asCScriptFunction* func = scriptFunctions[objType->beh.copy];
+		if (func->funcType == asFUNC_SYSTEM)
 			CallObjectMethod(dstObj, srcObj, objType->beh.copy);
 		else
 		{
 			// Call the script class' opAssign method
-			asASSERT( objType->flags & asOBJ_SCRIPT_OBJECT );
+			asASSERT(objType->flags & asOBJ_SCRIPT_OBJECT);
 			reinterpret_cast<asCScriptObject*>(dstObj)->CopyFrom(reinterpret_cast<asCScriptObject*>(srcObj));
 		}
 	}
-	else if( objType->size && (objType->flags & asOBJ_POD) )
+	else if (objType->size && (objType->flags & asOBJ_POD))
 	{
 		memcpy(dstObj, srcObj, objType->size);
+	}
+	else
+	{
+		asIScriptContext* ctx = asGetActiveContext();
+		if (ctx)
+			ctx->SetException("Cannot do value assignment");
+		return asNOT_SUPPORTED;
 	}
 
 	return asSUCCESS;

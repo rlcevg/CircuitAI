@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2021 Andreas Jonsson
+   Copyright (c) 2003-2022 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -58,8 +58,8 @@ BEGIN_AS_NAMESPACE
 
 // AngelScript version
 
-#define ANGELSCRIPT_VERSION        23600
-#define ANGELSCRIPT_VERSION_STRING "2.36.0 WIP"
+#define ANGELSCRIPT_VERSION        23601
+#define ANGELSCRIPT_VERSION_STRING "2.36.1 WIP"
 
 // Data types
 
@@ -147,6 +147,7 @@ enum asEEngineProp
 	asEP_INIT_CALL_STACK_SIZE               = 30,
 	asEP_MAX_CALL_STACK_SIZE                = 31,
 	asEP_IGNORE_DUPLICATE_SHARED_INTF       = 32,
+	asEP_NO_DEBUG_OUTPUT                    = 33,
 
 	asEP_LAST_PROPERTY
 };
@@ -252,14 +253,15 @@ enum asEBehaviours
 // Context states
 enum asEContextState
 {
-	asEXECUTION_FINISHED      = 0,
-	asEXECUTION_SUSPENDED     = 1,
-	asEXECUTION_ABORTED       = 2,
-	asEXECUTION_EXCEPTION     = 3,
-	asEXECUTION_PREPARED      = 4,
-	asEXECUTION_UNINITIALIZED = 5,
-	asEXECUTION_ACTIVE        = 6,
-	asEXECUTION_ERROR         = 7
+	asEXECUTION_FINISHED        = 0,
+	asEXECUTION_SUSPENDED       = 1,
+	asEXECUTION_ABORTED         = 2,
+	asEXECUTION_EXCEPTION       = 3,
+	asEXECUTION_PREPARED        = 4,
+	asEXECUTION_UNINITIALIZED   = 5,
+	asEXECUTION_ACTIVE          = 6,
+	asEXECUTION_ERROR           = 7,
+	asEXECUTION_DESERIALIZATION = 8
 };
 
 // Message types
@@ -487,7 +489,6 @@ template <typename T>
 
 #define asMETHOD(c,m) asSMethodPtr<sizeof(void (c::*)())>::Convert((void (c::*)())(&c::m))
 #define asMETHODPR(c,m,p,r) asSMethodPtr<sizeof(void (c::*)())>::Convert(AS_METHOD_AMBIGUITY_CAST(r (c::*)p)(&c::m))
-#define asMETHOD2PR(c,b,m,p,r) asSMethodPtr<sizeof(void (c::*)())>::Convert(AS_METHOD_AMBIGUITY_CAST(r (c::*)p)(&b::m))
 
 #else // Class methods are disabled
 
@@ -941,10 +942,17 @@ public:
 	virtual asIScriptFunction *GetFunction(asUINT stackLevel = 0) = 0;
 	virtual int                GetLineNumber(asUINT stackLevel = 0, int *column = 0, const char **sectionName = 0) = 0;
 	virtual int                GetVarCount(asUINT stackLevel = 0) = 0;
+	virtual int                GetVar(asUINT varIndex, asUINT stackLevel, const char** name, int* typeId = 0, asETypeModifiers* typeModifiers = 0, bool* isVarOnHeap = 0, int* stackOffset = 0) = 0;
+#ifdef AS_DEPRECATED
+	// deprecated since 2022-05-04, 2.36.0
 	virtual const char        *GetVarName(asUINT varIndex, asUINT stackLevel = 0) = 0;
+#endif
 	virtual const char        *GetVarDeclaration(asUINT varIndex, asUINT stackLevel = 0, bool includeNamespace = false) = 0;
-	virtual int                GetVarTypeId(asUINT varIndex, asUINT stackLevel = 0, asETypeModifiers *typeModifiers = 0) = 0;
-	virtual void              *GetAddressOfVar(asUINT varIndex, asUINT stackLevel = 0, bool dontDereference = false) = 0;
+#ifdef AS_DEPRECATED
+	// deprecated since 2022-05-04, 2.36.0
+	virtual int                GetVarTypeId(asUINT varIndex, asUINT stackLevel = 0) = 0;
+#endif
+	virtual void              *GetAddressOfVar(asUINT varIndex, asUINT stackLevel = 0, bool dontDereference = false, bool returnAddressOfUnitializedObjects = false) = 0;
 	virtual bool               IsVarInScope(asUINT varIndex, asUINT stackLevel = 0) = 0;
 	virtual int                GetThisTypeId(asUINT stackLevel = 0) = 0;
 	virtual void              *GetThisPointer(asUINT stackLevel = 0) = 0;
@@ -953,6 +961,17 @@ public:
 	// User data
 	virtual void *SetUserData(void *data, asPWORD type = 0) = 0;
 	virtual void *GetUserData(asPWORD type = 0) const = 0;
+
+	// Serialization
+	virtual int StartDeserialization() = 0;
+	virtual int FinishDeserialization() = 0;
+	virtual int PushFunction(asIScriptFunction *func, void *object) = 0;
+	virtual int GetStateRegisters(asUINT stackLevel, asIScriptFunction **callingSystemFunction, asIScriptFunction **initialFunction, asDWORD *origStackPointer, asDWORD *argumentsSize, asQWORD *valueRegister, void **objectRegister, asITypeInfo **objectTypeRegister) = 0;
+	virtual int GetCallStateRegisters(asUINT stackLevel, asDWORD *stackFramePointer, asIScriptFunction **currentFunction, asDWORD *programPointer, asDWORD *stackPointer, asDWORD *stackIndex) = 0;
+	virtual int SetStateRegisters(asUINT stackLevel, asIScriptFunction *callingSystemFunction, asIScriptFunction *initialFunction, asDWORD origStackPointer, asDWORD argumentsSize, asQWORD valueRegister, void *objectRegister, asITypeInfo *objectTypeRegister) = 0;
+	virtual int SetCallStateRegisters(asUINT stackLevel, asDWORD stackFramePointer, asIScriptFunction *currentFunction, asDWORD programPointer, asDWORD stackPointer, asDWORD stackIndex) = 0;
+	virtual int GetArgsOnStackCount(asUINT stackLevel) = 0;
+	virtual int GetArgOnStack(asUINT stackLevel, asUINT arg, int* typeId, asUINT *flags, void** address) = 0;
 
 protected:
 	virtual ~asIScriptContext() {}

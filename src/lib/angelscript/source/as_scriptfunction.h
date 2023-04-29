@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2022 Andreas Jonsson
+   Copyright (c) 2003-2023 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -61,7 +61,8 @@ struct asSScriptVariable
 	asCString   name;
 	asCDataType type;
 	int         stackOffset;
-	asUINT      declaredAtProgramPos;
+	asUINT      onHeap : 1;
+	asUINT      declaredAtProgramPos : 31;
 };
 
 enum asEListPatternNodeType
@@ -100,17 +101,17 @@ enum asEObjVarInfoOption
 
 enum asEFuncTrait
 {
-	asTRAIT_CONSTRUCTOR = 1,
-	asTRAIT_DESTRUCTOR  = 2,
-	asTRAIT_CONST       = 4,
-	asTRAIT_PRIVATE     = 8,
-	asTRAIT_PROTECTED   = 16,
-	asTRAIT_FINAL       = 32,
-	asTRAIT_OVERRIDE    = 64,
-	asTRAIT_SHARED      = 128,
-	asTRAIT_EXTERNAL    = 256,
-	asTRAIT_EXPLICIT    = 512,
-	asTRAIT_PROPERTY    = 1024
+	asTRAIT_CONSTRUCTOR = 1,    // method
+	asTRAIT_DESTRUCTOR  = 2,    // method
+	asTRAIT_CONST       = 4,    // method
+	asTRAIT_PRIVATE     = 8,    // method
+	asTRAIT_PROTECTED   = 16,   // method
+	asTRAIT_FINAL       = 32,   // method
+	asTRAIT_OVERRIDE    = 64,   // method
+	asTRAIT_SHARED      = 128,  // function
+	asTRAIT_EXTERNAL    = 256,  // function
+	asTRAIT_EXPLICIT    = 512,  // method
+	asTRAIT_PROPERTY    = 1024  // method/function
 };
 
 struct asSFunctionTraits
@@ -237,7 +238,7 @@ public:
 
 	void      DestroyInternal();
 
-	void      AddVariable(const asCString &name, asCDataType &type, int stackOffset);
+	void      AddVariable(const asCString &name, asCDataType &type, int stackOffset, bool onHeap);
 
 	int       GetSpaceNeededForArguments();
 	int       GetSpaceNeededForReturnValue();
@@ -267,6 +268,9 @@ public:
 
 	void      AllocateScriptFunctionData();
 	void      DeallocateScriptFunctionData();
+
+	asCScriptFunction* FindNextFunctionCalled(asUINT startSearchFromProgramPos, int *stackDelta, asUINT *outProgramPos);
+	asCScriptFunction* GetCalledFunction(asDWORD programPos);
 
 	asCGlobalProperty *GetPropertyByGlobalVarPtr(void *gvarPtr);
 
@@ -328,17 +332,6 @@ public:
 		// The stack space needed for the local variables
 		asDWORD                         variableSpace;
 
-		// These hold information on objects and function pointers, including temporary
-		// variables used by exception handler and when saving bytecode
-		// TODO: These two are not needed anymore, since the variables array contain the same information
-		asCArray<asCTypeInfo*>          objVariableTypes;
-		asCArray<int>                   objVariablePos; // offset on stackframe
-
-		// The first variables in above array are allocated on the heap, the rest on the stack.
-		// This variable shows how many are on the heap.
-		// TODO: This one needs to be stored in a different way when objVariableTypes & objVariablePos are removed, unless the variables array is rearranged in the same way as above arrays
-		asUINT                          objVariablesOnHeap;
-
 		// Holds information on scope for object variables on the stack
 		asCArray<asSObjectVariableInfo> objVariableInfo;
 
@@ -352,7 +345,9 @@ public:
 		asJITFunction                   jitFunction;
 
 		// Holds type information on both explicitly declared variables and temporary variables
+		// Used during exception handling, byte code serialization, debugging, and context serialization
 		asCArray<asSScriptVariable*>    variables;
+
 		// Store position, line number pairs for debug information
 		asCArray<int>                   lineNumbers;
 		// Store the script section where the code was declared

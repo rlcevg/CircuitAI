@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <stdio.h> // sprintf
+#include <stdio.h> // snprintf
 #include <string>
 #include <algorithm> // std::sort
 
@@ -189,8 +189,9 @@ static bool ScriptArrayTemplateCallback(asITypeInfo *ti, bool &dontGarbageCollec
 			if( !found )
 			{
 				// No default factory
-				// TODO: Should format the message to give the name of the subtype for better understanding
-				ti->GetEngine()->WriteMessage("array", 0, 0, asMSGTYPE_ERROR, "The subtype has no default factory");
+				char buffer[1024];
+				snprintf(buffer, sizeof(buffer), "The subtype '%s' has no default factory", subtype ? subtype->GetEngine()->GetTypeDeclaration(subtype->GetTypeId()) : "UNKNOWN");
+				ti->GetEngine()->WriteMessage("array", 0, 0, asMSGTYPE_ERROR, buffer);
 				return false;
 			}
 		}
@@ -561,8 +562,37 @@ void CScriptArray::SetValue(asUINT index, void *value)
 	void *ptr = At(index);
 	if( ptr == 0 ) return;
 
-	if( (subTypeId & ~asTYPEID_MASK_SEQNBR) && !(subTypeId & asTYPEID_OBJHANDLE) )
-		objType->GetEngine()->AssignScriptObject(ptr, value, objType->GetSubType());
+	if ((subTypeId & ~asTYPEID_MASK_SEQNBR) && !(subTypeId & asTYPEID_OBJHANDLE))
+	{
+		asITypeInfo *subType = objType->GetSubType();
+		if (subType->GetFlags() & asOBJ_ASHANDLE)
+		{
+			// For objects that should work as handles we must use the opHndlAssign method
+			// TODO: Must support alternative syntaxes as well
+			// TODO: Move the lookup of the opHndlAssign method to Precache() so it is only done once
+			string decl = string(subType->GetName()) + "& opHndlAssign(const " + string(subType->GetName()) + "&in)";
+			asIScriptFunction* func = subType->GetMethodByDecl(decl.c_str());
+			if (func)
+			{
+				// TODO: Reuse active context if existing
+				asIScriptEngine* engine = objType->GetEngine();
+				asIScriptContext* ctx = engine->RequestContext();
+				ctx->Prepare(func);
+				ctx->SetObject(ptr);
+				ctx->SetArgAddress(0, value);
+				// TODO: Handle errors
+				ctx->Execute();
+				engine->ReturnContext(ctx);
+			}
+			else
+			{
+				// opHndlAssign doesn't exist, so try ordinary value assign instead
+				objType->GetEngine()->AssignScriptObject(ptr, value, subType);
+			}
+		}
+		else
+			objType->GetEngine()->AssignScriptObject(ptr, value, subType);
+	}
 	else if( subTypeId & asTYPEID_OBJHANDLE )
 	{
 		void *tmp = *(void**)ptr;
@@ -1026,7 +1056,7 @@ bool CScriptArray::Less(const void *a, const void *b, bool asc)
 			case asTYPEID_UINT64: return COMPARE(asQWORD);
 			case asTYPEID_FLOAT:  return COMPARE(float);
 			case asTYPEID_DOUBLE: return COMPARE(double);
-			default: return COMPARE(signed int); // All enums fall in this case
+			default: return COMPARE(signed int); // All enums fall in this case. TODO: update this when enums can have different sizes and types
 			#undef COMPARE
 		}
 	}
@@ -1255,13 +1285,13 @@ int CScriptArray::Find(asUINT startAt, void *value) const
 #if defined(_MSC_VER) && _MSC_VER >= 1500 && !defined(__S3E__)
 					sprintf_s(tmp, 512, "Type '%s' has multiple matching opEquals or opCmp methods", subType->GetName());
 #else
-					sprintf(tmp, "Type '%s' has multiple matching opEquals or opCmp methods", subType->GetName());
+					snprintf(tmp, sizeof(tmp), "Type '%s' has multiple matching opEquals or opCmp methods", subType->GetName());
 #endif
 				else
 #if defined(_MSC_VER) && _MSC_VER >= 1500 && !defined(__S3E__)
 					sprintf_s(tmp, 512, "Type '%s' does not have a matching opEquals or opCmp method", subType->GetName());
 #else
-					sprintf(tmp, "Type '%s' does not have a matching opEquals or opCmp method", subType->GetName());
+					snprintf(tmp, sizeof(tmp), "Type '%s' does not have a matching opEquals or opCmp method", subType->GetName());
 #endif
 				ctx->SetException(tmp);
 			}
@@ -1418,13 +1448,13 @@ void CScriptArray::Sort(asUINT startAt, asUINT count, bool asc)
 #if defined(_MSC_VER) && _MSC_VER >= 1500 && !defined(__S3E__)
 					sprintf_s(tmp, 512, "Type '%s' has multiple matching opCmp methods", subType->GetName());
 #else
-					sprintf(tmp, "Type '%s' has multiple matching opCmp methods", subType->GetName());
+					snprintf(tmp, sizeof(tmp), "Type '%s' has multiple matching opCmp methods", subType->GetName());
 #endif
 				else
 #if defined(_MSC_VER) && _MSC_VER >= 1500 && !defined(__S3E__)
 					sprintf_s(tmp, 512, "Type '%s' does not have a matching opCmp method", subType->GetName());
 #else
-					sprintf(tmp, "Type '%s' does not have a matching opCmp method", subType->GetName());
+					snprintf(tmp, sizeof(tmp), "Type '%s' does not have a matching opCmp method", subType->GetName());
 #endif
 
 				ctx->SetException(tmp);
@@ -1672,8 +1702,37 @@ void CScriptArray::CopyBuffer(SArrayBuffer *dst, SArrayBuffer *src)
 				void **s   = (void**)src->data;
 
 				asITypeInfo *subType = objType->GetSubType();
-				for( ; d < max; d++, s++ )
-					engine->AssignScriptObject(*d, *s, subType);
+				if (subType->GetFlags() & asOBJ_ASHANDLE)
+				{
+					// For objects that should work as handles we must use the opHndlAssign method
+					// TODO: Must support alternative syntaxes as well
+					// TODO: Move the lookup of the opHndlAssign method to Precache() so it is only done once
+					string decl = string(subType->GetName()) + "& opHndlAssign(const " + string(subType->GetName()) + "&in)";
+					asIScriptFunction *func = subType->GetMethodByDecl(decl.c_str());
+					if (func)
+					{
+						// TODO: Reuse active context if existing
+						asIScriptContext* ctx = engine->RequestContext();
+						for (; d < max; d++, s++)
+						{
+							ctx->Prepare(func);
+							ctx->SetObject(*d);
+							ctx->SetArgAddress(0, *s);
+							// TODO: Handle errors
+							ctx->Execute();
+						}
+						engine->ReturnContext(ctx);
+					}
+					else
+					{
+						// opHndlAssign doesn't exist, so try ordinary value assign instead
+						for (; d < max; d++, s++)
+							engine->AssignScriptObject(*d, *s, subType);
+					}
+				}
+				else
+					for( ; d < max; d++, s++ )
+						engine->AssignScriptObject(*d, *s, subType);
 			}
 			else
 			{
