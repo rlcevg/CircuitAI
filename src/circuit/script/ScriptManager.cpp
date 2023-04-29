@@ -31,6 +31,7 @@ namespace circuit {
 
 using namespace springai;
 
+std::string CScriptManager::initName("init");
 std::string CScriptManager::mainName("main");
 
 CScriptManager::CScriptManager(CCircuitAI* circuit)

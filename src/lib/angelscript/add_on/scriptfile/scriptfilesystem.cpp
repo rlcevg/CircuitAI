@@ -4,7 +4,7 @@
 
 #if defined(_WIN32)
 #include <direct.h> // _getcwd
-#include <Windows.h> // FindFirstFile, GetFileAttributes
+#include <windows.h> // FindFirstFile, GetFileAttributes
 
 #undef DeleteFile
 #undef CopyFile

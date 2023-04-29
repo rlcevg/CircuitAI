@@ -250,7 +250,7 @@ bool CInitScript::InitConfig(const std::string& profile,
 		std::vector<std::string>& outCfgParts, CCircuitDef::SArmorInfo& outArmor)
 {
 	asIScriptEngine* engine = script->GetEngine();
-	int r = engine->BeginConfigGroup("init"); ASSERT(r >= 0);
+	int r = engine->BeginConfigGroup(CScriptManager::initName.c_str()); ASSERT(r >= 0);
 	r = engine->RegisterObjectType("SArmorInfo", sizeof(CCircuitDef::SArmorInfo), asOBJ_VALUE | asGetTypeTraits<CCircuitDef::SArmorInfo>()); ASSERT(r >= 0);
 	r = engine->RegisterObjectBehaviour("SArmorInfo", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructSArmorInfo), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
 	r = engine->RegisterObjectBehaviour("SArmorInfo", asBEHAVE_CONSTRUCT, "void f(const SArmorInfo& in)", asFUNCTION(ConstructCopySArmorInfo), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
@@ -279,11 +279,10 @@ bool CInitScript::InitConfig(const std::string& profile,
 	r = engine->EndConfigGroup(); ASSERT(r >= 0);
 
 	folderName = profile;
-	if (!script->Load("init", folderName, "init.as")) {
-		r = script->GetEngine()->RemoveConfigGroup("init"); ASSERT(r >= 0);
+	if (!script->Load(CScriptManager::initName.c_str(), folderName, CScriptManager::initName + ".as")) {
 		return false;
 	}
-	asIScriptModule* mod = script->GetEngine()->GetModule("init");
+	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::initName.c_str());
 	r = mod->SetDefaultNamespace("Init"); ASSERT(r >= 0);
 	asIScriptFunction* init = script->GetFunc(mod, "SInitInfo AiInit()");
 
@@ -315,13 +314,17 @@ bool CInitScript::InitConfig(const std::string& profile,
 				}
 			}
 		}
+		// NOTE: Init context shouldn't be used again, hence release
 //		ctx->Unprepare();
 //		script->ReturnContext(ctx);
 		ctx->Release();
 	}
 
-//	mod->Discard();
-//	r = script->GetEngine()->RemoveConfigGroup("init"); ASSERT(r >= 0);
+	mod->Discard();
+	// NOTE: destroys "array<T>". "main" should be registered and loaded first,
+	//       then "array<T>" will be in defaultGroup - not viable option.
+	//       And re-creating CScriptManager is not worth the effort.
+//	r = script->GetEngine()->RemoveConfigGroup(CScriptManager::initName.c_str()); ASSERT(r >= 0);
 	return true;
 }
 

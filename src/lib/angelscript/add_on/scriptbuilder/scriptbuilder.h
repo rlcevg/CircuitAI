@@ -36,6 +36,7 @@
 #include <set>
 #include <vector>
 #include <string.h> // _strcmpi
+#include <functional>
 
 BEGIN_AS_NAMESPACE
 
@@ -61,6 +62,10 @@ public:
 
 	// Start a new module
 	int StartNewModule(asIScriptEngine *engine, const char *moduleName);
+
+	// Custom VFS reader
+	using ReadFunc = std::function<std::string (const std::string& filename)>;
+	void SetReadFunc(const ReadFunc& read) { readFunc = read; }
 
 	// Load a script section from a file on disk
 	// Returns  1 if the file was included
@@ -121,6 +126,7 @@ protected:
 	int  Build();
 	int  ProcessScriptSection(const char *script, unsigned int length, const char *sectionname, int lineOffset);
 	int  LoadScriptSection(const char *filename);
+	int  LoadScriptSectionVFS(const char *filename);
 	bool IncludeIfNotAlreadyIncluded(const char *filename);
 
 	int  SkipStatement(int pos);
@@ -209,6 +215,8 @@ protected:
 #endif
 
 	std::set<std::string>      definedWords;
+
+	ReadFunc readFunc;
 };
 
 END_AS_NAMESPACE

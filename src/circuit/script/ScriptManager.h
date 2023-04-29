@@ -27,6 +27,7 @@ class IScript;
 
 class CScriptManager {
 public:
+	static std::string initName;
 	static std::string mainName;
 
 	CScriptManager(CCircuitAI* circuit);

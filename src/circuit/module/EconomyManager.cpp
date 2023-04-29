@@ -1113,6 +1113,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			return cdef->IsAvailable(frame) && terrainMgr->CanBeBuiltAt(cdef, pos);
 		});
 		if (convertDef != nullptr) {
+			// NOTE: Next check may prevent converters even when open mex-spot is far
+			//       away in unknown territory.
 //			const SConvertExt* convertExt = convertDefs.GetAvailInfo(convertDef);
 //			if ((mexDef == nullptr) || (convertExt->make / convertDef->GetCostM() >= metalMgr->GetSpotAvgIncome() * mexDef->GetExtractsM() / mexDef->GetCostM())) {
 				task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT, 0.f, true);
