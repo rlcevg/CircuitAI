@@ -174,6 +174,8 @@ public:
 	int GetTargetTile() const { return targetTile; }
 
 	void AddAttribute(CCircuitDef::AttrType type) { attr |= CCircuitDef::GetMask(static_cast<CCircuitDef::AttrT>(type)); }
+	void DelAttribute(CCircuitDef::AttrType type) { attr &= ~CCircuitDef::GetMask(static_cast<CCircuitDef::AttrT>(type)); }
+	void TglAttribute(CCircuitDef::AttrType type) { attr ^= CCircuitDef::GetMask(static_cast<CCircuitDef::AttrT>(type)); }
 	bool IsAttrAny(CCircuitDef::AttrM value) const { return (attr & value) != 0; }
 	bool IsAttrSolo() const { return attr & CCircuitDef::AttrMask::SOLO; }
 	bool IsAttrBase() const { return attr & CCircuitDef::AttrMask::BASE; }

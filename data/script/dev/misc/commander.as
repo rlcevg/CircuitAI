@@ -1,4 +1,4 @@
-#include "manager/factory.as"
+#include "../manager/factory.as"
 
 
 namespace Commander {

@@ -25,7 +25,7 @@ public:
 public:
 	int AddRef();
 	int Release();
-	int GetRefCount();
+	int GetRefCount() const;
 
 private:
 	std::atomic<int> refCount;

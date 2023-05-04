@@ -170,11 +170,11 @@ void CAttackTask::Update()
 	}
 
 	const AIFloat3& startPos = leader->GetPos(frame);
-	if (circuit->GetInflMap()->GetInfluenceAt(startPos) < -INFL_EPS) {
-		SetTarget(nullptr);
-	} else {
+//	if (circuit->GetInflMap()->GetInfluenceAt(startPos) < -INFL_EPS) {
+//		SetTarget(nullptr);  // FIXME: back-forths group
+//	} else {
 		FindTarget();
-	}
+//	}
 
 	state = State::ROAM;
 	if (GetTarget() != nullptr) {
@@ -262,7 +262,7 @@ void CAttackTask::FindTarget()
 	const std::vector<CEnemyManager::SEnemyGroup>& groups = circuit->GetEnemyManager()->GetEnemyGroups();
 	for (unsigned i = 0; i < groups.size(); ++i) {
 		const CEnemyManager::SEnemyGroup& group = groups[i];
-		const bool isOverpowered = maxPower * 0.25f > group.influence;
+		const bool isOverpowered = maxPower * 0.125f > group.influence;
 		if (hasGoodTarget && isOverpowered) {
 			continue;
 		}

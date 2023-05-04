@@ -80,6 +80,7 @@ public:
 	void UnmarkPorc(CCircuitUnit* unit);
 	void AbortDefence(const CBDefenceTask* task, int defPointId);
 	bool HasDefence(int cluster);
+	void ProcessHubDefence(CBDefenceTask* task);
 	springai::AIFloat3 GetScoutPosition(CCircuitUnit* unit);
 	void ClearScoutPosition(IUnitTask* task);
 	void FillFrontPos(CCircuitUnit* unit, F3Vec& outPositions);
@@ -142,6 +143,9 @@ private:
 	void AddArmyCost(CCircuitUnit* unit);
 	void DelArmyCost(CCircuitUnit* unit);
 	void PointOfInterest(CEnemyInfo* enemy, int start, int step);
+	CDefenceData::SDefPoint* FindClosestDefPoint(const springai::AIFloat3& pos);
+	CDefenceData::SDefPoint* FindClosestDefPoint(int cluster, const springai::AIFloat3& pos,
+			std::function<bool (const CDefenceData::SDefPoint&)> predicate = nullptr);
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;

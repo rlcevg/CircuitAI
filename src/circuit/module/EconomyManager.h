@@ -192,6 +192,7 @@ private:
 	CAvailList<SMetalExt> metalDefs;
 
 	struct SConvertExt {
+		float energyUse;
 		float make;
 	};
 	CAvailList<SConvertExt> convertDefs;
@@ -258,6 +259,8 @@ private:
 	bool isEnergyEmpty;
 	bool isEnergyFull;
 	bool isEnergyRequired;
+	float reclConvertEff;
+	float reclEnergyEff;
 
 	int metalPullFrame;
 	int energyPullFrame;

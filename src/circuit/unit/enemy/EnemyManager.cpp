@@ -37,6 +37,8 @@ CEnemyManager::CEnemyManager(CCircuitAI* circuit)
 		, dyingFrame(-1)
 		, pGroupData(&groupData0)
 		, enemyGroups(groupData0.enemyGroups)
+		, minThreatGroupIdx(0)
+		, preMaxThreatGroupIdx(0)
 		, maxThreatGroupIdx(0)
 		, isUpdating(false)
 		, enemyMobileCost(0.f)
@@ -546,8 +548,9 @@ void CEnemyManager::KMeansIteration()
 
 	// do a check and see if there are any empty means and set the height
 	groupData.enemyPos = ZeroVector;
-	groupData.maxThreatGroupIdx = 0;
+	std::vector<int> indices(newK);
 	for (int i = 0; i < newK; i++) {
+		indices[i] = i;
 		// if a newmean is unchanged, set it to the new means pos instead of (0, 0, 0)
 		if (newMeans[i].pos == ZeroVector) {
 			newMeans[i] = newMeansPosition;
@@ -556,12 +559,16 @@ void CEnemyManager::KMeansIteration()
 //			newMeans[i].pos.y = circuit->GetMap()->GetElevationAt(newMeans[i].pos.x, newMeans[i].pos.z) + K_MEANS_ELEVATION;
 		}
 		groupData.enemyPos += newMeans[i].pos;
-		if (newMeans[groupData.maxThreatGroupIdx].influence < newMeans[i].influence) {
-			groupData.maxThreatGroupIdx = i;
-		}
 		newMeans[i].vagueMetric = (newMeans[i].influence + 1.f) / (newMeans[i].cost + DIV0_SLACK);
 	}
 	groupData.enemyPos /= newK;
+
+	std::sort(indices.begin(), indices.end(), [&newMeans](int idxA, int idxB) {
+		return newMeans[idxA].influence < newMeans[idxB].influence;
+	});
+	groupData.minThreatGroupIdx = indices.front();
+	groupData.preMaxThreatGroupIdx = indices[std::max(0, newK - 2)];
+	groupData.maxThreatGroupIdx = indices.back();
 
 //	return newMeans;
 }
@@ -592,6 +599,8 @@ void CEnemyManager::SwapBuffers()
 	SGroupData& groupData = *pGroupData.load();
 	enemyGroups.swap(groupData1.enemyGroups);  // groupData0.enemyGroups.swap(groupData1.enemyGroups);
 	enemyPos = groupData.enemyPos;
+	minThreatGroupIdx = groupData.minThreatGroupIdx;
+	preMaxThreatGroupIdx = groupData.preMaxThreatGroupIdx;
 	maxThreatGroupIdx = groupData.maxThreatGroupIdx;
 }
 

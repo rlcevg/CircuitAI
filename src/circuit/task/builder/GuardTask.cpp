@@ -8,7 +8,7 @@
 #include "task/builder/GuardTask.h"
 #include "task/TaskManager.h"
 #include "module/BuilderManager.h"
-#include "terrain/TerrainManager.h"  // for CorrectPosition
+#include "terrain/TerrainManager.h"  // Only for CorrectPosition
 #include "CircuitAI.h"
 #include "util/Utils.h"
 

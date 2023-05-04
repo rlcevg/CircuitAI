@@ -32,7 +32,7 @@ int IRefCounter::Release()
 	return refCount;
 }
 
-int IRefCounter::GetRefCount()
+int IRefCounter::GetRefCount() const
 {
 	return refCount;
 }

@@ -92,9 +92,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		const int frame = this->circuit->GetLastFrame();
 		this->circuit->GetEconomyManager()->AddFactoryInfo(unit);
-		if (!this->circuit->IsLoadSave()) {  // FIXME: add script serialization, @see add_on/serializer
-			static_cast<CFactoryScript*>(script)->FactoryCreated(unit);
-		}
+		// FIXME: add script serialization to remove this->circuit->IsLoadSave() check in script, @see add_on/serializer
+		static_cast<CFactoryScript*>(script)->FactoryCreated(unit);
 
 		lastSwitchFrame = frame;
 		EnableFactory(unit);

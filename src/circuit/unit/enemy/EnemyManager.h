@@ -90,6 +90,8 @@ public:
 
 	const std::vector<SEnemyGroup>& GetEnemyGroups() const { return enemyGroups; }
 	const springai::AIFloat3& GetEnemyPos() const { return enemyPos; }
+	float GetMinGroupThreat() const { return enemyGroups[minThreatGroupIdx].influence; }
+	float GetPreMaxGroupThreat() const { return enemyGroups[preMaxThreatGroupIdx].influence; }
 	float GetMaxGroupThreat() const { return enemyGroups[maxThreatGroupIdx].influence; }
 	float GetEnemyMobileCost() const { return enemyMobileCost; }
 
@@ -104,6 +106,8 @@ private:
 	struct SGroupData {
 		std::vector<SEnemyGroup> enemyGroups;
 		springai::AIFloat3 enemyPos;
+		int minThreatGroupIdx;
+		int preMaxThreatGroupIdx;
 		int maxThreatGroupIdx;
 	};
 
@@ -133,6 +137,8 @@ private:
 	std::atomic<SGroupData*> pGroupData;
 	std::vector<SEnemyGroup>& enemyGroups;
 	springai::AIFloat3 enemyPos;
+	int minThreatGroupIdx;
+	int preMaxThreatGroupIdx;
 	int maxThreatGroupIdx;
 	bool isUpdating;
 

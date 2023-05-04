@@ -1,7 +1,7 @@
 #include "../../define.as"
 #include "../../unit.as"
 #include "../../task.as"
-#include "../commander.as"
+#include "../misc/commander.as"
 #include "economy.as"
 
 
@@ -37,6 +37,9 @@ void AiTaskClosed(IUnitTask@ task, bool done)
 void AiFactoryCreated(CCircuitUnit@ unit)
 {
 //	if (!factories.empty() || (this->circuit->GetBuilderManager()->GetWorkerCount() > 2)) return;
+	if (ai.IsLoadSave()) {
+		return;
+	}
 
 	const CCircuitDef@ facDef = unit.circuitDef;
 	const array<Opener::SO>@ opener = Opener::GetOpener(facDef);

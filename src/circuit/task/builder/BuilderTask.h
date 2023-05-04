@@ -36,6 +36,7 @@ public:
 		PYLON,
 		ENERGY,
 		GEO,
+		GEOUP,
 		DEFENCE,  // lotus, defender, stardust, stinger
 		BUNKER,  // ddm, anni
 		BIG_GUN,  // super weapons

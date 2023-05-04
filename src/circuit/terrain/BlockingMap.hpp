@@ -11,7 +11,7 @@
 
 #include "terrain/BlockingMap.h"
 
-#define MAX_BLOCK_VAL		0x1000
+#define BLOCK_VAL			0x1000
 #define BLOCK_THRESHOLD		(GRID_RATIO_LOW * GRID_RATIO_LOW * 3 / 4)
 
 namespace circuit {
@@ -40,7 +40,7 @@ inline bool SBlockingMap::IsStruct(int x, int z) const
 inline void SBlockingMap::MarkBlocker(int x, int z, StructType structType, SM notIgnoreMask)
 {
 	SBlockCell& cell = grid[z * columns + x];
-	cell.blockerCounts[static_cast<ST>(structType)] = MAX_BLOCK_VAL;
+	cell.blockerCounts[static_cast<ST>(structType)] = BLOCK_VAL * 2;
 	cell.notIgnoreMask = notIgnoreMask;
 //	cell.structMask = GetStructMask(structType);
 	const SM structMask = static_cast<SM>(GetStructMask(structType));
@@ -89,7 +89,7 @@ inline void SBlockingMap::AddStruct(int x, int z, StructType structType, SM notI
 			cellLow.blockerMask |= static_cast<SM>(GetStructMask(structType));
 		}
 	}
-	if (cell.blockerCounts[static_cast<ST>(structType)] < MAX_BLOCK_VAL) {
+	if (cell.blockerCounts[static_cast<ST>(structType)] < BLOCK_VAL) {
 		cell.notIgnoreMask = notIgnoreMask;
 	}
 	cell.structMask = GetStructMask(structType);
@@ -104,7 +104,7 @@ inline void SBlockingMap::DelStruct(int x, int z, StructType structType, SM notI
 			cellLow.blockerMask &= ~static_cast<SM>(GetStructMask(structType));
 		}
 	}
-	if (cell.blockerCounts[static_cast<ST>(structType)] < MAX_BLOCK_VAL) {
+	if (cell.blockerCounts[static_cast<ST>(structType)] < BLOCK_VAL) {
 		cell.notIgnoreMask = 0;
 	}
 	cell.structMask = StructMask::NONE;

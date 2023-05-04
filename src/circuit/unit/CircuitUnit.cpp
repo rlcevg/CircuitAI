@@ -11,7 +11,7 @@
 #include "unit/action/TravelAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "setup/SetupManager.h"
-#include "terrain/TerrainManager.h"  // for CorrectPosition
+#include "terrain/TerrainManager.h"  // Only for CorrectPosition
 #include "CircuitAI.h"
 #include "util/Utils.h"
 #ifdef DEBUG_VIS
@@ -51,7 +51,7 @@ CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitD
 		, isSelfD(false)
 		, target(nullptr)
 		, targetTile(-1)
-		, attr(cdef->GetInitAttributes())
+		, attr(cdef->GetAttributes())
 {
 	command = springai::WrappCurrentCommand::GetInstance(unit->GetSkirmishAIId(), id, 0);
 

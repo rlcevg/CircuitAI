@@ -107,7 +107,7 @@ CEnemyUnit::CEnemyUnit(CCircuitDef* cdef, const AIFloat3& pos)
 		, lastSeen(-1)
 		, shield(nullptr)
 		, data(SEnemyData {.cdef = cdef,
-			.shieldPower = cdef->GetMaxShield(),
+			.shieldPower = cdef->IsAbleToRepair() ? cdef->GetWorkerTime() : cdef->GetMaxShield(),
 			.health = cdef->GetHealth(),
 			.isBeingBuilt = false,
 			.isParalyzed = false,
@@ -189,7 +189,7 @@ void CEnemyUnit::UpdateInLosData()
 		return;
 	}
 
-	if (shield != nullptr) {
+	if (!data.cdef->IsAbleToRepair() && (shield != nullptr)) {
 		data.shieldPower = shield->GetShieldPower();
 	}
 	data.health = unit->GetHealth();

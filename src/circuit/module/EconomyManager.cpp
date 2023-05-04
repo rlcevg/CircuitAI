@@ -57,6 +57,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, isEnergyEmpty(false)
 		, isEnergyFull(false)
 		, isEnergyRequired(false)
+		, reclConvertEff(2.f)
+		, reclEnergyEff(20.f)
 		, metal(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, energy(SResourceInfo {-1, .0f, .0f, .0f, .0f})
 		, metalPullCorFrame(-1)
@@ -440,9 +442,9 @@ void CEconomyManager::InitEconomyScores(const std::vector<CCircuitDef*>&& builde
 	convertDefs.Init(builders, [this](CCircuitDef* cdef, SConvertExt& data) -> float {
 		// old engine way: cdef->GetDef()->GetMakesResource(metalRes)
 		auto customParams = cdef->GetDef()->GetCustomParams();
-		const float energy = utils::string_to_float(customParams.find("energyconv_capacity")->second);  // validated on init
 		const float ratio = utils::string_to_float(customParams.find("energyconv_efficiency")->second);  // validated on init
-		data.make = energy * ratio;
+		data.energyUse = utils::string_to_float(customParams.find("energyconv_capacity")->second);  // validated on init
+		data.make = data.energyUse * ratio;
 		return data.make;
 	});
 
@@ -1237,6 +1239,7 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	isEnergyStalling |= isEnergyRequired;
 	bool isLastHope = isEnergyStalling;
 	const int frame = circuit->GetLastFrame();
+	float bestResDist = std::numeric_limits<float>::max();
 
 	const auto& infos = energyDefs.GetInfos();
 	const float curWind = circuit->GetMap()->GetCurWind();
@@ -1265,12 +1268,19 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		if (engy.cdef->GetCount() < engy.data.cond.limit) {
 			isLastHope = false;
 			if (taskSize < (int)(buildPower / engy.cdef->GetCostM() * 4 + 1)) {
-				bestDef = engy.cdef;
-				if ((engy.data.cond.metalIncome < metalIncome)
-					&& (engy.data.cond.energyIncome < energyIncome)
-					&& (!engy.cdef->IsWind() || checkWind(i)))
-				{
+				if (engy.cdef->IsWind() && !checkWind(i)) {
+					continue;
+				}
+				if ((engy.data.cond.metalIncome < metalIncome) && (engy.data.cond.energyIncome < energyIncome)) {
+					bestDef = engy.cdef;
 					break;
+				} else {
+					const float resDist = ((engy.data.cond.metalIncome < metalIncome) ? 0.f : (engy.data.cond.metalIncome - metalIncome))
+							+ ((engy.data.cond.energyIncome < energyIncome) ? 0.f : GetEcoEM() * (engy.data.cond.energyIncome - energyIncome));
+					if (bestResDist > resDist) {
+						bestResDist = resDist;
+						bestDef = engy.cdef;
+					}
 				}
 			} else if ((engy.data.cond.metalIncome < metalIncome)
 				&& (engy.data.cond.energyIncome < energyIncome))
@@ -1992,9 +2002,10 @@ void CEconomyManager::UpdateEconomy()
 
 void CEconomyManager::ReclaimOldConvert(const SConvertExt* convertExt)
 {
-	if (circuit->IsLoadSave() || (IsEnergyFull() && !IsEnergyStalling())) {
+	if (circuit->IsLoadSave() || (reclConvertEff <= 0.f) || (IsEnergyFull() && !IsEnergyStalling())) {
 		return;
 	}
+	float energyNet = GetAvgEnergyIncome() - GetEnergyPull();
 	auto ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(circuit->GetSetupManager()->GetMetalBase(), 1000.f, false);
 	for (int id : ids) {
 		CCircuitUnit* unit = circuit->GetTeamUnit(id);
@@ -2002,15 +2013,20 @@ void CEconomyManager::ReclaimOldConvert(const SConvertExt* convertExt)
 			continue;
 		}
 		auto info = convertDefs.GetAvailInfo(unit->GetCircuitDef());
-		if (convertExt->make > info->make * 2.f) {
+		if (convertExt->make > info->make * reclConvertEff) {
 			circuit->GetBuilderManager()->EnqueueReclaim(IUnitTask::Priority::HIGH, unit, FRAMES_PER_SEC * 1200);
+			energyNet += convertExt->energyUse;
+			if (energyNet > 0) {
+				break;
+			}
 		}
 	}
 }
 
 void CEconomyManager::ReclaimOldEnergy(const SEnergyExt* energyExt)
 {
-	if (circuit->IsLoadSave() || (GetAvgEnergyIncome() < energyExt->cond.energyIncome)) {
+	float energyIncome = GetAvgEnergyIncome();
+	if (circuit->IsLoadSave() || (reclEnergyEff <= 0.f) || (energyIncome < energyExt->cond.energyIncome)) {
 		return;
 	}
 	auto ids = circuit->GetCallback()->GetFriendlyUnitIdsIn(circuit->GetSetupManager()->GetBasePos(), 1000.f, false);
@@ -2020,7 +2036,11 @@ void CEconomyManager::ReclaimOldEnergy(const SEnergyExt* energyExt)
 			continue;
 		}
 		auto info = energyDefs.GetAvailInfo(unit->GetCircuitDef());
-		if (energyExt->cond.score > info->cond.score * 20.f) {
+		if (energyExt->cond.score > info->cond.score * reclEnergyEff) {
+			energyIncome -= info->make;
+			if (energyIncome < energyExt->cond.energyIncome) {
+				break;
+			}
 			circuit->GetBuilderManager()->EnqueueReclaim(IUnitTask::Priority::HIGH, unit, FRAMES_PER_SEC * 1200);
 			unit->GetCircuitDef()->SetMaxThisUnit(0);
 		} else {

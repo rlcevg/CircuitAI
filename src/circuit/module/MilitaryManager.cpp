@@ -780,19 +780,9 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();
 	float maxCost = amountFactor * metalIncome;
-	CDefenceData::SDefPoint* closestPoint = nullptr;
-	float minDist = std::numeric_limits<float>::max();
-	const CDefenceData::DefPoints& points = defence->GetDefPoints();
-	const CDefenceData::DefIndices& indices = defence->GetDefIndices(cluster);
-	for (int idx : indices) {
-		if (points[idx].cost < maxCost) {
-			float dist = points[idx].position.SqDistance2D(pos);
-			if ((closestPoint == nullptr) || (dist < minDist)) {
-				closestPoint = const_cast<CDefenceData::SDefPoint*>(&points[idx]);
-				minDist = dist;
-			}
-		}
-	}
+	CDefenceData::SDefPoint* closestPoint = FindClosestDefPoint(cluster, pos, [maxCost](const CDefenceData::SDefPoint& pnt) {
+		return pnt.cost < maxCost;
+	});
 	if (closestPoint == nullptr) {
 		return;
 	}
@@ -993,6 +983,17 @@ bool CMilitaryManager::HasDefence(int cluster)
 		}
 	}
 	return false;
+}
+
+void CMilitaryManager::ProcessHubDefence(CBDefenceTask* task)
+{
+	const AIFloat3& pos = task->GetPosition();
+	CDefenceData::SDefPoint* closestPoint = FindClosestDefPoint(pos);
+	if ((closestPoint == nullptr) || (closestPoint->position.SqDistance2D(pos) > SQUARE(300.f))) {
+		return;
+	}
+	closestPoint->cost += task->GetCostM();
+	task->SetDefPointId(closestPoint->id);
 }
 
 AIFloat3 CMilitaryManager::GetScoutPosition(CCircuitUnit* unit)
@@ -1425,7 +1426,7 @@ void CMilitaryManager::UpdateDefenceTasks()
 //		if (groupIdx >= 0) {
 //			dt->SetMaxPower(std::max(minAttackers, enemyGroups[groupIdx].threat));
 //		}
-		dt->SetMaxPower(std::max(minAttackers, circuit->GetEnemyManager()->GetMaxGroupThreat()));
+		dt->SetMaxPower(std::max(minAttackers, circuit->GetEnemyManager()->GetPreMaxGroupThreat()));
 	}
 
 	/*
@@ -1689,7 +1690,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 						}
 					}
 					if (task == nullptr) {
-						const float power = std::max(minAttackers, enemyMgr->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
+						const float power = std::max(minAttackers, enemyMgr->GetPreMaxGroupThreat());
 						task = EnqueueDefend(IFighterTask::FightType::ATTACK, power);
 					}
 				} break;
@@ -1703,7 +1704,7 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 			}
 		} else {
 //			const bool isDefend = GetTasks(IFighterTask::FightType::ATTACK).empty() || enemyMgr->IsEnemyNear(unit->GetPos(circuit->GetLastFrame()));
-			const float power = std::max(minAttackers, enemyMgr->GetEnemyThreat() / circuit->GetAllyTeam()->GetAliveSize());
+			const float power = std::max(minAttackers, enemyMgr->GetPreMaxGroupThreat());
 			task = /*isDefend ? */EnqueueDefend(IFighterTask::FightType::ATTACK, power)
 							/*: EnqueueTask(IFighterTask::FightType::ATTACK)*/;
 		}
@@ -1835,6 +1836,35 @@ void CMilitaryManager::PointOfInterest(CEnemyInfo* enemy, int start, int step)
 		}), FRAMES_PER_SEC);
 	}
 #endif
+}
+
+CDefenceData::SDefPoint* CMilitaryManager::FindClosestDefPoint(const AIFloat3& pos)
+{
+	int cluster = circuit->GetMetalManager()->FindNearestCluster(pos);
+	return (cluster < 0) ? nullptr : FindClosestDefPoint(cluster, pos);
+}
+
+CDefenceData::SDefPoint* CMilitaryManager::FindClosestDefPoint(int cluster, const AIFloat3& pos,
+		std::function<bool (const CDefenceData::SDefPoint& pnt)> predicate)
+{
+	if (predicate == nullptr) {
+		predicate = [](const CDefenceData::SDefPoint&) { return true; };
+	}
+	CDefenceData::SDefPoint* closestPoint = nullptr;
+	float minDist = std::numeric_limits<float>::max();
+	const CDefenceData::DefPoints& points = defence->GetDefPoints();
+	const CDefenceData::DefIndices& indices = defence->GetDefIndices(cluster);
+	for (int idx : indices) {
+		if (!predicate(points[idx])) {
+			continue;
+		}
+		float dist = points[idx].position.SqDistance2D(pos);
+		if ((closestPoint == nullptr) || (dist < minDist)) {
+			closestPoint = const_cast<CDefenceData::SDefPoint*>(&points[idx]);
+			minDist = dist;
+		}
+	}
+	return closestPoint;
 }
 
 } // namespace circuit

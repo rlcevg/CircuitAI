@@ -8,6 +8,7 @@
 #include "task/fighter/SquadTask.h"
 #include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
+#include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
@@ -231,21 +232,35 @@ bool ISquadTask::IsMustRegroup()
 		return false;
 	}
 
-	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
-	if (circuit->GetInflMap()->GetEnemyInflAt(leader->GetPos(frame)) > INFL_EPS) {  // IsMergeSafe() ?
+	if (!IsMergeSafe()) {  // (circuit->GetInflMap()->GetEnemyInflAt(leader->GetPos(frame)) > INFL_EPS) ?
 		state = State::ROAM;
 		return false;
 	}
 
 	static std::vector<CCircuitUnit*> validUnits;  // NOTE: micro-opt
 //	validUnits.reserve(units.size());
+	CCircuitAI* circuit = manager->GetCircuit();
+	CThreatMap* threatMap = circuit->GetThreatMap();
+	threatMap->SetThreatType(leader);
+	const int frame = circuit->GetLastFrame();
+	const AIFloat3& leadPos = leader->GetPos(frame);
+	CCircuitUnit* bestPlace = leader;
+	float minSqDist = std::numeric_limits<float>::max();
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();;
 	for (CCircuitUnit* unit : units) {
+		const AIFloat3& unitPos = unit->GetPos(frame);
 		if (!unit->GetCircuitDef()->IsPlane() &&
-			terrainMgr->CanMoveToPos(unit->GetArea(), unit->GetPos(frame)))
+			terrainMgr->CanMoveToPos(unit->GetArea(), unitPos))
 		{
 			validUnits.push_back(unit);
+			if ((State::REGROUP == state) || (threatMap->GetThreatAt(leadPos) >= THREAT_MIN)) {
+				continue;
+			}
+			const float sqDist = unitPos.SqDistance2D(leadPos);
+			if (minSqDist > sqDist) {
+				minSqDist = sqDist;
+				bestPlace = unit;
+			}
 		}
 	}
 	if (validUnits.empty()) {
@@ -254,7 +269,7 @@ bool ISquadTask::IsMustRegroup()
 	}
 
 	if (State::REGROUP != state) {
-		groupPos = leader->GetPos(frame);
+		groupPos = bestPlace->GetLastPos();
 		groupFrame = frame;
 	} else if (frame >= groupFrame + FRAMES_PER_SEC * 60) {
 		// eliminate buggy units
@@ -263,7 +278,7 @@ bool ISquadTask::IsMustRegroup()
 			if (unit->GetCircuitDef()->IsPlane()) {
 				continue;
 			}
-			const AIFloat3& pos = unit->GetPos(frame);
+			const AIFloat3& pos = unit->GetLastPos();
 			const float sqDist = groupPos.SqDistance2D(pos);
 			if ((sqDist > sqMaxDist) &&
 				((unit->GetTaskFrame() < groupFrame) || !terrainMgr->CanMoveToPos(unit->GetArea(), pos)))
@@ -282,12 +297,17 @@ bool ISquadTask::IsMustRegroup()
 		return false;
 	}
 
+	if (threatMap->GetThreatAt(groupPos) >= THREAT_MIN) {
+		state = State::ROAM;
+		return false;
+	}
+
 	bool wasRegroup = (State::REGROUP == state);
 	state = State::ROAM;
 
 	const float sqMaxDist = SQUARE(std::max<float>(SQUARE_SIZE * 8 * validUnits.size(), highestRange));
 	for (CCircuitUnit* unit : validUnits) {
-		const float sqDist = groupPos.SqDistance2D(unit->GetPos(frame));
+		const float sqDist = groupPos.SqDistance2D(unit->GetLastPos());
 		if (sqDist > sqMaxDist) {
 			state = State::REGROUP;
 			break;

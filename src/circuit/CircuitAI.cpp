@@ -484,7 +484,7 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 
 std::string CCircuitAI::ValidateMod()
 {
-	const int minEngineVer = 104;
+	const int minEngineVer = 105;
 	const char* engineVersion = engine->GetVersionMajor();
 	int ver = atoi(engineVersion);
 	if (ver < minEngineVer) {

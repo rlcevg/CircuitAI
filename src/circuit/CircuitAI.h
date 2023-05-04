@@ -217,6 +217,7 @@ public:
 	CCircuitDef* GetCircuitDefSafe(CCircuitDef::Id unitDefId) {
 		return IsValidUnitDefId(unitDefId) ? &defsById[unitDefId - 1] : nullptr;
 	}
+	int GetDefCount() const { return defsById.size(); }
 	void BindRole(CCircuitDef::RoleT role, CCircuitDef::RoleT actAsRole) {
 		roleBind[role] = actAsRole;
 	}

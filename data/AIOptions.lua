@@ -17,8 +17,8 @@ local options = {
 	},
 	{ -- bool
 		key     = 'cheating',
-		name    = 'LOS cheating',
-		desc    = 'Enable LOS cheating',
+		name    = 'LOS vision',
+		desc    = 'Enable global sight',
 		type    = 'bool',
 		section = 'performance',
 		def     = false,

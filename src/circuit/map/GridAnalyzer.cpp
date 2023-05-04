@@ -16,7 +16,9 @@ namespace bwem {
 
 using namespace circuit;
 using namespace springai;
+#ifdef DEBUG_VIS
 springai::Lua* gDebugLua;
+#endif
 
 CChokePoint::CChokePoint(const CGridAnalyzer& ta, Id idx, const CArea* area1, const CArea* area2, const std::deque<TilePosition>& geometry)
 		: id(idx), areas(area1, area2)
@@ -447,7 +449,9 @@ CGridAnalyzer::~CGridAnalyzer()
 
 void CGridAnalyzer::Analyze(CCircuitAI* circuit)
 {
+#ifdef DEBUG_VIS
 gDebugLua = circuit->GetLua();
+#endif
 	tiles.resize(config.tileSize.x * config.tileSize.y);
 
 	LoadData();

@@ -564,7 +564,8 @@ int CThreatMap::GetCloakRange(const CCircuitDef* edef) const
 
 int CThreatMap::GetShieldRange(const CCircuitDef* edef) const
 {
-	return (edef->GetShieldMount() != nullptr) ? (int)edef->GetShieldRadius() / squareSize + 1 : 0;
+	return edef->IsAbleToRepair() ? (int)edef->GetBuildDistance() / squareSize + 1
+		: (edef->GetShieldMount() != nullptr) ? (int)edef->GetShieldRadius() / squareSize + 1 : 0;
 }
 
 float CThreatMap::GetThreatHealth(const CEnemyUnit* e) const
@@ -627,6 +628,7 @@ std::shared_ptr<IMainJob> CThreatMap::AmphDrawer(CCircuitDef::RoleT role)
 std::shared_ptr<IMainJob> CThreatMap::ApplyDrawers()
 {
 #ifdef CHRONO_THREAT
+//	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	if (--numThreadDraws == 0) {
 		int count = std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - t0).count();
 		printf("%i | %i mcs\n", manager->GetCircuit()->GetSkirmishAIId(), count);
@@ -665,7 +667,8 @@ std::shared_ptr<IMainJob> CThreatMap::Update(CEnemyManager* enemyMgr, CScheduler
 	for (const std::vector<SEnemyData>& datas : {enemyMgr->GetHostileDatas(), enemyMgr->GetPeaceDatas()}) {
 		for (const SEnemyData& e : datas) {
 			AddDecloaker(drawCloakThreat, e);
-			if ((e.cdef != nullptr) && (e.cdef->GetShieldMount() != nullptr)) {
+			// FIXME: for shield.getInterceptType() > 1
+			if ((e.cdef != nullptr) && (/*(e.cdef->GetShieldMount() != nullptr) || */e.cdef->IsAbleToRepair())) {
 				AddShield(drawShieldArray, e);
 			}
 		}

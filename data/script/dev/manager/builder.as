@@ -19,10 +19,10 @@ IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 // 	IUnitTask@ task = aiBuilderMgr.DefaultMakeTask(unit);
 // 	if ((task !is null) && (task.GetType() == 5)) {  // Type::BUILDER
 // 		switch (task.GetBuildType()) {
-// 		case 10:  // BuildType::MEX
+// 		case 13:  // BuildType::MEX
 // 			AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 			break;
-// 		case 5:  // BuildType::DEFENCE
+// 		case 7:  // BuildType::DEFENCE
 // 			AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 			break;
 // 		default:
@@ -54,24 +54,28 @@ void AiTaskCreated(IUnitTask@ task)
 // 	case 2:  // BuildType::STORE
 // 	case 3:  // BuildType::PYLON
 // 	case 5:  // BuildType::GEO
-// 	case 6:  // BuildType::DEFENCE
-// 	case 7:  // BuildType::BUNKER
-// 	case 8:  // BuildType::BIG_GUN
-// 	case 9:  // BuildType::RADAR
-// 	case 10:  // BuildType::SONAR
-// 	case 11:  // BuildType::CONVERT
-// 	case 12:  // BuildType::MEX
-// 	case 13:  // BuildType::MEXUP
+// 	case 6:  // BuildType::GEOUP
+// 	case 7:  // BuildType::DEFENCE
+// 	case 8:  // BuildType::BUNKER
+// 	case 9:  // BuildType::BIG_GUN
+// 	case 10:  // BuildType::RADAR
+// 	case 11:  // BuildType::SONAR
+// 	case 12:  // BuildType::CONVERT
+// 	case 13:  // BuildType::MEX
+// 	case 14:  // BuildType::MEXUP
 // 		AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 		break;
-// 	case 14:  // BuildType::REPAIR
+// 	case 15:  // BuildType::REPAIR
 // 		AiAddPoint(task.GetBuildPos(), "rep");
 // 		break;
-// 	case 15:  // BuildType::RECLAIM
+// 	case 16:  // BuildType::RECLAIM
 // 		AiAddPoint(task.GetBuildPos(), "rec");
 // 		break;
-// 	case 16:  // BuildType::RESURRECT
+// 	case 17:  // BuildType::RESURRECT
 // 		AiAddPoint(task.GetBuildPos(), "res");
+// 		break;
+// 	case 18:  // BuildType::TERRAFORM
+// 		AiAddPoint(task.GetBuildPos(), "ter");
 // 		break;
 // 	default:
 // 		break;
@@ -90,17 +94,19 @@ void AiTaskClosed(IUnitTask@ task, bool done)
 // 	case 3:  // BuildType::PYLON
 // 	case 4:  // BuildType::ENERGY
 // 	case 5:  // BuildType::GEO
-// 	case 6:  // BuildType::DEFENCE
-// 	case 7:  // BuildType::BUNKER
-// 	case 8:  // BuildType::BIG_GUN
-// 	case 9:  // BuildType::RADAR
-// 	case 10:  // BuildType::SONAR
-// 	case 11:  // BuildType::CONVERT
-// 	case 12:  // BuildType::MEX
-// 	case 13:  // BuildType::MEXUP
-// 	case 14:  // BuildType::REPAIR
-// 	case 15:  // BuildType::RECLAIM
-// 	case 16:  // BuildType::RESURRECT
+// 	case 6:  // BuildType::GEOUP
+// 	case 7:  // BuildType::DEFENCE
+// 	case 8:  // BuildType::BUNKER
+// 	case 9:  // BuildType::BIG_GUN
+// 	case 10:  // BuildType::RADAR
+// 	case 11:  // BuildType::SONAR
+// 	case 12:  // BuildType::CONVERT
+// 	case 13:  // BuildType::MEX
+// 	case 14:  // BuildType::MEXUP
+// 	case 15:  // BuildType::REPAIR
+// 	case 16:  // BuildType::RECLAIM
+// 	case 17:  // BuildType::RESURRECT
+// 	case 18:  // BuildType::TERRAFORM
 // 		AiDelPoint(task.GetBuildPos());
 // 		break;
 // 	default:

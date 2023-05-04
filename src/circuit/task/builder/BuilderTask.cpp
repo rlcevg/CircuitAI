@@ -7,6 +7,7 @@
 
 #include "task/builder/BuilderTask.h"
 #include "task/builder/BuildChain.h"
+#include "task/builder/DefenceTask.h"  // Only for static_cast<CBDefenceTask*>
 #include "task/RetreatTask.h"
 #include "map/ThreatMap.h"
 #include "map/InfluenceMap.h"
@@ -127,7 +128,7 @@ void IBuilderTask::AssignTo(CCircuitUnit* unit)
 	if (!utils::is_valid(position)) {
 		position = unit->GetPos(circuit->GetLastFrame());
 	}
-	if (unit->IsAttrSolo()) {
+	if (initiator == nullptr) {  // unit->IsAttrSolo()
 		initiator = unit;
 	}
 
@@ -836,6 +837,10 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				} else {
 					parent->SetNextTask(task);
 					parent = parent->GetNextTask();
+				}
+
+				if (IBuilderTask::BuildType::DEFENCE == bi.buildType) {
+					circuit->GetMilitaryManager()->ProcessHubDefence(static_cast<CBDefenceTask*>(task));
 				}
 			}
 		}

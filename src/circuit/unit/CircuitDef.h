@@ -118,8 +118,11 @@ public:
 	void AddEnemyRoles(RoleM mask) { enemyRole |= mask; }
 	bool IsEnemyRoleAny(RoleM value) const { return (enemyRole & value) != 0; }
 
-	AttrM GetInitAttributes() const { return attr; }
+	AttrM GetAttributes() const { return attr; }
 	void AddAttribute(AttrT type) { attr |= GetMask(type); }
+	void DelAttribute(AttrT type) { attr &= ~GetMask(type); }
+	void TglAttribute(AttrT type) { attr ^= GetMask(type); }
+	bool IsAttrAny(AttrM value) const { return (attr & value) != 0; }
 	void AddRole(RoleT type) { AddRole(type, type); }
 	void AddRole(RoleT type, RoleT bindType);
 	bool IsRespRoleAny(RoleM value) const { return (respRole & value) != 0; }
