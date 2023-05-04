@@ -20,6 +20,8 @@
 #include "angelscript/include/angelscript.h"
 #include "angelscript/add_on/scriptarray/scriptarray.h"
 
+#include "spring/SpringMap.h"
+
 #include "Log.h"
 #include "Drawer.h"
 #include "Game.h"
