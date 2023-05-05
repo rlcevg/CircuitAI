@@ -37,21 +37,20 @@ void AiTaskClosed(IUnitTask@ task, bool done)
 void AiFactoryCreated(CCircuitUnit@ unit)
 {
 //	if (!factories.empty() || (this->circuit->GetBuilderManager()->GetWorkerCount() > 2)) return;
-	if (ai.IsLoadSave()) {
+	if (ai.IsLoadSave())
 		return;
-	}
 
 	const CCircuitDef@ facDef = unit.circuitDef;
 	const array<Opener::SO>@ opener = Opener::GetOpener(facDef);
-	if (opener is null) {
+	if (opener is null)
 		return;
-	}
+
 	const AIFloat3 pos = unit.GetPos(ai.frame);
 	for (uint i = 0, icount = opener.length(); i < icount; ++i) {
 		CCircuitDef@ buildDef = aiFactoryMgr.GetRoleDef(facDef, opener[i].role);
-		if ((buildDef is null) || !buildDef.IsAvailable(ai.frame)) {
+		if ((buildDef is null) || !buildDef.IsAvailable(ai.frame))
 			continue;
-		}
+
 		Task::Priority priotiry;
 		Task::RecruitType recruit;
 		if (opener[i].role == Unit::Role::BUILDER.type) {
@@ -61,9 +60,8 @@ void AiFactoryCreated(CCircuitUnit@ unit)
 			priotiry = Task::Priority::HIGH;
 			recruit  = Task::RecruitType::FIREPOWER;
 		}
-		for (uint j = 0, jcount = opener[i].count; j < jcount; ++j) {
+		for (uint j = 0, jcount = opener[i].count; j < jcount; ++j)
 			aiFactoryMgr.EnqueueTask(priotiry, buildDef, pos, recruit, 64.f);
-		}
 	}
 }
 

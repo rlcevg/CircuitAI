@@ -92,31 +92,29 @@ const array<SO>@ GetOpener(const CCircuitDef@ facDef)
 
 	SOpener@ open;  // null
 	const array<string>@ keys = openInfo.getKeys();
-	for (uint i = 0, l = keys.length(); i < l; ++i) {
+	for (uint i = 0, l = keys.length(); i < l; ++i)
 		if (commName.findFirst(keys[i]) >= 0) {
 			@open = cast<SOpener>(openInfo[keys[i]]);
 			break;
 		}
-	}
 
-	if (open is null) {
+	if (open is null)
 		return null;
-	}
 
 	const string facName = facDef.GetName();
 	array<SQueue>@ queues;
-	if (open.factory.get(facName, @queues)) {
-		array<float> weights;
-		for (uint i = 0, l = queues.length(); i < l; ++i) {
-			weights.insertLast(queues[i].weight);
-		}
-		int choice = AiDice(weights);
-		if (choice < 0) {
-			return open.def;
-		}
-		return queues[choice].orders;
-	}
-	return open.def;
+	if (!open.factory.get(facName, @queues))
+		return open.def;
+
+	array<float> weights;
+	for (uint i = 0, l = queues.length(); i < l; ++i)
+		weights.insertLast(queues[i].weight);
+
+	int choice = AiDice(weights);
+	if (choice < 0)
+		return open.def;
+
+	return queues[choice].orders;
 }
 
 }  // namespace Opener

@@ -22,7 +22,7 @@
 				"task_rad": [3300.0, 1000.0]  // [<peace_radius>, <danger_radius>]
 			},
 
-			"assist_fac": 3,
+			"assist_fac": 3,  // commander assists factory with high priority till number of constructors reached
 			"side": "armada"
 		},
 		"corcom": {
@@ -43,7 +43,7 @@
 				"task_rad": [3300.0, 1000.0]  // [<peace_radius>, <danger_radius>]
 			},
 
-			"assist_fac": 3,
+			"assist_fac": 3,  // commander assists factory with high priority till number of constructors reached
 			"side": "cortex"
 		}
 	}

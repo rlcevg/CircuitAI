@@ -17,12 +17,12 @@ IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 // 	AiAddPoint(lastPos, "task");
 
 // 	IUnitTask@ task = aiBuilderMgr.DefaultMakeTask(unit);
-// 	if ((task !is null) && (task.GetType() == 5)) {  // Type::BUILDER
+// 	if ((task !is null) && (task.GetType() == Task::Type::BUILDER)) {
 // 		switch (task.GetBuildType()) {
-// 		case 13:  // BuildType::MEX
+// 		case Task::BuildType::MEX:
 // 			AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 			break;
-// 		case 7:  // BuildType::DEFENCE
+// 		case Task::BuildType::DEFENCE:
 // 			AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 			break;
 // 		default:
@@ -35,11 +35,10 @@ IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 
 void AiTaskCreated(IUnitTask@ task)
 {
-// 	if (task.GetType() != 5) {  // Type::BUILDER
+// 	if (task.GetType() != Task::Type::BUILDER)
 // 		return;
-// 	}
 // 	switch (task.GetBuildType()) {
-// 	case 4: {  // BuildType::ENERGY
+// 	case Task::BuildType::ENERGY: {
 // 		if (gPauseCnt == 0) {
 // 			string name = task.GetBuildDef().GetName();
 // 			if ((name == "armfus") || (name == "armafus") || (name == "corfus") || (name == "corafus")) {
@@ -49,32 +48,32 @@ void AiTaskCreated(IUnitTask@ task)
 // 			AiAddPoint(task.GetBuildPos(), name);
 // 		}
 // 	} break;
-// 	case 0:  // BuildType::FACTORY
-// 	case 1:  // BuildType::NANO
-// 	case 2:  // BuildType::STORE
-// 	case 3:  // BuildType::PYLON
-// 	case 5:  // BuildType::GEO
-// 	case 6:  // BuildType::GEOUP
-// 	case 7:  // BuildType::DEFENCE
-// 	case 8:  // BuildType::BUNKER
-// 	case 9:  // BuildType::BIG_GUN
-// 	case 10:  // BuildType::RADAR
-// 	case 11:  // BuildType::SONAR
-// 	case 12:  // BuildType::CONVERT
-// 	case 13:  // BuildType::MEX
-// 	case 14:  // BuildType::MEXUP
+// 	case Task::BuildType::FACTORY:
+// 	case Task::BuildType::NANO:
+// 	case Task::BuildType::STORE:
+// 	case Task::BuildType::PYLON:
+// 	case Task::BuildType::GEO:
+// 	case Task::BuildType::GEOUP:
+// 	case Task::BuildType::DEFENCE:
+// 	case Task::BuildType::BUNKER:
+// 	case Task::BuildType::BIG_GUN:
+// 	case Task::BuildType::RADAR:
+// 	case Task::BuildType::SONAR:
+// 	case Task::BuildType::CONVERT:
+// 	case Task::BuildType::MEX:
+// 	case Task::BuildType::MEXUP:
 // 		AiAddPoint(task.GetBuildPos(), task.GetBuildDef().GetName());
 // 		break;
-// 	case 15:  // BuildType::REPAIR
+// 	case Task::BuildType::REPAIR:
 // 		AiAddPoint(task.GetBuildPos(), "rep");
 // 		break;
-// 	case 16:  // BuildType::RECLAIM
+// 	case Task::BuildType::RECLAIM:
 // 		AiAddPoint(task.GetBuildPos(), "rec");
 // 		break;
-// 	case 17:  // BuildType::RESURRECT
+// 	case Task::BuildType::RESURRECT:
 // 		AiAddPoint(task.GetBuildPos(), "res");
 // 		break;
-// 	case 18:  // BuildType::TERRAFORM
+// 	case Task::BuildType::TERRAFORM:
 // 		AiAddPoint(task.GetBuildPos(), "ter");
 // 		break;
 // 	default:
@@ -84,29 +83,28 @@ void AiTaskCreated(IUnitTask@ task)
 
 void AiTaskClosed(IUnitTask@ task, bool done)
 {
-// 	if (task.GetType() != 5) {  // Type::BUILDER
+// 	if (task.GetType() != Task::Type::BUILDER)
 // 		return;
-// 	}
 // 	switch (task.GetBuildType()) {
-// 	case 0:  // BuildType::FACTORY
-// 	case 1:  // BuildType::NANO
-// 	case 2:  // BuildType::STORE
-// 	case 3:  // BuildType::PYLON
-// 	case 4:  // BuildType::ENERGY
-// 	case 5:  // BuildType::GEO
-// 	case 6:  // BuildType::GEOUP
-// 	case 7:  // BuildType::DEFENCE
-// 	case 8:  // BuildType::BUNKER
-// 	case 9:  // BuildType::BIG_GUN
-// 	case 10:  // BuildType::RADAR
-// 	case 11:  // BuildType::SONAR
-// 	case 12:  // BuildType::CONVERT
-// 	case 13:  // BuildType::MEX
-// 	case 14:  // BuildType::MEXUP
-// 	case 15:  // BuildType::REPAIR
-// 	case 16:  // BuildType::RECLAIM
-// 	case 17:  // BuildType::RESURRECT
-// 	case 18:  // BuildType::TERRAFORM
+// 	case Task::BuildType::FACTORY:
+// 	case Task::BuildType::NANO:
+// 	case Task::BuildType::STORE:
+// 	case Task::BuildType::PYLON:
+// 	case Task::BuildType::ENERGY:
+// 	case Task::BuildType::GEO:
+// 	case Task::BuildType::GEOUP:
+// 	case Task::BuildType::DEFENCE:
+// 	case Task::BuildType::BUNKER:
+// 	case Task::BuildType::BIG_GUN:
+// 	case Task::BuildType::RADAR:
+// 	case Task::BuildType::SONAR:
+// 	case Task::BuildType::CONVERT:
+// 	case Task::BuildType::MEX:
+// 	case Task::BuildType::MEXUP:
+// 	case Task::BuildType::REPAIR:
+// 	case Task::BuildType::RECLAIM:
+// 	case Task::BuildType::RESURRECT:
+// 	case Task::BuildType::TERRAFORM:
 // 		AiDelPoint(task.GetBuildPos());
 // 		break;
 // 	default:
@@ -138,11 +136,10 @@ void AiBuilderCreated(CCircuitUnit@ unit)
 
 void AiBuilderDestroyed(CCircuitUnit@ unit)
 {
-	if (energizer1 is unit) {
+	if (energizer1 is unit)
 		@energizer1 = null;
-	} else if (energizer2 is unit) {
+	else if (energizer2 is unit)
 		@energizer2 = null;
-	}
 }
 
 }  // namespace Builder

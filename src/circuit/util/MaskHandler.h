@@ -8,6 +8,7 @@
 #ifndef SRC_CIRCUIT_UTIL_MASKHANDLER_H_
 #define SRC_CIRCUIT_UTIL_MASKHANDLER_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <unordered_map>

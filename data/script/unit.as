@@ -32,7 +32,7 @@ TypeMask ROLE6    = AiAddRole("turtle",          ASSAULT.type);
 TypeMask ROLE7    = AiAddRole("role7",           ASSAULT.type);
 TypeMask ROLE8    = AiAddRole("role8",           ASSAULT.type);
 TypeMask ROLE9    = AiAddRole("rezzer",          SUPPORT.type);
-TypeMask ROLE10   = AiAddRole("anti_heavy_ass",  SUPPORT.type);
+TypeMask AHA      = AiAddRole("anti_heavy_ass",  SUPPORT.type);
 TypeMask BUILDER2 = AiAddRole("builderT2",       BUILDER.type);
 }  // namespace Role
 
@@ -76,5 +76,6 @@ Type HEAVY   = Unit::Role::HEAVY.type;
 Type SUPER   = Unit::Role::SUPER.type;
 Type COMM    = Unit::Role::COMM.type;
 // Custom roles
+Type AHA      = Unit::Role::AHA.type;
 Type BUILDER2 = Unit::Role::BUILDER2.type;
 }  // namespace RT
