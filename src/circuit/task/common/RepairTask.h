@@ -33,12 +33,14 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override = 0;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override = 0;
 
-	virtual void SetTarget(CAllyUnit* unit);
+	virtual void SetTarget(CCircuitUnit* unit) { SetRepTarget(unit); }
 	ICoreUnit::Id GetTargetId() const { return targetId; }
 
 	CAllyUnit* FindUnitToAssist(CCircuitUnit* unit);
 
 protected:
+	void SetRepTarget(CAllyUnit* unit);
+
 	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;
 

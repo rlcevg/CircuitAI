@@ -469,7 +469,7 @@ bool IBuilderTask::Reevaluate(CCircuitUnit* unit)
 		// NOTE: helps with obstructed factory, but not with blocked building plan.
 		//       @see CTerrainManager::CheckObstruct and its issues.
 		if ((unit->GetCircuitDef()->GetMobileId() >= 0) && circuit->GetTerrainManager()->IsObstruct(pos)) {
-			if (unit->GetTaskFrame() + FRAMES_PER_SEC * 5 < frame) {
+			if ((unit->GetTaskFrame() + FRAMES_PER_SEC * 5 < frame) && (unit->GetUnit()->GetVel().Length2D() > 1e-3f)) {
 				unit->SetTaskFrame(frame);  // re-use taskFrame
 				TRY_UNIT(circuit, unit,
 					AIFloat3 awayPos = utils::get_radial_pos(pos, 64.f);
