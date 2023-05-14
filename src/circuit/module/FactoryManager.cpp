@@ -92,8 +92,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		const int frame = this->circuit->GetLastFrame();
 		this->circuit->GetEconomyManager()->AddFactoryInfo(unit);
-		// FIXME: add script serialization to remove this->circuit->IsLoadSave() check in script, @see add_on/serializer
-		static_cast<CFactoryScript*>(script)->FactoryCreated(unit);
+		UnitAdded(unit, UseAs::FACTORY);
 
 		lastSwitchFrame = frame;
 		EnableFactory(unit);
@@ -113,6 +112,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 		// Remove blocked path from factory to lanePos
 		this->circuit->GetTerrainManager()->DelBusPath(unit);
+
+		UnitRemoved(unit, UseAs::FACTORY);
 	};
 
 	/*
@@ -182,6 +183,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 				havens.push_back(assPos);
 			}
 		}
+
+		UnitAdded(unit, UseAs::ASSIST);
 	};
 	auto assistIdleHandler = [](CCircuitUnit* unit) {
 		unit->GetTask()->OnUnitIdle(unit);
@@ -229,6 +232,8 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			energyRequire -= af.energyRequire;
 		}
 		assists.erase(unit);
+
+		UnitRemoved(unit, UseAs::ASSIST);
 	};
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
@@ -769,7 +774,7 @@ CRecruitTask* CFactoryManager::EnqueueTask(CRecruitTask::Priority priority,
 	CRecruitTask* task = new CRecruitTask(this, priority, buildDef, position, type, radius);
 	factoryTasks.push_back(task);
 	updateTasks.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -777,7 +782,7 @@ IUnitTask* CFactoryManager::EnqueueWait(bool stop, int timeout)
 {
 	CSWaitTask* task = new CSWaitTask(this, stop, timeout);
 	updateTasks.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -788,7 +793,7 @@ IBuilderTask* CFactoryManager::EnqueueReclaim(IBuilderTask::Priority priority,
 {
 	IBuilderTask* task = new CSReclaimTask(this, priority, position, {0.f, 0.f}, timeout, radius);
 	updateTasks.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -802,7 +807,7 @@ IBuilderTask* CFactoryManager::EnqueueRepair(IBuilderTask::Priority priority,
 	IBuilderTask* task = new CSRepairTask(this, priority, target);
 	updateTasks.push_back(task);
 	repairedUnits[target->GetId()] = task;
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 

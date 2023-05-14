@@ -192,7 +192,8 @@
 	},
 	"armanni": {
 		"role": ["static"],
-		"attribute": ["heavy", "anti_heavy"]
+		"attribute": ["heavy", "anti_heavy"],
+		"threat": 0.5
 	},
 
 	// CORTEX defenses

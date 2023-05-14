@@ -38,6 +38,8 @@ public:
 
 	friend std::istream& operator>>(std::istream& is, IModule& data);
 	friend std::ostream& operator<<(std::ostream& os, const IModule& data);
+	void LoadScript(std::istream& is);
+	void SaveScript(std::ostream& os) const;
 protected:
 	virtual void Load(std::istream& is) {}
 	virtual void Save(std::ostream& os) const {}

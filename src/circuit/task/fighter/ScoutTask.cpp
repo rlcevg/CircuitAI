@@ -283,15 +283,13 @@ void CScoutTask::FallbackScout(CCircuitUnit* unit, bool isUpdating)
 	// NOTE: Use max(unit_threat, THREAT_MIN) for no-weapon scouts
 	bool proceed = isUpdating && (threatMap->GetThreatAt(unit, threatPos) < std::max(threatMap->GetUnitPower(unit), THREAT_MIN) * powerMod);
 	if (!proceed) {
-		AIFloat3 nextPos = circuit->GetMilitaryManager()->GetScoutPosition(unit);
-		if (utils::is_equal_pos(nextPos, pos)) {
+		position = circuit->GetMilitaryManager()->GetScoutPosition(unit);
+		if (utils::is_equal_pos(position, pos)) {
 			return;
-		} else {
-			position = nextPos;
 		}
 	}
 
-	if (!utils::is_valid(position) && !proceed) {
+	if (!utils::is_valid(position)) {
 		float x = rand() % terrainMgr->GetTerrainWidth();
 		float z = rand() % terrainMgr->GetTerrainHeight();
 		position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);

@@ -46,6 +46,7 @@ bool CEconomyScript::Init()
 {
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Economy"); ASSERT(r >= 0);
+	InitModule(mod);
 	economyInfo.updateEconomy = script->GetFunc(mod, "void AiUpdateEconomy()");
 	return true;
 }

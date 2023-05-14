@@ -34,31 +34,7 @@ bool CBuilderScript::Init()
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Builder"); ASSERT(r >= 0);
 	InitModule(mod);
-	builderInfo.builderCreated = script->GetFunc(mod, "void AiBuilderCreated(CCircuitUnit@)");
-	builderInfo.builderDestroyed = script->GetFunc(mod, "void AiBuilderDestroyed(CCircuitUnit@)");
 	return true;
-}
-
-void CBuilderScript::BuilderCreated(CCircuitUnit* unit)
-{
-	if (builderInfo.builderCreated == nullptr) {
-		return;
-	}
-	asIScriptContext* ctx = script->PrepareContext(builderInfo.builderCreated);
-	ctx->SetArgObject(0, unit);
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
-}
-
-void CBuilderScript::BuilderDestroyed(CCircuitUnit* unit)
-{
-	if (builderInfo.builderDestroyed == nullptr) {
-		return;
-	}
-	asIScriptContext* ctx = script->PrepareContext(builderInfo.builderDestroyed);
-	ctx->SetArgObject(0, unit);
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
 }
 
 } // namespace circuit

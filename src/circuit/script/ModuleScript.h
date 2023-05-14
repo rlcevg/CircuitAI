@@ -10,6 +10,11 @@
 
 #include "script/Script.h"
 
+#include <iostream>
+
+class asIScriptModule;
+class asIScriptFunction;
+
 namespace circuit {
 
 class IModule;
@@ -20,7 +25,18 @@ public:
 	virtual ~IModuleScript();
 
 protected:
+	void InitModule(asIScriptModule* mod);
+
+public:
+	void Load(std::istream& is);
+	void Save(std::ostream& os) const;
+
+protected:
 	IModule* manager;
+	struct SScriptInfo {
+		asIScriptFunction* load = nullptr;
+		asIScriptFunction* save = nullptr;
+	} mInfo;
 };
 
 } // namespace circuit

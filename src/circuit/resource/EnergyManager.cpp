@@ -44,7 +44,7 @@ void CEnergyManager::ParseGeoSpots()
 	const unsigned height = circuit->GetMap()->GetHeight();
 	const int xsize = geoDef->GetDef()->GetXSize();
 	const int zsize = geoDef->GetDef()->GetZSize();
-	std::vector<Feature*> features = std::move(circuit->GetCallback()->GetFeatures());
+	std::vector<Feature*> features = circuit->GetCallback()->GetFeatures();
 	for (Feature* feature : features) {
 		FeatureDef* featDef = feature->GetDef();
 		const bool isGeo = featDef->IsGeoThermal();

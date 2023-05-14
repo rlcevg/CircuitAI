@@ -72,12 +72,16 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				stockpilers.insert(unit);
 			)
 		}
+
+		UnitAdded(unit, UseAs::DEFENCE);
 	};
 	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		UnmarkPorc(unit);
 		if (unit->GetCircuitDef()->IsAttrStock()) {
 			stockpilers.erase(unit);
 		}
+
+		UnitRemoved(unit, UseAs::DEFENCE);
 	};
 
 	auto stockFinishedHandler = [this](CCircuitUnit* unit) {
@@ -126,6 +130,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				stockpilers.insert(unit);
 			}
 		)
+
+		UnitAdded(unit, UseAs::COMBAT);
 	};
 	auto attackerIdleHandler = [this](CCircuitUnit* unit) {
 		// NOTE: Avoid instant task reassignment, though it may be not relevant for attackers
@@ -151,6 +157,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		if (unit->GetCircuitDef()->IsAttrStock()) {
 			stockpilers.erase(unit);
 		}
+
+		UnitRemoved(unit, UseAs::COMBAT);
 	};
 
 	/*
@@ -179,6 +187,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				stockpilers.insert(unit);
 			}
 		)
+
+		UnitAdded(unit, UseAs::SUPER);
 	};
 	auto superDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
@@ -188,6 +198,8 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		if (unit->GetCircuitDef()->IsAttrStock()) {
 			stockpilers.erase(unit);
 		}
+
+		UnitRemoved(unit, UseAs::SUPER);
 	};
 
 	/*
@@ -642,7 +654,7 @@ IFighterTask* CMilitaryManager::EnqueueTask(IFighterTask::FightType type)
 
 	fightTasks[static_cast<IFighterTask::FT>(type)].insert(task);
 	fightUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -653,7 +665,7 @@ IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType promote, f
 										 promote, promote, power, 1.0f / mod);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -663,7 +675,7 @@ IFighterTask* CMilitaryManager::EnqueueDefend(IFighterTask::FightType check, IFi
 										 check, promote, power, 1.0f);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::DEFEND)].insert(task);
 	fightUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -672,7 +684,7 @@ IFighterTask* CMilitaryManager::EnqueueGuard(CCircuitUnit* vip)
 	IFighterTask* task = new CFGuardTask(this, vip, 1.0f);
 	fightTasks[static_cast<IFighterTask::FT>(IFighterTask::FightType::GUARD)].insert(task);
 	fightUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -680,7 +692,7 @@ CRetreatTask* CMilitaryManager::EnqueueRetreat()
 {
 	CRetreatTask* task = new CRetreatTask(this);
 	fightUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 

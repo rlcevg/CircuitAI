@@ -7,6 +7,7 @@
 
 #include "module/Module.h"
 #include "script/Script.h"
+#include "script/ModuleScript.h"
 #include "unit/CircuitUnit.h"
 
 namespace circuit {
@@ -66,6 +67,16 @@ int IModule::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 {
 	UnitDestroyed(unit, nullptr);
 	return 0; //signaling: OK
+}
+
+void IModule::LoadScript(std::istream& is)
+{
+	static_cast<IModuleScript*>(script)->Load(is);
+}
+
+void IModule::SaveScript(std::ostream& os) const
+{
+	static_cast<IModuleScript*>(script)->Save(os);
 }
 
 } // namespace circuit

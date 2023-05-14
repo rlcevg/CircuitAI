@@ -6,6 +6,14 @@ namespace Economy {
 // To not reset army requirement on factory switch, @see Factory::AiIsSwitchAllowed
 bool isSwitchAssist = false;
 
+void AiLoad(IStream& istream)
+{
+}
+
+void AiSave(OStream& ostream)
+{
+}
+
 /*
  * struct SResourceInfo {
  *   const float current;

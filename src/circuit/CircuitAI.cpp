@@ -1299,6 +1299,9 @@ int CCircuitAI::Load(std::istream& is)
 	for (auto& module : modules) {
 		is >> *module;
 	}
+	for (auto& module : modules) {
+		module->LoadScript(is);
+	}
 
 	isLoadSave = false;
 	return 0;  // signaling: OK
@@ -1315,6 +1318,9 @@ int CCircuitAI::Save(std::ostream& os)
 
 	for (auto& module : modules) {
 		os << *module;
+	}
+	for (auto& module : modules) {
+		module->SaveScript(os);
 	}
 
 	return 0;  // signaling: OK

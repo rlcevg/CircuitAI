@@ -24,18 +24,14 @@ public:
 	CFactoryScript(CScriptManager* scr, CFactoryManager* mgr);
 	virtual ~CFactoryScript();
 
-	bool Init() override;
+	virtual bool Init() override;
 
 public:
-	void FactoryCreated(CCircuitUnit* unit);
-	void FactoryDestroyed(CCircuitUnit* unit);
 	bool IsSwitchTime(int lastSwitchFrame);
 	bool IsSwitchAllowed(CCircuitDef* facDef);
 
 private:
 	struct SScriptInfo {
-		asIScriptFunction* factoryCreated = nullptr;
-		asIScriptFunction* factoryDestroyed = nullptr;
 		asIScriptFunction* isSwitchTime = nullptr;
 		asIScriptFunction* isSwitchAllowed = nullptr;
 	} factoryInfo;

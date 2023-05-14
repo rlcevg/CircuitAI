@@ -52,6 +52,12 @@ TypeMask ONOFF     = aiAttrMasker.GetTypeMask("onoff");
 TypeMask RARE      = aiAttrMasker.GetTypeMask("rare");
 }  // namespace Attr
 
+enum UseAs {
+	COMBAT = 0, DEFENCE, SUPER,  // military
+	BUILDER, REZZER,  // builder
+	FACTORY, ASSIST  // factory
+}
+
 }  // namespace Unit
 
 namespace RT {

@@ -26,18 +26,18 @@ IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 	return aiFactoryMgr.DefaultMakeTask(unit);
 }
 
-void AiTaskCreated(IUnitTask@ task)
+void AiTaskAdded(IUnitTask@ task)
 {
 }
 
-void AiTaskClosed(IUnitTask@ task, bool done)
+void AiTaskRemoved(IUnitTask@ task, bool done)
 {
 }
 
-void AiFactoryCreated(CCircuitUnit@ unit)
+void AiUnitAdded(CCircuitUnit@ unit, Unit::UseAs usage)
 {
 //	if (!factories.empty() || (this->circuit->GetBuilderManager()->GetWorkerCount() > 2)) return;
-	if (ai.IsLoadSave())
+	if (usage != Unit::UseAs::FACTORY)
 		return;
 
 	const CCircuitDef@ facDef = unit.circuitDef;
@@ -65,7 +65,15 @@ void AiFactoryCreated(CCircuitUnit@ unit)
 	}
 }
 
-void AiFactoryDestroyed(CCircuitUnit@ unit)
+void AiUnitRemoved(CCircuitUnit@ unit, Unit::UseAs usage)
+{
+}
+
+void AiLoad(IStream& istream)
+{
+}
+
+void AiSave(OStream& ostream)
 {
 }
 

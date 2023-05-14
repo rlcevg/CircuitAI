@@ -15,6 +15,13 @@
 namespace circuit {
 
 class IUnitModule: public IModule, public IUnitManager, public ITaskManager {  // CActionList
+public:
+	enum class UseAs: char {
+		COMBAT = 0, DEFENCE, SUPER,  // military
+		BUILDER, REZZER,  // builder
+		FACTORY, ASSIST  // factory
+	};
+
 protected:
 	IUnitModule(CCircuitAI* circuit, IScript* script);
 public:
@@ -28,8 +35,10 @@ protected:
 public:
 	// callins
 	virtual IUnitTask* MakeTask(CCircuitUnit* unit) override;
-	void TaskCreated(IUnitTask* task);
-	void TaskClosed(IUnitTask* task, bool done);
+	void TaskAdded(IUnitTask* task);
+	void TaskRemoved(IUnitTask* task, bool done);
+	void UnitAdded(CCircuitUnit* unit, UseAs usage);
+	void UnitRemoved(CCircuitUnit* unit, UseAs usage);
 
 	// callouts
 	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) = 0;

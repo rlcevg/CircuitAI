@@ -1069,7 +1069,10 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	CCircuitDef* mexDef = nullptr;
 	const unsigned int mexTaskSize = builderMgr->GetTasks(IBuilderTask::BuildType::MEX).size();
-	if (mexTaskSize < (unsigned)mexMax/*builderMgr->GetWorkerCount() * 2 + 1*/ && !builderMgr->CanUpMex(unit->GetCircuitDef())) {
+	if (mexTaskSize < (unsigned)mexMax/*builderMgr->GetWorkerCount() * 2 + 1*/
+		&& ((GetAvgMetalIncome() < 100.f) || !IsMetalFull())
+		&& !builderMgr->CanUpMex(unit->GetCircuitDef()))
+	{
 		const std::vector<CCircuitDef*>& mexDefOptions = metalDefs.GetBuildDefs(unit->GetCircuitDef());
 		std::vector<CCircuitDef*> mexDefs;
 		for (CCircuitDef* mDef : mexDefOptions) {

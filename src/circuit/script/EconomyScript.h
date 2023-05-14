@@ -26,7 +26,7 @@ public:
 	CEconomyScript(CScriptManager* scr, CEconomyManager* mgr);
 	virtual ~CEconomyScript();
 
-	bool Init() override;
+	virtual bool Init() override;
 
 public:
 	void UpdateEconomy();

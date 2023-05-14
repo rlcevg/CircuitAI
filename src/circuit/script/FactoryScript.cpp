@@ -37,33 +37,9 @@ bool CFactoryScript::Init()
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Factory"); ASSERT(r >= 0);
 	InitModule(mod);
-	factoryInfo.factoryCreated = script->GetFunc(mod, "void AiFactoryCreated(CCircuitUnit@)");
-	factoryInfo.factoryDestroyed = script->GetFunc(mod, "void AiFactoryDestroyed(CCircuitUnit@)");
 	factoryInfo.isSwitchTime = script->GetFunc(mod, "bool AiIsSwitchTime(int)");
 	factoryInfo.isSwitchAllowed = script->GetFunc(mod, "bool AiIsSwitchAllowed(CCircuitDef@)");
 	return true;
-}
-
-void CFactoryScript::FactoryCreated(CCircuitUnit* unit)
-{
-	if (factoryInfo.factoryCreated == nullptr) {
-		return;
-	}
-	asIScriptContext* ctx = script->PrepareContext(factoryInfo.factoryCreated);
-	ctx->SetArgObject(0, unit);
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
-}
-
-void CFactoryScript::FactoryDestroyed(CCircuitUnit* unit)
-{
-	if (factoryInfo.factoryDestroyed == nullptr) {
-		return;
-	}
-	asIScriptContext* ctx = script->PrepareContext(factoryInfo.factoryDestroyed);
-	ctx->SetArgObject(0, unit);
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
 }
 
 bool CFactoryScript::IsSwitchTime(int lastSwitchFrame)

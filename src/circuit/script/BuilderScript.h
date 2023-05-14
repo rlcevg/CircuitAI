@@ -19,17 +19,7 @@ public:
 	CBuilderScript(CScriptManager* scr, CBuilderManager* mgr);
 	virtual ~CBuilderScript();
 
-	bool Init() override;
-
-public:
-	void BuilderCreated(CCircuitUnit* unit);
-	void BuilderDestroyed(CCircuitUnit* unit);
-
-private:
-	struct SScriptInfo {
-		asIScriptFunction* builderCreated = nullptr;
-		asIScriptFunction* builderDestroyed = nullptr;
-	} builderInfo;
+	virtual bool Init() override;
 };
 
 } // namespace circuit

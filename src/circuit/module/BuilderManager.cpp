@@ -101,8 +101,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		AddBuildList(unit, 0);
 
-		// NOTE: circuit->IsLoadSave() safe?
-		static_cast<CBuilderScript*>(script)->BuilderCreated(unit);
+		UnitAdded(unit, UseAs::BUILDER);
 
 		if (!unit->GetCircuitDef()->IsAttacker()
 			&& !unit->GetCircuitDef()->IsAbleToFly()
@@ -144,7 +143,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		RemoveBuildList(unit, 0);
 
-		static_cast<CBuilderScript*>(script)->BuilderDestroyed(unit);
+		UnitRemoved(unit, UseAs::BUILDER);
 
 		militaryMgr->DelGuardTask(unit);
 	};
@@ -164,6 +163,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		militaryMgr->AddResponse(unit);
 
 		workers.insert(unit);
+
+		UnitAdded(unit, UseAs::REZZER);
 	};
 	auto rezzDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		IUnitTask* task = unit->GetTask();
@@ -178,6 +179,8 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 		workers.erase(unit);
 		costQueries.erase(unit);
+
+		UnitRemoved(unit, UseAs::REZZER);
 	};
 
 	/*
@@ -708,7 +711,7 @@ IBuilderTask* CBuilderManager::EnqueueSpot(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -731,7 +734,7 @@ IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -751,7 +754,7 @@ IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -767,7 +770,7 @@ IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::REPAIR)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -782,7 +785,7 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -798,7 +801,7 @@ IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -812,7 +815,7 @@ IBuilderTask* CBuilderManager::EnqueueResurrect(IBuilderTask::Priority priority,
 	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RESURRECT)].insert(task);
 	buildTasksCount++;
 	buildUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -823,7 +826,7 @@ IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
 {
 	IBuilderTask* task = new CBPatrolTask(this, priority, position, {cost, 0.f}, timeout);
 	buildUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -847,7 +850,7 @@ IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -858,7 +861,7 @@ IBuilderTask* CBuilderManager::EnqueueGuard(IBuilderTask::Priority priority,
 {
 	IBuilderTask* task = new CBGuardTask(this, priority, target, isInterrupt, timeout);
 	buildUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -866,7 +869,7 @@ IUnitTask* CBuilderManager::EnqueueWait(int timeout)
 {
 	CBWaitTask* task = new CBWaitTask(this, timeout);
 	buildUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -874,7 +877,7 @@ CRetreatTask* CBuilderManager::EnqueueRetreat()
 {
 	CRetreatTask* task = new CRetreatTask(this);
 	buildUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -882,7 +885,7 @@ CCombatTask* CBuilderManager::EnqueueCombat(float powerMod)
 {
 	CCombatTask* task = new CCombatTask(this, powerMod);
 	buildUpdates.push_back(task);
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 
@@ -943,7 +946,7 @@ IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
 	} else {
 		task->Deactivate();
 	}
-	TaskCreated(task);
+	TaskAdded(task);
 	return task;
 }
 

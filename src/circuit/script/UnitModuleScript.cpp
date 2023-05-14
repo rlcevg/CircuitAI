@@ -7,7 +7,6 @@
 
 #include "script/UnitModuleScript.h"
 #include "script/ScriptManager.h"
-#include "module/UnitModule.h"
 #include "util/Utils.h"
 #include "angelscript/include/angelscript.h"
 
@@ -24,42 +23,69 @@ IUnitModuleScript::~IUnitModuleScript()
 
 void IUnitModuleScript::InitModule(asIScriptModule* mod)
 {
-	info.makeTask = script->GetFunc(mod, "IUnitTask@ AiMakeTask(CCircuitUnit@)");
-	info.taskCreated = script->GetFunc(mod, "void AiTaskCreated(IUnitTask@)");
-	info.taskClosed = script->GetFunc(mod, "void AiTaskClosed(IUnitTask@, bool)");
+	IModuleScript::InitModule(mod);
+	umInfo.makeTask = script->GetFunc(mod, "IUnitTask@ AiMakeTask(CCircuitUnit@)");
+	umInfo.taskAdded = script->GetFunc(mod, "void AiTaskAdded(IUnitTask@)");
+	umInfo.taskRemoved = script->GetFunc(mod, "void AiTaskRemoved(IUnitTask@, bool)");
+	umInfo.unitAdded = script->GetFunc(mod, "void AiUnitAdded(CCircuitUnit@, Unit::UseAs usage)");
+	umInfo.unitRemoved = script->GetFunc(mod, "void AiUnitRemoved(CCircuitUnit@, Unit::UseAs usage)");
 }
 
 IUnitTask* IUnitModuleScript::MakeTask(CCircuitUnit* unit)
 {
-	if (info.makeTask == nullptr) {
+	if (umInfo.makeTask == nullptr) {
 		return static_cast<IUnitModule*>(manager)->DefaultMakeTask(unit);
 	}
-	asIScriptContext* ctx = script->PrepareContext(info.makeTask);
+	asIScriptContext* ctx = script->PrepareContext(umInfo.makeTask);
 	ctx->SetArgObject(0, unit);
 	IUnitTask* result = script->Exec(ctx) ? (IUnitTask*)ctx->GetReturnObject() : nullptr;
 	script->ReturnContext(ctx);
 	return result;
 }
 
-void IUnitModuleScript::TaskCreated(IUnitTask* task)
+void IUnitModuleScript::TaskAdded(IUnitTask* task)
 {
-	if (info.taskCreated == nullptr) {
+	if (umInfo.taskAdded == nullptr) {
 		return;
 	}
-	asIScriptContext* ctx = script->PrepareContext(info.taskCreated);
+	asIScriptContext* ctx = script->PrepareContext(umInfo.taskAdded);
 	ctx->SetArgObject(0, task);
 	script->Exec(ctx);
 	script->ReturnContext(ctx);
 }
 
-void IUnitModuleScript::TaskClosed(IUnitTask* task, bool done)
+void IUnitModuleScript::TaskRemoved(IUnitTask* task, bool done)
 {
-	if (info.taskClosed == nullptr) {
+	if (umInfo.taskRemoved == nullptr) {
 		return;
 	}
-	asIScriptContext* ctx = script->PrepareContext(info.taskClosed);
+	asIScriptContext* ctx = script->PrepareContext(umInfo.taskRemoved);
 	ctx->SetArgObject(0, task);
 	ctx->SetArgByte(1, done);
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
+}
+
+void IUnitModuleScript::UnitAdded(CCircuitUnit* unit, IUnitModule::UseAs usage)
+{
+	if (umInfo.unitAdded == nullptr) {
+		return;
+	}
+	asIScriptContext* ctx = script->PrepareContext(umInfo.unitAdded);
+	ctx->SetArgObject(0, unit);
+	ctx->SetArgDWord(1, static_cast<std::underlying_type<decltype(usage)>::type>(usage));
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
+}
+
+void IUnitModuleScript::UnitRemoved(CCircuitUnit* unit, IUnitModule::UseAs usage)
+{
+	if (umInfo.unitRemoved == nullptr) {
+		return;
+	}
+	asIScriptContext* ctx = script->PrepareContext(umInfo.unitRemoved);
+	ctx->SetArgObject(0, unit);
+	ctx->SetArgDWord(1, static_cast<std::underlying_type<decltype(usage)>::type>(usage));
 	script->Exec(ctx);
 	script->ReturnContext(ctx);
 }

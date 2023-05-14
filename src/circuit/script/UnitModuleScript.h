@@ -9,6 +9,7 @@
 #define SRC_CIRCUIT_SCRIPT_UNITMODULESCRIPT_H_
 
 #include "script/ModuleScript.h"
+#include "module/UnitModule.h"
 
 class asIScriptModule;
 class asIScriptFunction;
@@ -29,15 +30,19 @@ protected:
 
 public:
 	IUnitTask* MakeTask(CCircuitUnit* unit);
-	void TaskCreated(IUnitTask* task);
-	void TaskClosed(IUnitTask* task, bool done);
+	void TaskAdded(IUnitTask* task);
+	void TaskRemoved(IUnitTask* task, bool done);
+	void UnitAdded(CCircuitUnit* unit, IUnitModule::UseAs usage);
+	void UnitRemoved(CCircuitUnit* unit, IUnitModule::UseAs usage);
 
 protected:
 	struct SScriptInfo {
 		asIScriptFunction* makeTask = nullptr;
-		asIScriptFunction* taskCreated = nullptr;
-		asIScriptFunction* taskClosed = nullptr;
-	} info;
+		asIScriptFunction* taskAdded = nullptr;
+		asIScriptFunction* taskRemoved = nullptr;
+		asIScriptFunction* unitAdded = nullptr;
+		asIScriptFunction* unitRemoved = nullptr;
+	} umInfo;
 };
 
 } // namespace circuit
