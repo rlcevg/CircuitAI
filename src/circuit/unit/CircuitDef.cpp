@@ -409,9 +409,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		const bool isWaterWeapon = wd->IsWaterWeapon();
 		canSurfTargetWater |= isWaterWeapon;
 
-		canSubTargetAir |= (isAirWeapon && isWaterWeapon);
-		canSubTargetLand |= (isLandWeapon && isWaterWeapon);
-		canSubTargetWater |= (wd->IsFireSubmersed() && isWaterWeapon);
+		const bool isFireSubmersed = wd->IsFireSubmersed();
+		canSubTargetAir |= (isAirWeapon && isWaterWeapon && isFireSubmersed);
+		canSubTargetLand |= (isLandWeapon && isWaterWeapon && isFireSubmersed);
+		canSubTargetWater |= (isWaterWeapon && isFireSubmersed);
 
 		it = customParams.find("statsdamage");
 		if (it != customParams.end()) {
@@ -487,9 +488,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 				hasSurfToAirDGun   |= (weaponCat & circuit->GetAirCategory()) && isAirWeapon;
 				hasSurfToLandDGun  |= (weaponCat & circuit->GetLandCategory()) && isLandWeapon;
 				hasSurfToWaterDGun |= (weaponCat & circuit->GetWaterCategory()) && isWaterWeapon;
-				hasSubToAirDGun    |= (weaponCat & circuit->GetAirCategory()) && (isAirWeapon && isWaterWeapon);
-				hasSubToLandDGun   |= (weaponCat & circuit->GetLandCategory()) && (isLandWeapon && isWaterWeapon);
-				hasSubToWaterDGun  |= (weaponCat & circuit->GetWaterCategory()) && (wd->IsFireSubmersed() && isWaterWeapon);
+				hasSubToAirDGun    |= (weaponCat & circuit->GetAirCategory()) && (isAirWeapon && isWaterWeapon && isFireSubmersed);
+				hasSubToLandDGun   |= (weaponCat & circuit->GetLandCategory()) && (isLandWeapon && isWaterWeapon && isFireSubmersed);
+				hasSubToWaterDGun  |= (weaponCat & circuit->GetWaterCategory()) && (isWaterWeapon && isFireSubmersed);
 //			} else {  // FIXME: Dynamo com workaround
 //				delete mount;
 //			}

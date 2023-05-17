@@ -123,12 +123,12 @@ void AiUnitAdded(CCircuitUnit@ unit, Unit::UseAs usage)
 		if (energizer1 is null
 			&& (uint(cdef.count) > aiMilitaryMgr.GetGuardTaskNum() || cdef.IsAbleToFly()))
 		{
-			@energizer1 = @unit;
+			@energizer1 = unit;
 			unit.AddAttribute(Unit::Attr::BASE.type);
 		}
 	} else {
 		if (energizer2 is null) {
-			@energizer2 = @unit;
+			@energizer2 = unit;
 			unit.AddAttribute(Unit::Attr::BASE.type);
 		}
 	}
