@@ -28,6 +28,8 @@ public:
 	float GetRange() const { return range; }
 	float GetAoe() const { return aoe; }
 	float GetCostE() const { return costE; }
+	bool IsStockpile() const { return isStockpile; }
+	bool IsHighTrajectory() const { return isHigh; }
 
 private:
 	springai::WeaponDef* def;  // owner
@@ -35,6 +37,8 @@ private:
 	float range;
 	float aoe;
 	float costE;
+	bool isStockpile : 1;
+	bool isHigh : 1;
 };
 
 } // namespace circuit

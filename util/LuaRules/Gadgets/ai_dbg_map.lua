@@ -91,12 +91,12 @@ function gadget:DrawWorldPreUnit()
 						pz = z * size
 						value = value / div
 						gl.Color(value, 0.0, 0.0, 0.6)
-						gl.DrawGroundQuad(px, pz, px + size, pz + size)
+						gl.DrawGroundQuad(px + 1, pz + 1, px + size - 1, pz + size - 1)
 					elseif value < 0 then
 						pz = z * size
 						value = -value / div
 						gl.Color(0.0, 0.0, value, 0.6)
-						gl.DrawGroundQuad(px, pz, px + size, pz + size)
+						gl.DrawGroundQuad(px + 1, pz + 1, px + size - 1, pz + size - 1)
 					end
 				end
 			end

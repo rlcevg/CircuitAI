@@ -6,6 +6,7 @@
  */
 
 #include "unit/CircuitWDef.h"
+#include "util/Defines.h"
 
 #include "Lua/LuaConfig.h"
 
@@ -19,6 +20,17 @@ CWeaponDef::CWeaponDef(WeaponDef* def, Resource* resE)
 	range = def->GetRange();
 	aoe = def->GetAreaOfEffect();
 	costE = def->GetCost(resE);
+
+	isStockpile = def->IsStockpileable();
+	if (isStockpile) {
+		const float stockTime = def->GetStockpileTime() / FRAMES_PER_SEC;
+		costE /= stockTime;
+	}
+
+	std::string wt(def->GetType());
+	isHigh = (wt == "StarburstLauncher")
+			|| ((wt == "MissileLauncher") && (def->GetTrajectoryHeight() > 0.5f))  // 1.0 ~ 45 deg
+			|| ((wt == "Cannon") && (def->GetHighTrajectory() >= 1));
 }
 
 CWeaponDef::~CWeaponDef()

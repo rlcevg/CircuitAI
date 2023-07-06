@@ -77,7 +77,7 @@ namespace aatc {
 		#endif
 
 		{
-			int r = 0;
+			VARIABLE_IS_NOT_USED int r = 0;
 			char textbuf[common::RegistrationState::bufsize];
 
 			{//register script_Funcpointer

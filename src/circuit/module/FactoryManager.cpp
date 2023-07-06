@@ -180,7 +180,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		UnitDef* def = cdef.GetDef();
 		if (!cdef.IsMobile() && def->IsBuilder()) {
 			CCircuitDef::Id unitDefId = cdef.GetId();
-			if  (!cdef.GetBuildOptions().empty()) {
+			if (!cdef.GetBuildOptions().empty()) {
 				createdHandler[unitDefId] = factoryCreatedHandler;
 				finishedHandler[unitDefId] = factoryFinishedHandler;
 				idleHandler[unitDefId] = factoryIdleHandler;
@@ -1166,15 +1166,6 @@ IUnitTask* CFactoryManager::DefaultMakeTask(CCircuitUnit* unit)
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 {
-	CEconomyManager* economyMgr = circuit->GetEconomyManager();
-	const bool isStalling = economyMgr->IsMetalEmpty() &&
-							(economyMgr->GetAvgMetalIncome() * 1.2f < economyMgr->GetMetalPull()) &&
-							(metalPull * economyMgr->GetPullMtoS() > circuit->GetBuilderManager()->GetMetalPull());
-	const bool isNotReady = !economyMgr->IsExcessed() || isStalling;
-	if (isNotReady) {
-		return EnqueueWait(false, FRAMES_PER_SEC * 3);
-	}
-
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
 		if (circuit->GetEnemyManager()->IsAirValid()) {
 			if (validAir.find(unit) == validAir.end()) {
@@ -1191,6 +1182,15 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 	IUnitTask* task = UpdateBuildPower(unit);
 	if (task != nullptr) {
 		return task;
+	}
+
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	const bool isStalling = economyMgr->IsMetalEmpty() &&
+							(economyMgr->GetAvgMetalIncome() * 1.2f < economyMgr->GetMetalPull()) &&
+							(metalPull * economyMgr->GetPullMtoS() > circuit->GetBuilderManager()->GetMetalPull());
+	const bool isNotReady = !economyMgr->IsExcessed() || isStalling;
+	if (isNotReady) {
+		return EnqueueWait(false, FRAMES_PER_SEC * 3);
 	}
 
 	task = UpdateFirePower(unit);

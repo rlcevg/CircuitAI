@@ -41,7 +41,9 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	const int frame = circuit->GetLastFrame();
 	// NOTE: Paralyzer doesn't increase ReloadFrame beyond currentFrame, but disarmer does.
 	//       Also checking disarm is more expensive (because of UnitRulesParam).
-	if (!unit->IsDGunReady(frame, circuit->GetEconomyManager()->GetEnergyCur()) || unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed(frame)*/) {
+	if (!unit->IsDGunReady(frame, circuit->GetEconomyManager()->GetEnergyCur() * 0.9f)
+		|| unit->GetUnit()->IsParalyzed() /*|| unit->IsDisarmed(frame)*/)
+	{
 		return;
 	}
 	const AIFloat3& pos = unit->GetPos(frame);
@@ -50,8 +52,9 @@ void CDGunAction::Update(CCircuitAI* circuit)
 		return;
 	}
 
-	int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
-	bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
+	const int canTargetCat = unit->GetCircuitDef()->GetTargetCategory();
+	const bool notDGunAA = !unit->GetCircuitDef()->HasDGunAA();
+	const bool isLowTraj = !unit->IsDGunHigh();
 	CEnemyInfo* bestTarget = nullptr;
 	float maxThreat = 0.f;
 
@@ -68,14 +71,16 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			continue;
 		}
 
-		AIFloat3 dir = enemy->GetPos() - pos;
-		float rayRange = dir.LengthNormalize();
-		// NOTE: TraceRay check is mostly to ensure shot won't go into terrain.
-		//       Doesn't properly work with standoff weapons.
-		//       C API also returns rayLen.
-		ICoreUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
-		if (hitUID != enemy->GetId()) {
-			continue;
+		if (isLowTraj) {
+			AIFloat3 dir = enemy->GetPos() - pos;
+			float rayRange = dir.LengthNormalize();
+			// NOTE: TraceRay check is mostly to ensure shot won't go into terrain.
+			//       Doesn't properly work with standoff weapons.
+			//       C API also returns rayLen.
+			ICoreUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
+			if (hitUID != enemy->GetId()) {
+				continue;
+			}
 		}
 
 		const float defThreat = edef->GetPower();

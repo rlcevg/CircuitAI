@@ -269,7 +269,7 @@ void CContextMgr::AbortAll()
 
 asIScriptContext *CContextMgr::AddContext(asIScriptEngine *engine, asIScriptFunction *func, bool keepCtxAfterExec)
 {
-	// Use RequestContext instead of CreateContext so we can take 
+	// Use RequestContext instead of CreateContext so we can take
 	// advantage of possible context pooling configured with the engine
 	asIScriptContext *ctx = engine->RequestContext();
 	if( ctx == 0 )
@@ -364,7 +364,7 @@ void CContextMgr::SetSleeping(asIScriptContext *ctx, asUINT milliSeconds)
 
 void CContextMgr::RegisterThreadSupport(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	// Must set the get time callback function for this to work
 	assert( m_getTimeFunc != 0 );
@@ -377,7 +377,7 @@ void CContextMgr::RegisterThreadSupport(asIScriptEngine *engine)
 
 void CContextMgr::RegisterCoRoutineSupport(asIScriptEngine *engine)
 {
-	int r; 
+	VARIABLE_IS_NOT_USED int r;
 
 	// The dictionary add-on must have been registered already
 	assert( engine->GetTypeInfoByDecl("dictionary") );

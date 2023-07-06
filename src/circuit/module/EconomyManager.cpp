@@ -346,7 +346,7 @@ void CEconomyManager::Init()
 	mexMax = (mm < 1.f) ? decltype(mexMax)(mm * spSize) : std::numeric_limits<decltype(mexMax)>::max();
 
 	const Json::Value& pull = econ["ms_pull"];
-	mspInfos.resize(pull.size());
+	mspInfos.reserve(pull.size());
 	mspInfos.push_back(SPullMtoS {
 		.pull = pull[0].get((unsigned)0, 1.0f).asFloat(),
 		.mex = (int)(pull[0].get((unsigned)1, 0.0f).asFloat() * spSize),
@@ -1257,7 +1257,7 @@ void CEconomyManager::UpdateEconomy()
 		pullMtoS = mspInfos.back().pull;
 	} else {
 		auto it = std::lower_bound(mspInfos.cbegin(), mspInfos.cend(), mexCount, SPullMtoS());
-		SPullMtoS& mspInfo = mspInfos[std::distance(mspInfos.cbegin(), it)];
+		const SPullMtoS& mspInfo = *--it;
 		pullMtoS = mspInfo.fraction * (mexCount - mspInfo.mex) + mspInfo.pull;
 	}
 	pullMtoS *= circuit->GetMilitaryManager()->ClampMobileCostRatio();

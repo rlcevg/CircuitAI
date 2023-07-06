@@ -132,7 +132,7 @@ bool closeTo(double a, double b, double epsilon)
 
 void RegisterScriptMath_Native(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	// Conversion between floating point and IEEE bits representations
 	r = engine->RegisterGlobalFunction("float fpFromIEEE(uint)", asFUNCTIONPR(fpFromIEEE, (asUINT), float), asCALL_CDECL); assert( r >= 0 );
@@ -278,7 +278,7 @@ void atan2_generic(asIScriptGeneric *gen)
 #endif
 void RegisterScriptMath_Generic(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 #if AS_USE_FLOAT
 	// Trigonometric functions

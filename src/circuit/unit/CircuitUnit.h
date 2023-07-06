@@ -92,6 +92,7 @@ public:
 	bool HasWeapon() const { return weapon != nullptr; }
 	bool HasShield() const { return shield != nullptr; }
 	void ManualFire(CEnemyInfo* target, int timeout);
+	bool IsDGunHigh() const;
 	bool IsDisarmed(int frame);
 	bool IsWeaponReady(int frame);
 	bool IsDGunReady(int frame, float energy);

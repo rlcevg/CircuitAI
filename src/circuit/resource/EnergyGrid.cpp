@@ -311,7 +311,7 @@ CEnergyNode* CEnergyGrid::FindNodeDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 	decltype(rangePylons) candDefs = rangePylons;
 	while (!candDefs.empty()) {
 		CCircuitDef::Id defId = -1;
-		float range;
+		float range = 0.f;
 		auto it = candDefs.rbegin();
 		for (; it != candDefs.rend(); ++it) {
 			defId = it->second;
@@ -369,7 +369,7 @@ CEnergyLink* CEnergyGrid::FindLinkDef(CCircuitDef*& outDef, AIFloat3& outPos, CE
 	decltype(rangePylons) candDefs = rangePylons;
 	while (!candDefs.empty()) {
 		CCircuitDef::Id defId = -1;
-		float range;
+		float range = 0.f;
 		auto it = candDefs.rbegin();
 		for (; it != candDefs.rend(); ++it) {
 			defId = it->second;

@@ -19,7 +19,7 @@ BEGIN_AS_NAMESPACE
 
 // Helper functions
 static string GetCurrentDir();
-static string GetAbsolutePath(const string &path);
+static string GetAbsolutePath(const string &path, const bool isVFS);
 
 
 CScriptBuilder::CScriptBuilder()
@@ -95,11 +95,11 @@ int CScriptBuilder::AddSectionFromFile(const char *filename)
 {
 	// The file name stored in the set should be the fully resolved name because
 	// it is possible to name the same file in multiple ways using relative paths.
-	string fullpath = GetAbsolutePath(filename);
+	string fullpath = GetAbsolutePath(filename, readFunc != nullptr);
 
 	if( IncludeIfNotAlreadyIncluded(fullpath.c_str()) )
 	{
-		int r = LoadScriptSection(fullpath.c_str());
+		int r = readFunc == nullptr ? LoadScriptSection(fullpath.c_str()) : LoadScriptSectionVFS(fullpath.c_str());
 		if( r < 0 )
 			return r;
 		else
@@ -183,7 +183,7 @@ int CScriptBuilder::LoadScriptSection(const char *filename)
 	if( f == 0 )
 	{
 		// Write a message to the engine's message callback
-		string msg = "Failed to open script file '" + GetAbsolutePath(scriptFile) + "'";
+		string msg = "Failed to open script file '" + GetAbsolutePath(scriptFile, readFunc != nullptr) + "'";
 		engine->WriteMessage(filename, 0, 0, asMSGTYPE_ERROR, msg.c_str());
 
 		// TODO: Write the file where this one was included from
@@ -213,7 +213,24 @@ int CScriptBuilder::LoadScriptSection(const char *filename)
 	if( c == 0 && len > 0 )
 	{
 		// Write a message to the engine's message callback
-		string msg = "Failed to load script file '" + GetAbsolutePath(scriptFile) + "'";
+		string msg = "Failed to load script file '" + GetAbsolutePath(scriptFile, readFunc != nullptr) + "'";
+		engine->WriteMessage(filename, 0, 0, asMSGTYPE_ERROR, msg.c_str());
+		return -1;
+	}
+
+	// Process the script section even if it is zero length so that the name is registered
+	return ProcessScriptSection(code.c_str(), (unsigned int)(code.length()), filename, 0);
+}
+
+int CScriptBuilder::LoadScriptSectionVFS(const char *filename)
+{
+	string scriptFile = filename;
+	string code = readFunc(scriptFile);
+
+	if( code.empty() )
+	{
+		// Write a message to the engine's message callback
+		string msg = "Failed to load script file '" + GetAbsolutePath(scriptFile, readFunc != nullptr) + "'";
 		engine->WriteMessage(filename, 0, 0, asMSGTYPE_ERROR, msg.c_str());
 		return -1;
 	}
@@ -302,7 +319,7 @@ int CScriptBuilder::ProcessScriptSection(const char *script, unsigned int length
 	declaration.reserve(100);
 #endif
 
-	// Then check for meta data and #include directives
+	// Then check for meta data and pre-processor directives
 	pos = 0;
 	while( pos < modifiedScript.size() )
 	{
@@ -313,10 +330,19 @@ int CScriptBuilder::ProcessScriptSection(const char *script, unsigned int length
 			pos += len;
 			continue;
 		}
+		string token;
+		token.assign(&modifiedScript[pos], len);
 
 #if AS_PROCESS_METADATA == 1
-		// Check if class
-		if( currentClass == "" && modifiedScript.substr(pos,len) == "class" )
+		// Skip possible decorators before class and interface declarations
+		if (token == "shared" || token == "abstract" || token == "mixin" || token == "external")
+		{
+			pos += len;
+			continue;
+		}
+
+		// Check if class or interface so the metadata for members can be gathered
+		if( currentClass == "" && (token == "class" || token == "interface") )
 		{
 			// Get the identifier after "class"
 			do
@@ -362,15 +388,15 @@ int CScriptBuilder::ProcessScriptSection(const char *script, unsigned int length
 		}
 
 		// Check if end of class
-		if( currentClass != "" && modifiedScript[pos] == '}' )
+		if( currentClass != "" && token == "}" )
 		{
 			currentClass = "";
 			pos += len;
 			continue;
 		}
 
-		// Check if namespace
-		if( modifiedScript.substr(pos,len) == "namespace" )
+		// Check if namespace so the metadata for members can be gathered
+		if( token == "namespace" )
 		{
 			// Get the identifier after "namespace"
 			do
@@ -403,7 +429,7 @@ int CScriptBuilder::ProcessScriptSection(const char *script, unsigned int length
 		}
 
 		// Check if end of namespace
-		if( currentNamespace != "" && modifiedScript[pos] == '}' )
+		if( currentNamespace != "" && token == "}" )
 		{
 			size_t found = currentNamespace.rfind( "::" );
 			if( found != string::npos )
@@ -419,7 +445,7 @@ int CScriptBuilder::ProcessScriptSection(const char *script, unsigned int length
 		}
 
 		// Is this the start of metadata?
-		if( modifiedScript[pos] == '[' )
+		if( token == "[" )
 		{
 			// Get the metadata string
 			pos = ExtractMetadata(pos, metadata);
@@ -438,37 +464,47 @@ int CScriptBuilder::ProcessScriptSection(const char *script, unsigned int length
 		else
 #endif
 		// Is this a preprocessor directive?
-		if( modifiedScript[pos] == '#' && (pos + 1 < modifiedScript.size()) )
+		if( token == "#" && (pos + 1 < modifiedScript.size()) )
 		{
 			int start = pos++;
 
 			t = engine->ParseToken(&modifiedScript[pos], modifiedScript.size() - pos, &len);
-			if( t == asTC_IDENTIFIER )
+			if (t == asTC_IDENTIFIER)
 			{
-				string token;
 				token.assign(&modifiedScript[pos], len);
-				if( token == "include" )
+				if (token == "include")
 				{
 					pos += len;
 					t = engine->ParseToken(&modifiedScript[pos], modifiedScript.size() - pos, &len);
-					if( t == asTC_WHITESPACE )
+					if (t == asTC_WHITESPACE)
 					{
 						pos += len;
 						t = engine->ParseToken(&modifiedScript[pos], modifiedScript.size() - pos, &len);
 					}
 
-					if( t == asTC_VALUE && len > 2 && (modifiedScript[pos] == '"' || modifiedScript[pos] == '\'') )
+					if (t == asTC_VALUE && len > 2 && (modifiedScript[pos] == '"' || modifiedScript[pos] == '\''))
 					{
 						// Get the include file
 						string includefile;
-						includefile.assign(&modifiedScript[pos+1], len-2);
+						includefile.assign(&modifiedScript[pos + 1], len - 2);
 						pos += len;
 
-						// Store it for later processing
-						includes.push_back(includefile);
+						// Make sure the includeFile doesn't contain any line breaks
+						size_t p = includefile.find('\n');
+						if (p != string::npos)
+						{
+							// TODO: Show the correct line number for the error
+							string str = "Invalid file name for #include; it contains a line-break: '" + includefile.substr(0, p) + "'";
+							engine->WriteMessage(sectionname, 0, 0, asMSGTYPE_ERROR, str.c_str());
+						}
+						else
+						{
+							// Store it for later processing
+							includes.push_back(includefile);
 
-						// Overwrite the include directive with space characters to avoid compiler error
-						OverwriteCode(start, pos-start);
+							// Overwrite the include directive with space characters to avoid compiler error
+							OverwriteCode(start, pos - start);
+						}
 					}
 				}
 				else if (token == "pragma")
@@ -488,6 +524,19 @@ int CScriptBuilder::ProcessScriptSection(const char *script, unsigned int length
 					}
 
 					// Overwrite the pragma directive with space characters to avoid compiler error
+					OverwriteCode(start, pos - start);
+				}
+			}
+			else
+			{
+				// Check for lines starting with #!, e.g. shebang interpreter directive. These will be treated as comments and removed by the preprocessor
+				if (modifiedScript[pos] == '!')
+				{
+					// Read until the end of the line
+					pos += len;
+					for (; pos < modifiedScript.size() && modifiedScript[pos] != '\n'; pos++);
+
+					// Overwrite the directive with space characters to avoid compiler error
 					OverwriteCode(start, pos - start);
 				}
 			}
@@ -1071,12 +1120,13 @@ vector<string> CScriptBuilder::GetMetadataForTypeMethod(int typeId, asIScriptFun
 }
 #endif
 
-string GetAbsolutePath(const string &file)
+string GetAbsolutePath(const string &file, const bool isVFS)
 {
 	string str = file;
 
 	// If this is a relative path, complement it with the current path
-	if( !((str.length() > 0 && (str[0] == '/' || str[0] == '\\')) ||
+	if( !isVFS &&
+		!((str.length() > 0 && (str[0] == '/' || str[0] == '\\')) ||
 		  str.find(":") != string::npos) )
 	{
 		str = GetCurrentDir() + "/" + str;

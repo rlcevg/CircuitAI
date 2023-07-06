@@ -26,8 +26,8 @@
 	"base": [[0, 10], [1, 300], [0, 310], [1, 400], [6, 450], [0, 500], [16, 600], [5, 660], [1, 990], [5, 1160], [1, 1380], [2, 1680], [13, 1800], [15, 1850]],
 
 	"superweapon": {
-		"unit":   ["raveparty", "staticnuke", "staticheavyarty", "zenith", "staticantinuke"],  // FIXME: last aren't superweapon
-		"weight": [ 0.10,         0.20,        0.20,              0.05,     0.25,    0.10],
+		"unit":   ["raveparty", "staticnuke", "staticheavyarty", "zenith", "mahlazer", "staticantinuke"],  // FIXME: last aren't superweapon
+		"weight": [ 0.10,         0.20,        0.20,              0.10,     0.10,    0.10],
 
 		"condition": [16, 20000]  // [<Minimum income>, <maximum seconds to build>]
 	},
@@ -69,7 +69,9 @@
 				[  // chain1
 					{"unit": "turretlaser", "category": "defence", "offset": [-80, -80]},
 					{"unit": "turretmissile", "category": "defence", "offset": [-70, 70]},
+					{"unit": "turretmissile", "category": "defence", "offset": [-80, 80]},
 					{"unit": "staticshield", "category": "defence", "offset": [10, 10]},
+					{"unit": "staticshield", "category": "defence", "offset": [-10, -10]},
 					{"unit": "staticstorage", "category": "defence", "offset": [-10, -10]},
 					{"unit": "turretaafar", "category": "defence", "offset": {"front": 120}, "condition": "air"},
 					{"unit": "turretaaflak", "category": "defence", "offset": {"front": 120}, "condition": "no_air"}
@@ -78,7 +80,10 @@
 					{"unit": "turretlaser", "category": "defence", "offset": [80, 80]},
 					{"unit": "turretemp", "category": "defence", "offset": {"right": 80}},
 					{"unit": "turretmissile", "category": "defence", "offset": [70, -70]},
+					{"unit": "turretmissile", "category": "defence", "offset": [80, -80]},
+					{"unit": "staticshield", "category": "defence", "offset": [10, 10]},
 					{"unit": "staticshield", "category": "defence", "offset": [-10, -10]},
+					{"unit": "staticstorage", "category": "defence", "offset": [-10, -10]},
 					{"unit": "turretaafar", "category": "defence", "offset": {"front": 120}, "condition": "air"},
 					{"unit": "turretaaflak", "category": "defence", "offset": {"front": 120}, "condition": "no_air"}
 				]
@@ -88,6 +93,7 @@
 //			"pylon": true,
 			"hub": [[
 					{"unit": "turretlaser", "category": "defence", "offset": [80, -80]},
+					{"unit": "staticstorage", "category": "defence", "offset": [-10, -10]},
 					{"unit": "turretriot", "category": "defence", "offset": [-80, 80]}
 				]]
 		}
@@ -98,6 +104,9 @@
 		},
 		"factorygunship": {
 			"hub": [[{"unit": "staticcon", "category": "nano", "offset": {"front": 150}}]]
+		},
+		"striderhub": {
+			"pylon": true
 		}
 	},
 	"mex": {
@@ -123,6 +132,10 @@
 		},
 		"raveparty": {
 			"hub": [[
+					{"unit": "energypylon", "category": "defence", "offset": [250, -250]},
+					{"unit": "energypylon", "category": "defence", "offset": [-250, 250]},
+					{"unit": "energypylon", "category": "defence", "offset": [-250, -250]},
+					{"unit": "energypylon", "category": "defence", "offset": [250, 250]},
 					{"unit": "staticradar", "category": "radar", "offset": {"back": 40}},
 					{"unit": "turretaafar", "category": "defence", "offset": {"left": 120}, "condition": "air"},
 					{"unit": "turretlaser", "category": "defence", "offset": [-80, 80]},
@@ -131,7 +144,6 @@
 					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
 					{"unit": "staticshield", "category": "defence", "offset": [-10, -10]},
 					{"unit": "staticshield", "category": "defence", "offset": [10, 10]},
-					{"unit": "staticstorage", "category": "defence", "offset": [-10, -10]},
 					{"unit": "turretriot", "category": "defence", "offset": [80, 80]},
 					{"unit": "turretriot", "category": "defence", "offset": [-80, -80]},
 					{"unit": "turretmissile", "category": "defence", "offset": [-80, -80]}
@@ -139,6 +151,10 @@
 		},
 		"mahlazer": {
 			"hub": [[
+					{"unit": "energypylon", "category": "defence", "offset": [250, -250]},
+					{"unit": "energypylon", "category": "defence", "offset": [-250, 250]},
+					{"unit": "energypylon", "category": "defence", "offset": [-250, -250]},
+					{"unit": "energypylon", "category": "defence", "offset": [250, 250]},
 					{"unit": "staticradar", "category": "radar", "offset": {"back": 40}},
 					{"unit": "turretaafar", "category": "defence", "offset": {"left": 120}, "condition": "air"},
 					{"unit": "turretlaser", "category": "defence", "offset": [-80, 80]},
@@ -146,7 +162,24 @@
 					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
 					{"unit": "staticshield", "category": "defence", "offset": [-10, -10]},
 					{"unit": "staticshield", "category": "defence", "offset": [10, 10]},
-					{"unit": "staticstorage", "category": "defence", "offset": [-10, -10]},
+					{"unit": "turretriot", "category": "defence", "offset": [80, 80]},
+					{"unit": "turretriot", "category": "defence", "offset": [-80, -80]},
+					{"unit": "turretmissile", "category": "defence", "offset": [-80, -80]}
+				]]
+		},
+		"zenith": {
+			"hub": [[
+					{"unit": "energypylon", "category": "defence", "offset": [250, -250]},
+					{"unit": "energypylon", "category": "defence", "offset": [-250, 250]},
+					{"unit": "energypylon", "category": "defence", "offset": [-250, -250]},
+					{"unit": "energypylon", "category": "defence", "offset": [250, 250]},
+					{"unit": "staticradar", "category": "radar", "offset": {"back": 40}},
+					{"unit": "turretaafar", "category": "defence", "offset": {"left": 120}, "condition": "air"},
+					{"unit": "turretlaser", "category": "defence", "offset": [-80, 80]},
+					{"unit": "turretlaser", "category": "defence", "offset": [80, -80]},
+					{"unit": "turretmissile", "category": "defence", "offset": [80, 80]},
+					{"unit": "staticshield", "category": "defence", "offset": [-10, -10]},
+					{"unit": "staticshield", "category": "defence", "offset": [10, 10]},
 					{"unit": "turretriot", "category": "defence", "offset": [80, 80]},
 					{"unit": "turretriot", "category": "defence", "offset": [-80, -80]},
 					{"unit": "turretmissile", "category": "defence", "offset": [-80, -80]}
@@ -190,6 +223,7 @@
 				]]
 		},
 		"turretaaheavy": {
+			"pylon": true,
 			"hub": [
 					[
 					{"unit": "staticradar", "category": "radar", "offset": {"back": 40}},

@@ -375,6 +375,19 @@
 		},
 
 		"caretaker": 100
+//	},
+//
+//	"staticmissilesilo": {
+//		"importance": [0, 0],
+//		"require_energy": false,
+//
+//		"income_tier": [0],
+//		"unit":      ["tacnuke", "seismic", "empmissile", "napalmmissile"],
+//		"land": {
+//			"tier0": [ 0.01,      0.01,      0.01,         0.97]
+//		},
+//
+//		"caretaker": 1
 	}
 }
 }

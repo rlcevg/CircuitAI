@@ -24,7 +24,7 @@ using namespace springai;
 IRepairTask::IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyUnit* target, int timeout)
 		: IBuilderTask(mgr, priority, nullptr, -RgtVector, type, BuildType::REPAIR, 1000.0f, 0.f, timeout)
 {
-	SetTarget(target);
+	SetRepTarget(target);
 }
 
 IRepairTask::~IRepairTask()
@@ -129,7 +129,7 @@ void IRepairTask::Execute(CCircuitUnit* unit)
 	}
 }
 
-void IRepairTask::SetTarget(CAllyUnit* unit)
+void IRepairTask::SetRepTarget(CAllyUnit* unit)
 {
 	if (unit != nullptr) {
 		CCircuitAI* circuit = manager->GetCircuit();

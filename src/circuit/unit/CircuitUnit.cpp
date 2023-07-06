@@ -151,6 +151,11 @@ void CCircuitUnit::ManualFire(CEnemyInfo* target, int timeout)
 	)
 }
 
+bool CCircuitUnit::IsDGunHigh() const
+{
+	return dgunDef->IsHighTrajectory();
+}
+
 bool CCircuitUnit::IsDisarmed(int frame)
 {
 	if (disarmFrame != frame) {
@@ -175,7 +180,8 @@ bool CCircuitUnit::IsWeaponReady(int frame)
 
 bool CCircuitUnit::IsDGunReady(int frame, float energy)
 {
-	return (dgun->GetReloadFrame() <= frame) && (dgunDef->GetCostE() < energy + 1.f);
+	return (dgun->GetReloadFrame() <= frame) && (dgunDef->GetCostE() < energy)
+			&& (!dgunDef->IsStockpile() || (unit->GetStockpile() > 0));
 }
 
 bool CCircuitUnit::IsShieldCharged(float percent)

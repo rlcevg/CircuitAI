@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2020 Andreas Jonsson
+   Copyright (c) 2003-2023 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -848,6 +848,10 @@ void asCModule::InternalReset()
 	}
 	m_scriptGlobals.Clear();
 
+	// Clear the type lookup
+	// The references were already released as the types were removed from the respective arrays
+	m_typeLookup.EraseAll();
+
 	asASSERT( IsEmpty() );
 }
 
@@ -1157,28 +1161,10 @@ asITypeInfo *asCModule::GetTypeInfoByName(const char *in_name) const
 		
 	while (ns)
 	{
-		for (asUINT n = 0; n < m_classTypes.GetLength(); n++)
+		asITypeInfo* info = GetType(name, ns);
+		if(info)
 		{
-			if (m_classTypes[n] &&
-				m_classTypes[n]->name == name &&
-				m_classTypes[n]->nameSpace == ns)
-				return m_classTypes[n];
-		}
-
-		for (asUINT n = 0; n < m_enumTypes.GetLength(); n++)
-		{
-			if (m_enumTypes[n] &&
-				m_enumTypes[n]->name == name &&
-				m_enumTypes[n]->nameSpace == ns)
-				return m_enumTypes[n];
-		}
-
-		for (asUINT n = 0; n < m_typeDefs.GetLength(); n++)
-		{
-			if (m_typeDefs[n] &&
-				m_typeDefs[n]->name == name &&
-				m_typeDefs[n]->nameSpace == ns)
-				return m_typeDefs[n];
+			return info;
 		}
 
 		// Recursively search parent namespace
@@ -1434,22 +1420,18 @@ int asCModule::BindImportedFunction(asUINT index, asIScriptFunction *func)
 	if( func == 0 )
 		return asINVALID_ARG;
 
+	// Only script functions and registered functions can be bound
+	// Class methods, delegates, other imported functions are not allowed
+	if (func->GetFuncType() != asFUNC_SCRIPT && func->GetFuncType() != asFUNC_SYSTEM)
+		return asNOT_SUPPORTED;
+
 	asCScriptFunction *src = m_engine->GetScriptFunction(func->GetId());
 	if( src == 0 )
 		return asNO_FUNCTION;
 
-	// Verify return type
-	if( dst->returnType != src->returnType )
+	// Verify function signature
+	if (!dst->IsSignatureExceptNameEqual(src))
 		return asINVALID_INTERFACE;
-
-	if( dst->parameterTypes.GetLength() != src->parameterTypes.GetLength() )
-		return asINVALID_INTERFACE;
-
-	for( asUINT n = 0; n < dst->parameterTypes.GetLength(); ++n )
-	{
-		if( dst->parameterTypes[n] != src->parameterTypes[n] )
-			return asINVALID_INTERFACE;
-	}
 
 	m_bindInformations[index]->boundFunctionId = src->GetId();
 	src->AddRefInternal();
@@ -1484,7 +1466,8 @@ const char *asCModule::GetImportedFunctionDeclaration(asUINT index) const
 	if( func == 0 ) return 0;
 
 	asCString *tempString = &asCThreadManager::GetLocalData()->string;
-	*tempString = func->GetDeclarationStr();
+	// TODO: Allow the application to decide if the parameter name should be included or not (requires change in the interface)
+	*tempString = func->GetDeclarationStr(true, true, false);
 
 	return tempString->AddressOf();
 }
@@ -1547,45 +1530,71 @@ int asCModule::UnbindAllImportedFunctions()
 }
 
 // internal
-asCTypeInfo *asCModule::GetType(const char *type, asSNameSpace *ns)
+void asCModule::AddClassType(asCObjectType* type)
 {
-	asUINT n;
+	m_classTypes.PushLast(type);
+	m_typeLookup.Insert(asSNameSpaceNamePair(type->nameSpace, type->name), type);
+}
 
-	// TODO: optimize: Improve linear search
-	for (n = 0; n < m_classTypes.GetLength(); n++)
-		if (m_classTypes[n]->name == type &&
-			m_classTypes[n]->nameSpace == ns)
-			return m_classTypes[n];
+// internal
+void asCModule::AddEnumType(asCEnumType* type)
+{
+	m_enumTypes.PushLast(type);
+	m_typeLookup.Insert(asSNameSpaceNamePair(type->nameSpace, type->name), type);
+}
 
-	for (n = 0; n < m_enumTypes.GetLength(); n++)
-		if (m_enumTypes[n]->name == type &&
-			m_enumTypes[n]->nameSpace == ns)
-			return m_enumTypes[n];
+// internal
+void asCModule::AddTypeDef(asCTypedefType* type)
+{
+	m_typeDefs.PushLast(type);
+	m_typeLookup.Insert(asSNameSpaceNamePair(type->nameSpace, type->name), type);
+}
 
-	for (n = 0; n < m_typeDefs.GetLength(); n++)
-		if (m_typeDefs[n]->name == type &&
-			m_typeDefs[n]->nameSpace == ns)
-			return m_typeDefs[n];
+// internal
+void asCModule::AddFuncDef(asCFuncdefType* type)
+{
+	m_funcDefs.PushLast(type);
+	m_typeLookup.Insert(asSNameSpaceNamePair(type->nameSpace, type->name), type);
+}
 
-	for (n = 0; n < m_funcDefs.GetLength(); n++)
-		if (m_funcDefs[n]->name == type &&
-			m_funcDefs[n]->nameSpace == ns)
-			return m_funcDefs[n];
+// internal
+void asCModule::ReplaceFuncDef(asCFuncdefType* type, asCFuncdefType* newType)
+{
+	int i = m_funcDefs.IndexOf(type);
+	if( i >= 0 )
+	{
+		m_funcDefs[i] = newType;
+		
+		// Replace it in the lookup map too
+		asSMapNode<asSNameSpaceNamePair, asCTypeInfo*>* result = 0;
+		if(m_typeLookup.MoveTo(&result, asSNameSpaceNamePair(type->nameSpace, type->name)))
+		{
+			asASSERT( result->value == type );
+			result->value = newType;
+		}
+	}
+}
 
+// internal
+asCTypeInfo *asCModule::GetType(const asCString &type, asSNameSpace *ns) const
+{
+	asSMapNode<asSNameSpaceNamePair, asCTypeInfo*>* result = 0;
+	if(m_typeLookup.MoveTo(&result, asSNameSpaceNamePair(ns, type)))
+	{
+		return result->value;
+	}
 	return 0;
 }
 
 // internal
-asCObjectType *asCModule::GetObjectType(const char *type, asSNameSpace *ns)
+asCObjectType *asCModule::GetObjectType(const char *type, asSNameSpace *ns) const
 {
-	asUINT n;
-
-	// TODO: optimize: Improve linear search
-	for( n = 0; n < m_classTypes.GetLength(); n++ )
-		if( m_classTypes[n]->name == type &&
-			m_classTypes[n]->nameSpace == ns )
-			return m_classTypes[n];
-
+	asSMapNode<asSNameSpaceNamePair, asCTypeInfo*>* result = 0;
+	if(m_typeLookup.MoveTo(&result, asSNameSpaceNamePair(ns, type)))
+	{
+		return CastToObjectType(result->value);
+	}
+ 
 	return 0;
 }
 
@@ -1747,11 +1756,11 @@ int asCModule::CompileGlobalVar(const char *sectionName, const char *code, int l
 }
 
 // interface
-int asCModule::CompileFunction(const char *sectionName, const char *code, int lineOffset, asDWORD compileFlags, asIScriptFunction **outFunc)
+int asCModule::CompileFunction(const char* sectionName, const char* code, int lineOffset, asDWORD compileFlags, asIScriptFunction** outFunc)
 {
 	// Make sure the outFunc is null if the function fails, so the
 	// application doesn't attempt to release a non-existent function
-	if( outFunc )
+	if (outFunc)
 		*outFunc = 0;
 
 #ifdef AS_NO_COMPILER
@@ -1762,19 +1771,19 @@ int asCModule::CompileFunction(const char *sectionName, const char *code, int li
 	return asNOT_SUPPORTED;
 #else
 	// Validate arguments
-	if( code == 0 ||
-		(compileFlags != 0 && compileFlags != asCOMP_ADD_TO_MODULE) )
+	if (code == 0 ||
+		(compileFlags != 0 && compileFlags != asCOMP_ADD_TO_MODULE))
 		return asINVALID_ARG;
 
 	// Only one thread may build at one time
 	// TODO: It should be possible to have multiple threads perform compilations
 	int r = m_engine->RequestBuild();
-	if( r < 0 )
+	if (r < 0)
 		return r;
 
 	// Prepare the engine
 	m_engine->PrepareEngine();
-	if( m_engine->configFailed )
+	if (m_engine->configFailed)
 	{
 		m_engine->WriteMessage("", 0, 0, asMSGTYPE_ERROR, TXT_INVALID_CONFIGURATION);
 		m_engine->BuildCompleted();
@@ -1784,8 +1793,18 @@ int asCModule::CompileFunction(const char *sectionName, const char *code, int li
 	// Compile the single function
 	asCBuilder funcBuilder(m_engine, this);
 	asCString str = code;
-	asCScriptFunction *func = 0;
+	asCScriptFunction* func = 0;
 	r = funcBuilder.CompileFunction(sectionName, str.AddressOf(), lineOffset, compileFlags, &func);
+
+	if (r >= 0)
+	{
+		// Invoke the JIT compiler if it has been set
+		asIJITCompiler* jit = m_engine->GetJITCompiler();
+		if (jit)
+		{
+			func->JITCompile();
+		}
+	}
 
 	m_engine->BuildCompleted();
 
@@ -1837,7 +1856,7 @@ int asCModule::AddFuncDef(const asCString &funcName, asSNameSpace *ns, asCObject
 	func->module    = this;
 
 	asCFuncdefType *fdt = asNEW(asCFuncdefType)(m_engine, func);
-	m_funcDefs.PushLast(fdt); // The constructor set the refcount to 1
+	AddFuncDef(fdt); // The constructor set the refcount to 1
 
 	m_engine->funcDefs.PushLast(fdt); // doesn't increase refcount
 	func->id = m_engine->GetNextScriptFunctionId();

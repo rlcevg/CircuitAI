@@ -1100,6 +1100,19 @@
 	},
 	"chickenwurm": {
 		"role": ["heavy"]
+	},
+
+	"tacnuke": {
+		"role": ["super"]
+	},
+	"seismic": {
+		"role": ["super"]
+	},
+	"empmissile": {
+		"role": ["super"]
+	},
+	"napalmmissile": {
+		"role": ["super"]
 	}
 }
 }
