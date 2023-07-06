@@ -18,12 +18,10 @@
 //#define AS_USE_STLNAMES		1
 
 #include "angelscript/include/angelscript.h"
-#include "angelscript/jit/as_jit.h"
 #include "angelscript/add_on/scriptstdstring/scriptstdstring.h"
 #include "angelscript/add_on/scriptarray/scriptarray.h"
 #include "angelscript/add_on/scriptdictionary/scriptdictionary.h"
 #include "angelscript/add_on/scriptbuilder/scriptbuilder.h"
-#include "angelscript/add_on/aatc/aatc.hpp"
 
 namespace circuit {
 
@@ -32,7 +30,6 @@ using namespace springai;
 CScriptManager::CScriptManager(CCircuitAI* circuit)
 		: circuit(circuit)
 		, engine(nullptr)
-		, jit(nullptr)
 {
 	Init();
 }
@@ -60,7 +57,7 @@ void CScriptManager::Init()
 	r = engine->SetEngineProperty(asEP_INIT_GLOBAL_VARS_AFTER_BUILD,        true); ASSERT(r >= 0);  // Default: true
 	r = engine->SetEngineProperty(asEP_REQUIRE_ENUM_SCOPE,                 false); ASSERT(r >= 0);  // Default: false
 	r = engine->SetEngineProperty(asEP_SCRIPT_SCANNER,                         1); ASSERT(r >= 0);  // Default: 1 (UTF8)  // 0 - ASCII, 1 - UTF8
-//	r = engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS,           false); ASSERT(r >= 0);  // Default: false
+	r = engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS,           false); ASSERT(r >= 0);  // Default: false
 	r = engine->SetEngineProperty(asEP_STRING_ENCODING,                        0); ASSERT(r >= 0);  // Default: 0 (UTF8)  // 0 - UTF8/ASCII, 1 - UTF16
 	r = engine->SetEngineProperty(asEP_PROPERTY_ACCESSOR_MODE,                 3); ASSERT(r >= 0);  // Default: 3  // 0 - no accessors, 1 - app registered accessors, 2 - app and script created accessors, 3 - app and script created accesors, property keyword required
 	r = engine->SetEngineProperty(asEP_EXPAND_DEF_ARRAY_TO_TMPL,           false); ASSERT(r >= 0);  // Default: false
@@ -81,19 +78,6 @@ void CScriptManager::Init()
 	r = engine->SetEngineProperty(asEP_INIT_CALL_STACK_SIZE,                  10); ASSERT(r >= 0);  // Default: 10
 	r = engine->SetEngineProperty(asEP_MAX_CALL_STACK_SIZE,                    0); ASSERT(r >= 0);  // Default: 0 (no limit)
 
-#ifdef CIRCUIT_AS_JIT
-	// Create the JIT Compiler. The build flags are explained below,
-	// as well as in as_jit.h
-	//  Faster: JIT_NO_SUSPEND | JIT_SYSCALL_FPU_NORESET | JIT_SYSCALL_NO_ERRORS | JIT_ALLOC_SIMPLE | JIT_FAST_REFCOUNT
-	//  Slower: JIT_NO_SWITCHES | JIT_NO_SCRIPT_CALLS
-	jit = new asCJITCompiler(JIT_FAST_REFCOUNT | JIT_SYSCALL_FPU_NORESET);
-	// Enable JIT helper instructions; without these,
-	// the JIT will not be invoked
-	r = engine->SetEngineProperty(asEP_INCLUDE_JIT_INSTRUCTIONS, true); ASSERT(r >= 0);
-	// Bind the JIT compiler to the engine
-	r = engine->SetJITCompiler(jit); ASSERT(r >= 0);
-#endif
-
 	// AngelScript doesn't have a built-in string type, as there is no definite standard
 	// string type for C++ applications. Every developer is free to register its own string type.
 	// The SDK do however provide a standard add-on for registering a string type, so it's not
@@ -102,7 +86,6 @@ void CScriptManager::Init()
 	RegisterScriptArray(engine, true);
 //	RegisterStdStringUtils(engine);  // optional
 	RegisterScriptDictionary(engine);
-	aatc::RegisterAllContainers(engine);
 
 	engine->SetContextCallbacks(CScriptManager::ProvideContext, CScriptManager::StoreContext, this);
 }
@@ -115,7 +98,6 @@ void CScriptManager::Release()
 	}
 	contexts.clear();
 	engine->ShutDownAndRelease();
-	delete jit;
 }
 
 bool CScriptManager::Load(const char* modname, const char* filename)

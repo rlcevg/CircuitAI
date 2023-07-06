@@ -625,12 +625,6 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	modules.push_back(factoryManager);
 	modules.push_back(economyManager);  // NOTE: Units use manager, but ain't assigned here
 
-	script->RegisterMgr();
-	script->Init();
-	for (auto& module : modules) {
-		module->InitScript();
-	}
-
 	if (isCheating) {
 		cheats->SetEnabled(true);
 		cheats->SetEventsEnabled(true);

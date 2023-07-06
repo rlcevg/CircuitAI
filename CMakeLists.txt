@@ -26,24 +26,6 @@ endif ()
 #set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
 
 
-if    (CIRCUIT_AS_JIT)
-	if (WIN32)
-		set(additionalSources  ${additionalSources} platform/angelscript/jit/virtual_asm_windows.cpp)
-	elseif (APPLE)
-		set(additionalSources  ${additionalSources} platform/angelscript/jit/virtual_asm_linux.cpp)
-	else ()
-		set(additionalSources  ${additionalSources} platform/angelscript/jit/virtual_asm_linux.cpp)
-	endif ()
-	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-		set(additionalSources  ${additionalSources} platform/angelscript/jit/virtual_asm_x64.cpp)
-	else ()
-		set(additionalSources  ${additionalSources} platform/angelscript/jit/virtual_asm_x86.cpp)
-	endif ()
-	set(additionalSources      ${additionalSources} platform/angelscript/jit/as_jit.cpp)
-	set(additionalCompileFlags "${additionalCompileFlags} -DCIRCUIT_AS_JIT")
-endif (CIRCUIT_AS_JIT)
-
-
 if    (BUILD_Cpp_AIWRAPPER)
 	include_directories(BEFORE
 		${Cpp_AIWRAPPER_INCLUDE_DIRS}

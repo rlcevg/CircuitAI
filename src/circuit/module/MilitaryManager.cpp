@@ -11,7 +11,6 @@
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
-#include "script/MilitaryScript.h"
 #include "setup/SetupManager.h"
 #include "setup/DefenceMatrix.h"
 #include "task/NilTask.h"
@@ -51,7 +50,7 @@ namespace circuit {
 using namespace springai;
 
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
-		: IUnitModule(circuit, new CMilitaryScript(circuit->GetScriptManager(), this))
+		: IUnitModule(circuit)
 		, fightIterator(0)
 		, defenceIdx(0)
 		, scoutIdx(0)
@@ -628,7 +627,7 @@ void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 
 IUnitTask* CMilitaryManager::MakeTask(CCircuitUnit* unit)
 {
-	return static_cast<CMilitaryScript*>(script)->MakeTask(unit);  // DefaultMakeTask
+	return DefaultMakeTask(unit);
 }
 
 void CMilitaryManager::AbortTask(IUnitTask* task)

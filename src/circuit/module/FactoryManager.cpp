@@ -9,7 +9,6 @@
 #include "module/EconomyManager.h"
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
-#include "script/FactoryScript.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/NilTask.h"
@@ -36,7 +35,7 @@ namespace circuit {
 using namespace springai;
 
 CFactoryManager::CFactoryManager(CCircuitAI* circuit)
-		: IUnitModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
+		: IUnitModule(circuit)
 		, updateIterator(0)
 		, factoryPower(.0f)
 		, assistDef(nullptr)
@@ -679,7 +678,7 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 
 IUnitTask* CFactoryManager::MakeTask(CCircuitUnit* unit)
 {
-	return static_cast<CFactoryScript*>(script)->MakeTask(unit);  // DefaultMakeTask
+	return DefaultMakeTask(unit);
 }
 
 void CFactoryManager::AbortTask(IUnitTask* task)

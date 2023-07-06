@@ -9,7 +9,6 @@
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "module/MilitaryManager.h"
-#include "script/EconomyScript.h"
 #include "setup/SetupManager.h"
 #include "resource/MetalManager.h"
 #include "resource/EnergyGrid.h"
@@ -40,7 +39,7 @@ const char* RES_NAME_METAL = "Metal";
 const char* RES_NAME_ENERGY = "Energy";
 
 CEconomyManager::CEconomyManager(CCircuitAI* circuit)
-		: IModule(circuit, new CEconomyScript(circuit->GetScriptManager(), this))
+		: IModule(circuit)
 		, energyGrid(nullptr)
 		, pylonDef(nullptr)
 		, mexDef(nullptr)

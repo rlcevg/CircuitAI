@@ -12,7 +12,6 @@
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
-#include "script/BuilderScript.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
@@ -53,7 +52,7 @@ namespace circuit {
 using namespace springai;
 
 CBuilderManager::CBuilderManager(CCircuitAI* circuit)
-		: IUnitModule(circuit, new CBuilderScript(circuit->GetScriptManager(), this))
+		: IUnitModule(circuit)
 		, buildTasksCount(0)
 		, buildPower(.0f)
 		, buildIterator(0)
@@ -831,7 +830,7 @@ bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& pos
 
 IUnitTask* CBuilderManager::MakeTask(CCircuitUnit* unit)
 {
-	return static_cast<CBuilderScript*>(script)->MakeTask(unit);  // DefaultMakeTask
+	return DefaultMakeTask(unit);
 }
 
 void CBuilderManager::AbortTask(IUnitTask* task)
