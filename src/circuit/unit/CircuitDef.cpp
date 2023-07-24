@@ -123,6 +123,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, isLander(false)
 		, isMex(false)
 		, isPylon(false)
+		, isAssist(false)
 		, stockCost(.0f)
 		, jumpRange(.0f)
 		, retreat(-1.f)

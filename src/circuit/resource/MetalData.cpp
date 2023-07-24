@@ -188,7 +188,7 @@ void CMetalData::TriangulateGraph(const std::vector<double>& coords,
 			}
 			return false;
 		};
-		for (auto kv : edges) {
+		for (auto& kv : edges) {
 			const DEdge& e = kv.first;
 			const std::set<std::size_t>& vs = kv.second;
 			if (badEdge(e, vs)) {

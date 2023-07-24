@@ -176,28 +176,6 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	CCircuitDef* commDef = circuit->GetSetupManager()->GetCommChoice();
 
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
-		UnitDef* def = cdef.GetDef();
-		if (!cdef.IsMobile() && def->IsBuilder()) {
-			CCircuitDef::Id unitDefId = cdef.GetId();
-			if (!cdef.GetBuildOptions().empty()) {
-				createdHandler[unitDefId] = factoryCreatedHandler;
-				finishedHandler[unitDefId] = factoryFinishedHandler;
-				idleHandler[unitDefId] = factoryIdleHandler;
-				destroyedHandler[unitDefId] = factoryDestroyedHandler;
-			} else if (maxBuildDist < cdef.GetBuildDistance() &&
-				(std::max(def->GetXSize(), def->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
-			{
-				maxBuildDist = cdef.GetBuildDistance();
-				createdHandler[unitDefId] = assistCreatedHandler;
-				finishedHandler[unitDefId] = assistFinishedHandler;
-				idleHandler[unitDefId] = assistIdleHandler;
-				destroyedHandler[unitDefId] = assistDestroyedHandler;
-				if (commDef->CanBuild(&cdef)) {
-					assistDef = &cdef;
-				}
-			}
-		}
-
 		// Auto-assign roles
 		auto setRoles = [&cdef](CCircuitDef::RoleT type) {
 			cdef.SetMainRole(type);
@@ -219,6 +197,32 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 	}
 
 	ReadConfig();
+
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		if (cdef.IsMobile() || !cdef.GetDef()->IsBuilder()) {
+			continue;
+		}
+
+		CCircuitDef::Id unitDefId = cdef.GetId();
+		if (!cdef.GetBuildOptions().empty() && (factoryDefs.find(unitDefId) != factoryDefs.end())) {
+			createdHandler[unitDefId] = factoryCreatedHandler;
+			finishedHandler[unitDefId] = factoryFinishedHandler;
+			idleHandler[unitDefId] = factoryIdleHandler;
+			destroyedHandler[unitDefId] = factoryDestroyedHandler;
+		} else if (cdef.IsAbleToAssist() &&
+			(std::max(cdef.GetDef()->GetXSize(), cdef.GetDef()->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
+		{
+			createdHandler[unitDefId] = assistCreatedHandler;
+			finishedHandler[unitDefId] = assistFinishedHandler;
+			idleHandler[unitDefId] = assistIdleHandler;
+			destroyedHandler[unitDefId] = assistDestroyedHandler;
+			if (commDef->CanBuild(&cdef) && (maxBuildDist < cdef.GetBuildDistance())) {
+				maxBuildDist = cdef.GetBuildDistance();
+				assistDef = &cdef;
+			}
+			cdef.SetIsAssist(true);
+		}
+	}
 
 	if (assistDef == nullptr) {
 		assistDef = circuit->GetEconomyManager()->GetDefaultDef();
@@ -1014,15 +1018,14 @@ void CFactoryManager::EnableFactory(CCircuitUnit* unit)
 	const AIFloat3& pos = unit->GetPos(circuit->GetLastFrame());
 	COOAICallback* clb = circuit->GetCallback();
 	auto units = clb->GetFriendlyUnitsIn(pos, radius);
-	CCircuitDef::Id nanoId = assistDef->GetId();
 	int teamId = circuit->GetTeamId();
 	for (Unit* nano : units) {
 		if (nano == nullptr) {
 			continue;
 		}
 		int unitId = nano->GetUnitId();
-		CCircuitDef::Id ndefId = clb->Unit_GetDefId(unitId);
-		if ((ndefId == nanoId) && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
+		CCircuitDef* nDef = circuit->GetCircuitDef(clb->Unit_GetDefId(unitId));
+		if (nDef->IsAssist() && (nano->GetTeam() == teamId) && !nano->IsBeingBuilt()) {
 			CCircuitUnit* ass = circuit->GetTeamUnit(unitId);
 			// NOTE: OOAICallback::GetFriendlyUnits may return yet unregistered units created in GamePreload
 			if (ass != nullptr) {
@@ -1143,7 +1146,7 @@ IUnitTask* CFactoryManager::DefaultMakeTask(CCircuitUnit* unit)
 {
 	const IUnitTask* task = nullptr;
 
-	if (unit->GetCircuitDef() == assistDef) {
+	if (unit->GetCircuitDef()->IsAssist()) {
 		task = CreateAssistTask(unit);
 
 	} else {
