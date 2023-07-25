@@ -53,7 +53,7 @@ public:
 	bool HasStartBoxes() const;
 	bool CanChooseStartPos() const;
 
-	void PickStartPos(CCircuitAI* circuit, StartPosType type);
+	void PickStartPos(StartPosType type);
 	void SetStartPos(const springai::AIFloat3& pos) { startPos = basePos = pos; }
 	const springai::AIFloat3& GetStartPos() const { return startPos; }
 	void SetBasePos(const springai::AIFloat3& pos) { basePos = pos; }
@@ -85,6 +85,7 @@ private:
 	void FindStart();
 	void CalcStartPos();
 	void CalcLanePos();
+	springai::AIFloat3 MakeStartPosOffset(const springai::AIFloat3& pos, int clusterId, float range);
 	bool LocatePath(std::string& filename);
 	bool LoadConfig(const std::string& profile, const std::vector<std::string>& parts);
 	Json::Value* ReadConfig(const std::string& dirName, const std::string& profile, const std::vector<std::string>& parts);

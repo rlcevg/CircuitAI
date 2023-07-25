@@ -7,6 +7,7 @@
 
 #include "setup/SetupManager.h"
 #include "setup/SetupData.h"
+#include "module/EconomyManager.h"  // only for GetMexDef
 #include "module/MilitaryManager.h"  // only for CalcLanePos
 #include "resource/MetalManager.h"
 #include "terrain/TerrainManager.h"
@@ -129,7 +130,7 @@ bool CSetupManager::CanChooseStartPos() const
 	return setupData->CanChooseStartPos();
 }
 
-void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
+void CSetupManager::PickStartPos(StartPosType type)
 {
 	float x, z;
 	CAllyTeam* allyTeam = circuit->GetAllyTeam();
@@ -204,8 +205,12 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 
 				const CMetalData::MetalIndices& indices = validPoints[clusterId];
 				const CMetalData::SMetal& spot = spots[indices[rand() % indices.size()]];
-				x = spot.position.x;
-				z = spot.position.z;
+				CCircuitDef* mexDef = circuit->GetEconomyManager()->GetMexDef();
+				const float range = std::max(mexDef->GetDef()->GetXSize(), mexDef->GetDef()->GetZSize())
+						* SQUARE_SIZE / 2 * 1.4f + commChoice->GetRadius();
+				const AIFloat3 newPos = MakeStartPosOffset(spot.position, clusterId, range);
+				x = newPos.x;
+				z = newPos.z;
 				break;
 			}
 
@@ -612,6 +617,24 @@ void CSetupManager::CalcLanePos()
 
 	// NOTE: #include "module/MilitaryManager.h"
 	circuit->GetMilitaryManager()->SetBaseDefRange(lanePos.distance2D(basePos));
+}
+
+AIFloat3 CSetupManager::MakeStartPosOffset(const AIFloat3& pos, int clusterId, float range)
+{
+	// offset towards cluster center
+	const AIFloat3 newPos = circuit->GetTerrainManager()->ShiftPos(commChoice, pos, clusterId, range);
+	// check new position
+	if (!utils::is_valid(newPos)) {
+		return pos;
+	}
+	Lua* lua = circuit->GetLua();
+	std::string cmd("ai_is_valid_startpos:");
+	cmd += utils::int_to_string(newPos.x) + "/" + utils::int_to_string(newPos.z);
+	std::string result = lua->CallRules(cmd.c_str(), cmd.size());
+	if (result != "1") {
+		return pos;
+	}
+	return newPos;
 }
 
 bool CSetupManager::LocatePath(std::string& filename)

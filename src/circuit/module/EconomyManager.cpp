@@ -144,7 +144,9 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				if (facDef != nullptr) {
 					// Enqueue factory
 					CTerrainManager* terrainMgr = this->circuit->GetTerrainManager();
-					buildPos = terrainMgr->GetBuildPosition(facDef, pos);
+					const float range = std::max(facDef->GetDef()->GetXSize(), facDef->GetDef()->GetZSize())
+							* SQUARE_SIZE / 2 * 1.4f + unit->GetCircuitDef()->GetRadius();
+					buildPos = terrainMgr->ShiftPos(facDef, pos, range, true);
 					CBuilderManager* builderMgr = this->circuit->GetBuilderManager();
 					IBuilderTask* task = builderMgr->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, buildPos,
 																	SQUARE_SIZE, true, true, 0);

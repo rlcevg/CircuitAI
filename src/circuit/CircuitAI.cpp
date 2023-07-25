@@ -612,7 +612,7 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		const CSetupManager::StartPosType spt = metalManager->HasMetalSpots() ?
 												CSetupManager::StartPosType::METAL_SPOT :
 												CSetupManager::StartPosType::MIDDLE;
-		setupManager->PickStartPos(this, spt);
+		setupManager->PickStartPos(spt);
 	}
 
 	factoryManager = std::make_shared<CFactoryManager>(this);
@@ -808,7 +808,7 @@ int CCircuitAI::Message(int playerId, const char* message)
 	}
 
 	else if ((msgLength == strlen(cmdPos)) && (strcmp(message, cmdPos) == 0)) {
-		setupManager->PickStartPos(this, CSetupManager::StartPosType::RANDOM);
+		setupManager->PickStartPos(CSetupManager::StartPosType::RANDOM);
 	}
 	else if ((msgLength == strlen(cmdSelfD)) && (strcmp(message, cmdSelfD) == 0)) {
 		selfD();

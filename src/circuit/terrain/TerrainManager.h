@@ -46,6 +46,9 @@ public:
 	static inline int GetTerrainDiagonal() {
 		return sqrtf(SQUARE(springai::AIFloat3::maxxpos) + SQUARE(springai::AIFloat3::maxzpos));
 	}
+	static inline springai::AIFloat3 GetTerrainCenter() {
+		return springai::AIFloat3(GetTerrainWidth() / 2, 0, GetTerrainHeight() / 2);
+	}
 
 public:
 	void Init();
@@ -131,6 +134,8 @@ public:
 	bool CanMoveToPos(STerrainMapArea* area, const springai::AIFloat3& destination);
 	springai::AIFloat3 GetBuildPosition(CCircuitDef* cdef, const springai::AIFloat3& position);
 	springai::AIFloat3 GetMovePosition(STerrainMapArea* sourceArea, const springai::AIFloat3& position);
+	springai::AIFloat3 ShiftPos(CCircuitDef* cdef, const springai::AIFloat3& position, float range, bool isOrtho = false);
+	springai::AIFloat3 ShiftPos(CCircuitDef* cdef, const springai::AIFloat3& position, int clusterId, float range, bool isOrtho = false);
 private:
 	std::vector<STerrainMapAreaSector>& GetSectorList(STerrainMapArea* sourceArea = nullptr);
 	STerrainMapAreaSector* GetClosestSector(STerrainMapArea* sourceArea, const int destinationSIndex);

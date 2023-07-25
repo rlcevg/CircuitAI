@@ -1148,6 +1148,50 @@ AIFloat3 CTerrainManager::GetMovePosition(STerrainMapArea* sourceArea, const AIF
 	return (sourceArea == nullptr) ? pos : GetClosestSector(sourceArea, iS)->S->position;
 }
 
+AIFloat3 CTerrainManager::ShiftPos(CCircuitDef* cdef, const AIFloat3& position, float range, bool isOrtho)
+{
+	int clusterId = circuit->GetMetalManager()->FindNearestCluster(position);
+	return ShiftPos(cdef, position, clusterId, range, isOrtho);
+}
+
+AIFloat3 CTerrainManager::ShiftPos(CCircuitDef* cdef, const AIFloat3& position, int clusterId, float range, bool isOrtho)
+{
+	AIFloat3 newPos;
+	if (clusterId < 0) {
+		newPos = utils::get_radial_pos(position, range);
+	} else {
+		const CMetalData::Clusters& clusters = circuit->GetMetalManager()->GetClusters();
+		const CMetalData::SCluster& cluster = clusters[clusterId];
+		if (cluster.idxSpots.size() == 1) {
+			newPos = utils::get_radial_pos(position, range);
+		} else {
+			if (isOrtho) {
+				const AIFloat3 shift = (cluster.position - position).Normalize2D();
+				const AIFloat3 shifts[2] = {AIFloat3(shift.z, shift.y, -shift.x), AIFloat3(-shift.z, shift.y, shift.x)};
+				int index = 0;
+				if (shifts[0].dot2D(GetTerrainCenter() - position) < 0.f) {
+					index = 1;
+				}
+				newPos = position + shifts[index] * range;
+				CorrectPosition(newPos);
+				if (CanBeBuiltAt(cdef, newPos)) {
+					return newPos;
+				} else {
+					newPos = position + shifts[++index & 1] * range;
+				}
+			} else {
+				if (cluster.position.SqDistance2D(position) < SQUARE(SQUARE_SIZE)) {
+					newPos = utils::get_radial_pos(position, range);
+				} else {
+					newPos = position + (cluster.position - position).Normalize2D() * range;
+				}
+			}
+		}
+	}
+	CorrectPosition(newPos);
+	return CanBeBuiltAt(cdef, newPos) ? newPos : GetBuildPosition(cdef, newPos);
+}
+
 std::vector<STerrainMapAreaSector>& CTerrainManager::GetSectorList(STerrainMapArea* sourceArea)
 {
 	if ((sourceArea == nullptr) ||( sourceArea->mobileType == nullptr)) {  // It flies or it's immobile
