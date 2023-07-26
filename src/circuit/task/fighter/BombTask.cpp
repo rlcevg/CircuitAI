@@ -12,6 +12,7 @@
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathFinder.h"
 #include "terrain/path/QueryPathSingle.h"
+#include "unit/action/FightAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
@@ -46,9 +47,16 @@ void CBombTask::AssignTo(CCircuitUnit* unit)
 	IFighterTask::AssignTo(unit);
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-	CMoveAction* travelAction = new CMoveAction(unit, squareSize);
+	CCircuitDef* cdef = unit->GetCircuitDef();
+	ITravelAction* travelAction;
+	if (cdef->IsAttrSiege()) {
+		travelAction = new CFightAction(unit, squareSize);
+	} else {
+		travelAction = new CMoveAction(unit, squareSize);
+	}
 	unit->PushTravelAct(travelAction);
 	travelAction->StateWait();
+	unit->SetAllowedToJump(cdef->IsAbleToJump() && cdef->IsAttrJump());
 }
 
 void CBombTask::RemoveAssignee(CCircuitUnit* unit)

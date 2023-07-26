@@ -38,12 +38,13 @@ CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitD
 		, moveFails(0)
 		, failFrame(-1)
 		, execFrame(-1)
+		, disarmFrame(-1)
+		, ammoFrame(-1)
 		, isDead(false)
 		, isDisarmed(false)
-		, disarmFrame(-1)
 		, isWeaponReady(true)
-		, ammoFrame(-1)
 		, isMorphing(false)
+		, isAllowedToJump(false)
 		, target(nullptr)
 		, targetTile(-1)
 {
@@ -196,7 +197,7 @@ bool CCircuitUnit::IsJumpReady()
 
 bool CCircuitUnit::IsJumping()
 {
-	return unit->GetRulesParamFloat("is_jumping", 0) > 0.f;
+	return isAllowedToJump && (unit->GetRulesParamFloat("is_jumping", 0) > 0.f);
 }
 
 float CCircuitUnit::GetDamage()

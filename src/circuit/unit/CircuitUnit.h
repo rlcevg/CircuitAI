@@ -77,6 +77,9 @@ public:
 	void PushTravelAct(ITravelAction* action);
 	ITravelAction* GetTravelAct() const { return travelAct; }
 
+	void SetAllowedToJump(bool value) { isAllowedToJump = value; }
+	bool IsAllowedToJump() const { return isAllowedToJump; }
+
 	bool IsMoveFailed(int frame);
 
 	void ForceUpdate(int frame) { execFrame = frame; }
@@ -151,21 +154,22 @@ private:
 //	int damagedFrame;
 	int moveFails;
 	int failFrame;
-	bool execFrame;  // TODO: Replace by CExecuteAction?
-	bool isDead;
+	int execFrame;  // TODO: Replace by CExecuteAction?
+	int disarmFrame;
+	int ammoFrame;
+
+	// ---- Bit fields ---- BEGIN
+	bool isDead : 1;
+	bool isDisarmed : 1;
+	bool isWeaponReady : 1;
+	bool isMorphing : 1;
+	bool isAllowedToJump : 1;
+	// ---- Bit fields ---- END
 
 	CWeaponDef* dgunDef;
 	springai::Weapon* dgun;
 	springai::Weapon* weapon;  // main weapon
 	springai::Weapon* shield;
-
-	bool isDisarmed;
-	int disarmFrame;
-
-	bool isWeaponReady;
-	int ammoFrame;
-
-	bool isMorphing;
 
 	CEnemyInfo* target;
 	int targetTile;

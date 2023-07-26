@@ -45,13 +45,15 @@
 
 		// Attributes - optinal states
 		// "melee" - always move close to target, disregard attack range
-		// "no_jump" - disable jump on retreat
 		// "boost" - boost speed on retreat
+		// "no_jump" - disable jump on retreat
 		// "no_strafe" - disable gunship's strafe
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
 		// "siege" - mostly use fight command instead of move
 		// "ret_hold" - hold fire on retreat
 		// "ret_fight" - fight on retreat
+		// "jump" - enable jump on regular move
+		// "dg_cost" - DGun by metal cost instead of by threat
 //		"attribute": ["boost", "no_strafe"],
 
 		// Fire state (open by default)
