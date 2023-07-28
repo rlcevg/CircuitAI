@@ -67,11 +67,11 @@ public:
 	enum class AttrType: RoleT {NONE = -1,
 		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
 		STOCK, SIEGE, RET_HOLD, RET_FIGHT,
-		JUMP, DG_COST, _SIZE_};
+		JUMP, DG_COST, DG_STILL, _SIZE_};
 	enum AttrMask: RoleM {
 		MELEE = 0x00000001, BOOST   = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
 		STOCK = 0x00000010, SIEGE   = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080,
-		JUMP  = 0x00000100, DG_COST = 0x00000200};
+		JUMP  = 0x00000100, DG_COST = 0x00000200, DG_STILL = 0x00000400};
 	using AttrT = std::underlying_type<AttrType>::type;
 	using AttrM = std::underlying_type<AttrMask>::type;
 

@@ -21,13 +21,15 @@ CWeaponDef::CWeaponDef(WeaponDef* def, Resource* resE)
 	aoe = def->GetAreaOfEffect();
 	costE = def->GetCost(resE);
 
+	std::string wt(def->GetType());
+	fireTime = (wt == "BeamLaser") ? def->GetBeamTime() : 0.f;
+
 	isStockpile = def->IsStockpileable();
 	if (isStockpile) {
 		const float stockTime = def->GetStockpileTime() / FRAMES_PER_SEC;
 		costE /= stockTime;
 	}
 
-	std::string wt(def->GetType());
 	isHigh = (wt == "StarburstLauncher")
 			|| ((wt == "MissileLauncher") && (def->GetTrajectoryHeight() > 0.5f))  // 1.0 ~ 45 deg
 			|| ((wt == "Cannon") && (def->GetHighTrajectory() >= 1));
