@@ -66,11 +66,12 @@ void CDefendTask::AssignTo(CCircuitUnit* unit)
 	ITravelAction* travelAction;
 	if (cdef->IsAttrSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
-	} else/* if (cdef->IsAttrMelee())*/ {
+	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
 	travelAction->StateWait();
+	unit->SetAllowedToJump(cdef->IsAbleToJump() && cdef->IsAttrJump());
 }
 
 void CDefendTask::RemoveAssignee(CCircuitUnit* unit)

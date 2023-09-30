@@ -72,21 +72,26 @@ public:
 	 * RET_FIGHT: fight on retreat
 	 * SOLO:      construction initiator, won't join task if already started
 	 * BASE:      base builder, high priority for energy and storage tasks
-	 * VAMPIRE:   reclaim enemy units without threat check
+	 * DG_COST:   DGun by metal cost instead of by threat
+	 * DG_STILL:  hold still after DGun activation
+	 * JUMP:      enable jump on regular move
 	 * ONOFF:     toggle weapon state, for mobile targets - state1, for static - state2
+	 * VAMPIRE:   reclaim enemy units without threat check
 	 * RARE:      build unit from T1 factory even when T2+ factory is available
 	 * FENCE:     unit counted in total cluster defence cost
 	 */
 	enum class AttrType: RoleT {NONE = -1,
 		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
 		STOCK, SIEGE, RET_HOLD, RET_FIGHT,
-		SOLO, BASE, VAMPIRE, ONOFF,
-		RARE, FENCE, _SIZE_};
+		SOLO, BASE, DG_COST, DG_STILL,
+		JUMP, ONOFF, VAMPIRE, RARE,
+		FENCE, _SIZE_};
 	enum AttrMask: RoleM {
 		MELEE = 0x00000001, BOOST = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
 		STOCK = 0x00000010, SIEGE = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080,
-		SOLO  = 0x00000100, BASE  = 0x00000200, VAMPIRE  = 0x00000400, ONOFF     = 0x00000800,
-		RARE  = 0x00001000, FENCE = 0x00002000};
+		SOLO  = 0x00000100, BASE  = 0x00000200, DG_COST  = 0x00000400, DG_STILL  = 0x00000800,
+		JUMP  = 0x00001000, ONOFF = 0x00002000, VAMPIRE  = 0x00004000, RARE      = 0x00008000,
+		FENCE = 0x00010000};
 	using AttrT = std::underlying_type<AttrType>::type;
 	using AttrM = std::underlying_type<AttrMask>::type;
 
@@ -163,8 +168,10 @@ public:
 	bool IsAttrRetFight() const { return attr & AttrMask::RET_FIGHT; }
 //	bool IsAttrSolo()     const { return attr & AttrMask::SOLO; }  // per-unit
 //	bool IsAttrBase()     const { return attr & AttrMask::BASE; }  // per-unit
-	bool IsAttrVampire()  const { return attr & AttrMask::VAMPIRE; }
+	bool IsAttrDGCost()   const { return attr & AttrMask::DG_COST; }
+	bool IsAttrJump()     const { return attr & AttrMask::JUMP; }
 	bool IsAttrOnOff()    const { return attr & AttrMask::ONOFF; }
+	bool IsAttrVampire()  const { return attr & AttrMask::VAMPIRE; }
 	bool IsAttrRare()     const { return attr & AttrMask::RARE; }
 	bool IsAttrFence()    const { return attr & AttrMask::FENCE; }
 

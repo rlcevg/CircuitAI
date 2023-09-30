@@ -78,6 +78,7 @@ void CRaidTask::AssignTo(CCircuitUnit* unit)
 	}
 	unit->PushTravelAct(travelAction);
 	travelAction->StateWait();
+	unit->SetAllowedToJump(cdef->IsAbleToJump() && cdef->IsAttrJump());
 }
 
 void CRaidTask::RemoveAssignee(CCircuitUnit* unit)

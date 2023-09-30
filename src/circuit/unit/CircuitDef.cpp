@@ -83,8 +83,11 @@ void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker, CMas
 		{"ret_fight", {ATTR_TYPE(RET_FIGHT), CCircuitDef::AttrMask::RET_FIGHT}},
 		{"solo",      {ATTR_TYPE(SOLO),      CCircuitDef::AttrMask::SOLO}},
 		{"base",      {ATTR_TYPE(BASE),      CCircuitDef::AttrMask::BASE}},
-		{"vampire",   {ATTR_TYPE(VAMPIRE),   CCircuitDef::AttrMask::VAMPIRE}},
+		{"dg_cost",   {ATTR_TYPE(DG_COST),   CCircuitDef::AttrMask::DG_COST}},
+		{"dg_still",  {ATTR_TYPE(DG_STILL),  CCircuitDef::AttrMask::DG_STILL}},
+		{"jump",      {ATTR_TYPE(JUMP),      CCircuitDef::AttrMask::JUMP}},
 		{"onoff",     {ATTR_TYPE(ONOFF),     CCircuitDef::AttrMask::ONOFF}},
+		{"vampire",   {ATTR_TYPE(VAMPIRE),   CCircuitDef::AttrMask::VAMPIRE}},
 		{"rare",      {ATTR_TYPE(RARE),      CCircuitDef::AttrMask::RARE}},
 		{"fence",     {ATTR_TYPE(FENCE),     CCircuitDef::AttrMask::FENCE}},
 	};

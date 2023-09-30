@@ -21,7 +21,6 @@
 #include "unit/action/DGunAction.h"
 #include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
-#include "unit/action/JumpAction.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
@@ -73,14 +72,13 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 
 	int squareSize = circuit->GetPathfinder()->GetSquareSize();
 	ITravelAction* travelAction;
-	if (cdef->IsAbleToJump() && !cdef->IsAttrNoJump()) {
-		travelAction = new CJumpAction(unit, squareSize);
-	} else if (cdef->IsAttrRetFight()) {
+	if (cdef->IsAttrRetFight()) {
 		travelAction = new CFightAction(unit, squareSize);
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
+	unit->SetAllowedToJump(cdef->IsAbleToJump() && !cdef->IsAttrNoJump());
 
 	if (unit->GetCircuitDef()->IsAbleToCloak()) {
 		TRY_UNIT(manager->GetCircuit(), unit,
@@ -296,16 +294,15 @@ void CRetreatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	if (unit->GetTravelAct() == nullptr) {
 		// NOTE: IsAttrBoost units don't get travel action on AssignTo
 		int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
-		ITravelAction* travelAction;
 		CCircuitDef* cdef = unit->GetCircuitDef();
-		if (cdef->IsAbleToJump() && !cdef->IsAttrNoJump()) {
-			travelAction = new CJumpAction(unit, squareSize);
-		} else if (cdef->IsAttrRetFight()) {
+		ITravelAction* travelAction;
+		if (cdef->IsAttrRetFight()) {
 			travelAction = new CFightAction(unit, squareSize);
 		} else {
 			travelAction = new CMoveAction(unit, squareSize);
 		}
 		unit->PushTravelAct(travelAction);
+		unit->SetAllowedToJump(cdef->IsAbleToJump() && !cdef->IsAttrNoJump());
 	}
 	unit->GetTravelAct()->StateActivate();
 

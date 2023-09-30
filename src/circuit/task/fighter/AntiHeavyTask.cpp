@@ -15,8 +15,8 @@
 #include "terrain/path/QueryPathSingle.h"
 #include "terrain/path/QueryPathMulti.h"
 #include "unit/action/DGunAction.h"
-#include "unit/action/MoveAction.h"
 #include "unit/action/FightAction.h"
+#include "unit/action/MoveAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
@@ -85,6 +85,7 @@ void CAntiHeavyTask::AssignTo(CCircuitUnit* unit)
 	}
 	unit->PushTravelAct(travelAction);
 	travelAction->StateWait();
+	unit->SetAllowedToJump(cdef->IsAbleToJump() && cdef->IsAttrJump());
 }
 
 void CAntiHeavyTask::RemoveAssignee(CCircuitUnit* unit)

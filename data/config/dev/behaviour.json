@@ -50,16 +50,18 @@
 
 		// Attributes - optinal states; can contain roles to count it as response; if factoty has support attribute then it's back-line building.
 		// "melee" - always move close to target, disregard attack range
-		// "no_jump" - disable jump on retreat
 		// "boost" - boost speed on retreat
+		// "no_jump" - disable jump on retreat
 		// "no_strafe" - disable gunship's strafe
 		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
 		// "siege" - mostly use fight command instead of move
 		// "ret_hold" - hold fire on retreat
 		// "ret_fight" - fight on retreat
 		// "solo" - construction initiator, won't join task if already started
-		// "vampire" - reclaim enemy units without threat check
+		// "dg_cost" - DGun by metal cost instead of by threat
+		// "jump" - enable jump on regular move
 		// "onoff" - auto-assigned when "on" tag is present
+		// "vampire" - reclaim enemy units without threat check
 		// "rare" - build unit from T1 factory even when T2+ factory is available
 //		"attribute": ["boost", "no_strafe"],
 

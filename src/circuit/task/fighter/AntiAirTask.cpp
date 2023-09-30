@@ -62,14 +62,16 @@ void CAntiAirTask::AssignTo(CCircuitUnit* unit)
 	ISquadTask::AssignTo(unit);
 
 	int squareSize = manager->GetCircuit()->GetPathfinder()->GetSquareSize();
+	CCircuitDef* cdef = unit->GetCircuitDef();
 	ITravelAction* travelAction;
-	if (unit->GetCircuitDef()->IsAttrSiege()) {
+	if (cdef->IsAttrSiege()) {
 		travelAction = new CFightAction(unit, squareSize);
 	} else {
 		travelAction = new CMoveAction(unit, squareSize);
 	}
 	unit->PushTravelAct(travelAction);
 	travelAction->StateWait();
+	unit->SetAllowedToJump(cdef->IsAbleToJump() && cdef->IsAttrJump());
 }
 
 void CAntiAirTask::RemoveAssignee(CCircuitUnit* unit)

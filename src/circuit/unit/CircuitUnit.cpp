@@ -49,6 +49,7 @@ CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitD
 		, isWeaponReady(true)
 		, isMorphing(false)
 		, isSelfD(false)
+		, isAllowedToJump(false)
 		, target(nullptr)
 		, targetTile(-1)
 		, attr(cdef->GetAttributes())
@@ -216,7 +217,7 @@ bool CCircuitUnit::IsJumpReady()
 
 bool CCircuitUnit::IsJumping()
 {
-	return unit->GetRulesParamFloat("is_jumping", 0) > 0.f;
+	return isAllowedToJump && (unit->GetRulesParamFloat("is_jumping", 0) > 0.f);
 }
 
 bool CCircuitUnit::IsInvisible()

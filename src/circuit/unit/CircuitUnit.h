@@ -91,6 +91,9 @@ public:
 	void PushTravelAct(ITravelAction* action);
 	ITravelAction* GetTravelAct() const { return travelAct; }
 
+	void SetAllowedToJump(bool value) { isAllowedToJump = value; }
+	bool IsAllowedToJump() const { return isAllowedToJump; }
+
 	bool IsMoveFailed(int frame);
 	bool IsStuck() const { return isStuck; }
 
@@ -208,6 +211,7 @@ private:
 	bool isWeaponReady : 1;
 	bool isMorphing : 1;
 	bool isSelfD : 1;
+	bool isAllowedToJump : 1;
 	// ---- Bit fields ---- END
 
 	springai::Command* command;  // current top command
