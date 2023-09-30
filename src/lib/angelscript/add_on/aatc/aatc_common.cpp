@@ -180,9 +180,9 @@ namespace aatc {
 
 		script_Funcpointer::script_Funcpointer() :
 			//dedicated_context(NULL),
-			ready(0),
 			func(NULL),
-			so(NULL)
+			so(NULL),
+			ready(0)
 		{
 		}
 		script_Funcpointer::~script_Funcpointer(){
@@ -322,7 +322,7 @@ namespace aatc {
 
 
 		DATAHANDLINGTYPE Determine_Datahandlingtype(asIScriptEngine* engine,config::t::uint32 astypeid){
-			if(astypeid == engine->GetStringFactoryReturnTypeId()){
+			if(astypeid == (decltype(astypeid))engine->GetStringFactoryReturnTypeId()){
 				return DATAHANDLINGTYPE::STRING;
 			}
 			if(astypeid & asTYPEID_MASK_OBJECT){

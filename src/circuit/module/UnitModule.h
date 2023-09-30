@@ -17,7 +17,7 @@ namespace circuit {
 class IUnitModule: public IModule, public IUnitManager, public ITaskManager {  // CActionList
 public:
 	enum class UseAs: char {
-		COMBAT = 0, DEFENCE, SUPER,  // military
+		COMBAT = 0, FENCE, SUPER, STOCK,  // military
 		BUILDER, REZZER,  // builder
 		FACTORY, ASSIST  // factory
 	};

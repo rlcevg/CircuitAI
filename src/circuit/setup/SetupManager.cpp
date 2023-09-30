@@ -31,6 +31,7 @@
 #include "Lua.h"
 
 #include <regex>
+#include <random>
 
 namespace circuit {
 
@@ -189,7 +190,9 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 					c.distDivIncome = mapCenter.distance(cl.position) / income;
 					validClusters.push_back(std::make_pair(kv.first, c));
 				}
-				std::random_shuffle(validClusters.begin(), validClusters.end());
+				std::random_device rd;
+				std::mt19937 g(rd());
+				std::shuffle(validClusters.begin(), validClusters.end(), g);
 
 				auto cmp = [](const std::pair<int, SCluster>& a, const std::pair<int, SCluster>& b) {
 					if (a.second.count < b.second.count) {

@@ -171,6 +171,11 @@ void CCircuitUnit::ManualFire(CEnemyInfo* target, int timeout)
 	)
 }
 
+bool CCircuitUnit::IsDGunHigh() const
+{
+	return dgunDef->IsHighTrajectory();
+}
+
 bool CCircuitUnit::IsDisarmed(int frame)
 {
 	if (disarmFrame != frame) {

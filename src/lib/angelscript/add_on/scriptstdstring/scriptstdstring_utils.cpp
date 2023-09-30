@@ -113,7 +113,7 @@ static void StringJoin_Generic(asIScriptGeneric *gen)
 // The string type must have been registered first.
 void RegisterStdStringUtils(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	if( strstr(asGetLibraryOptions(), "AS_MAX_PORTABILITY") )
 	{

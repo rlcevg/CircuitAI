@@ -121,7 +121,7 @@ namespace aatc {
 							t->container.erase(value);
 							t->safety_iteratorversion_Increment();
 
-							return oldsize != t->container.size();
+							return oldsize != (decltype(oldsize))t->container.size();
 						}
 						template<typename T_container> void insert_value(T_container* t, const typename T_container::T_content& value) {
 							t->container.insert(value);
@@ -134,7 +134,7 @@ namespace aatc {
 									aatc::common::errorprint::container::access_empty(T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::operator_index);
 									return T_container::defaultvalue;
 								}
-								if (position >= t->container.size()) {
+								if (position >= (decltype(position))t->container.size()) {
 									aatc::common::errorprint::container::access_bounds(position, (config::t::sizetype)t->container.size(), T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::operator_index);
 									return T_container::defaultvalue;
 								}
@@ -367,7 +367,7 @@ namespace aatc {
 									aatc::common::errorprint::container::access_empty(T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 									return;
 								}
-								if (position >= t->container.size()) {
+								if (position >= (decltype(position))t->container.size()) {
 									aatc::common::errorprint::container::access_bounds(position, (config::t::sizetype)t->container.size(),T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 									return;
 								}
@@ -382,7 +382,7 @@ namespace aatc {
 									aatc::common::errorprint::container::access_empty(T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 									return;
 								}
-								if (position >= t->container.size()) {
+								if (position >= (decltype(position))t->container.size()) {
 									aatc::common::errorprint::container::access_bounds(position, (config::t::sizetype)t->container.size(), T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 									return;
 								}
@@ -405,11 +405,11 @@ namespace aatc {
 									aatc::common::errorprint::container::access_empty(T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 									return 0;
 								}
-								if (range_begin >= t->container.size()) {
+								if (range_begin >= (decltype(range_begin))t->container.size()) {
 									aatc::common::errorprint::container::access_bounds(range_begin, (config::t::sizetype)t->container.size(), T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 									return 0;
 								}
-								if (range_end >= t->container.size()) {
+								if (range_end >= (decltype(range_end))t->container.size()) {
 									aatc::common::errorprint::container::access_bounds(range_end, (config::t::sizetype)t->container.size(), T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 									return 0;
 								}
@@ -433,11 +433,11 @@ namespace aatc {
 								aatc::common::errorprint::container::access_empty(T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 								return 0;
 							}
-							if (range_begin >= t->container.size()) {
+							if (range_begin >= (decltype(range_begin))t->container.size()) {
 								aatc::common::errorprint::container::access_bounds(range_begin, (config::t::sizetype)t->container.size(), T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 								return 0;
 							}
-							if (range_end >= t->container.size()) {
+							if (range_end >= (decltype(range_end))t->container.size()) {
 								aatc::common::errorprint::container::access_bounds(range_end, (config::t::sizetype)t->container.size(), T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::erase);
 								return 0;
 							}
@@ -578,7 +578,7 @@ namespace aatc {
 									aatc::common::errorprint::container::access_empty(T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::insert_position_before);
 									return;
 								}
-								if (position > t->container.size()) {
+								if (position > (decltype(position))t->container.size()) {
 									aatc::common::errorprint::container::access_bounds(position, (config::t::sizetype)t->container.size(), T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::insert_position_before);
 									return;
 								}
@@ -593,7 +593,7 @@ namespace aatc {
 									aatc::common::errorprint::container::access_empty(T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::insert_position_before);
 									return;
 								}
-								if (position > t->container.size()) {
+								if (position > (decltype(position))t->container.size()) {
 									aatc::common::errorprint::container::access_bounds(position, (config::t::sizetype)t->container.size(), T_container::staticname_container.c_str(), T_container::staticname_content.c_str(), config::scriptname::method::container::insert_position_before);
 									return;
 								}

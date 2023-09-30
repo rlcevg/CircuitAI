@@ -63,38 +63,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CMilitaryManager::Init, this));
 
 	/*
-	 * Defence handlers
-	 */
-	auto defenceFinishedHandler = [this](CCircuitUnit* unit) {
-		if (unit->GetCircuitDef()->IsAttrStock()) {
-			TRY_UNIT(this->circuit, unit,
-				unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-				stockpilers.insert(unit);
-			)
-		}
-
-		UnitAdded(unit, UseAs::DEFENCE);
-	};
-	auto defenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
-		UnmarkPorc(unit);
-		if (unit->GetCircuitDef()->IsAttrStock()) {
-			stockpilers.erase(unit);
-		}
-
-		UnitRemoved(unit, UseAs::DEFENCE);
-	};
-
-	auto stockFinishedHandler = [this](CCircuitUnit* unit) {
-		TRY_UNIT(this->circuit, unit,
-			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
-			stockpilers.insert(unit);
-		)
-	};
-	auto stockDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
-		stockpilers.erase(unit);
-	};
-
-	/*
 	 * Attacker handlers
 	 */
 	auto attackerCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
@@ -159,6 +127,33 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 		}
 
 		UnitRemoved(unit, UseAs::COMBAT);
+	};
+
+	/*
+	 * Regular defence handlers: for units not in STOCK or SUPER but with FENCE attribute
+	 */
+	auto fenceFinishedHandler = [this](CCircuitUnit* unit) {
+		UnitAdded(unit, UseAs::FENCE);
+	};
+	auto fenceDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+		UnitRemoved(unit, UseAs::FENCE);
+	};
+
+	/*
+	 * Stockpile handlers: for units with STOCK attribute but not SUPER
+	 */
+	auto stockFinishedHandler = [this](CCircuitUnit* unit) {
+		TRY_UNIT(this->circuit, unit,
+			unit->GetUnit()->Stockpile(UNIT_COMMAND_OPTION_SHIFT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY);
+			stockpilers.insert(unit);
+		)
+
+		UnitAdded(unit, UseAs::STOCK);
+	};
+	auto stockDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+		stockpilers.erase(unit);
+
+		UnitRemoved(unit, UseAs::STOCK);
 	};
 
 	/*
@@ -278,22 +273,18 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 			cdef.SetRetreat((cdef.GetRetreat() < 0.f) ? fighterRet : cdef.GetRetreat() * retMod);
 		} else {
 //			damagedHandler[unitDefId] = structDamagedHandler;
-			if (cdef.IsAttacker()) {
-				if (cdef.IsRoleSuper()) {
+			if (cdef.IsRoleSuper()) {
+				if (cdef.IsAttacker()) {
 					createdHandler[unitDefId] = superCreatedHandler;
 					finishedHandler[unitDefId] = superFinishedHandler;
 					destroyedHandler[unitDefId] = superDestroyedHandler;
-				} else if (cdef.IsAttrStock()) {
-					finishedHandler[unitDefId] = stockFinishedHandler;
-					destroyedHandler[unitDefId] = stockDestroyedHandler;
 				}
-			} else {
-				// FIXME: BA
-				if (cdef.IsAttrStock()) {
-					finishedHandler[unitDefId] = stockFinishedHandler;
-					destroyedHandler[unitDefId] = stockDestroyedHandler;
-				}
-				// FIXME: BA
+			} else if (cdef.IsAttrStock()) {
+				finishedHandler[unitDefId] = stockFinishedHandler;
+				destroyedHandler[unitDefId] = stockDestroyedHandler;
+			} else if (cdef.IsAttrFence()) {
+				finishedHandler[unitDefId] = fenceFinishedHandler;
+				destroyedHandler[unitDefId] = fenceDestroyedHandler;
 			}
 			if (cdef.GetDef()->GetRadarRadius() > 1.f) {
 				radarDefs.AddDef(&cdef);
@@ -303,13 +294,6 @@ CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
 				sonarDefs.AddDef(&cdef);
 				cdef.SetIsSonar(true);
 			}
-		}
-	}
-
-	for (unsigned side = 0; side < sideInfos.size(); ++side) {
-		for (const CCircuitDef* cdef : sideInfos[side].defenderDefs) {
-			finishedHandler[cdef->GetId()] = defenceFinishedHandler;
-			destroyedHandler[cdef->GetId()] = defenceDestroyedHandler;
 		}
 	}
 
@@ -403,29 +387,31 @@ void CMilitaryManager::ReadConfig()
 	for (const auto& kv : sideMasker.GetMasks()) {
 		SSideInfo& sideInfo = sideInfos[kv.second.type];
 		const Json::Value& defs = porc["unit"][kv.first];
-		sideInfo.defenderDefs.reserve(defs.size());
+		std::vector<CCircuitDef*> defenderDefs;
+		defenderDefs.reserve(defs.size());
 		for (const Json::Value& def : defs) {
 			CCircuitDef* cdef = circuit->GetCircuitDef(def.asCString());
 			if (cdef == nullptr) {
 				circuit->LOG("CONFIG %s: has unknown UnitDef '%s'", cfgName.c_str(), def.asCString());
 			} else {
-				sideInfo.defenderDefs.push_back(cdef);
+				cdef->AddAttribute(ATTR_TYPE(FENCE));
+				defenderDefs.push_back(cdef);
 			}
 		}
 		const Json::Value& land = porc["land"];
 		sideInfo.landDefenders.reserve(land.size());
 		for (const Json::Value& idx : land) {
 			unsigned index = idx.asUInt();
-			if (index < sideInfo.defenderDefs.size()) {
-				sideInfo.landDefenders.push_back(sideInfo.defenderDefs[index]);
+			if (index < defenderDefs.size()) {
+				sideInfo.landDefenders.push_back(defenderDefs[index]);
 			}
 		}
 		const Json::Value& watr = porc["water"];
 		sideInfo.waterDefenders.reserve(watr.size());
 		for (const Json::Value& idx : watr) {
 			unsigned index = idx.asUInt();
-			if (index < sideInfo.defenderDefs.size()) {
-				sideInfo.waterDefenders.push_back(sideInfo.defenderDefs[index]);
+			if (index < defenderDefs.size()) {
+				sideInfo.waterDefenders.push_back(defenderDefs[index]);
 			}
 		}
 
@@ -433,11 +419,11 @@ void CMilitaryManager::ReadConfig()
 		sideInfo.baseDefence.reserve(base.size());
 		for (const Json::Value& pair : base) {
 			unsigned index = pair.get((unsigned)0, -1).asUInt();
-			if (index >= sideInfo.defenderDefs.size()) {
+			if (index >= defenderDefs.size()) {
 				continue;
 			}
 			int frame = pair.get((unsigned)1, 0).asInt() * FRAMES_PER_SEC;
-			sideInfo.baseDefence.emplace_back(sideInfo.defenderDefs[index], frame);
+			sideInfo.baseDefence.emplace_back(defenderDefs[index], frame);
 		}
 		auto compare = [](const std::pair<CCircuitDef*, int>& d1, const std::pair<CCircuitDef*, int>& d2) {
 			return d1.second > d2.second;
@@ -599,6 +585,10 @@ int CMilitaryManager::UnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 
 int CMilitaryManager::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 {
+	if (unit->GetCircuitDef()->IsAttrFence()) {
+		UnmarkPorc(unit);
+	}
+
 	auto search = destroyedHandler.find(unit->GetCircuitDef()->GetId());
 	if (search != destroyedHandler.end()) {
 		search->second(unit, attacker);

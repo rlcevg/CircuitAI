@@ -178,82 +178,82 @@ namespace config {
 
 	namespace scriptname {
 		namespace t {
-			static const char* size = "int";
-			static const char* hash = "aatc_hash_t";
+			VARIABLE_IS_NOT_USED static const char* size = "int";
+			VARIABLE_IS_NOT_USED static const char* hash = "aatc_hash_t";
 
 			#if aatc_ENABLE_HASHTYPE_BITS == 32
-				static const char* hash_actual = "uint";
+				VARIABLE_IS_NOT_USED static const char* hash_actual = "uint";
 			#elif aatc_ENABLE_HASHTYPE_BITS == 64
-				static const char* hash_actual = "uint64";
+				VARIABLE_IS_NOT_USED static const char* hash_actual = "uint64";
 			#endif
 		};//namespace t
 
 		namespace container {
-			static const char* vector = "vector";
-			static const char* list = "list";
-			static const char* deque = "deque";
-			static const char* set = "set";
-			static const char* unordered_set = "unordered_set";
-			static const char* map = "map";
-			static const char* unordered_map = "unordered_map";
+			VARIABLE_IS_NOT_USED static const char* vector = "vector";
+			VARIABLE_IS_NOT_USED static const char* list = "list";
+			VARIABLE_IS_NOT_USED static const char* deque = "deque";
+			VARIABLE_IS_NOT_USED static const char* set = "set";
+			VARIABLE_IS_NOT_USED static const char* unordered_set = "unordered_set";
+			VARIABLE_IS_NOT_USED static const char* map = "map";
+			VARIABLE_IS_NOT_USED static const char* unordered_map = "unordered_map";
 		};//namespace container
 
-		static const char* iterator_suffix = "_iterator";
-		static const char* funcpointer = "aatc_funcpointer";
-		static const char* funcdef_cmp_prefix = "aatc_funcdef_cmp_";
+		VARIABLE_IS_NOT_USED static const char* iterator_suffix = "_iterator";
+		VARIABLE_IS_NOT_USED static const char* funcpointer = "aatc_funcpointer";
+		VARIABLE_IS_NOT_USED static const char* funcdef_cmp_prefix = "aatc_funcdef_cmp_";
 
 		namespace method {
 			namespace content {
-				static const char* hash = "hash";
+				VARIABLE_IS_NOT_USED static const char* hash = "hash";
 			};//namespace content
 
 			namespace container {
-				static const char* set_directcomp = "SetDirectcomp";
+				VARIABLE_IS_NOT_USED static const char* set_directcomp = "SetDirectcomp";
 
-				static const char* clear = "clear";
-				static const char* size = "size";
-				static const char* count = "count";
-				static const char* empty = "empty";
-				static const char* swap = "swap";
+				VARIABLE_IS_NOT_USED static const char* clear = "clear";
+				VARIABLE_IS_NOT_USED static const char* size = "size";
+				VARIABLE_IS_NOT_USED static const char* count = "count";
+				VARIABLE_IS_NOT_USED static const char* empty = "empty";
+				VARIABLE_IS_NOT_USED static const char* swap = "swap";
 
-				static const char* front = "front";
-				static const char* back = "back";
-				static const char* push_front = "push_front";
-				static const char* push_back = "push_back";
-				static const char* pop_front = "pop_front";
-				static const char* pop_back = "pop_back";
-				static const char* reserve = "reserve";
-				static const char* insert = "insert";
-				static const char* erase = "erase";
-				static const char* sort = "sort";
-				static const char* sort_scriptfunc = sort;
-				static const char* sort_aatcfuncptr = sort;
-				static const char* contains = "contains";
-				static const char* find = "find";
-				static const char* erase_position = erase;
-				static const char* erase_position_range = erase_position;
-				static const char* erase_value = "erase_value";
-				static const char* insert_position_before = insert;
+				VARIABLE_IS_NOT_USED static const char* front = "front";
+				VARIABLE_IS_NOT_USED static const char* back = "back";
+				VARIABLE_IS_NOT_USED static const char* push_front = "push_front";
+				VARIABLE_IS_NOT_USED static const char* push_back = "push_back";
+				VARIABLE_IS_NOT_USED static const char* pop_front = "pop_front";
+				VARIABLE_IS_NOT_USED static const char* pop_back = "pop_back";
+				VARIABLE_IS_NOT_USED static const char* reserve = "reserve";
+				VARIABLE_IS_NOT_USED static const char* insert = "insert";
+				VARIABLE_IS_NOT_USED static const char* erase = "erase";
+				VARIABLE_IS_NOT_USED static const char* sort = "sort";
+				VARIABLE_IS_NOT_USED static const char* sort_scriptfunc = sort;
+				VARIABLE_IS_NOT_USED static const char* sort_aatcfuncptr = sort;
+				VARIABLE_IS_NOT_USED static const char* contains = "contains";
+				VARIABLE_IS_NOT_USED static const char* find = "find";
+				VARIABLE_IS_NOT_USED static const char* erase_position = erase;
+				VARIABLE_IS_NOT_USED static const char* erase_position_range = erase_position;
+				VARIABLE_IS_NOT_USED static const char* erase_value = "erase_value";
+				VARIABLE_IS_NOT_USED static const char* insert_position_before = insert;
 
-				static const char* operator_index = "opIndex";
+				VARIABLE_IS_NOT_USED static const char* operator_index = "opIndex";
 
-				static const char* begin = "begin";
-				static const char* end = "end";
-				static const char* find_iterator = "find_iterator";
-				static const char* erase_iterator = erase;
-				static const char* erase_iterator_range = erase_iterator;
-				static const char* insert_iterator = insert;
+				VARIABLE_IS_NOT_USED static const char* begin = "begin";
+				VARIABLE_IS_NOT_USED static const char* end = "end";
+				VARIABLE_IS_NOT_USED static const char* find_iterator = "find_iterator";
+				VARIABLE_IS_NOT_USED static const char* erase_iterator = erase;
+				VARIABLE_IS_NOT_USED static const char* erase_iterator_range = erase_iterator;
+				VARIABLE_IS_NOT_USED static const char* insert_iterator = insert;
 			};//namespace container
 
 			namespace iterator {
-				static const char* access_property = "value";
-				static const char* access_property_key = "key";
-				static const char* access_property_value = "value";
-				static const char* access_function = "current";
-				static const char* access_function_key = "current_key";
-				static const char* access_function_value = "current_value";
-				static const char* is_end = "IsEnd";
-				static const char* is_valid = "IsValid";
+				VARIABLE_IS_NOT_USED static const char* access_property = "value";
+				VARIABLE_IS_NOT_USED static const char* access_property_key = "key";
+				VARIABLE_IS_NOT_USED static const char* access_property_value = "value";
+				VARIABLE_IS_NOT_USED static const char* access_function = "current";
+				VARIABLE_IS_NOT_USED static const char* access_function_key = "current_key";
+				VARIABLE_IS_NOT_USED static const char* access_function_value = "current_value";
+				VARIABLE_IS_NOT_USED static const char* is_end = "IsEnd";
+				VARIABLE_IS_NOT_USED static const char* is_valid = "IsValid";
 			};//namespace iterator
 		};//namespace method
 	};//namespace scriptname
@@ -282,7 +282,7 @@ namespace config {
 			/*
 				Happens when trying to access or set an iterator and the container has been modified after iterator construction.
 			*/
-			static const char* container_modified = "Invalid iterator. Container has been modified during iteration.";
+			VARIABLE_IS_NOT_USED static const char* container_modified = "Invalid iterator. Container has been modified during iteration.";
 
 			/*
 				Used by the container if it tries to use an invalid iterator.
@@ -294,7 +294,7 @@ namespace config {
 				myvec.erase(it);//no problem
 				myvec.erase(it);//this line will cause this exception, because the first erase changed the container state and invalidated all iterators
 			*/
-			static const char* is_invalid = "Invalid iterator.";
+			VARIABLE_IS_NOT_USED static const char* is_invalid = "Invalid iterator.";
 		};//namespace iterator
 	};//namespace errormessage
 };//namespace config

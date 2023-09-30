@@ -976,7 +976,7 @@ string ScriptGetExceptionInfo()
 
 void RegisterExceptionRoutines(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	// The string type must be available
 	assert(engine->GetTypeInfoByDecl("string"));

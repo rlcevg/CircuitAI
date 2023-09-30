@@ -1316,7 +1316,9 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 	AIFloat3 buildPos = -RgtVector;
 	if (bestDef->GetCostM() < 200.0f) {
-		if ((circuit->GetFactoryManager()->GetFactoryCount() > 0) && (position.SqDistance2D(setupMgr->GetBasePos()) < SQUARE(600.f))) {
+		if ((circuit->GetFactoryManager()->GetFactoryCount() > 0) && (position.SqDistance2D(setupMgr->GetSmallEnergyPos()) < SQUARE(600.f))
+			&& ((unit == nullptr) || !unit->GetCircuitDef()->IsRoleComm()))  // TODO: instead of isComm check isFast
+		{
 			buildPos = setupMgr->GetSmallEnergyPos();
 		} else {
 			buildPos = position + (position - terrainMgr->GetTerrainCenter()).Normalize2D() * (bestDef->GetRadius() + SQUARE_SIZE * 6);  // utils::get_radial_pos(position, bestDef->GetRadius() + SQUARE_SIZE * 6);
@@ -1997,7 +1999,7 @@ void CEconomyManager::UpdateEconomy()
 		pullMtoS = mspInfos.back().pull;
 	} else {
 		auto it = std::lower_bound(mspInfos.cbegin(), mspInfos.cend(), mexCount, SPullMtoS());
-		SPullMtoS& mspInfo = mspInfos[std::distance(mspInfos.cbegin(), it)];
+		const SPullMtoS& mspInfo = *--it;
 		pullMtoS = mspInfo.fraction * (mexCount - mspInfo.mex) + mspInfo.pull;
 	}
 	pullMtoS *= circuit->GetMilitaryManager()->ClampMobileCostRatio();

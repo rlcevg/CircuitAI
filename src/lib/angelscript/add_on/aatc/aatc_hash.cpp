@@ -57,7 +57,7 @@ namespace aatc {
 		namespace hashfunc {
 			config::t::hash djb2(const config::t::string& a) {
 				config::t::hash hash = 5381;
-				for (int i = 0; i < a.size(); i++) {
+				for (int i = 0; i < (int)a.size(); i++) {
 					hash = ((hash << 5) + hash) + a[i];
 				}
 				return hash;

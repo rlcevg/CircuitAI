@@ -254,7 +254,7 @@ namespace aatc {
 					scriptcmpfunctor_internal::functor_SetArgs<T> functor_setargs;
 					functor_setargs(context, lhs, rhs);
 					context->Execute();
-					return (context->GetReturnDWord() * reverse_multiplier) == -1;
+					return (context->GetReturnDWord() * reverse_multiplier) == (asDWORD)-1;
 				}
 			};
 			template<> class scriptcmpfunctor_globalfunction<scriptcmpfunctor_internal::dummytype_object> {
@@ -268,7 +268,7 @@ namespace aatc {
 					scriptcmpfunctor_internal::functor_SetArgs<scriptcmpfunctor_internal::dummytype_object> functor_setargs;
 					functor_setargs(context, lhs, rhs);
 					context->Execute();
-					return (context->GetReturnDWord() * reverse_multiplier) == -1;
+					return (context->GetReturnDWord() * reverse_multiplier) == (asDWORD)-1;
 				}
 			};
 			template<> class scriptcmpfunctor_globalfunction<scriptcmpfunctor_internal::dummytype_handle> {
@@ -282,7 +282,7 @@ namespace aatc {
 					scriptcmpfunctor_internal::functor_SetArgs<scriptcmpfunctor_internal::dummytype_handle> functor_setargs;
 					functor_setargs(context, lhs, rhs);
 					context->Execute();
-					return (context->GetReturnDWord() * reverse_multiplier) == -1;
+					return (context->GetReturnDWord() * reverse_multiplier) == (asDWORD)-1;
 				}
 			};
 
@@ -299,7 +299,7 @@ namespace aatc {
 					scriptcmpfunctor_internal::functor_SetArgs<T> functor_setargs;
 					functor_setargs(context, lhs, rhs);
 					context->Execute();
-					return (context->GetReturnDWord() * reverse_multiplier) == -1;
+					return (context->GetReturnDWord() * reverse_multiplier) == (asDWORD)-1;
 				}
 			};
 			template<> class scriptcmpfunctor_method<scriptcmpfunctor_internal::dummytype_object> {
@@ -315,7 +315,7 @@ namespace aatc {
 					scriptcmpfunctor_internal::functor_SetArgs<scriptcmpfunctor_internal::dummytype_object> functor_setargs;
 					functor_setargs(context, lhs, rhs);
 					context->Execute();
-					return (context->GetReturnDWord() * reverse_multiplier) == -1;
+					return (context->GetReturnDWord() * reverse_multiplier) == (asDWORD)-1;
 				}
 			};
 			template<> class scriptcmpfunctor_method<scriptcmpfunctor_internal::dummytype_handle> {
@@ -331,7 +331,7 @@ namespace aatc {
 					scriptcmpfunctor_internal::functor_SetArgs<scriptcmpfunctor_internal::dummytype_handle> functor_setargs;
 					functor_setargs(context, lhs, rhs);
 					context->Execute();
-					return (context->GetReturnDWord() * reverse_multiplier) == -1;
+					return (context->GetReturnDWord() * reverse_multiplier) == (asDWORD)-1;
 				}
 			};
 

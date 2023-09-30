@@ -234,7 +234,7 @@ static void ConstructSet_Generic(asIScriptGeneric *gen)
 
 void RegisterScriptDateTime(asIScriptEngine *engine)
 {
-	int r = engine->RegisterObjectType("datetime", sizeof(CDateTime), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<CDateTime>()); assert(r >= 0);
+	VARIABLE_IS_NOT_USED int r = engine->RegisterObjectType("datetime", sizeof(CDateTime), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<CDateTime>()); assert(r >= 0);
 
 	if(strstr(asGetLibraryOptions(), "AS_MAX_PORTABILITY")==0)
 	{

@@ -39,6 +39,12 @@
 #ifndef ANGELSCRIPT_H
 #define ANGELSCRIPT_H
 
+#ifdef __GNUC__
+#define VARIABLE_IS_NOT_USED __attribute__ ((unused))
+#else
+#define VARIABLE_IS_NOT_USED
+#endif
+
 #include <stddef.h>
 #ifndef _MSC_VER
 #include <stdint.h>

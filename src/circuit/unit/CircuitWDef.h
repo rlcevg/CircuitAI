@@ -30,6 +30,7 @@ public:
 	float GetCostM() const { return costM; }
 	float GetCostE() const { return costE; }
 	bool IsStockpile() const { return isStockpile; }
+	bool IsHighTrajectory() const { return isHigh; }
 
 private:
 	springai::WeaponDef* def;  // owner
@@ -38,7 +39,8 @@ private:
 	float aoe;
 	float costM;
 	float costE;
-	bool isStockpile;
+	bool isStockpile : 1;
+	bool isHigh : 1;
 };
 
 } // namespace circuit

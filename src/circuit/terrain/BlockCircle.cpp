@@ -25,7 +25,7 @@ CBlockCircle::CBlockCircle(const int2& offset, int radius, const int2& ssize, SB
 		for (int x = 0; x < xsize; x++) {
 			if ((x >= s1.x) && (x < s2.x) && (z >= s1.y) && (z < s2.y)) {
 				mask[z * xsize + x] = BlockType::STRUCT;
-			} else if ((x - c.x) * (x - c.x) + (z - c.y) * (z - c.y) <= radius * radius) {
+			} else if (SQUARE(x - c.x) + SQUARE(z - c.y) <= SQUARE(radius)) {
 				mask[z * xsize + x] = BlockType::BLOCK;
 			} else {
 				mask[z * xsize + x] = BlockType::OPEN;

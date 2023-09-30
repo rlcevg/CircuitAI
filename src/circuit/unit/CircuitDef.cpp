@@ -86,6 +86,7 @@ void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker, CMas
 		{"vampire",   {ATTR_TYPE(VAMPIRE),   CCircuitDef::AttrMask::VAMPIRE}},
 		{"onoff",     {ATTR_TYPE(ONOFF),     CCircuitDef::AttrMask::ONOFF}},
 		{"rare",      {ATTR_TYPE(RARE),      CCircuitDef::AttrMask::RARE}},
+		{"fence",     {ATTR_TYPE(FENCE),     CCircuitDef::AttrMask::FENCE}},
 	};
 	for (auto& kv : attrs) {
 		CMaskHandler::TypeMask tm = attrMasker->GetTypeMask(kv.first);

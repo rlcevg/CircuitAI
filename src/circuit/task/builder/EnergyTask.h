@@ -20,10 +20,14 @@ public:
 	CBEnergyTask(ITaskManager* mgr);  // Load
 	virtual ~CBEnergyTask();
 
+	virtual bool CanAssignTo(CCircuitUnit* unit) const override;
+
 	virtual void Update() override;
 protected:
 	virtual void Finish() override;
 	virtual void Cancel() override;
+
+	virtual bool Reevaluate(CCircuitUnit* unit) override;
 
 	virtual bool Load(std::istream& is) override;
 	virtual void Save(std::ostream& os) const override;

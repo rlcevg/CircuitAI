@@ -163,7 +163,7 @@ static void ComplexListConstructor(float *list, Complex *self)
 
 static void RegisterScriptMathComplex_Native(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	// Register the type
 #if AS_CAN_USE_CPP11

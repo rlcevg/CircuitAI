@@ -58,6 +58,7 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	const int canTargetCat = cdef->GetTargetCategoryDGun();
 	const bool isRoleComm = cdef->IsRoleComm();
 	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
+	const bool isLowTraj = !unit->IsDGunHigh();
 	CEnemyInfo* bestTarget = nullptr;
 	float maxThreat = 0.f;
 
@@ -89,14 +90,16 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			}
 		}
 
-		AIFloat3 dir = enemy->GetPos() - pos;
-		float rayRange = dir.LengthNormalize();
-		// NOTE: TraceRay check is mostly to ensure shot won't go into terrain.
-		//       Doesn't properly work with standoff weapons.
-		//       C API also returns rayLen.
-		ICoreUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
-		if (hitUID != enemy->GetId()) {
-			continue;
+		if (isLowTraj) {
+			AIFloat3 dir = enemy->GetPos() - pos;
+			float rayRange = dir.LengthNormalize();
+			// NOTE: TraceRay check is mostly to ensure shot won't go into terrain.
+			//       Doesn't properly work with standoff weapons.
+			//       C API also returns rayLen.
+			ICoreUnit::Id hitUID = circuit->GetDrawer()->TraceRay(pos, dir, rayRange, unit->GetUnit(), 0);
+			if (hitUID != enemy->GetId()) {
+				continue;
+			}
 		}
 
 		const float defThreat = edef->GetPower();

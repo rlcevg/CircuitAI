@@ -121,6 +121,7 @@ public:
 	float ClampPriority() const { return std::min(static_cast<float>(priority), 1.0f); }  // FIXME: BA
 
 protected:
+	void SetTaskPos(const springai::AIFloat3& pos) { position = pos; }
 	CCircuitUnit* GetNextAssignee();
 	void Update(CCircuitUnit* unit);
 	virtual bool Reevaluate(CCircuitUnit* unit);

@@ -264,28 +264,26 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
-		if (!cdef.GetDef()->IsBuilder()) {
+		if (cdef.IsMobile() || !cdef.GetDef()->IsBuilder()) {
 			continue;
 		}
 
-		if (!cdef.IsMobile()) {
-			CCircuitDef::Id unitDefId = cdef.GetId();
-			// FIXME: Caretaker can be factory. Make attributes?
-			if (cdef.IsBuilder() && (factoryDefs.find(unitDefId) != factoryDefs.end())) {
-				createdHandler[unitDefId] = factoryCreatedHandler;
-				finishedHandler[unitDefId] = factoryFinishedHandler;
-				idleHandler[unitDefId] = factoryIdleHandler;
-				destroyedHandler[unitDefId] = factoryDestroyedHandler;
-				economyMgr->AddFactoryDef(&cdef);
-			} else if (cdef.IsAbleToAssist()
-				&& (std::max(cdef.GetDef()->GetXSize(), cdef.GetDef()->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
-			{
-				createdHandler[unitDefId] = assistCreatedHandler;
-				finishedHandler[unitDefId] = assistFinishedHandler;
-				idleHandler[unitDefId] = assistIdleHandler;
-				destroyedHandler[unitDefId] = assistDestroyedHandler;
-				economyMgr->AddAssistDef(&cdef);
-			}
+		CCircuitDef::Id unitDefId = cdef.GetId();
+		// FIXME: Caretaker can be factory. Make attributes?
+		if (cdef.IsBuilder() && (factoryDefs.find(unitDefId) != factoryDefs.end())) {
+			createdHandler[unitDefId] = factoryCreatedHandler;
+			finishedHandler[unitDefId] = factoryFinishedHandler;
+			idleHandler[unitDefId] = factoryIdleHandler;
+			destroyedHandler[unitDefId] = factoryDestroyedHandler;
+			economyMgr->AddFactoryDef(&cdef);
+		} else if (cdef.IsAbleToAssist()
+			&& (std::max(cdef.GetDef()->GetXSize(), cdef.GetDef()->GetZSize()) * SQUARE_SIZE < cdef.GetBuildDistance()))
+		{
+			createdHandler[unitDefId] = assistCreatedHandler;
+			finishedHandler[unitDefId] = assistFinishedHandler;
+			idleHandler[unitDefId] = assistIdleHandler;
+			destroyedHandler[unitDefId] = assistDestroyedHandler;
+			economyMgr->AddAssistDef(&cdef);
 		}
 	}
 
@@ -1352,15 +1350,6 @@ IUnitTask* CFactoryManager::DefaultMakeTask(CCircuitUnit* unit)
 
 IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 {
-	CEconomyManager* economyMgr = circuit->GetEconomyManager();
-	const bool isStalling = economyMgr->IsMetalEmpty() &&
-							(economyMgr->GetAvgMetalIncome() * 1.2f < economyMgr->GetMetalPull()) &&
-							(metalPull * economyMgr->GetPullMtoS() > circuit->GetBuilderManager()->GetMetalPull());
-	const bool isNotReady = !economyMgr->IsExcessed() || isStalling;
-	if (isNotReady) {
-		return EnqueueWait(false, FRAMES_PER_SEC * 3);
-	}
-
 	if (unit->GetCircuitDef()->GetMobileId() < 0) {
 		if (circuit->GetEnemyManager()->IsAirValid()) {
 			if (validAir.find(unit) == validAir.end()) {
@@ -1379,6 +1368,15 @@ IUnitTask* CFactoryManager::CreateFactoryTask(CCircuitUnit* unit)
 	IUnitTask* task = UpdateBuildPower(unit, isActive);
 	if (task != nullptr) {
 		return task;
+	}
+
+	CEconomyManager* economyMgr = circuit->GetEconomyManager();
+	const bool isStalling = economyMgr->IsMetalEmpty() &&
+							(economyMgr->GetAvgMetalIncome() * 1.2f < economyMgr->GetMetalPull()) &&
+							(metalPull * economyMgr->GetPullMtoS() > circuit->GetBuilderManager()->GetMetalPull());
+	const bool isNotReady = !economyMgr->IsExcessed() || isStalling;
+	if (isNotReady) {
+		return EnqueueWait(false, FRAMES_PER_SEC * 3);
 	}
 
 	task = UpdateFirePower(unit, isActive);

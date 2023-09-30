@@ -141,7 +141,7 @@ void RegisterScriptAny(asIScriptEngine *engine)
 
 void RegisterScriptAny_Native(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 	r = engine->RegisterObjectType("any", sizeof(CScriptAny), asOBJ_REF | asOBJ_GC); assert( r >= 0 );
 
 	// We'll use the generic interface for the constructor as we need the engine pointer
@@ -170,7 +170,7 @@ void RegisterScriptAny_Native(asIScriptEngine *engine)
 
 void RegisterScriptAny_Generic(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 	r = engine->RegisterObjectType("any", sizeof(CScriptAny), asOBJ_REF | asOBJ_GC); assert( r >= 0 );
 
 	// We'll use the generic interface for the constructor as we need the engine pointer

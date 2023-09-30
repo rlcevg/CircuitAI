@@ -138,7 +138,7 @@ namespace aatc {
 				config::t::sizetype erase(const Iterator& range_begin, const Iterator& range_end) { return shared::method::native::erase_iterator_range(this, range_begin, range_end); }
 				config::t::sizetype erase(config::t::sizetype position_range_begin, config::t::sizetype position_range_end) { return shared::method::genericcc::erase_position_range_linear(this, position_range_begin, position_range_end); }
 
-				config::t::sizetype erase_value(const T_content& value, bool all = false) { shared::method::genericcc::erase_value(this, value, all); }
+				config::t::sizetype erase_value(const T_content& value, bool all = false) { return shared::method::genericcc::erase_value(this, value, all); }
 
 				Iterator find(const T_content& value) { return shared::method::genericcc::find_iterator(this, value); }
 

@@ -220,7 +220,7 @@ void RegisterScriptGrid(asIScriptEngine *engine)
 
 static void RegisterScriptGrid_Native(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	// Register the grid type as a template
 	r = engine->RegisterObjectType("grid<class T>", 0, asOBJ_REF | asOBJ_GC | asOBJ_TEMPLATE); assert( r >= 0 );

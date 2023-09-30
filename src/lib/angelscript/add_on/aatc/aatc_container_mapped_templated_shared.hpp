@@ -165,15 +165,15 @@ namespace aatc {
 
 						Containerbase(asIScriptEngine* _engine, asITypeInfo* _typeinfo) :
 							container::shared::container_basicbase(_engine),
-							container(_engine, this),
 							basetype_refcounted_GC(),
+							container(_engine, this),
 							typeinfo_container(_typeinfo),
+							typeinfo_key(nullptr),
+							typeinfo_value(nullptr),
 							needref_key(1),
 							needref_value(1),
 							directcomp_forced(0),
-							need_errorcheck_missing_functions(1),
-							typeinfo_key(nullptr),
-							typeinfo_value(nullptr)
+							need_errorcheck_missing_functions(1)
 						{
 							engine = _engine;
 
@@ -341,6 +341,7 @@ namespace aatc {
 									}
 									break;
 								}
+								default: break;
 								};
 							} else {//copy by inserting everything, takes time
 								for (auto it = other.container.begin(); it != other.container.end(); it++) {

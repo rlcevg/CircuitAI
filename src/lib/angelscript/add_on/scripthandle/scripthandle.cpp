@@ -230,7 +230,7 @@ void CScriptHandle::ReleaseReferences(asIScriptEngine * /*inEngine*/)
 
 void RegisterScriptHandle_Native(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 #if AS_CAN_USE_CPP11
 	// With C++11 it is possible to use asGetTypeTraits to automatically determine the flags that represent the C++ class
@@ -332,7 +332,7 @@ void CScriptHandle_ReleaseReferences_Generic(asIScriptGeneric *gen)
 
 void RegisterScriptHandle_Generic(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	r = engine->RegisterObjectType("ref", sizeof(CScriptHandle), asOBJ_VALUE | asOBJ_ASHANDLE | asOBJ_GC | asOBJ_APP_CLASS_CDAK); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("ref", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(CScriptHandle_Construct_Generic), asCALL_GENERIC); assert( r >= 0 );

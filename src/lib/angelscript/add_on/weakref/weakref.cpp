@@ -220,7 +220,7 @@ bool CScriptWeakRef::Equals(void *ref) const
 
 void RegisterScriptWeakRef_Native(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	// Register a type for non-const handles
 	r = engine->RegisterObjectType("weakref<class T>", sizeof(CScriptWeakRef), asOBJ_VALUE | asOBJ_ASHANDLE | asOBJ_TEMPLATE | asOBJ_APP_CLASS_DAK); assert( r >= 0 );
@@ -326,7 +326,7 @@ static void ScriptWeakRefTemplateCallback_Generic(asIScriptGeneric *gen)
 
 void RegisterScriptWeakRef_Generic(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	// Register a type for non-const handles
 	r = engine->RegisterObjectType("weakref<class T>", sizeof(CScriptWeakRef), asOBJ_VALUE | asOBJ_ASHANDLE | asOBJ_TEMPLATE | asOBJ_APP_CLASS_DAK); assert( r >= 0 );

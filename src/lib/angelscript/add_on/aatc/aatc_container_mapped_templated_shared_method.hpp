@@ -208,6 +208,8 @@ namespace aatc {
 
 								common::primunion old_key;
 								common::primunion old_value;
+								old_key.ptr = nullptr;
+								old_value.ptr = nullptr;
 
 								if (t->datahandlingid_key != common::DATAHANDLINGTYPE::PRIMITIVE) { old_key.ptr = (*it).first.ptr; }
 								if (t->datahandlingid_value != common::DATAHANDLINGTYPE::PRIMITIVE) { old_value.ptr = (*it).second.ptr; }

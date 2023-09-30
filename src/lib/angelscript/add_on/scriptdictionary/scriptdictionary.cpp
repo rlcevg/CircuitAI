@@ -1068,7 +1068,7 @@ void RegisterScriptDictionary(asIScriptEngine *engine)
 
 void RegisterScriptDictionary_Native(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	// The array<string> type must be available
 	assert( engine->GetTypeInfoByDecl("array<string>") );
@@ -1147,7 +1147,7 @@ void RegisterScriptDictionary_Native(asIScriptEngine *engine)
 
 void RegisterScriptDictionary_Generic(asIScriptEngine *engine)
 {
-	int r;
+	VARIABLE_IS_NOT_USED int r;
 
 	// Register the cleanup callback for the object type cache
 	engine->SetEngineUserDataCleanupCallback(SDictionaryCache::Cleanup, DICTIONARY_CACHE);

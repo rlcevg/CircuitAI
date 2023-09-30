@@ -50,10 +50,11 @@ TypeMask BASE      = aiAttrMasker.GetTypeMask("base");
 TypeMask VAMPIRE   = aiAttrMasker.GetTypeMask("vampire");
 TypeMask ONOFF     = aiAttrMasker.GetTypeMask("onoff");
 TypeMask RARE      = aiAttrMasker.GetTypeMask("rare");
+TypeMask FENCE     = aiAttrMasker.GetTypeMask("fence");
 }  // namespace Attr
 
 enum UseAs {
-	COMBAT = 0, DEFENCE, SUPER,  // military
+	COMBAT = 0, FENCE, SUPER, STOCK,  // military
 	BUILDER, REZZER,  // builder
 	FACTORY, ASSIST  // factory
 }

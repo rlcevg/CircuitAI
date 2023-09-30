@@ -131,7 +131,7 @@ namespace aatc {
 						int paramTypeId;
 						func->GetParam(0, &paramTypeId, &flags);
 
-						if ((paramTypeId & ~(asTYPEID_OBJHANDLE | asTYPEID_HANDLETOCONST)) != (subtypeid &  ~(asTYPEID_OBJHANDLE | asTYPEID_HANDLETOCONST))){
+						if (((decltype(subtypeid))paramTypeId & ~(asTYPEID_OBJHANDLE | asTYPEID_HANDLETOCONST)) != (subtypeid &  ~(asTYPEID_OBJHANDLE | asTYPEID_HANDLETOCONST))){
 							continue;
 						}
 

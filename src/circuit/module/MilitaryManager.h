@@ -29,7 +29,6 @@ public:
 	using BuildVector = std::vector<std::pair<CCircuitDef*, int>>;  // cdef: frame
 	using SuperInfos = std::vector<std::pair<CCircuitDef*, float>>;  // cdef: weight
 	struct SSideInfo {
-		std::vector<CCircuitDef*> defenderDefs;
 		std::vector<CCircuitDef*> landDefenders;
 		std::vector<CCircuitDef*> waterDefenders;
 		BuildVector baseDefence;
