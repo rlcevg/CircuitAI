@@ -59,12 +59,15 @@ void CDGunAction::Update(CCircuitAI* circuit)
 	const bool isRoleComm = cdef->IsRoleComm();
 	const bool IsInWater = cdef->IsInWater(map->GetElevationAt(pos.x, pos.z), pos.y);
 	const bool isLowTraj = !unit->IsDGunHigh();
+	const bool notByCost = !unit->GetCircuitDef()->IsAttrDGCost();
 	CEnemyInfo* bestTarget = nullptr;
-	float maxThreat = 0.f;
+	float maxScore = 0.f;
 
 	for (int eId : enemies) {
 		CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
-		if ((enemy == nullptr) || enemy->NotInRadarAndLOS() || (enemy->GetInfluence() < THREAT_MIN)) {
+		if ((enemy == nullptr) || enemy->NotInRadarAndLOS()
+			|| (notByCost && (enemy->GetInfluence() < THREAT_MIN)))
+		{
 			continue;
 		}
 		CCircuitDef* edef = enemy->GetCircuitDef();
@@ -102,9 +105,9 @@ void CDGunAction::Update(CCircuitAI* circuit)
 			}
 		}
 
-		const float defThreat = edef->GetPower();
-		if (maxThreat < defThreat) {
-			maxThreat = defThreat;
+		const float defScore = notByCost ? edef->GetPower() : edef->GetCostM();
+		if (maxScore < defScore) {
+			maxScore = defScore;
 			bestTarget = enemy;
 		}
 	}

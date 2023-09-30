@@ -47,8 +47,11 @@ TypeMask RET_HOLD  = aiAttrMasker.GetTypeMask("ret_hold");
 TypeMask RET_FIGHT = aiAttrMasker.GetTypeMask("ret_fight");
 TypeMask SOLO      = aiAttrMasker.GetTypeMask("solo");
 TypeMask BASE      = aiAttrMasker.GetTypeMask("base");
-TypeMask VAMPIRE   = aiAttrMasker.GetTypeMask("vampire");
+TypeMask DG_COST   = aiAttrMasker.GetTypeMask("dg_cost");
+TypeMask DG_STILL  = aiAttrMasker.GetTypeMask("dg_still");
+TypeMask JUMP      = aiAttrMasker.GetTypeMask("jump");
 TypeMask ONOFF     = aiAttrMasker.GetTypeMask("onoff");
+TypeMask VAMPIRE   = aiAttrMasker.GetTypeMask("vampire");
 TypeMask RARE      = aiAttrMasker.GetTypeMask("rare");
 TypeMask FENCE     = aiAttrMasker.GetTypeMask("fence");
 }  // namespace Attr

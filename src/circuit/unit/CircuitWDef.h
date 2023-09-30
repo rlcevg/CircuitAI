@@ -29,6 +29,7 @@ public:
 	float GetAoe() const { return aoe; }
 	float GetCostM() const { return costM; }
 	float GetCostE() const { return costE; }
+	float GetFireTime() const { return fireTime; }
 	bool IsStockpile() const { return isStockpile; }
 	bool IsHighTrajectory() const { return isHigh; }
 
@@ -39,6 +40,7 @@ private:
 	float aoe;
 	float costM;
 	float costE;
+	float fireTime;
 	bool isStockpile : 1;
 	bool isHigh : 1;
 };
