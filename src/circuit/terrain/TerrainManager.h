@@ -164,6 +164,8 @@ public:
 	bool CanMoveToPos(terrain::SArea* area, const springai::AIFloat3& destination);
 	springai::AIFloat3 GetBuildPosition(CCircuitDef* cdef, const springai::AIFloat3& position);
 	springai::AIFloat3 GetMovePosition(terrain::SArea* sourceArea, const springai::AIFloat3& position);
+	springai::AIFloat3 ShiftPos(CCircuitDef* cdef, const springai::AIFloat3& position, float range, bool isOrtho = false);
+	springai::AIFloat3 ShiftPos(CCircuitDef* cdef, const springai::AIFloat3& position, int clusterId, float range, bool isOrtho = false);
 private:
 	std::vector<terrain::SAreaSector>& GetSectorList(terrain::SArea* sourceArea = nullptr);
 	terrain::SAreaSector* GetClosestSectorWithAltitude(terrain::SArea* sourceArea, const int destinationSIndex, const int altitude);

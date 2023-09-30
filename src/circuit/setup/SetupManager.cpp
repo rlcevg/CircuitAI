@@ -139,7 +139,7 @@ bool CSetupManager::CanChooseStartPos() const
 	return setupData->CanChooseStartPos();
 }
 
-void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
+void CSetupManager::PickStartPos(StartPosType type)
 {
 	CAllyTeam* allyTeam = circuit->GetAllyTeam();
 	const utils::CRegion& box = allyTeam->GetStartBox();
@@ -208,7 +208,11 @@ void CSetupManager::PickStartPos(CCircuitAI* circuit, StartPosType type)
 				allyTeam->OccupyCluster(clusterId, circuit->GetTeamId());
 
 				const CMetalData::MetalIndices& indices = validPoints[clusterId];
-				pos = spots[indices[rand() % indices.size()]].position;
+				const CMetalData::SMetal& spot = spots[indices[rand() % indices.size()]];
+				CCircuitDef* mexDef = circuit->GetEconomyManager()->GetSideInfo().mexDef;
+				const float range = std::max(mexDef->GetDef()->GetXSize(), mexDef->GetDef()->GetZSize())
+						* SQUARE_SIZE / 2 * 1.4f + commChoice->GetRadius();
+				pos = MakeStartPosOffset(spot.position, clusterId, range);
 			} else {
 				pos = box.Random();
 			}
@@ -604,6 +608,24 @@ void CSetupManager::CalcLanePos()
 //	if (mapCenter.SqDistance2D(lanePos) < mapCenter.SqDistance2D(allyTeam->GetAuthority()->GetSetupManager()->GetLanePos())) {
 //		allyTeam->SetAuthority(circuit);
 //	}
+}
+
+AIFloat3 CSetupManager::MakeStartPosOffset(const AIFloat3& pos, int clusterId, float range)
+{
+	// offset towards cluster center
+	const AIFloat3 newPos = circuit->GetTerrainManager()->ShiftPos(commChoice, pos, clusterId, range);
+	// check new position
+	if (!utils::is_valid(newPos)) {
+		return pos;
+	}
+	Lua* lua = circuit->GetLua();
+	std::string cmd("ai_is_valid_startpos:");
+	cmd += utils::int_to_string(newPos.x) + "/" + utils::int_to_string(newPos.z);
+	std::string result = lua->CallRules(cmd.c_str(), cmd.size());
+	if (result != "1") {
+		return pos;
+	}
+	return newPos;
 }
 
 bool CSetupManager::LoadConfig(const std::string& profile, const std::vector<std::string>& parts)
