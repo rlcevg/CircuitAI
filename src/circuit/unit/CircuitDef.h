@@ -63,6 +63,7 @@ public:
 	 * RET_FIGHT: fight on retreat
 	 * JUMP:      enable jump on regular move
 	 * DG_COST:   DGun by metal cost instead of by threat
+	 * DG_STILL:  hold still after DGun activation
 	 */
 	enum class AttrType: RoleT {NONE = -1,
 		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,

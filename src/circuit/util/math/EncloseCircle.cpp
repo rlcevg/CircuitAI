@@ -8,6 +8,7 @@
 #include "util/math/EncloseCircle.h"
 #include "util/Utils.h"
 
+#include <random>
 #include <algorithm>
 #include <assert.h>
 
@@ -47,7 +48,9 @@ void CEncloseCircle::MakeCircle(const std::vector<AIFloat3>& points)
 		}
 		// Randomize order
 		// TODO: Read why shuffle??
-		std::random_shuffle(shuffled.begin(), shuffled.end());
+		std::random_device rd;
+		std::mt19937 g(rd());
+		std::shuffle(shuffled.begin(), shuffled.end(), g);
 
 		// Progressively add points to circle or recompute circle
 		decltype(shuffled)::iterator it = shuffled.begin();
