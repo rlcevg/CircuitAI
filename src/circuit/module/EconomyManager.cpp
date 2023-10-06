@@ -217,7 +217,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 				// BA: float metalConverts = unitDef->GetMakesResource(metalRes);
 				//     float metalExtracts = unitDef->GetExtractsResource(metalRes);
 				//     float netMetal = unitDef->GetResourceMake(metalRes) - unitDef->GetUpkeep(metalRes);
-				if (((it = customParams.find("ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
+				if (((it = customParams.find(               "ismex")) != customParams.end()) && (utils::string_to_int(it->second) == 1)
+				||  ((it = customParams.find("metal_extractor_mult")) != customParams.end()) && (utils::string_to_int(it->second) > 0)) {
 					finishedHandler[cdef.GetId()] = mexFinishedHandler;
 					mexDef = &cdef;  // cormex
 					cdef.SetIsMex(true);
