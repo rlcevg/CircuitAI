@@ -15,8 +15,9 @@
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
-#include "json/json.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
+#include "json/json.h"
 
 #include "spring/SpringCallback.h"
 #include "spring/SpringMap.h"
@@ -580,6 +581,8 @@ void CEnemyManager::Prepare()
 
 std::shared_ptr<IMainJob> CEnemyManager::Update()
 {
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	Prepare();
 
 	KMeansIteration();

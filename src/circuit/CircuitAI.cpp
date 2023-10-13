@@ -24,6 +24,7 @@
 #include "unit/enemy/EnemyUnit.h"
 #include "util/GameAttribute.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #ifdef DEBUG_VIS
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
@@ -67,10 +68,16 @@ using namespace terrain;
 #define RELEASE_SCRIPT		202
 #define RELEASE_COMMANDER	203
 #define RELEASE_CORRUPTED	204
-#ifdef DEBUG_TOPIC
-	#define PRINT_TOPIC(txt, topic)	LOG("<CircuitAI> %s topic: %i, SkirmishAIId: %i", txt, topic, skirmishAIId)
+#ifdef CIRCUIT_PROFILING
+	#define TRACY_TOPIC(txt, topic)	\
+		ZoneScopedN(txt);	\
+		ZoneName(profiler.GetEvent ## topic ## Name(skirmishAIId), profiler.GetEvent ## topic ## Size(skirmishAIId))
+	#define TRACY_TOPIC_UNIT(txt, topic, unit)	\
+		TRACY_TOPIC(txt, topic);	\
+		ZoneValue(unit)
 #else
-	#define PRINT_TOPIC(txt, topic)
+	#define TRACY_TOPIC(txt, topic)
+	#define TRACY_TOPIC_UNIT(txt, topic, unit)
 #endif
 
 /*
@@ -79,7 +86,7 @@ using namespace terrain;
  * Разрушать города,
  * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.6.8"};
+constexpr char version[]{"1.6.9"};
 constexpr uint32_t VERSION_SAVE = 4;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -201,8 +208,8 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 
 	switch (topic) {
 		case EVENT_INIT: {
-			PRINT_TOPIC("EVENT_INIT", topic);
-			SCOPED_TIME(this, "EVENT_INIT");
+			TRACY_TOPIC("EVENT_INIT", Init);
+
 			struct SInitEvent* evt = (struct SInitEvent*)data;
 			try {
 				ret = this->Init(evt->skirmishAIId, evt->callback);
@@ -217,35 +224,36 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			return ret;
 		} break;
 		case EVENT_RELEASE: {
-			PRINT_TOPIC("EVENT_RELEASE", topic);
-			SCOPED_TIME(this, "EVENT_RELEASE");
+			TRACY_TOPIC("EVENT_RELEASE", Release);
+
 			struct SReleaseEvent* evt = (struct SReleaseEvent*)data;
 			ret = this->Release(evt->reason);
 		} break;
 		case EVENT_UPDATE: {
-//			PRINT_TOPIC("EVENT_UPDATE", topic);
-			SCOPED_TIME(this, "EVENT_UPDATE");
+			FrameMarkNamed(profiler.GetEventUpdateName(skirmishAIId));
+			TRACY_TOPIC("EVENT_UPDATE", Update);
+
 			struct SUpdateEvent* evt = (struct SUpdateEvent*)data;
 			ret = this->Update(evt->frame);
 		} break;
 		case EVENT_MESSAGE: {
-			PRINT_TOPIC("EVENT_MESSAGE", topic);
-			SCOPED_TIME(this, "EVENT_MESSAGE");
+			TRACY_TOPIC("EVENT_MESSAGE", Message);
+
 			struct SMessageEvent* evt = (struct SMessageEvent*)data;
 			ret = this->Message(evt->player, evt->message);
 		} break;
 		case EVENT_UNIT_CREATED: {
-			PRINT_TOPIC("EVENT_UNIT_CREATED", topic);
-			SCOPED_TIME(this, "EVENT_UNIT_CREATED");
 			struct SUnitCreatedEvent* evt = (struct SUnitCreatedEvent*)data;
+			TRACY_TOPIC_UNIT("EVENT_UNIT_CREATED", UnitCreated, evt->unit);
+
 			CCircuitUnit* builder = GetTeamUnit(evt->builder);
 			CCircuitUnit* unit = GetOrRegTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitCreated(unit, builder) : ERROR_UNIT_CREATED;
 		} break;
 		case EVENT_UNIT_FINISHED: {
-			PRINT_TOPIC("EVENT_UNIT_FINISHED", topic);
-			SCOPED_TIME(this, "EVENT_UNIT_FINISHED");
 			struct SUnitFinishedEvent* evt = (struct SUnitFinishedEvent*)data;
+			TRACY_TOPIC_UNIT("EVENT_UNIT_FINISHED", UnitFinished, evt->unit);
+
 			// Lua might call SetUnitHealth within eventHandler.UnitCreated(this, builder);
 			// and trigger UnitFinished before eoh->UnitCreated(*this, builder);
 			// @see rts/Sim/Units/Unit.cpp CUnit::PostInit
@@ -253,32 +261,32 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			ret = (unit != nullptr) ? this->UnitFinished(unit) : ERROR_UNIT_FINISHED;
 		} break;
 		case EVENT_UNIT_IDLE: {
-			PRINT_TOPIC("EVENT_UNIT_IDLE", topic);
-			SCOPED_TIME(this, "EVENT_UNIT_IDLE");
 			struct SUnitIdleEvent* evt = (struct SUnitIdleEvent*)data;
+			TRACY_TOPIC_UNIT("EVENT_UNIT_IDLE", UnitIdle, evt->unit);
+
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitIdle(unit) : ERROR_UNIT_IDLE;
 		} break;
 		case EVENT_UNIT_MOVE_FAILED: {
-			PRINT_TOPIC("EVENT_UNIT_MOVE_FAILED", topic);
-			SCOPED_TIME(this, "EVENT_UNIT_MOVE_FAILED");
 			struct SUnitMoveFailedEvent* evt = (struct SUnitMoveFailedEvent*)data;
+			TRACY_TOPIC_UNIT("EVENT_UNIT_MOVE_FAILED", UnitMoveFailed, evt->unit);
+
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr) ? this->UnitMoveFailed(unit) : ERROR_UNIT_MOVE_FAILED;
 		} break;
 		case EVENT_UNIT_DAMAGED: {
-			PRINT_TOPIC("EVENT_UNIT_DAMAGED", topic);
-			SCOPED_TIME(this, "EVENT_UNIT_DAMAGED");
 			struct SUnitDamagedEvent* evt = (struct SUnitDamagedEvent*)data;
+			TRACY_TOPIC_UNIT("EVENT_UNIT_DAMAGED", UnitDamaged, evt->unit);
+
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			ret = (unit != nullptr)
 					? this->UnitDamaged(unit, evt->attacker, evt->weaponDefId, AIFloat3(evt->dir_posF3))
 					: ERROR_UNIT_DAMAGED;
 		} break;
 		case EVENT_UNIT_DESTROYED: {
-			PRINT_TOPIC("EVENT_UNIT_DESTROYED", topic);
-			SCOPED_TIME(this, "EVENT_UNIT_DESTROYED");
 			struct SUnitDestroyedEvent* evt = (struct SUnitDestroyedEvent*)data;
+			TRACY_TOPIC_UNIT("EVENT_UNIT_DESTROYED", UnitDestroyed, evt->unit);
+
 			CEnemyInfo* attacker = GetEnemyInfo(evt->attacker);
 			CCircuitUnit* unit = GetTeamUnit(evt->unit);
 			if (unit != nullptr) {
@@ -289,20 +297,20 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			}
 		} break;
 		case EVENT_UNIT_GIVEN: {
-			PRINT_TOPIC("EVENT_UNIT_GIVEN", topic);
-			SCOPED_TIME(this, "EVENT_UNIT_GIVEN");
 			struct SUnitGivenEvent* evt = (struct SUnitGivenEvent*)data;
+			TRACY_TOPIC_UNIT("EVENT_UNIT_GIVEN", UnitGiven, evt->unitId);
+
 			ret = this->UnitGiven(evt->unitId, evt->oldTeamId, evt->newTeamId);
 		} break;
 		case EVENT_UNIT_CAPTURED: {
-			PRINT_TOPIC("EVENT_UNIT_CAPTURED", topic);
-			SCOPED_TIME(this, "EVENT_UNIT_CAPTURED");
 			struct SUnitCapturedEvent* evt = (struct SUnitCapturedEvent*)data;
+			TRACY_TOPIC_UNIT("EVENT_UNIT_CAPTURED", UnitCaptured, evt->unitId);
+
 			ret = this->UnitCaptured(evt->unitId, evt->oldTeamId, evt->newTeamId);
 		} break;
 		case EVENT_ENEMY_ENTER_LOS: {
-			PRINT_TOPIC("EVENT_ENEMY_ENTER_LOS", topic);
-			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_LOS");
+			TRACY_TOPIC("EVENT_ENEMY_ENTER_LOS", EnemyEnterLOS);
+
 			struct SEnemyEnterLOSEvent* evt = (struct SEnemyEnterLOSEvent*)data;
 			CEnemyInfo* enemy;
 			bool isReal;
@@ -312,8 +320,8 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 					: 0;
 		} break;
 		case EVENT_ENEMY_LEAVE_LOS: {
-			PRINT_TOPIC("EVENT_ENEMY_LEAVE_LOS", topic);
-			SCOPED_TIME(this, "EVENT_ENEMY_LEAVE_LOS");
+			TRACY_TOPIC("EVENT_ENEMY_LEAVE_LOS", EnemyLeaveLOS);
+
 			if (isCheating) {
 				ret = 0;
 			} else {
@@ -323,8 +331,8 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			}
 		} break;
 		case EVENT_ENEMY_ENTER_RADAR: {
-			PRINT_TOPIC("EVENT_ENEMY_ENTER_RADAR", topic);
-			SCOPED_TIME(this, "EVENT_ENEMY_ENTER_RADAR");
+			TRACY_TOPIC("EVENT_ENEMY_ENTER_RADAR", EnemyEnterRadar);
+
 			struct SEnemyEnterRadarEvent* evt = (struct SEnemyEnterRadarEvent*)data;
 			CEnemyInfo* enemy;
 			bool isReal;
@@ -334,8 +342,8 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 					: 0;
 		} break;
 		case EVENT_ENEMY_LEAVE_RADAR: {
-			PRINT_TOPIC("EVENT_ENEMY_LEAVE_RADAR", topic);
-			SCOPED_TIME(this, "EVENT_ENEMY_LEAVE_RADAR");
+			TRACY_TOPIC("EVENT_ENEMY_LEAVE_RADAR", EnemyLeaveRadar);
+
 			if (isCheating) {
 				ret = 0;
 			} else {
@@ -345,15 +353,15 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			}
 		} break;
 		case EVENT_ENEMY_DAMAGED: {
-			PRINT_TOPIC("EVENT_ENEMY_DAMAGED", topic);
-			SCOPED_TIME(this, "EVENT_ENEMY_DAMAGED");
+			TRACY_TOPIC("EVENT_ENEMY_DAMAGED", EnemyDamaged);
+
 			struct SEnemyDamagedEvent* evt = (struct SEnemyDamagedEvent*)data;
 			CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 			ret = (enemy != nullptr) ? this->EnemyDamaged(enemy) : ERROR_ENEMY_DAMAGED;
 		} break;
 		case EVENT_ENEMY_DESTROYED: {
-			PRINT_TOPIC("EVENT_ENEMY_DESTROYED", topic);
-			SCOPED_TIME(this, "EVENT_ENEMY_DESTROYED");
+			TRACY_TOPIC("EVENT_ENEMY_DESTROYED", EnemyDestroyed);
+
 			struct SEnemyDestroyedEvent* evt = (struct SEnemyDestroyedEvent*)data;
 			CEnemyInfo* enemy = GetEnemyInfo(evt->enemy);
 			if (enemy != nullptr) {
@@ -364,11 +372,13 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			}
 		} break;
 		case EVENT_WEAPON_FIRED: {
-			PRINT_TOPIC("EVENT_WEAPON_FIRED", topic);
+			TRACY_TOPIC("EVENT_WEAPON_FIRED", WeaponFired);
+
 			ret = 0;
 		} break;
 		case EVENT_PLAYER_COMMAND: {
-			PRINT_TOPIC("EVENT_PLAYER_COMMAND", topic);
+			TRACY_TOPIC("EVENT_PLAYER_COMMAND", PlayerCommand);
+
 			struct SPlayerCommandEvent* evt = (struct SPlayerCommandEvent*)data;
 			std::vector<CCircuitUnit*> units;
 			units.reserve(evt->unitIds_size);
@@ -378,11 +388,13 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			ret = this->PlayerCommand(units);
 		} break;
 		case EVENT_SEISMIC_PING: {
-			PRINT_TOPIC("EVENT_SEISMIC_PING", topic);
+			TRACY_TOPIC("EVENT_SEISMIC_PING", SeismicPing);
+
 			ret = 0;
 		} break;
 		case EVENT_COMMAND_FINISHED: {
-//			PRINT_TOPIC("EVENT_COMMAND_FINISHED", topic);
+			TRACY_TOPIC("EVENT_COMMAND_FINISHED", CommandFinished);
+
 			// FIXME: commandId always == -1, no use
 //			struct SCommandFinishedEvent* evt = (struct SCommandFinishedEvent*)data;
 //			CCircuitUnit* unit = GetTeamUnit(evt->unitId);
@@ -392,7 +404,8 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			ret = 0;
 		} break;
 		case EVENT_LOAD: {
-			PRINT_TOPIC("EVENT_LOAD", topic);
+			TRACY_TOPIC("EVENT_LOAD", Load);
+
 			struct SLoadEvent* evt = (struct SLoadEvent*)data;
 			std::ifstream loadFileStream;
 			loadFileStream.open(evt->file, std::ios::binary);
@@ -401,7 +414,8 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			return ret;
 		} break;
 		case EVENT_SAVE: {
-			PRINT_TOPIC("EVENT_SAVE", topic);
+			TRACY_TOPIC("EVENT_SAVE", Save);
+
 			struct SSaveEvent* evt = (struct SSaveEvent*)data;
 			std::ofstream saveFileStream;
 			saveFileStream.open(evt->file, std::ios::binary);
@@ -410,10 +424,10 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 			return ret;
 		} break;
 		case EVENT_ENEMY_CREATED: {
-			PRINT_TOPIC("EVENT_ENEMY_CREATED", topic);
+			TRACY_TOPIC("EVENT_ENEMY_CREATED", EnemyCreated);
+
 			// @see Cheats::SetEventsEnabled
 			// FIXME: Can't query enemy data with globalLOS
-			SCOPED_TIME(this, "EVENT_ENEMY_CREATED");
 			struct SEnemyCreatedEvent* evt = (struct SEnemyCreatedEvent*)data;
 			CEnemyInfo* unit;
 			bool isReal;
@@ -423,13 +437,14 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 					: 0;
 		} break;
 		case EVENT_ENEMY_FINISHED: {
-			PRINT_TOPIC("EVENT_ENEMY_FINISHED", topic);
+			TRACY_TOPIC("EVENT_ENEMY_FINISHED", EnemyFinished);
+
 			// @see Cheats::SetEventsEnabled
 			ret = 0;
 		} break;
 		case EVENT_LUA_MESSAGE: {
-			PRINT_TOPIC("EVENT_LUA_MESSAGE", topic);
-			SCOPED_TIME(this, "EVENT_LUA_MESSAGE");
+			TRACY_TOPIC("EVENT_LUA_MESSAGE", LuaMessage);
+
 			struct SLuaMessageEvent* evt = (struct SLuaMessageEvent*)data;
 			ret = this->LuaMessage(evt->inData);
 		} break;
@@ -448,7 +463,8 @@ int CCircuitAI::HandleGameEvent(int topic, const void* data)
 int CCircuitAI::HandleEndEvent(int topic, const void* data)
 {
 	if (topic == EVENT_RELEASE) {
-		PRINT_TOPIC("EVENT_RELEASE::END", topic);
+		TRACY_TOPIC("EVENT_RELEASE::END", ReleaseEnd);
+
 		struct SReleaseEvent* evt = (struct SReleaseEvent*)data;
 		return this->Release(evt->reason);
 	}
@@ -459,12 +475,15 @@ int CCircuitAI::HandleResignEvent(int topic, const void* data)
 {
 	switch (topic) {
 		case EVENT_RELEASE: {
-			PRINT_TOPIC("EVENT_RELEASE::RESIGN", topic);
+			TRACY_TOPIC("EVENT_RELEASE::RESIGN", ReleaseResign);
+
 			struct SReleaseEvent* evt = (struct SReleaseEvent*)data;
 			return this->Release(evt->reason);
 		} break;
 		case EVENT_UPDATE: {
-//			PRINT_TOPIC("EVENT_UPDATE::RESIGN", topic);
+			FrameMarkNamed(profiler.GetEventUpdateName(skirmishAIId));
+			TRACY_TOPIC("EVENT_UPDATE::RESIGN", UpdateResign);
+
 			struct SUpdateEvent* evt = (struct SUpdateEvent*)data;
 			if (evt->frame % (TEAM_SLOWUPDATE_RATE * INCOME_SAMPLES) == 0) {
 				const int mId = metalRes->GetResourceId();

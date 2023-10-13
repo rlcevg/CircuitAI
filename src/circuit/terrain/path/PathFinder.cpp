@@ -18,6 +18,7 @@
 #include "scheduler/Scheduler.h"
 #include "unit/CircuitUnit.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #ifdef DEBUG_VIS
 #include "CircuitAI.h"
 
@@ -548,7 +549,10 @@ void CPathFinder::RunPathSingle(CScheduler* scheduler, const std::shared_ptr<IPa
 			onComplete(query);
 		}
 	});
+
 	scheduler->RunParallelJob(CScheduler::PathJob(query, [this, finish](int threadNum, IPathQuery* query) {
+		ZoneScopedN(__PRETTY_FUNCTION__);
+
 		this->MakePath(query, micropathers[threadNum]);
 		return finish;
 	}));
@@ -569,7 +573,10 @@ void CPathFinder::RunPathMulti(CScheduler* scheduler, const std::shared_ptr<IPat
 			onComplete(query);
 		}
 	});
+
 	scheduler->RunParallelJob(CScheduler::PathJob(query, [this, finish](int threadNum, IPathQuery* query) {
+		ZoneScopedN(__PRETTY_FUNCTION__);
+
 		this->FindBestPath(query, micropathers[threadNum]);
 		return finish;
 	}));
@@ -590,7 +597,10 @@ void CPathFinder::RunPathWide(CScheduler* scheduler, const std::shared_ptr<IPath
 			onComplete(query);
 		}
 	});
+
 	scheduler->RunParallelJob(CScheduler::PathJob(query, [this, finish](int threadNum, IPathQuery* query) {
+		ZoneScopedN(__PRETTY_FUNCTION__);
+
 		this->MakePathWide(query, micropathers[threadNum]);
 		return finish;
 	}));
@@ -605,7 +615,10 @@ void CPathFinder::RunCostMap(CScheduler* scheduler, const std::shared_ptr<IPathQ
 			onComplete(query);
 		}
 	});
+
 	scheduler->RunParallelJob(CScheduler::PathJob(query, [this, finish](int threadNum, IPathQuery* query) {
+		ZoneScopedN(__PRETTY_FUNCTION__);
+
 		this->MakeCostMap(query, micropathers[threadNum]);
 		return finish;
 	}));

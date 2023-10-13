@@ -23,6 +23,7 @@
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -1457,7 +1458,8 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 
 void CFactoryManager::Watchdog()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	auto checkIdler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			return;
@@ -1478,13 +1480,15 @@ void CFactoryManager::Watchdog()
 
 void CFactoryManager::UpdateIdle()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	idleTask->Update();
 }
 
 void CFactoryManager::UpdateFactory()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScoped;
+
 	if (updateIterator >= updateTasks.size()) {
 		updateIterator = 0;
 	}

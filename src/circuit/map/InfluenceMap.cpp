@@ -14,6 +14,7 @@
 #include "unit/ally/AllyUnit.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -86,10 +87,12 @@ void CInfluenceMap::ReadConfig()
 
 void CInfluenceMap::EnqueueUpdate()
 {
-//	if (isUpdating) {
+//	if (isUpdating) {  // NOTE: done at MapManager level
 //		return;
 //	}
 	isUpdating = true;
+
+	FrameMarkStart(profiler.GetInflUpdateName(manager->GetCircuit()->GetSkirmishAIId()));
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	CEnemyManager* enemyMgr = circuit->GetEnemyManager();
@@ -117,6 +120,8 @@ void CInfluenceMap::Prepare(SInfluenceData& inflData)
 
 std::shared_ptr<IMainJob> CInfluenceMap::Update(CEnemyManager* enemyMgr)
 {
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	Prepare(*GetNextInflData());
 
 	for (const SEnemyData& e : enemyMgr->GetHostileDatas()) {
@@ -170,6 +175,8 @@ void CInfluenceMap::Apply()
 
 	SwapBuffers();
 	isUpdating = false;
+
+	FrameMarkEnd(profiler.GetInflUpdateName(manager->GetCircuit()->GetSkirmishAIId()));
 
 #ifdef DEBUG_VIS
 	UpdateVis();

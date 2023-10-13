@@ -39,6 +39,7 @@
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -1454,7 +1455,8 @@ void CMilitaryManager::UpdateDefenceTasks()
 
 void CMilitaryManager::UpdateDefence()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScoped;
+
 	const int frame = circuit->GetLastFrame();
 	decltype(buildDefence)::iterator ibd = buildDefence.begin();
 	while (ibd != buildDefence.end()) {
@@ -1717,7 +1719,8 @@ IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)
 
 void CMilitaryManager::Watchdog()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	for (CCircuitUnit* unit : army) {
 		if (unit->GetTask()->GetType() == IUnitTask::Type::PLAYER) {
 			continue;
@@ -1730,13 +1733,15 @@ void CMilitaryManager::Watchdog()
 
 void CMilitaryManager::UpdateIdle()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	idleTask->Update();
 }
 
 void CMilitaryManager::UpdateFight()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScoped;
+
 	if (fightIterator >= fightUpdates.size()) {
 		fightIterator = 0;
 	}

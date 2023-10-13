@@ -20,6 +20,7 @@
 #include "setup/SetupManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #include "json/json.h"
 
 #include "spring/SpringMap.h"
@@ -625,7 +626,8 @@ AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, 
 
 AIFloat3 CTerrainManager::FindBuildSite(CCircuitDef* cdef, const AIFloat3& pos, float searchRadius, int facing, TerrainPredicate& predicate, bool isIgnore)
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScoped;
+
 	if (circuit->IsAllyAware()) {
 		MarkAllyBuildings();
 	}
@@ -1859,7 +1861,7 @@ const bwem::CArea* CTerrainManager::GetTAArea(const springai::AIFloat3& pos) con
 
 void CTerrainManager::UpdateAreaUsers(int interval)
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScopedN(__PRETTY_FUNCTION__);
 
 	areaData = terrainData->GetNextAreaData();
 	const int frame = circuit->GetLastFrame();

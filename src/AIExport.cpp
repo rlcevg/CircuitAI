@@ -8,6 +8,7 @@
 #include "WrappOOAICallback.h"
 
 #include "circuit/CircuitAI.h"
+#include "util/Profiler.h"
 
 #include <stdexcept>
 #include <map>
@@ -35,6 +36,8 @@ EXPORT(int) init(int skirmishAIId, const struct SSkirmishAICallback* innerCallba
 	int ret = ERROR_SHIFT + 1;
 
 	try {
+		circuit::profiler.InitNames(skirmishAIId);
+
 		springai::OOAICallback* clb = springai::WrappOOAICallback::GetInstance(innerCallback, skirmishAIId);
 		circuit::CCircuitAI* ai = new circuit::CCircuitAI(clb);
 
@@ -60,6 +63,8 @@ EXPORT(int) release(int skirmishAIId) {
 
 		delete ai;
 		delete clb;
+
+		circuit::profiler.ReleaseNames(skirmishAIId);
 
 		ret = 0;
 	} CATCH_CPP_AI_EXCEPTION(ret);

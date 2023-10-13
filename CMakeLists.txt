@@ -13,17 +13,17 @@ elseif (APPLE)
 else ()
 	set(additionalSources  ${additionalSources} ${CMAKE_SOURCE_DIR}/rts/System/Platform/Linux/Futex.cpp)
 endif ()
-set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)
+set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)  # can't use Tracy::TracyClient in dll, requires -fPIC
 #set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils ${SDL2_LIBRARY})
 
 
 #set(additionalCompileFlags "-Isrc/lib/ -Isrc/circuit/ -O1 -DDEBUG -DDEBUG_VIS -DDEBUG_LOG -Wall -Wextra -D_GLIBCXX_USE_CXX11_ABI=0")
-if (CIRCUIT_DEBUG)
+if    (CIRCUIT_DEBUG)
 	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
 #	set(additionalCompileFlags "-DDEBUG_VIS -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1 -fno-strict-aliasing")
-else ()
+else  (CIRCUIT_DEBUG)
 	set(additionalCompileFlags "-Wall")
-endif ()
+endif (CIRCUIT_DEBUG)
 
 #set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
 
@@ -54,6 +54,17 @@ if    (BUILD_Cpp_AIWRAPPER)
 		${CMAKE_CURRENT_SOURCE_DIR}/src/lib/angelscript/include/
 		${CMAKE_CURRENT_SOURCE_DIR}/src/circuit/
 	)
+	get_target_property(TRACY_INCLUDE_DIRS Tracy::TracyClient INCLUDE_DIRECTORIES)
+	include_directories(BEFORE ${TRACY_INCLUDE_DIRS})
+	if (TRACY_ENABLE OR CIRCUIT_PROFILING)
+		if (NOT TRACY_ENABLE)  # if only CIRCUIT_PROFILING=1
+			get_target_property(TRACY_SOURCES Tracy::TracyClient SOURCES)
+			set(additionalSources ${additionalSources} ${TRACY_SOURCES})
+			set(additionalCompileFlags "${additionalCompileFlags} -fno-omit-frame-pointer -DCIRCUIT_PROFILING")
+			set(additionalCompileFlags "${additionalCompileFlags} -DTRACY_ENABLE -DTRACY_ON_DEMAND -DTRACY_CALLSTACK=10 -DTRACY_NO_CALLSTACK_INLINES")
+			set(additionalCompileFlags "${additionalCompileFlags} -DTRACY_NO_BROADCAST -DTRACY_NO_FRAME_IMAGE -DTRACY_NO_SYSTEM_TRACING")  # -DTRACY_NO_SAMPLING
+		endif ()
+	endif ()
 	configure_native_skirmish_ai(mySourceDirRel additionalSources additionalCompileFlags additionalLibraries)
 else  (BUILD_Cpp_AIWRAPPER)
 	message ("warning: (New) C++ Circuit AI will not be built! (missing Cpp Wrapper)")

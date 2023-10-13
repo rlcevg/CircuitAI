@@ -12,6 +12,7 @@
 #include "CircuitAI.h"
 #include "util/FileSystem.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 
 #include "Log.h"
 #include "OptionValues.h"
@@ -207,7 +208,14 @@ void CScriptManager::ReturnContext(asIScriptContext* ctx)
 
 bool CScriptManager::Exec(asIScriptContext* ctx)
 {
-	SCOPED_TIME(circuit, std::string(ctx->GetFunction()->GetNamespace()) + "::" + ctx->GetFunction()->GetName());
+#ifdef CIRCUIT_PROFILING
+	ZoneScoped;
+	std::string nameFunc;
+	nameFunc.reserve(256);
+	nameFunc.append("AS ").append(ctx->GetFunction()->GetNamespace()).append("::").append(ctx->GetFunction()->GetName());
+	ZoneName(nameFunc.c_str(), nameFunc.size());
+	ZoneValue(ctx->GetFunction()->GetId());
+#endif
 
 	int r = ctx->Execute();
 	if (r != asEXECUTION_FINISHED) {

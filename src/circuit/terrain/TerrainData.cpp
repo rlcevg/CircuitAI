@@ -14,6 +14,7 @@
 #include "util/math/HierarchCluster.h"
 #include "util/math/RagMatrix.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -699,7 +700,8 @@ void CTerrainData::DelegateAuthority(CCircuitAI* curOwner)
 
 void CTerrainData::EnqueueUpdate()
 {
-	SCOPED_TIME(*gameAttribute->GetCircuits().begin(), __PRETTY_FUNCTION__);
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	if (isUpdating) {
 		return;
 	}
@@ -713,6 +715,8 @@ void CTerrainData::EnqueueUpdate()
 
 std::shared_ptr<IMainJob> CTerrainData::UpdateAreas()
 {
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	/*
 	 *  Assign areaData references
 	 */

@@ -14,11 +14,6 @@
 #include <map>
 #include <vector>
 
-//#define CHRONO_THREAT 1
-#ifdef CHRONO_THREAT
-#include <chrono>
-#endif
-
 namespace circuit {
 
 #define THREAT_UPDATE_RATE	(FRAMES_PER_SEC / 3)
@@ -31,10 +26,6 @@ class IMainJob;
 
 class CThreatMap {
 public:
-#ifdef CHRONO_THREAT
-	using clock = std::chrono::high_resolution_clock;
-	clock::time_point t0;
-#endif
 	CThreatMap(CMapManager* manager, float decloakRadius);
 	virtual ~CThreatMap();
 

@@ -47,6 +47,7 @@
 #include "task/builder/BuildChain.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -1720,7 +1721,8 @@ void CBuilderManager::RemoveBuildList(CCircuitUnit* unit, int hiddenDefs)
 
 void CBuilderManager::Watchdog()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	CEconomyManager* economyMgr = circuit->GetEconomyManager();
 	Resource* metalRes = economyMgr->GetMetalRes();
 	// somehow workers get stuck
@@ -1779,13 +1781,15 @@ void CBuilderManager::Watchdog()
 
 void CBuilderManager::UpdateIdle()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	idleTask->Update();
 }
 
 void CBuilderManager::UpdateBuild()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScoped;
+
 	if (buildIterator >= buildUpdates.size()) {
 		buildIterator = 0;
 	}

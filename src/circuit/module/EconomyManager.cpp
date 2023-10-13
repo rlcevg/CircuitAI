@@ -20,6 +20,7 @@
 #include "CircuitAI.h"
 #include "util/GameAttribute.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #include "json/json.h"
 
 #include "spring/SpringCallback.h"
@@ -789,7 +790,8 @@ const CEconomyManager::SSideInfo& CEconomyManager::GetSideInfo() const
 
 void CEconomyManager::UpdateResourceIncome()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScoped;
+
 	float oddEnergyIncome = circuit->GetTeam()->GetRulesParamFloat("OD_energyIncome", 0.f);
 	float oddEnergyChange = circuit->GetTeam()->GetRulesParamFloat("OD_energyChange", 0.f);
 
@@ -971,6 +973,8 @@ bool CEconomyManager::IsEnoughEnergy(IBuilderTask const* task, CCircuitDef const
 
 IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
+	ZoneScoped;
+
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	if (!builderMgr->CanEnqueueTask()) {
 		return nullptr;
@@ -995,6 +999,7 @@ IBuilderTask* CEconomyManager::MakeEconomyTasks(const AIFloat3& position, CCircu
 IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
 	assert(unit != nullptr);
+	ZoneScoped;
 
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	if (!builderMgr->CanEnqueueTask(16)) {
@@ -1135,6 +1140,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 
 IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCircuitUnit* unit, bool isNear)
 {
+	ZoneScoped;
+
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	if (/*!builderManager->CanEnqueueTask() || */(unit == nullptr) || !unit->GetCircuitDef()->IsAbleToReclaim()) {
 		return nullptr;
@@ -1222,6 +1229,8 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 
 IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
+	ZoneScoped;
+
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	if (!builderMgr->CanEnqueueTask(32)) {
 		return nullptr;
@@ -1349,6 +1358,8 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 
 IBuilderTask* CEconomyManager::UpdateGeoTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
+	ZoneScoped;
+
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	if (!builderMgr->CanEnqueueTask(32) || !builderMgr->GetTasks(IBuilderTask::BuildType::GEO).empty() || !geoDefs.HasAvail()) {
 		return nullptr;
@@ -1395,6 +1406,8 @@ IBuilderTask* CEconomyManager::UpdateGeoTasks(const AIFloat3& position, CCircuit
 
 IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCircuitUnit* unit)
 {
+	ZoneScoped;
+
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	if (!builderMgr->CanEnqueueTask(64) || isEnergyRequired) {
 		return nullptr;
@@ -1559,13 +1572,13 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 
 IBuilderTask* CEconomyManager::UpdateFactoryTasks()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
 	return UpdateFactoryTasks(circuit->GetSetupManager()->GetBasePos());
 }
 
 IBuilderTask* CEconomyManager::UpdateStorageTasks()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScoped;
+
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 	if (!builderMgr->CanEnqueueTask(32)) {
 		return nullptr;
@@ -1770,7 +1783,8 @@ void CEconomyManager::AddMorphee(CCircuitUnit* unit)
 
 void CEconomyManager::UpdateMorph()
 {
-	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
+	ZoneScoped;
+
 	if (morphees.empty()) {
 		circuit->GetScheduler()->RemoveJob(morph);
 		morph = nullptr;

@@ -1,0 +1,12 @@
+Linux sampling rate limits.
+
+dmesg | grep perf
+>> [26199.880924] perf: interrupt took too long (4839 > 2500), lowering kernel.perf_event_max_sample_rate to 41100
+
+sysctl -w kernel.perf_event_max_sample_rate=100000
+(default: unknown, varied)
+
+sysctl -w kernel.perf_cpu_time_max_percent=75
+(default: 25)
+
+----

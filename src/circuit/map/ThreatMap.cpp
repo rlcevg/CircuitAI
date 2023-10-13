@@ -13,6 +13,7 @@
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 #include "json/json.h"
 
 //#undef NDEBUG
@@ -154,10 +155,12 @@ void CThreatMap::CopyDefs(CCircuitAI* ally)
 
 void CThreatMap::EnqueueUpdate()
 {
-//	if (isUpdating) {
+//	if (isUpdating) {  // NOTE: done at MapManager level
 //		return;
 //	}
 	isUpdating = true;
+
+	FrameMarkStart(profiler.GetThreatUpdateName(manager->GetCircuit()->GetSkirmishAIId()));
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	areaData = circuit->GetTerrainManager()->GetAreaData();
@@ -582,6 +585,8 @@ float CThreatMap::GetThreatHealth(const CEnemyUnit* e) const
 
 std::shared_ptr<IMainJob> CThreatMap::AirDrawer(CCircuitDef::RoleT role)
 {
+	ZoneScoped;
+
 	SThreatData& threatData = *GetNextThreatData();
 	SRoleThreat& roleThreat = threatData.roleThreats[role];
 	std::fill(roleThreat.airThreat.begin(), roleThreat.airThreat.end(), THREAT_BASE);
@@ -601,6 +606,8 @@ std::shared_ptr<IMainJob> CThreatMap::AirDrawer(CCircuitDef::RoleT role)
 
 std::shared_ptr<IMainJob> CThreatMap::AmphDrawer(CCircuitDef::RoleT role)
 {
+	ZoneScoped;
+
 	SThreatData& threatData = *GetNextThreatData();
 	SRoleThreat& roleThreat = threatData.roleThreats[role];
 	std::fill(roleThreat.surfThreat.begin(), roleThreat.surfThreat.end(), THREAT_BASE);
@@ -627,25 +634,13 @@ std::shared_ptr<IMainJob> CThreatMap::AmphDrawer(CCircuitDef::RoleT role)
 
 std::shared_ptr<IMainJob> CThreatMap::ApplyDrawers()
 {
-#ifdef CHRONO_THREAT
-//	SCOPED_TIME(circuit, __PRETTY_FUNCTION__);
-	if (--numThreadDraws == 0) {
-		int count = std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - t0).count();
-		printf("%i | %i mcs\n", manager->GetCircuit()->GetSkirmishAIId(), count);
-		return CScheduler::GameJob(&CThreatMap::Apply, this);
-	} else {
-		return nullptr;
-	}
-#else
 	return (--numThreadDraws == 0) ? CScheduler::GameJob(&CThreatMap::Apply, this) : nullptr;
-#endif
 }
 
 std::shared_ptr<IMainJob> CThreatMap::Update(CEnemyManager* enemyMgr, CScheduler* scheduler)
 {
-#ifdef CHRONO_THREAT
-	t0 = clock::now();
-#endif
+	ZoneScopedN(__PRETTY_FUNCTION__);
+
 	airDraws.clear();
 	amphDraws.clear();
 	for (const SEnemyData& e : enemyMgr->GetHostileDatas()) {
@@ -685,6 +680,8 @@ void CThreatMap::Apply()
 
 	SwapBuffers();
 	isUpdating = false;
+
+	FrameMarkEnd(profiler.GetThreatUpdateName(manager->GetCircuit()->GetSkirmishAIId()));
 
 #ifdef DEBUG_VIS
 	UpdateVis();

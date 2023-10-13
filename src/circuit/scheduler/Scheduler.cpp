@@ -7,6 +7,7 @@
 
 #include "scheduler/Scheduler.h"
 #include "util/Utils.h"
+#include "util/Profiler.h"
 
 namespace circuit {
 
@@ -202,6 +203,10 @@ void CScheduler::RemoveReleaseJob(const std::shared_ptr<IMainJob>& task)
 
 void CScheduler::WorkerThread(int num)
 {
+#ifdef CIRCUIT_PROFILING
+	tracy::SetThreadName(utils::int_to_string(num, "AI job %i").c_str());  // 15 chars max
+#endif
+
 	int workerPauseId = gWorkerPauseId;
 
 	while (gIsWorkerRunning.load()) {
@@ -216,6 +221,7 @@ void CScheduler::WorkerThread(int num)
 			gProceedCV.wait(lock, [pauseId] { return pauseId != gWorkerPauseId; });
 		}
 
+		TracyPlot("Jobs", (int64_t)gWorkTasks.Size());
 		WorkTask container = gWorkTasks.Pop();
 
 		std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
