@@ -22,7 +22,7 @@ if (CIRCUIT_DEBUG)
 	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
 #	set(additionalCompileFlags "-DDEBUG_LOG -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1 -fno-strict-aliasing")
 else ()
-	set(additionalCompileFlags "-Wall")
+	set(additionalCompileFlags "-Wall -fno-omit-frame-pointer")
 endif ()
 
 #set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
