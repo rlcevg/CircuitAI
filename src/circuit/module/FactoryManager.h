@@ -18,6 +18,68 @@ namespace circuit {
 
 class CEconomyManager;
 class CFactoryData;
+class CSRepairTask;
+
+namespace TaskS {
+	struct SRecruitTask {
+		CRecruitTask::RecruitType type;
+		CRecruitTask::Priority priority;
+		CCircuitDef* buildDef;
+		springai::AIFloat3 position;
+		float radius;
+	};
+
+	struct SServSTask {
+		IBuilderTask::BuildType type;
+		IBuilderTask::Priority priority;
+		springai::AIFloat3 position;
+		CAllyUnit* target;
+		float radius;
+		bool stop;
+		int timeout;
+	};
+
+	static inline SRecruitTask Recruit(CRecruitTask::RecruitType type,
+			CRecruitTask::Priority priority, CCircuitDef* buildDef,
+			const springai::AIFloat3& position, float radius)
+	{
+		SRecruitTask ti;
+		ti.type = type;
+		ti.priority = priority;
+		ti.buildDef = buildDef;
+		ti.position = position;
+		ti.radius = radius;
+		return ti;
+	}
+
+	static inline SServSTask Repair(IBuilderTask::Priority priority, CAllyUnit* target)
+	{
+		SServSTask ti;
+		ti.type = IBuilderTask::BuildType::REPAIR;
+		ti.priority = priority;
+		ti.target = target;
+		return ti;
+	}
+	static inline SServSTask Reclaim(IBuilderTask::Priority priority,
+			const springai::AIFloat3& position, float radius, int timeout = 0)
+	{
+		SServSTask ti;
+		ti.type = IBuilderTask::BuildType::RECLAIM;
+		ti.priority = priority;
+		ti.position = position;
+		ti.radius = radius;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SServSTask Wait(bool stop, int timeout)
+	{
+		SServSTask ti;
+		ti.type = IBuilderTask::BuildType::WAIT;
+		ti.stop = stop;
+		ti.timeout = timeout;
+		return ti;
+	}
+} // namespace TaskS
 
 class CFactoryManager: public IUnitModule {
 public:
@@ -33,31 +95,24 @@ public:
 private:
 	void ReadConfig();
 	void Init();
-public:
-	void Release();
 
+public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
 	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
-	CRecruitTask* EnqueueTask(CRecruitTask::Priority priority,
-							  CCircuitDef* buildDef,
-							  const springai::AIFloat3& position,
-							  CRecruitTask::RecruitType type,
-							  float radius);
-	IUnitTask* EnqueueWait(bool stop, int timeout);
-	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
-								 const springai::AIFloat3& position,
-								 float radius,
-								 int timeout = 0);
-	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
-								CAllyUnit* target);
+	CRecruitTask* Enqueue(const TaskS::SRecruitTask& ti);
+	IUnitTask* Enqueue(const TaskS::SServSTask& ti);
 private:
 	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 
 public:
 	virtual void FallbackTask(CCircuitUnit* unit) override;
+
+	void MarkRepairUnit(ICoreUnit::Id targetId, CSRepairTask* task) {
+		repairUnits[targetId] = task;
+	}
 
 	int GetFactoryCount() const { return factories.size(); }
 	int GetNoT1FacCount() const { return noT1FacCount; }
@@ -108,8 +163,6 @@ private:
 	IUnitTask* CreateAssistTask(CCircuitUnit* unit);
 
 	void Watchdog();
-	void UpdateIdle();
-	void UpdateFactory();
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -118,8 +171,6 @@ private:
 
 	std::map<CAllyUnit*, IBuilderTask*> unfinishedUnits;
 	std::vector<CRecruitTask*> factoryTasks;  // order matters
-	std::vector<IUnitTask*> updateTasks;  // owner
-	unsigned int updateIterator;
 	float metalRequire;
 	float energyRequire;
 	float newFacModM;
@@ -136,7 +187,7 @@ private:
 	};
 	std::map<CCircuitUnit*, SAssistToFactory> assists;  // nano 1:n factory
 	std::vector<springai::AIFloat3> havens;  // position behind factory
-	std::map<ICoreUnit::Id, IBuilderTask*> repairedUnits;
+	std::map<ICoreUnit::Id, CSRepairTask*> repairUnits;
 
 	CFactoryData* factoryData;
 	struct SAssistant {

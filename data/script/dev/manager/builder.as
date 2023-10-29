@@ -11,7 +11,6 @@ CCircuitUnit@ energizer2 = null;
 
 IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 {
-	// TODO: Add API to create any tasks
 // 	AiDelPoint(lastPos);
 // 	lastPos = unit.GetPos(ai.frame);
 // 	AiAddPoint(lastPos, "task");

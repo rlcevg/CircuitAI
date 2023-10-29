@@ -8,6 +8,8 @@
 #ifndef SRC_CIRCUIT_TASK_TASKMANAGER_H_
 #define SRC_CIRCUIT_TASK_TASKMANAGER_H_
 
+#include <vector>
+
 namespace circuit {
 
 class IUnitTask;
@@ -41,6 +43,7 @@ public:
 	float GetMetalPull() const { return metalPull; }
 
 	void Init();
+	void Release();
 	CIdleTask* GetIdleTask() const { return idleTask; }
 	virtual CRetreatTask* EnqueueRetreat() { return nullptr; }
 
@@ -48,9 +51,15 @@ public:
 	void Resurrected(CCircuitUnit* unit);
 
 protected:
+	void UpdateIdle();
+	void Update();
+
 	CNilTask* nilTask;
 	CIdleTask* idleTask;
 	CPlayerTask* playerTask;
+
+	std::vector<IUnitTask*> updateTasks;  // owner
+	unsigned int updateIterator;
 
 	float metalPull;
 };

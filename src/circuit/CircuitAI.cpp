@@ -1081,7 +1081,7 @@ int CCircuitAI::UnitMoveFailed(CCircuitUnit* unit)
 			unit->GetUnit()->SetMoveState(2);
 		)
 //		Garbage(unit, "stuck");
-		GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::NORMAL, unit);
+		GetBuilderManager()->Enqueue(TaskB::Reclaim(IBuilderTask::Priority::NORMAL, unit));
 	} else if (unit->GetTask()->GetType() != IUnitTask::Type::NIL) {
 		unit->GetTask()->OnUnitMoveFailed(unit);
 	}

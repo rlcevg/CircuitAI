@@ -89,7 +89,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 
 	// Mobile repair
 	if (!cdef->IsAbleToFly()) {
-		circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
+		circuit->GetBuilderManager()->Enqueue(TaskB::Repair(IBuilderTask::Priority::HIGH, unit));
 	}
 }
 

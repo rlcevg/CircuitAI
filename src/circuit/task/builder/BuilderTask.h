@@ -48,10 +48,10 @@ public:
 		REPAIR,
 		RECLAIM,
 		RESURRECT,
+		RECRUIT,
 		TERRAFORM,
 		_SIZE_,  // selectable tasks count
-		RECRUIT,  // builder actions that can't be reassigned
-		PATROL, GUARD,
+		PATROL, GUARD, COMBAT, WAIT,  // builder actions that can't be reassigned
 		DEFAULT = BIG_GUN
 	};
 	using BT = std::underlying_type<BuildType>::type;

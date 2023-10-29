@@ -26,6 +26,7 @@ using namespace springai;
 CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout)
 		: IRepairTask(mgr, priority, Type::FACTORY, target, timeout)
 {
+	static_cast<CFactoryManager*>(mgr)->MarkRepairUnit(target->GetId(), this);
 }
 
 CSRepairTask::~CSRepairTask()
@@ -82,7 +83,7 @@ void CSRepairTask::Update()
 			return;
 		}
 
-		IBuilderTask* task = nullptr;
+		IUnitTask* task = nullptr;
 		if (repTarget->GetUnit()->IsBeingBuilt()) {
 			CFactoryManager* factoryMgr = circuit->GetFactoryManager();
 			if (economyMgr->IsMetalEmpty() && !factoryMgr->IsHighPriority(repTarget)) {
@@ -99,7 +100,7 @@ void CSRepairTask::Update()
 						continue;
 					}
 					if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
-						task = factoryMgr->EnqueueRepair(IBuilderTask::Priority::NORMAL, candUnit);
+						task = factoryMgr->Enqueue(TaskS::Repair(IBuilderTask::Priority::NORMAL, candUnit));
 						break;
 					}
 				}
@@ -107,7 +108,7 @@ void CSRepairTask::Update()
 				if (task == nullptr) {
 					// Reclaim task
 					if (circuit->GetCallback()->IsFeaturesIn(position, radius) && !builderMgr->IsResurrect(position, radius)) {
-						task = factoryMgr->EnqueueReclaim(IBuilderTask::Priority::NORMAL, position, radius);
+						task = factoryMgr->Enqueue(TaskS::Reclaim(IBuilderTask::Priority::NORMAL, position, radius));
 					}
 				}
 			}
@@ -129,7 +130,7 @@ void CSRepairTask::Update()
 				bool isHighPrio = factoryMgr->IsHighPriority(candUnit);
 				if (u->IsBeingBuilt() && ((candUnit->GetCircuitDef()->GetBuildTime() < maxCost) || isHighPrio)) {
 					IBuilderTask::Priority priority = isHighPrio ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
-					task = factoryMgr->EnqueueRepair(priority, candUnit);
+					task = factoryMgr->Enqueue(TaskS::Repair(priority, candUnit));
 					break;
 				}
 			}

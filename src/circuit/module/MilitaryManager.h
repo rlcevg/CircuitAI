@@ -21,6 +21,49 @@ namespace circuit {
 
 class IMainJob;
 class CBDefenceTask;
+class CFGuardTask;
+
+namespace TaskF {
+	struct SFightTask {
+		IFighterTask::FightType type;
+		IFighterTask::FightType check;
+		IFighterTask::FightType promote;
+		float power;
+		CCircuitUnit* vip;
+	};
+
+	static inline SFightTask Common(IFighterTask::FightType type)
+	{
+		SFightTask ti;
+		ti.type = type;
+		return ti;
+	}
+	static inline SFightTask Guard(CCircuitUnit* vip)
+	{
+		SFightTask ti;
+		ti.type = IFighterTask::FightType::GUARD;
+		ti.vip = vip;
+		return ti;
+	}
+	static inline SFightTask Defend(IFighterTask::FightType promote, float power)
+	{
+		SFightTask ti;
+		ti.type = IFighterTask::FightType::DEFEND;
+		ti.check = IFighterTask::FightType::_SIZE_;  // NONE
+		ti.promote = promote;
+		ti.power = power;
+		return ti;
+	}
+	static inline SFightTask Defend(IFighterTask::FightType check, IFighterTask::FightType promote, float power)
+	{
+		SFightTask ti;
+		ti.type = IFighterTask::FightType::DEFEND;
+		ti.check = check;
+		ti.promote = promote;
+		ti.power = power;
+		return ti;
+	}
+} // namespace TaskF
 
 class CMilitaryManager: public IUnitModule {
 public:
@@ -47,9 +90,8 @@ private:
 	void ReadConfig();
 	void InitEconomyScores(const std::vector<CCircuitDef*>&& builders);
 	void Init();
-public:
-	void Release();
 
+public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
@@ -60,16 +102,17 @@ public:
 		return fightTasks[static_cast<IFighterTask::FT>(type)];
 	}
 
-	IFighterTask* EnqueueTask(IFighterTask::FightType type);
-	IFighterTask* EnqueueDefend(IFighterTask::FightType promote, float power);
-	IFighterTask* EnqueueDefend(IFighterTask::FightType check, IFighterTask::FightType promote, float power);
-	IFighterTask* EnqueueGuard(CCircuitUnit* vip);
+	IFighterTask* Enqueue(const TaskF::SFightTask& ti);
 	virtual CRetreatTask* EnqueueRetreat() override;
 private:
 	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 
 public:
 	virtual void FallbackTask(CCircuitUnit* unit) override;
+
+	void MarkGuardUnit(CCircuitUnit* vip, CFGuardTask* task) {
+		guardTasks[vip] = task;
+	}
 
 	void MakeDefence(const springai::AIFloat3& pos);
 	void MakeDefence(int cluster);
@@ -88,8 +131,6 @@ public:
 	void FillSafePos(CCircuitUnit* unit, F3Vec& outPositions);
 	CCircuitUnit* GetClosestLeader(IFighterTask::FightType type, const springai::AIFloat3& position);
 
-	IFighterTask* AddGuardTask(CCircuitUnit* unit);
-	bool DelGuardTask(CCircuitUnit* unit);
 	IFighterTask* GetGuardTask(CCircuitUnit* unit) const;
 
 	const std::set<CCircuitUnit*>& GetRoleUnits(CCircuitDef::RoleT type) const {
@@ -136,8 +177,6 @@ private:
 	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) override;
 
 	void Watchdog();
-	void UpdateIdle();
-	void UpdateFight();
 
 	void AddArmyCost(CCircuitUnit* unit);
 	void DelArmyCost(CCircuitUnit* unit);
@@ -153,8 +192,6 @@ private:
 	EHandlers destroyedHandler;
 
 	std::vector<std::set<IFighterTask*>> fightTasks;
-	std::vector<IUnitTask*> fightUpdates;  // owner
-	unsigned int fightIterator;
 
 	CDefenceData* defence;
 	unsigned int defenceIdx;
@@ -190,7 +227,7 @@ private:
 	std::set<CCircuitUnit*> army;
 	float armyCost;
 
-	std::map<CCircuitUnit*, IFighterTask*> guardTasks;
+	std::map<CCircuitUnit*, CFGuardTask*> guardTasks;
 
 	struct SRaidQuota {
 		float min;

@@ -64,7 +64,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		, guardCount(0)
 		, buildTasksCount(0)
 		, buildPower(.0f)
-		, buildIterator(0)
 {
 	circuit->GetScheduler()->RunOnInit(CScheduler::GameJob(&CBuilderManager::Init, this));
 
@@ -79,7 +78,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		}
 		CEconomyManager* economyMgr = this->circuit->GetEconomyManager();
 		if (unit->GetUnit()->IsBeingBuilt() && !economyMgr->IsEnergyStalling() && !economyMgr->IsMetalEmpty()) {
-			EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+			Enqueue(TaskB::Repair(IBuilderTask::Priority::NORMAL, unit));
 		}
 	};
 	auto workerFinishedHandler = [this](CCircuitUnit* unit) {
@@ -108,7 +107,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 			&& !unit->GetCircuitDef()->IsAbleToFly()
 			&& (militaryMgr->GetTasks(IFighterTask::FightType::GUARD).size() < militaryMgr->GetGuardTaskNum()))
 		{
-			militaryMgr->AddGuardTask(unit);
+			militaryMgr->Enqueue(TaskF::Guard(unit));
 		}
 	};
 	auto workerIdleHandler = [this](CCircuitUnit* unit) {
@@ -145,8 +144,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		RemoveBuildList(unit, 0);
 
 		UnitRemoved(unit, UseAs::BUILDER);
-
-		militaryMgr->DelGuardTask(unit);
 	};
 
 	/*
@@ -188,7 +185,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	 * building handlers
 	 */
 	auto buildingDamagedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
-		EnqueueRepair(IBuilderTask::Priority::HIGH, unit);
+		Enqueue(TaskB::Repair(IBuilderTask::Priority::HIGH, unit));
 	};
 	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
@@ -219,7 +216,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
 				this->circuit->GetTerrainManager()->CanBeBuiltAtSafe(mexDef, pos))  // hostile environment
 			{
-				EnqueueSpot(IBuilderTask::Priority::HIGH, mexDef, index, pos, IBuilderTask::BuildType::MEX);
+				Enqueue(TaskB::Spot(IBuilderTask::BuildType::MEX, IBuilderTask::Priority::HIGH, mexDef, pos, index));
 			}
 		}), FRAMES_PER_SEC * 20);
 	};
@@ -302,9 +299,6 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 
 CBuilderManager::~CBuilderManager()
 {
-	for (IUnitTask* task : buildUpdates) {
-		task->ClearRelease();
-	}
 	for (auto& kv1 : buildChains) {
 		for (auto& kv2 : kv1.second) {
 			delete kv2.second;
@@ -462,7 +456,7 @@ void CBuilderManager::Init()
 		const int interval = 8;
 		const int offset = circuit->GetSkirmishAIId() % interval;
 		scheduler->RunJobEvery(CScheduler::GameJob(&CBuilderManager::UpdateIdle, this), interval, offset + 0);
-		scheduler->RunJobEvery(CScheduler::GameJob(&CBuilderManager::UpdateBuild, this), 1/*interval*/, offset + 1);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CBuilderManager::Update, this), 1/*interval*/, offset + 1);
 
 		scheduler->RunJobEvery(CScheduler::GameJob(&CBuilderManager::Watchdog, this),
 								FRAMES_PER_SEC * 60,
@@ -470,20 +464,6 @@ void CBuilderManager::Init()
 	};
 
 	circuit->GetSetupManager()->ExecOnFindStart(subinit);
-}
-
-void CBuilderManager::Release()
-{
-	// NOTE: Release expected to be called on CCircuit::Release.
-	//       It doesn't stop scheduled GameTasks for that reason.
-	for (IUnitTask* task : buildUpdates) {
-		AbortTask(task);
-		// NOTE: Do not delete task as other AbortTask may ask for it
-	}
-	for (IUnitTask* task : buildUpdates) {
-		task->ClearRelease();
-	}
-	buildUpdates.clear();
 }
 
 int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
@@ -535,7 +515,7 @@ int CBuilderManager::UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder)
 			MarkUnfinishedUnit(unit, taskB);
 		} else {
 			// reclaim lost unit
-			AssignTask(builder, EnqueueReclaim(IBuilderTask::Priority::HIGH, unit));
+			AssignTask(builder, Enqueue(TaskB::Reclaim(IBuilderTask::Priority::HIGH, unit)));
 		}
 	} else {
 		if ((taskB->GetBuildType() == IBuilderTask::BuildType::RESURRECT) && !unit->GetCircuitDef()->IsMobile()) {
@@ -638,77 +618,117 @@ void CBuilderManager::ActivateTask(IBuilderTask* task)
 		buildTasks[static_cast<IBuilderTask::BT>(task->GetBuildType())].insert(task);
 		buildTasksCount++;
 	}
-	buildUpdates.push_back(task);
+	updateTasks.push_back(task);
 	task->Activate();
 }
 
-IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
-										   CCircuitDef* buildDef,
-										   const AIFloat3& position,
-										   IBuilderTask::BuildType type,
-										   float cost,
-										   float shake,
-										   bool isActive,
-										   int timeout)
+IBuilderTask* CBuilderManager::Enqueue(const TaskB::SBuildTask& ti)
 {
-	return AddTask(priority, buildDef, position, type, {cost, 0.f}, shake, isActive, timeout);
-}
-
-IBuilderTask* CBuilderManager::EnqueueTask(IBuilderTask::Priority priority,
-										   CCircuitDef* buildDef,
-										   const AIFloat3& position,
-										   IBuilderTask::BuildType type,
-										   float shake,
-										   bool isActive,
-										   int timeout)
-{
-	const SResource cost = {buildDef->GetCostM(), buildDef->GetCostE()};
-	return AddTask(priority, buildDef, position, type, cost, shake, isActive, timeout);
-}
-
-IBuilderTask* CBuilderManager::EnqueueDefence(IBuilderTask::Priority priority,
-											  CCircuitDef* buildDef,
-											  int pointId,
-											  const AIFloat3& position,
-											  IBuilderTask::BuildType type,
-											  float cost,
-											  float shake,
-											  bool isActive,
-											  int timeout)
-{
-	IBuilderTask* task = new CBDefenceTask(this, priority, buildDef, position, {cost, 0.f}, shake, timeout);
-	return task;
-}
-
-IBuilderTask* CBuilderManager::EnqueueSpot(IBuilderTask::Priority priority,
-										   CCircuitDef* buildDef,
-										   int spotId,
-										   const springai::AIFloat3& position,
-										   IBuilderTask::BuildType type,
-										   bool isActive,
-										   int timeout)
-{
-	const SResource cost = {buildDef->GetCostM(), buildDef->GetCostE()};
 	IBuilderTask* task;
-	switch (type) {
+
+	switch (ti.type) {
+		case IBuilderTask::BuildType::FACTORY: {
+			const SResource cost = ti.b.isPlop ? SResource{1.f, 0.f} : SResource{ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBFactoryTask(this, ti.priority, ti.buildDef, ti.ref.reprDef, ti.position, cost, ti.f.shake, ti.b.isPlop, ti.timeout);
+			if (ti.isActive) {
+				task->Activate();  // circuit->GetFactoryManager()->ApplySwitchFrame();
+			}
+		} break;
+		case IBuilderTask::BuildType::NANO: {
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBNanoTask(this, ti.priority, ti.buildDef, ti.position, cost, ti.f.shake, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::STORE: {
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBStoreTask(this, ti.priority, ti.buildDef, ti.position, cost, ti.f.shake, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::PYLON: {
+			task = new CBPylonTask(this, ti.priority, ti.buildDef, ti.position, ti.ref.link, ti.cost, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::ENERGY: {
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBEnergyTask(this, ti.priority, ti.buildDef, ti.position, cost, ti.f.shake, ti.timeout);
+		} break;
 		case IBuilderTask::BuildType::GEO: {
-			task = new CBGeoTask(this, priority, buildDef, spotId, position, cost, timeout);
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBGeoTask(this, ti.priority, ti.buildDef, ti.i.spotId, ti.position, cost, ti.timeout);
+		} break;
+//		case IBuilderTask::BuildType::GEOUP: {
+//		} break;
+		case IBuilderTask::BuildType::DEFENCE: {  // lotus, defender, stardust, stinger
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBDefenceTask(this, ti.priority, ti.buildDef, ti.position, cost, ti.f.shake, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::BUNKER: {  // ddm, anni
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBBunkerTask(this, ti.priority, ti.buildDef, ti.position, cost, ti.f.shake, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::BIG_GUN: {  // super weapons
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBBigGunTask(this, ti.priority, ti.buildDef, ti.position, cost, ti.f.shake, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::RADAR: {
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBRadarTask(this, ti.priority, ti.buildDef, ti.position, cost, ti.f.shake, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::SONAR: {
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBSonarTask(this, ti.priority, ti.buildDef, ti.position, cost, ti.f.shake, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::CONVERT: {
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBConvertTask(this, ti.priority, ti.buildDef, ti.position, cost, ti.f.shake, ti.timeout);
 		} break;
 		case IBuilderTask::BuildType::MEX: {
-			task = new CBMexTask(this, priority, buildDef, spotId, position, cost, timeout);
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBMexTask(this, ti.priority, ti.buildDef, ti.i.spotId, ti.position, cost, ti.timeout);
 		} break;
 		case IBuilderTask::BuildType::MEXUP: {
-			task = new CBMexUpTask(this, priority, buildDef, spotId, position, cost, timeout);
+			const SResource cost = {ti.buildDef->GetCostM(), ti.buildDef->GetCostE()};
+			task = new CBMexUpTask(this, ti.priority, ti.buildDef, ti.i.spotId, ti.position, cost, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::REPAIR: {
+			auto it = repairUnits.find(ti.ref.target->GetId());
+			if ((it != repairUnits.end()) && (it->second != nullptr)) {
+				return it->second;
+			}
+			task = new CBRepairTask(this, ti.priority, ti.ref.target, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::RECLAIM: {
+			if (ti.ref.target != nullptr) {
+				auto it = reclaimUnits.find(ti.ref.target);
+				if ((it != reclaimUnits.end()) && (it->second != nullptr)) {  // TODO: Rework RegisterReclaim() that puts nullptr into reclaimUnits
+					return it->second;
+				}
+				task = new CBReclaimTask(this, ti.priority, ti.ref.target, ti.timeout);
+			} else {
+				task = new CBReclaimTask(this, ti.priority, ti.position, ti.cost, ti.timeout, ti.f.radius, ti.b.isMetal);
+			}
+		} break;
+		case IBuilderTask::BuildType::RESURRECT: {
+			task = new CBResurrectTask(this, ti.priority, ti.position, ti.cost, ti.timeout, ti.f.radius);
+		} break;
+//		case IBuilderTask::BuildType::RECRUIT: {
+//		} break;
+		case IBuilderTask::BuildType::TERRAFORM: {
+			if (ti.ref.target != nullptr) {
+				task = new CBTerraformTask(this, ti.priority, ti.ref.target, ti.cost, ti.timeout);
+			} else {
+				task = new CBTerraformTask(this, ti.priority, ti.position, ti.cost, ti.timeout);
+			}
 		} break;
 		default: {
-			task = new CBGenericTask(this, type, priority, buildDef, position, cost, 0.f, timeout);
+			// FIXME: CBGenericTask is a workaround and should be fixed to remain as crash handler.
+			//        Currently used by build_chain->hub config.
+			//        There's no way for AS to distinguish generic from real BuildType task. Save/Load gets confused.
+			task = new CBGenericTask(this, ti.type, ti.priority, ti.buildDef, ti.position, ti.cost, ti.f.shake, ti.timeout);
 		} break;
 	}
 
-	if (isActive) {
-		buildTasks[static_cast<IBuilderTask::BT>(type)].insert(task);
+	if (ti.isActive) {
+		buildTasks[static_cast<IBuilderTask::BT>(ti.type)].insert(task);
 		buildTasksCount++;
-		buildUpdates.push_back(task);
+		updateTasks.push_back(task);
 	} else {
 		task->Deactivate();
 	}
@@ -716,160 +736,27 @@ IBuilderTask* CBuilderManager::EnqueueSpot(IBuilderTask::Priority priority,
 	return task;
 }
 
-IBuilderTask* CBuilderManager::EnqueueFactory(IBuilderTask::Priority priority,
-											  CCircuitDef* buildDef,
-											  CCircuitDef* reprDef,
-											  const AIFloat3& position,
-											  float shake,
-											  bool isPlop,
-											  bool isActive,
-											  int timeout)
+IUnitTask* CBuilderManager::Enqueue(const TaskB::SServBTask& ti)
 {
-	const SResource cost = isPlop ? SResource{1.f, 0.f} : SResource{buildDef->GetCostM(), buildDef->GetCostE()};
-	IBuilderTask* task = new CBFactoryTask(this, priority, buildDef, reprDef, position, cost, shake, isPlop, timeout);
-	if (isActive) {
-		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::FACTORY)].insert(task);
-		buildTasksCount++;
-		buildUpdates.push_back(task);
-		task->Activate();  // circuit->GetFactoryManager()->ApplySwitchFrame();
-	} else {
-		task->Deactivate();
+	IUnitTask* task;
+
+	switch (ti.type) {
+		case IBuilderTask::BuildType::PATROL: {
+			task = new CBPatrolTask(this, ti.priority, ti.position, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::GUARD: {
+			task = new CBGuardTask(this, ti.priority, ti.target, ti.isInterrupt, ti.timeout);
+		} break;
+		case IBuilderTask::BuildType::COMBAT: {
+			task = new CCombatTask(this, ti.powerMod);
+		} break;
+		default:
+		case IBuilderTask::BuildType::WAIT: {
+			task = new CBWaitTask(this, ti.timeout);
+		} break;
 	}
-	TaskAdded(task);
-	return task;
-}
 
-IBuilderTask* CBuilderManager::EnqueuePylon(IBuilderTask::Priority priority,
-											CCircuitDef* buildDef,
-											const AIFloat3& position,
-											IGridLink* link,
-											float cost,
-											bool isActive,
-											int timeout)
-{
-	IBuilderTask* task = new CBPylonTask(this, priority, buildDef, position, link, {cost, 0.f}, timeout);
-	if (isActive) {
-		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::PYLON)].insert(task);
-		buildTasksCount++;
-		buildUpdates.push_back(task);
-	} else {
-		task->Deactivate();
-	}
-	TaskAdded(task);
-	return task;
-}
-
-IBuilderTask* CBuilderManager::EnqueueRepair(IBuilderTask::Priority priority,
-											 CCircuitUnit* target,
-											 int timeout)
-{
-	auto it = repairUnits.find(target->GetId());
-	if ((it != repairUnits.end()) && (it->second != nullptr)) {
-		return it->second;
-	}
-	CBRepairTask* task = new CBRepairTask(this, priority, target, timeout);
-	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::REPAIR)].insert(task);
-	buildTasksCount++;
-	buildUpdates.push_back(task);
-	TaskAdded(task);
-	return task;
-}
-
-IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
-											  const AIFloat3& position,
-											  float cost,
-											  int timeout,
-											  float radius,
-											  bool isMetal)
-{
-	CBReclaimTask* task = new CBReclaimTask(this, priority, position, {cost, 0.f}, timeout, radius, isMetal);
-	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
-	buildTasksCount++;
-	buildUpdates.push_back(task);
-	TaskAdded(task);
-	return task;
-}
-
-IBuilderTask* CBuilderManager::EnqueueReclaim(IBuilderTask::Priority priority,
-											  CCircuitUnit* target,
-											  int timeout)
-{
-	auto it = reclaimUnits.find(target);
-	if ((it != reclaimUnits.end()) && (it->second != nullptr)) {  // TODO: Rework RegisterReclaim() that puts nullptr into reclaimUnits
-		return it->second;
-	}
-	CBReclaimTask* task = new CBReclaimTask(this, priority, target, timeout);
-	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RECLAIM)].insert(task);
-	buildTasksCount++;
-	buildUpdates.push_back(task);
-	TaskAdded(task);
-	return task;
-}
-
-IBuilderTask* CBuilderManager::EnqueueResurrect(IBuilderTask::Priority priority,
-												const springai::AIFloat3& position,
-												float cost,
-												int timeout,
-												float radius)
-{
-	CBResurrectTask* task = new CBResurrectTask(this, priority, position, {cost, 0.f}, timeout, radius);
-	buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::RESURRECT)].insert(task);
-	buildTasksCount++;
-	buildUpdates.push_back(task);
-	TaskAdded(task);
-	return task;
-}
-
-IBuilderTask* CBuilderManager::EnqueuePatrol(IBuilderTask::Priority priority,
-											 const AIFloat3& position,
-											 float cost,
-											 int timeout)
-{
-	IBuilderTask* task = new CBPatrolTask(this, priority, position, {cost, 0.f}, timeout);
-	buildUpdates.push_back(task);
-	TaskAdded(task);
-	return task;
-}
-
-IBuilderTask* CBuilderManager::EnqueueTerraform(IBuilderTask::Priority priority,
-												CCircuitUnit* target,
-												const AIFloat3& position,
-												float cost,
-												bool isActive,
-												int timeout)
-{
-	IBuilderTask* task;
-	if (target == nullptr) {
-		task = new CBTerraformTask(this, priority, position, {cost, 0.f}, timeout);
-	} else {
-		task = new CBTerraformTask(this, priority, target, {cost, 0.f}, timeout);
-	}
-	if (isActive) {
-		buildTasks[static_cast<IBuilderTask::BT>(IBuilderTask::BuildType::TERRAFORM)].insert(task);
-		buildTasksCount++;
-		buildUpdates.push_back(task);
-	} else {
-		task->Deactivate();
-	}
-	TaskAdded(task);
-	return task;
-}
-
-IBuilderTask* CBuilderManager::EnqueueGuard(IBuilderTask::Priority priority,
-											CCircuitUnit* target,
-											bool isInterrupt,
-											int timeout)
-{
-	IBuilderTask* task = new CBGuardTask(this, priority, target, isInterrupt, timeout);
-	buildUpdates.push_back(task);
-	TaskAdded(task);
-	return task;
-}
-
-IUnitTask* CBuilderManager::EnqueueWait(int timeout)
-{
-	CBWaitTask* task = new CBWaitTask(this, timeout);
-	buildUpdates.push_back(task);
+	updateTasks.push_back(task);
 	TaskAdded(task);
 	return task;
 }
@@ -877,76 +764,7 @@ IUnitTask* CBuilderManager::EnqueueWait(int timeout)
 CRetreatTask* CBuilderManager::EnqueueRetreat()
 {
 	CRetreatTask* task = new CRetreatTask(this);
-	buildUpdates.push_back(task);
-	TaskAdded(task);
-	return task;
-}
-
-CCombatTask* CBuilderManager::EnqueueCombat(float powerMod)
-{
-	CCombatTask* task = new CCombatTask(this, powerMod);
-	buildUpdates.push_back(task);
-	TaskAdded(task);
-	return task;
-}
-
-IBuilderTask* CBuilderManager::AddTask(IBuilderTask::Priority priority,
-									   CCircuitDef* buildDef,
-									   const AIFloat3& position,
-									   IBuilderTask::BuildType type,
-									   SResource cost,
-									   float shake,
-									   bool isActive,
-									   int timeout)
-{
-	IBuilderTask* task;
-	switch (type) {
-		case IBuilderTask::BuildType::NANO: {
-			task = new CBNanoTask(this, priority, buildDef, position, cost, shake, timeout);
-		} break;
-		case IBuilderTask::BuildType::STORE: {
-			task = new CBStoreTask(this, priority, buildDef, position, cost, shake, timeout);
-		} break;
-		case IBuilderTask::BuildType::ENERGY: {
-			task = new CBEnergyTask(this, priority, buildDef, position, cost, shake, timeout);
-		} break;
-		case IBuilderTask::BuildType::DEFENCE: {
-			task = new CBDefenceTask(this, priority, buildDef, position, cost, shake, timeout);
-		} break;
-		case IBuilderTask::BuildType::BUNKER: {
-			task = new CBBunkerTask(this, priority, buildDef, position, cost, shake, timeout);
-		} break;
-		case IBuilderTask::BuildType::BIG_GUN: {
-			task = new CBBigGunTask(this, priority, buildDef, position, cost, shake, timeout);
-		} break;
-		case IBuilderTask::BuildType::RADAR: {
-			task = new CBRadarTask(this, priority, buildDef, position, cost, shake, timeout);
-		} break;
-		case IBuilderTask::BuildType::SONAR: {
-			task = new CBSonarTask(this, priority, buildDef, position, cost, shake, timeout);
-		} break;
-		case IBuilderTask::BuildType::CONVERT: {
-			task = new CBConvertTask(this, priority, buildDef, position, cost, shake, timeout);
-		} break;
-		// NOTE: Tasks created by config "hub"
-//		case IBuilderTask::BuildType::FACTORY: {
-//			task = new CBFactoryTask(this, priority, buildDef, nullptr, position, cost, shake, false, timeout);
-//		} break;
-		default: {
-			// FIXME: CBGenericTask is a workaround and should be fixed to remain as crash handler.
-			//        Currently used by build_chain->hub config.
-			//        There's no way for AS to distinguish generic from real BuildType task. Save/Load gets confused.
-			task = new CBGenericTask(this, type, priority, buildDef, position, cost, shake, timeout);
-		} break;
-	}
-
-	if (isActive) {
-		buildTasks[static_cast<IBuilderTask::BT>(type)].insert(task);
-		buildTasksCount++;
-		buildUpdates.push_back(task);
-	} else {
-		task->Deactivate();
-	}
+	updateTasks.push_back(task);
 	TaskAdded(task);
 	return task;
 }
@@ -991,7 +809,7 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
-	IBuilderTask* task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
+	IUnitTask* task = Enqueue(TaskB::Patrol(IBuilderTask::Priority::LOW, pos, FRAMES_PER_SEC * 5));
 	task->AssignTo(unit);
 	task->Start(unit);
 }
@@ -1102,7 +920,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 
 	const CCircuitDef* cdef = unit->GetCircuitDef();
 	if ((cdef->GetPower() > THREAT_MIN) && circuit->GetMilitaryManager()->IsCombatTargetExists(unit, pos, 1.5f)) {
-		return EnqueueCombat(1.5f);
+		return Enqueue(TaskB::Combat(1.5f));
 	}
 
 	const auto it = costQueries.find(unit);
@@ -1118,7 +936,7 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	pathfinder->RunQuery(circuit->GetScheduler().get(), q);
 
 	if (query == nullptr) {
-		return EnqueueWait(FRAMES_PER_SEC);  // 1st run
+		return Enqueue(TaskB::Wait(FRAMES_PER_SEC));  // 1st run
 	}
 
 	std::shared_ptr<CQueryCostMap> pQuery = std::static_pointer_cast<CQueryCostMap>(query);
@@ -1273,9 +1091,9 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 	{
 		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(pos);
 		if (vip != nullptr) {
-			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 10);
+			task = EnqueueB(TaskB::Guard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 10));
 		} else {
-			task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
+			task = EnqueueB(TaskB::Patrol(IBuilderTask::Priority::LOW, pos, FRAMES_PER_SEC * 5));
 		}
 	}
 
@@ -1385,9 +1203,9 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 	{
 		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(pos);
 		if (vip != nullptr) {
-			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
+			task = EnqueueB(TaskB::Guard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60));
 		} else {
-			task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
+			task = EnqueueB(TaskB::Patrol(IBuilderTask::Priority::LOW, pos, FRAMES_PER_SEC * 5));
 		}
 	}
 
@@ -1487,9 +1305,9 @@ IBuilderTask* CBuilderManager::MakeCommDangerTask(CCircuitUnit* unit, const CQue
 	{
 		CCircuitUnit* vip = circuit->GetFactoryManager()->GetClosestFactory(pos);
 		if (vip != nullptr) {
-			task = EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
+			task = EnqueueB(TaskB::Guard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60));
 		} else {
-			task = EnqueuePatrol(IBuilderTask::Priority::LOW, pos, .0f, FRAMES_PER_SEC * 5);
+			task = EnqueueB(TaskB::Patrol(IBuilderTask::Priority::LOW, pos, FRAMES_PER_SEC * 5));
 		}
 	}
 
@@ -1650,8 +1468,8 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 					&& unit->GetCircuitDef()->CanBuild(buildDef))
 				{
 					AIFloat3 pos = militaryMgr->GetBigGunPos(buildDef);
-					return EnqueueTask(IBuilderTask::Priority::NORMAL, buildDef, pos,
-									   IBuilderTask::BuildType::BIG_GUN);
+					return Enqueue(TaskB::Common(IBuilderTask::BuildType::BIG_GUN,
+								   IBuilderTask::Priority::NORMAL, buildDef, pos));
 				}
 			} else if (unit->GetCircuitDef()->CanBuild(buildDef)) {
 				return *tasks.begin();
@@ -1663,14 +1481,14 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 			? circuit->GetFactoryManager()->GetClosestFactory(position)
 			: militaryMgr->GetClosestLeader(IFighterTask::FightType::ATTACK, position);
 	if (vip != nullptr) {
-		return EnqueueGuard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60);
+		return EnqueueB(TaskB::Guard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60));
 	}
 
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 	if (setupMgr->GetCommander() != nullptr) {
-		return EnqueueGuard(IBuilderTask::Priority::LOW, setupMgr->GetCommander(), true, FRAMES_PER_SEC * 20);
+		return EnqueueB(TaskB::Guard(IBuilderTask::Priority::LOW, setupMgr->GetCommander(), true, FRAMES_PER_SEC * 20));
 	}
-	return EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
+	return EnqueueB(TaskB::Patrol(IBuilderTask::Priority::LOW, position, FRAMES_PER_SEC * 20));
 }
 
 void CBuilderManager::AddBuildList(CCircuitUnit* unit, int hiddenDefs)
@@ -1768,52 +1586,13 @@ void CBuilderManager::Watchdog()
 				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
 				CCircuitDef* cdef = unit->GetCircuitDef();
 				if ((cdef->GetBuildTime() * buildPercent < maxCost) || (*cdef == *terraDef)) {
-					EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+					Enqueue(TaskB::Repair(IBuilderTask::Priority::NORMAL, unit));
 				} else {
-					EnqueueReclaim(IBuilderTask::Priority::NORMAL, unit);
+					Enqueue(TaskB::Reclaim(IBuilderTask::Priority::NORMAL, unit));
 				}
 //			} else if (u->GetHealth() < u->GetMaxHealth()) {
-//				EnqueueRepair(IBuilderTask::Priority::NORMAL, unit);
+//				Enqueue(TaskB::Repair(IBuilderTask::Priority::NORMAL, unit));
 			}
-		}
-	}
-}
-
-void CBuilderManager::UpdateIdle()
-{
-	ZoneScopedN(__PRETTY_FUNCTION__);
-
-	idleTask->Update();
-}
-
-void CBuilderManager::UpdateBuild()
-{
-	ZoneScoped;
-
-	if (buildIterator >= buildUpdates.size()) {
-		buildIterator = 0;
-	}
-
-	int lastFrame = circuit->GetLastFrame();
-	// stagger the Update's
-	unsigned int n = (buildUpdates.size() / TEAM_SLOWUPDATE_RATE) + 1;
-
-	while ((buildIterator < buildUpdates.size()) && (n != 0)) {
-		IUnitTask* task = buildUpdates[buildIterator];
-		if (task->IsDead()) {
-			buildUpdates[buildIterator] = buildUpdates.back();
-			buildUpdates.pop_back();
-			task->ClearRelease();  // delete task;
-		} else {
-			int frame = task->GetLastTouched();
-			int timeout = task->GetTimeout();
-			if ((frame != -1) && (timeout > 0) && (lastFrame - frame >= timeout)) {
-				AbortTask(task);
-			} else {
-				task->Update();
-			}
-			++buildIterator;
-			n--;
 		}
 	}
 }
@@ -1886,6 +1665,8 @@ void CBuilderManager::Load(std::istream& is)
 				case IBuilderTask::BuildType::GEO: {
 					task = new CBGeoTask(this);
 				} break;
+//				case IBuilderTask::BuildType::GEOUP: {
+//				} break;
 				case IBuilderTask::BuildType::DEFENCE: {
 					task = new CBDefenceTask(this);
 				} break;
@@ -1928,7 +1709,7 @@ void CBuilderManager::Load(std::istream& is)
 				const bool isValid = is >> *task;
 				buildTasks[i].insert(task);
 				buildTasksCount++;
-				buildUpdates.push_back(task);
+				updateTasks.push_back(task);
 				if (!isValid) {
 #ifdef DEBUG_SAVELOAD
 					circuit->LOG("Invalid task");

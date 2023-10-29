@@ -90,13 +90,13 @@ void CCombatTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 		const float minShield = circuit->GetSetupManager()->GetEmptyShield();
 		if ((healthPerc > cdef->GetRetreat()) && unit->IsShieldCharged(minShield)) {
 			if (cdef->IsRoleHeavy() && (healthPerc < 0.9f)) {
-				circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::NOW, unit);
+				circuit->GetBuilderManager()->Enqueue(TaskB::Repair(IBuilderTask::Priority::NOW, unit));
 			}
 			return;
 		}
 	} else if ((healthPerc > cdef->GetRetreat()) && !unit->IsDisarmed(frame)) {
 		if (cdef->IsRoleHeavy() && (healthPerc < 0.9f)) {
-			circuit->GetBuilderManager()->EnqueueRepair(IBuilderTask::Priority::NOW, unit);
+			circuit->GetBuilderManager()->Enqueue(TaskB::Repair(IBuilderTask::Priority::NOW, unit));
 		}
 		return;
 	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat

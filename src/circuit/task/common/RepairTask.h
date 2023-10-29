@@ -36,9 +36,9 @@ public:
 	virtual void SetTarget(CCircuitUnit* unit) { SetRepTarget(unit); }
 	ICoreUnit::Id GetTargetId() const { return targetId; }
 
+protected:
 	CAllyUnit* FindUnitToAssist(CCircuitUnit* unit);
 
-protected:
 	void SetRepTarget(CAllyUnit* unit);
 
 	virtual bool Load(std::istream& is) override;

@@ -66,7 +66,7 @@ void CBMexUpTask::Finish()
 		}
 	}
 	if (oldMex != nullptr) {
-		circuit->GetBuilderManager()->EnqueueReclaim(priority, oldMex);
+		circuit->GetBuilderManager()->Enqueue(TaskB::Reclaim(priority, oldMex));
 	}
 
 	// FIXME: Won't work with EnqueueReclaim

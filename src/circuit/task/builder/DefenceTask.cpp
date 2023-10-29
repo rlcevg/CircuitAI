@@ -86,7 +86,8 @@ void CBDefenceTask::Finish()
 	// Reclaim turret blockers
 	const float radius = 128.0f;  // buildDef->GetMaxRange() * 0.5f;
 	if (circuit->GetCallback()->IsFeaturesIn(buildPos, radius)) {
-		circuit->GetBuilderManager()->EnqueueReclaim(IBuilderTask::Priority::HIGH, buildPos, .0f, FRAMES_PER_SEC * 60, radius, false);
+		circuit->GetBuilderManager()->Enqueue(TaskB::Reclaim(IBuilderTask::Priority::HIGH,
+				buildPos, .0f, FRAMES_PER_SEC * 60, radius, false));
 	}
 
 	IBuilderTask::Finish();

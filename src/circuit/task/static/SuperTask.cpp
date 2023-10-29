@@ -15,6 +15,8 @@
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
+#include "spring/SpringMap.h"
+
 #include "AISCommands.h"
 #include "Lua.h"
 
@@ -169,6 +171,7 @@ void CSuperTask::Update()
 	SetTarget(bestTarget);
 	if (GetTarget() != nullptr) {
 		targetPos = GetTarget()->GetPos();
+		targetPos.y = circuit->GetMap()->GetElevationAt(targetPos.x, targetPos.z);
 
 		std::string cmd = (!cdef->IsAttrStock() || (unit->GetUnit()->GetStockpile() > 0)) ? "ai_super_fire:" : "ai_super_intention:";
 		cmd += utils::int_to_string(unit->GetId()) + "/" + utils::int_to_string(targetPos.x) + "/" + utils::int_to_string(targetPos.z);

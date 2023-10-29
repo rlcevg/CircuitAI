@@ -22,6 +22,7 @@ CFGuardTask::CFGuardTask(ITaskManager* mgr, CCircuitUnit* vip, float maxPower)
 		, vipId(vip->GetId())
 		, maxPower(maxPower)
 {
+	static_cast<CMilitaryManager*>(mgr)->MarkGuardUnit(vip, this);
 }
 
 CFGuardTask::~CFGuardTask()
@@ -94,6 +95,10 @@ void CFGuardTask::Update()
 	}
 
 	if (target != nullptr) {
+		if (frame < attackFrame + FRAMES_PER_SEC * 3) {
+			return;
+		}
+		attackFrame = frame;
 		state = State::ENGAGE;
 		const bool isGroundAttack = target->GetUnit()->IsCloaked();
 		for (CCircuitUnit* unit : units) {

@@ -75,6 +75,11 @@ static void ConstructCopyAIFloat3(AIFloat3* mem, const AIFloat3& o)
 	new(mem) AIFloat3(o);
 }
 
+static void ConstructAIFloat3Val(AIFloat3* mem, float x, float y, float z)
+{
+	new(mem) AIFloat3(x, y, z);
+}
+
 static void ConstructSArmorInfo(CCircuitDef::SArmorInfo* mem)
 {
 	new(mem) CCircuitDef::SArmorInfo();
@@ -132,16 +137,6 @@ static void DestructSInitInfo(CInitScript::SInitInfo *mem)
 	mem->~SInitInfo();
 }
 
-static void ConstructTypeMask(CMaskHandler::TypeMask* mem)
-{
-	new(mem) CMaskHandler::TypeMask();
-}
-
-static void ConstructCopyTypeMask(CMaskHandler::TypeMask* mem, const CMaskHandler::TypeMask& o)
-{
-	new(mem) CMaskHandler::TypeMask(o);
-}
-
 static CCircuitDef* CCircuitAI_GetCircuitDef(CCircuitAI* circuit, const std::string& name)
 {
 	return circuit->GetCircuitDef(name.c_str());
@@ -167,6 +162,7 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	int r = engine->RegisterObjectType("AIFloat3", sizeof(AIFloat3), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<AIFloat3>()); ASSERT(r >= 0);
 	r = engine->RegisterObjectBehaviour("AIFloat3", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructAIFloat3), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
 	r = engine->RegisterObjectBehaviour("AIFloat3", asBEHAVE_CONSTRUCT, "void f(const AIFloat3& in)", asFUNCTION(ConstructCopyAIFloat3), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectBehaviour("AIFloat3", asBEHAVE_CONSTRUCT, "void f(float, float, float)", asFUNCTION(ConstructAIFloat3Val), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("AIFloat3", "float x", asOFFSET(AIFloat3, x)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("AIFloat3", "float y", asOFFSET(AIFloat3, y)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("AIFloat3", "float z", asOFFSET(AIFloat3, z)); ASSERT(r >= 0);
@@ -212,8 +208,6 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterTypedef("Id", "int"); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectType("TypeMask", sizeof(CMaskHandler::TypeMask), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<CMaskHandler::TypeMask>()); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("TypeMask", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructTypeMask), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("TypeMask", asBEHAVE_CONSTRUCT, "void f(const TypeMask& in)", asFUNCTION(ConstructCopyTypeMask), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 	r = engine->RegisterTypedef("Type", "int"); ASSERT(r >= 0);
 	r = engine->RegisterTypedef("Mask", "uint"); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("TypeMask", "Type type", asOFFSET(CMaskHandler::TypeMask, type)); ASSERT(r >= 0);

@@ -22,7 +22,6 @@ int switchInterval = MakeSwitchInterval();
 
 IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 {
-	// TODO: Add API to create any tasks
 	return aiFactoryMgr.DefaultMakeTask(unit);
 }
 
@@ -51,17 +50,17 @@ void AiUnitAdded(CCircuitUnit@ unit, Unit::UseAs usage)
 		if ((buildDef is null) || !buildDef.IsAvailable(ai.frame))
 			continue;
 
-		Task::Priority priotiry;
+		Task::Priority priority;
 		Task::RecruitType recruit;
 		if (opener[i].role == Unit::Role::BUILDER.type) {
-			priotiry = Task::Priority::NORMAL;
+			priority = Task::Priority::NORMAL;
 			recruit  = Task::RecruitType::BUILDPOWER;
 		} else {
-			priotiry = Task::Priority::HIGH;
+			priority = Task::Priority::HIGH;
 			recruit  = Task::RecruitType::FIREPOWER;
 		}
 		for (uint j = 0, jcount = opener[i].count; j < jcount; ++j)
-			aiFactoryMgr.EnqueueTask(priotiry, buildDef, pos, recruit, 64.f);
+			aiFactoryMgr.Enqueue(TaskS::Recruit(recruit, priority, buildDef, pos, 64.f));
 	}
 }
 

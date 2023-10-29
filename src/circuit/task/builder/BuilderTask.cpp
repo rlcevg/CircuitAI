@@ -218,7 +218,7 @@ void IBuilderTask::Finish()
 
 		const int buildDelay = circuit->GetEconomyManager()->GetBuildDelay();
 		if (buildDelay > 0) {
-			IUnitTask* task = builderMgr->EnqueueWait(buildDelay);
+			IUnitTask* task = builderMgr->Enqueue(TaskB::Wait(buildDelay));
 			decltype(units) tmpUnits = units;
 			for (CCircuitUnit* unit : tmpUnits) {
 				manager->AssignTask(unit, task);
@@ -665,8 +665,8 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				isValid = (index >= 0) && (circuit->GetMetalManager()->GetSpots()[index].income * buildDef->GetExtractsM() > energyMake * 0.8f);
 			}
 			if (isValid) {
-				circuit->GetBuilderManager()->EnqueueTask(IBuilderTask::Priority::NORMAL, energyDef, buildPos,
-														  IBuilderTask::BuildType::ENERGY, SQUARE_SIZE * 8.0f, true);
+				circuit->GetBuilderManager()->Enqueue(TaskB::Common(IBuilderTask::BuildType::ENERGY,
+						IBuilderTask::Priority::NORMAL, energyDef, buildPos, SQUARE_SIZE * 8.0f, true));
 			}
 		}
 	}
@@ -711,7 +711,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 						pos += dir.Normalize2D() * (ourRange + pylonRange) * 0.9f;
 					}
 				}
-				circuit->GetBuilderManager()->EnqueuePylon(IBuilderTask::Priority::HIGH, pylonDef, pos, nullptr, 1.0f);
+				circuit->GetBuilderManager()->Enqueue(TaskB::Pylon(IBuilderTask::Priority::HIGH, pylonDef, pos, nullptr, 1.0f));
 			}
 		}
 	}
@@ -732,7 +732,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 
 	if (chain->isTerra) {
 		if (circuit->GetEconomyManager()->GetAvgMetalIncome() > 10) {
-			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
+			circuit->GetBuilderManager()->Enqueue(TaskB::Terraform(IBuilderTask::Priority::HIGH, target));
 		}
 	}
 
@@ -833,7 +833,7 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 				CTerrainManager::CorrectPosition(pos);
 				pos = terrainMgr->GetBuildPosition(bdef, pos);
 
-				IBuilderTask* task = builderMgr->EnqueueTask(bi.priority, bi.cdef, pos, bi.buildType, 0.f, parent == nullptr, 0);
+				IBuilderTask* task = builderMgr->Enqueue(TaskB::Common(bi.buildType, bi.priority, bi.cdef, pos, 0.f, parent == nullptr, 0));
 				if (parent == nullptr) {
 					parent = task;
 				} else {

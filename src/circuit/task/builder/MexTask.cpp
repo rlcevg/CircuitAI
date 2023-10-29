@@ -289,7 +289,8 @@ bool CBMexTask::CheckWaterBlock(CCircuitUnit* unit)
 	if (task == nullptr) {
 //		AIFloat3 newPos = AIFloat3(buildPos - (buildPos - pos).Normalize2D() * (unit->GetCircuitDef()->GetBuildDistance() * 0.9f));
 //		CTerrainManager::CorrectPosition(newPos);
-		task = builderMgr->EnqueueTask(IBuilderTask::Priority::NOW, def, pos/*newPos*/, IBuilderTask::BuildType::DEFENCE, 1.f, 0.f, true);
+		task = builderMgr->Enqueue(TaskB::Common(IBuilderTask::BuildType::DEFENCE,
+								   IBuilderTask::Priority::NOW, def, pos/*newPos*/, 0.f, true));
 	}
 	manager->AssignTask(unit, task);
 	return true;

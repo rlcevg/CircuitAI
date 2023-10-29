@@ -92,7 +92,7 @@ void IRepairTask::Finish()
 //	if (target != nullptr) {
 //		CCircuitDef* cdef = target->GetCircuitDef();
 //		if (!cdef->IsMobile() && !cdef->IsAttacker() && (cdef->GetCost() > 1000.0f)) {
-//			circuit->GetBuilderManager()->EnqueueTerraform(IBuilderTask::Priority::HIGH, target);
+//			circuit->GetBuilderManager()->EnqueueTask(TaskB::Terraform(IBuilderTask::Priority::HIGH, target));
 //		}
 //	}
 

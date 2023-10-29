@@ -157,8 +157,8 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 							* SQUARE_SIZE / 2 * 1.4f + unit->GetCircuitDef()->GetRadius();
 					buildPos = terrainMgr->ShiftPos(facDef, pos, range, true);
 					CBuilderManager* builderMgr = this->circuit->GetBuilderManager();
-					IBuilderTask* task = builderMgr->EnqueueFactory(IBuilderTask::Priority::NOW, facDef, nullptr, buildPos,
-																	SQUARE_SIZE, true, true, 0);
+					IBuilderTask* task = builderMgr->Enqueue(TaskB::Factory(IBuilderTask::Priority::NOW,
+							facDef, buildPos, nullptr, SQUARE_SIZE, true, true, 0));
 					static_cast<ITaskManager*>(builderMgr)->AssignTask(unit, task);
 				}
 			}
@@ -1067,7 +1067,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			builderMgr->SetCanUpMex(unit->GetCircuitDef(), index != -1);
 			if (index != -1) {
 				const AIFloat3& pos = spots[index].position;
-				task = builderMgr->EnqueueSpot(IBuilderTask::Priority::HIGH, mexDef, index, pos, IBuilderTask::BuildType::MEXUP);
+				task = builderMgr->Enqueue(TaskB::Spot(IBuilderTask::BuildType::MEXUP,
+						IBuilderTask::Priority::HIGH, mexDef, pos, index));
 				return task;
 			}
 		}
@@ -1110,7 +1111,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			int index = metalMgr->GetSpotToBuild(position, predicate);
 			if (index != -1) {
 				const AIFloat3& pos = spots[index].position;
-				task = builderMgr->EnqueueSpot(IBuilderTask::Priority::HIGH, mexDef, index, pos, IBuilderTask::BuildType::MEX);
+				task = builderMgr->Enqueue(TaskB::Spot(IBuilderTask::BuildType::MEX,
+						IBuilderTask::Priority::HIGH, mexDef, pos, index));
 				return task;
 			}
 		}
@@ -1129,7 +1131,8 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			//       away in unknown territory.
 //			const SConvertExt* convertExt = convertDefs.GetAvailInfo(convertDef);
 //			if ((mexDef == nullptr) || (convertExt->make / convertDef->GetCostM() >= metalMgr->GetSpotAvgIncome() * mexDef->GetExtractsM() / mexDef->GetCostM())) {
-				task = builderMgr->EnqueueTask(IBuilderTask::Priority::NORMAL, convertDef, pos, IBuilderTask::BuildType::CONVERT, 0.f, true);
+				task = builderMgr->Enqueue(TaskB::Common(IBuilderTask::BuildType::CONVERT,
+										   IBuilderTask::Priority::NORMAL, convertDef, pos, 0.f, true));
 				return task;
 //			}
 		}
@@ -1213,12 +1216,12 @@ IBuilderTask* CEconomyManager::UpdateReclaimTasks(const AIFloat3& position, CCir
 		task = builderMgr->GetResurrectTask(pos, 8.0f/*unit->GetCircuitDef()->GetBuildDistance()*/);
 		if (isResurrect) {
 			if (task == nullptr) {
-				task = builderMgr->EnqueueResurrect(IBuilderTask::Priority::HIGH, pos, cost, FRAMES_PER_SEC * 300,
-													8.0f/*unit->GetCircuitDef()->GetBuildDistance()*/);
+				task = builderMgr->Enqueue(TaskB::Resurrect(IBuilderTask::Priority::HIGH, pos, cost, FRAMES_PER_SEC * 300,
+										   8.0f/*unit->GetCircuitDef()->GetBuildDistance()*/));
 			}
 		} else if (task == nullptr) {
-			task = builderMgr->EnqueueReclaim(IBuilderTask::Priority::HIGH, pos, cost, FRAMES_PER_SEC * 300,
-											  8.0f/*unit->GetCircuitDef()->GetBuildDistance()*/);
+			task = builderMgr->Enqueue(TaskB::Reclaim(IBuilderTask::Priority::HIGH, pos, cost, FRAMES_PER_SEC * 300,
+									   8.0f/*unit->GetCircuitDef()->GetBuildDistance()*/));
 		} else {
 			task = nullptr;
 		}
@@ -1347,7 +1350,8 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 		IBuilderTask::Priority priority = isEnergyStalling
 				? (IsEnergyEmpty() ? IBuilderTask::Priority::NOW : IBuilderTask::Priority::HIGH)
 				: IBuilderTask::Priority::NORMAL;
-		IBuilderTask* task = builderMgr->EnqueueTask(priority, bestDef, buildPos, IBuilderTask::BuildType::ENERGY, 0.f, true);
+		IBuilderTask* task = builderMgr->Enqueue(TaskB::Common(IBuilderTask::BuildType::ENERGY,
+												 priority, bestDef, buildPos, 0.f, true));
 		if ((unit == nullptr) || unit->GetCircuitDef()->CanBuild(bestDef)) {
 			return task;
 		}
@@ -1401,7 +1405,7 @@ IBuilderTask* CEconomyManager::UpdateGeoTasks(const AIFloat3& position, CCircuit
 		return nullptr;
 	}
 
-	return builderMgr->EnqueueSpot(IBuilderTask::Priority::NORMAL, geoDef, index, pos, IBuilderTask::BuildType::GEO);
+	return builderMgr->Enqueue(TaskB::Spot(IBuilderTask::BuildType::GEO, IBuilderTask::Priority::NORMAL, geoDef, pos, index));
 }
 
 IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCircuitUnit* unit)
@@ -1555,7 +1559,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 //			CCircuitUnit* reclFac = factoryMgr->GetClosestFactory(buildPos);
 //			if (reclFac != nullptr) {
 ////				factoryMgr->DisableFactory(reclFac);
-//				builderMgr->EnqueueReclaim(IBuilderTask::Priority::NOW, reclFac);
+//				builderMgr->EnqueueTask(TaskB::Reclaim(IBuilderTask::Priority::NOW, reclFac));
 //			}
 //		}
 		builderMgr->ActivateTask(factoryTask);
@@ -1613,7 +1617,8 @@ IBuilderTask* CEconomyManager::UpdateStorageTasks()
 
 	if (storeDef != nullptr) {
 		AIFloat3 buildPos = circuit->GetSetupManager()->GetBasePos();
-		return builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, storeDef, buildPos, IBuilderTask::BuildType::STORE);
+		return builderMgr->Enqueue(TaskB::Common(IBuilderTask::BuildType::STORE,
+								   IBuilderTask::Priority::HIGH, storeDef, buildPos));
 	}
 
 	return UpdatePylonTasks();
@@ -1651,7 +1656,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	if (utils::is_valid(buildPos)) {
 		IBuilderTask::Priority priority = metalIncome < 40 ? IBuilderTask::Priority::NORMAL : IBuilderTask::Priority::HIGH;
-		return builderMgr->EnqueuePylon(priority, buildDef, buildPos, link, buildDef->GetCostM());
+		return builderMgr->Enqueue(TaskB::Pylon(priority, buildDef, buildPos, link, buildDef->GetCostM()));
 	} else {
 		link->SetValid(false);
 		energyGrid->SetForceRebuild(true);
@@ -1689,7 +1694,7 @@ IBuilderTask* CEconomyManager::CheckMobileAssistRequired(const AIFloat3& positio
 	if ((metal.current > (metal.pull + miRequire - GetAvgMetalIncome()) * (SEC - 2))
 		&& (energy.current > (energy.pull + eiRequire - GetAvgEnergyIncome()) * (SEC - 2)))
 	{
-		return builderMgr->EnqueueGuard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * SEC);
+		return builderMgr->EnqueueB(TaskB::Guard(IBuilderTask::Priority::HIGH, vip, false, FRAMES_PER_SEC * SEC));
 	}
 	return nullptr;
 }
@@ -1764,8 +1769,8 @@ CBFactoryTask* CEconomyManager::PickNextFactory(const AIFloat3& position, bool i
 									  : IBuilderTask::Priority::HIGH;
 	const bool isPlop = (factoryMgr->GetFactoryCount() <= 0);
 	// hold selected facDef - create non-active task
-	factoryTask = static_cast<CBFactoryTask*>(builderMgr->EnqueueFactory(priority,
-			facDef, reprDef, -RgtVector, SQUARE_SIZE, isPlop, false, FRAMES_PER_SEC * 120));
+	factoryTask = static_cast<CBFactoryTask*>(builderMgr->Enqueue(TaskB::Factory(priority,
+			facDef, -RgtVector, reprDef, SQUARE_SIZE, isPlop, false, FRAMES_PER_SEC * 120)));
 	return factoryTask;
 }
 
@@ -1878,7 +1883,7 @@ bool CEconomyManager::CheckAirpadRequired(const AIFloat3& position, CCircuitUnit
 	if (terrainMgr->CanBeBuiltAtSafe(airpadDef, buildPos) &&
 		((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
 	{
-		outTask = builderMgr->EnqueueFactory(IBuilderTask::Priority::NORMAL, airpadDef, nullptr, buildPos);
+		outTask = builderMgr->Enqueue(TaskB::Factory(IBuilderTask::Priority::NORMAL, airpadDef, buildPos, nullptr));
 		return true;
 	}
 
@@ -1961,8 +1966,8 @@ bool CEconomyManager::CheckAssistRequired(const AIFloat3& position, CCircuitUnit
 	if (terrainMgr->CanBeBuiltAtSafe(assistDef, buildPos)
 		&& ((unit == nullptr) || terrainMgr->CanReachAtSafe(unit, buildPos, unit->GetCircuitDef()->GetBuildDistance())))
 	{
-		outTask = builderMgr->EnqueueTask(IBuilderTask::Priority::HIGH, assistDef, buildPos,
-										  IBuilderTask::BuildType::NANO, SQUARE_SIZE * 8, true);
+		outTask = builderMgr->Enqueue(TaskB::Common(IBuilderTask::BuildType::NANO, IBuilderTask::Priority::HIGH,
+									  assistDef, buildPos, SQUARE_SIZE * 8, true));
 		return true;
 	}
 	return false;
@@ -2035,7 +2040,7 @@ void CEconomyManager::ReclaimOldConvert(const SConvertExt* convertExt)
 		}
 		auto info = convertDefs.GetAvailInfo(unit->GetCircuitDef());
 		if (convertExt->make > info->make * reclConvertEff) {
-			circuit->GetBuilderManager()->EnqueueReclaim(IUnitTask::Priority::HIGH, unit, FRAMES_PER_SEC * 1200);
+			circuit->GetBuilderManager()->Enqueue(TaskB::Reclaim(IUnitTask::Priority::HIGH, unit, FRAMES_PER_SEC * 1200));
 			energyNet += convertExt->energyUse;
 			if (energyNet > 0) {
 				break;
@@ -2062,7 +2067,7 @@ void CEconomyManager::ReclaimOldEnergy(const SEnergyExt* energyExt)
 			if (energyIncome < energyExt->cond.energyIncome) {
 				break;
 			}
-			circuit->GetBuilderManager()->EnqueueReclaim(IUnitTask::Priority::HIGH, unit, FRAMES_PER_SEC * 1200);
+			circuit->GetBuilderManager()->Enqueue(TaskB::Reclaim(IUnitTask::Priority::HIGH, unit, FRAMES_PER_SEC * 1200));
 			unit->GetCircuitDef()->SetMaxThisUnit(0);
 		} else {
 			unit->GetCircuitDef()->SetMaxThisUnit(info->cond.limit);

@@ -19,14 +19,16 @@ CEconomyScript::CEconomyScript(CScriptManager* scr, CEconomyManager* mgr)
 		: IModuleScript(scr, mgr)
 {
 	asIScriptEngine* engine = script->GetEngine();
-	int r = engine->RegisterObjectType("CEconomyManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
-	r = engine->RegisterGlobalProperty("CEconomyManager aiEconomyMgr", manager); ASSERT(r >= 0);
+
 //	r = engine->RegisterObjectType("SResourceInfo", sizeof(CEconomyManager::SResourceInfo), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<CEconomyManager::SResourceInfo>()); ASSERT(r >= 0);
-	r = engine->RegisterObjectType("SResourceInfo", sizeof(CEconomyManager::SResourceInfo), asOBJ_REF | asOBJ_NOCOUNT); ASSERT(r >= 0);
+	int r = engine->RegisterObjectType("SResourceInfo", sizeof(CEconomyManager::SResourceInfo), asOBJ_REF | asOBJ_NOCOUNT); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("SResourceInfo", "const float current", asOFFSET(CEconomyManager::SResourceInfo, current)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("SResourceInfo", "const float storage", asOFFSET(CEconomyManager::SResourceInfo, storage)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("SResourceInfo", "const float pull", asOFFSET(CEconomyManager::SResourceInfo, pull)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("SResourceInfo", "const float income", asOFFSET(CEconomyManager::SResourceInfo, income)); ASSERT(r >= 0);
+
+	r = engine->RegisterObjectType("CEconomyManager", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
+	r = engine->RegisterGlobalProperty("CEconomyManager aiEconomyMgr", manager); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CEconomyManager", "const SResourceInfo metal", asOFFSET(CEconomyManager, metal)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CEconomyManager", "const SResourceInfo energy", asOFFSET(CEconomyManager, energy)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CEconomyManager", "bool isMetalEmpty", asOFFSET(CEconomyManager, isMetalEmpty)); ASSERT(r >= 0);

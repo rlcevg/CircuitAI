@@ -32,6 +32,210 @@ class CCombatTask;
 
 struct SBuildChain;
 
+namespace TaskB {
+	struct SBuildTask {
+		IBuilderTask::BuildType type;
+		IBuilderTask::Priority priority;
+		CCircuitDef* buildDef;
+		springai::AIFloat3 position;
+		SResource cost;
+		union {
+			CCircuitDef* reprDef;
+			CCircuitUnit* target;
+			IGridLink* link;
+		} ref;
+		union {
+			int pointId;
+			int spotId;
+		} i;
+		union {
+			float shake;
+			float radius;
+		} f;
+		union {
+			bool isPlop;
+			bool isMetal;
+		} b;
+		bool isActive;
+		int timeout;
+	};
+
+	struct SServBTask {
+		IBuilderTask::BuildType type;
+		IBuilderTask::Priority priority;
+		springai::AIFloat3 position;
+		CCircuitUnit* target;
+		float powerMod;
+		bool isInterrupt;
+		int timeout;
+	};
+
+	static inline SBuildTask Common(IBuilderTask::BuildType type, IBuilderTask::Priority priority,
+			CCircuitDef* buildDef, const springai::AIFloat3& position,
+			float shake = SQUARE_SIZE * 32,  // Alter/randomize position by offset
+			bool isActive = true,  // Should task go to general queue or remain detached?
+			int timeout = ASSIGN_TIMEOUT)
+	{
+		SBuildTask ti;
+		ti.type = type;
+		ti.priority = priority;
+		ti.buildDef = buildDef;
+		ti.position = position;
+		ti.f.shake = shake;
+		ti.isActive = isActive;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SBuildTask Spot(IBuilderTask::BuildType type, IBuilderTask::Priority priority,
+			CCircuitDef* buildDef, const springai::AIFloat3& position, int spotId,
+			bool isActive = true, int timeout = ASSIGN_TIMEOUT)
+	{
+		SBuildTask ti;
+		ti.type = type;
+		ti.priority = priority;
+		ti.buildDef = buildDef;
+		ti.position = position;
+		ti.i.spotId = spotId;
+		ti.isActive = isActive;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SBuildTask Factory(IBuilderTask::Priority priority, CCircuitDef* buildDef,
+			const springai::AIFloat3& position, CCircuitDef* reprDef,
+			float shake = SQUARE_SIZE * 32, bool isPlop = false,
+			bool isActive = true, int timeout = ASSIGN_TIMEOUT)
+	{
+		SBuildTask ti;
+		ti.type = IBuilderTask::BuildType::FACTORY;
+		ti.priority = priority;
+		ti.buildDef = buildDef;
+		ti.position = position;
+		ti.ref.reprDef = reprDef;
+		ti.f.shake = shake;
+		ti.b.isPlop = isPlop;
+		ti.isActive = isActive;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SBuildTask Pylon(IBuilderTask::Priority priority, CCircuitDef* buildDef,
+			const springai::AIFloat3& position, IGridLink* link, float cost,
+			bool isActive = true, int timeout = ASSIGN_TIMEOUT)
+	{
+		SBuildTask ti;
+		ti.type = IBuilderTask::BuildType::PYLON;
+		ti.priority = priority;
+		ti.buildDef = buildDef;
+		ti.position = position;
+		ti.cost = {cost, 0.f};
+		ti.ref.link = link;
+		ti.isActive = isActive;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SBuildTask Repair(IBuilderTask::Priority priority,
+			CCircuitUnit* target, int timeout = ASSIGN_TIMEOUT)
+	{
+		SBuildTask ti;
+		ti.type = IBuilderTask::BuildType::REPAIR;
+		ti.priority = priority;
+		ti.ref.target = target;
+		ti.isActive = true;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SBuildTask Reclaim(IBuilderTask::Priority priority,
+			const springai::AIFloat3& position, float cost,
+			int timeout, float radius = .0f, bool isMetal = true)
+	{
+		SBuildTask ti;
+		ti.type = IBuilderTask::BuildType::RECLAIM;
+		ti.priority = priority;
+		ti.position = position;
+		ti.cost = {cost, 0.f};
+		ti.ref.target = nullptr;
+		ti.f.radius = radius;
+		ti.b.isMetal = isMetal;
+		ti.isActive = true;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SBuildTask Reclaim(IBuilderTask::Priority priority,
+			CCircuitUnit* target, int timeout = ASSIGN_TIMEOUT)
+	{
+		SBuildTask ti;
+		ti.type = IBuilderTask::BuildType::RECLAIM;
+		ti.priority = priority;
+		ti.ref.target = target;
+		ti.isActive = true;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SBuildTask Resurrect(IBuilderTask::Priority priority,
+			const springai::AIFloat3& position, float cost,
+			int timeout, float radius = .0f)
+	{
+		SBuildTask ti;
+		ti.type = IBuilderTask::BuildType::RESURRECT;
+		ti.priority = priority;
+		ti.position = position;
+		ti.cost = {cost, 0.f};
+		ti.f.radius = radius;
+		ti.isActive = true;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SBuildTask Terraform(IBuilderTask::Priority priority,
+			CCircuitUnit* target, const springai::AIFloat3& position = -RgtVector,
+			float cost = 1.0f, bool isActive = true, int timeout = ASSIGN_TIMEOUT)
+	{
+		SBuildTask ti;
+		ti.type = IBuilderTask::BuildType::TERRAFORM;
+		ti.priority = priority;
+		ti.position = position;
+		ti.cost = {cost, 0.f};
+		ti.ref.target = target;
+		ti.isActive = isActive;
+		ti.timeout = timeout;
+		return ti;
+	}
+
+	static inline SServBTask Patrol(IBuilderTask::Priority priority,
+			const springai::AIFloat3& position, int timeout)
+	{
+		SServBTask ti;
+		ti.type = IBuilderTask::BuildType::PATROL;
+		ti.priority = priority;
+		ti.position = position;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SServBTask Guard(IBuilderTask::Priority priority,
+			CCircuitUnit* target, bool isInterrupt, int timeout = ASSIGN_TIMEOUT)
+	{
+		SServBTask ti;
+		ti.type = IBuilderTask::BuildType::GUARD;
+		ti.priority = priority;
+		ti.target = target;
+		ti.isInterrupt = isInterrupt;
+		ti.timeout = timeout;
+		return ti;
+	}
+	static inline SServBTask Combat(float powerMod)
+	{
+		SServBTask ti;
+		ti.type = IBuilderTask::BuildType::COMBAT;
+		ti.powerMod = powerMod;
+		return ti;
+	}
+	static inline SServBTask Wait(int timeout)
+	{
+		SServBTask ti;
+		ti.type = IBuilderTask::BuildType::WAIT;
+		ti.timeout = timeout;
+		return ti;
+	}
+} // namespace TaskB
+
 class CBuilderManager: public IUnitModule {
 public:
 	friend class CBuilderScript;
@@ -62,86 +266,13 @@ public:
 	const std::set<IBuilderTask*>& GetTasks(IBuilderTask::BuildType type) const;
 	void ActivateTask(IBuilderTask* task);
 
-	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
-							  CCircuitDef* buildDef,
-							  const springai::AIFloat3& position,
-							  IBuilderTask::BuildType type,
-							  float cost,
-							  float shake = SQUARE_SIZE * 32,  // Alter/randomize position by offset
-							  bool isActive = true,  // Should task go to general queue or remain detached?
-							  int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueueTask(IBuilderTask::Priority priority,
-							  CCircuitDef* buildDef,
-							  const springai::AIFloat3& position,
-							  IBuilderTask::BuildType type,
-							  float shake = SQUARE_SIZE * 32,
-							  bool isActive = true,
-							  int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueueDefence(IBuilderTask::Priority priority,
-								 CCircuitDef* buildDef,
-								 int pointId,
-								 const springai::AIFloat3& position,
-								 IBuilderTask::BuildType type,
-								 float cost,
-								 float shake = SQUARE_SIZE * 32,
-								 bool isActive = true,
-								 int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueueSpot(IBuilderTask::Priority priority,
-							  CCircuitDef* buildDef,
-							  int spotId,
-							  const springai::AIFloat3& position,
-							  IBuilderTask::BuildType type,
-							  bool isActive = true,
-							  int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueueFactory(IBuilderTask::Priority priority,
-								 CCircuitDef* buildDef,
-								 CCircuitDef* reprDef,
-								 const springai::AIFloat3& position,
-								 float shake = SQUARE_SIZE * 32,
-								 bool isPlop = false,
-								 bool isActive = true,
-								 int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueuePylon(IBuilderTask::Priority priority,
-							   CCircuitDef* buildDef,
-							   const springai::AIFloat3& position,
-							   IGridLink* link,
-							   float cost,
-							   bool isActive = true,
-							   int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueueRepair(IBuilderTask::Priority priority,
-								CCircuitUnit* target,
-								int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
-								 const springai::AIFloat3& position,
-								 float cost,
-								 int timeout,
-								 float radius = .0f,
-								 bool isMetal = true);
-	IBuilderTask* EnqueueReclaim(IBuilderTask::Priority priority,
-								 CCircuitUnit* target,
-								 int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueueResurrect(IBuilderTask::Priority priority,
-								   const springai::AIFloat3& position,
-								   float cost,
-								   int timeout,
-								   float radius = .0f);
-	IBuilderTask* EnqueuePatrol(IBuilderTask::Priority priority,
-								const springai::AIFloat3& position,
-								float cost,
-								int timeout);
-	IBuilderTask* EnqueueTerraform(IBuilderTask::Priority priority,
-								   CCircuitUnit* target,
-								   const springai::AIFloat3& position = -RgtVector,
-								   float cost = 1.0f,
-								   bool isActive = true,
-								   int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask* EnqueueGuard(IBuilderTask::Priority priority,
-							   CCircuitUnit* target,
-							   bool isInterrupt,
-							   int timeout = ASSIGN_TIMEOUT);
-	IUnitTask* EnqueueWait(int timeout);
+	IBuilderTask* Enqueue(const TaskB::SBuildTask& ti);
+	IUnitTask* Enqueue(const TaskB::SServBTask& ti);
 	virtual CRetreatTask* EnqueueRetreat() override;
-	CCombatTask* EnqueueCombat(float powerMod);
+	inline IBuilderTask* EnqueueB(const TaskB::SServBTask& ti) {
+		assert((ti.type == IBuilderTask::BuildType::PATROL) || (ti.type == IBuilderTask::BuildType::GUARD));
+		return static_cast<IBuilderTask*>(Enqueue(ti));
+	}
 
 private:
 	IBuilderTask* AddTask(IBuilderTask::Priority priority,
@@ -204,8 +335,6 @@ private:
 	void RemoveBuildList(CCircuitUnit* unit, int hiddenDefs);
 
 	void Watchdog();
-	void UpdateIdle();
-	void UpdateBuild();
 
 	Handlers2 createdHandler;
 	Handlers1 finishedHandler;
@@ -221,8 +350,6 @@ private:
 	unsigned int guardCount;  // assist guards
 	unsigned int buildTasksCount;
 	float buildPower;
-	std::vector<IUnitTask*> buildUpdates;  // owner
-	unsigned int buildIterator;
 
 	float goalExecTime;  // seconds
 	std::set<CCircuitUnit*> workers;

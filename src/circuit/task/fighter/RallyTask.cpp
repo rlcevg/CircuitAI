@@ -68,7 +68,7 @@ void CRallyTask::Start(CCircuitUnit* unit)
 		return;
 	}
 
-	IFighterTask* task = static_cast<CMilitaryManager*>(manager)->EnqueueTask(IFighterTask::FightType::ATTACK);
+	IFighterTask* task = static_cast<CMilitaryManager*>(manager)->Enqueue(TaskF::Common(IFighterTask::FightType::ATTACK));
 	decltype(units) tmpUnits = units;
 	for (CCircuitUnit* ass : tmpUnits) {
 		manager->AssignTask(ass, task);
