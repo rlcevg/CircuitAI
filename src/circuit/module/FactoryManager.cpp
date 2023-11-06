@@ -804,10 +804,6 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 	IUnitModule::DequeueTask(task, done);
 }
 
-void CFactoryManager::FallbackTask(CCircuitUnit* unit)
-{
-}
-
 void CFactoryManager::ApplySwitchFrame()
 {
 	lastSwitchFrame = circuit->GetLastFrame();

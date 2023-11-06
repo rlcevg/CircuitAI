@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBFactoryTask: public IBuilderTask {
 public:
-	CBFactoryTask(ITaskManager* mgr, Priority priority,
+	CBFactoryTask(IUnitModule* mgr, Priority priority,
 				  CCircuitDef* buildDef, CCircuitDef* reprDef, const springai::AIFloat3& position,
 				  SResource cost, float shake, bool isPlop, int timeout);
-	CBFactoryTask(ITaskManager* mgr);  // Load
+	CBFactoryTask(IUnitModule* mgr);  // Load
 	virtual ~CBFactoryTask();
 
 	CCircuitDef* GetReprDef() const { return reprDef; }

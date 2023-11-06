@@ -6,7 +6,6 @@
  */
 
 #include "task/fighter/ArtilleryTask.h"
-#include "task/TaskManager.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
@@ -28,7 +27,7 @@ namespace circuit {
 
 using namespace springai;
 
-CArtilleryTask::CArtilleryTask(ITaskManager* mgr)
+CArtilleryTask::CArtilleryTask(IUnitModule* mgr)
 		: IFighterTask(mgr, FightType::ARTY, 1.f)
 {
 	position = manager->GetCircuit()->GetSetupManager()->GetBasePos();

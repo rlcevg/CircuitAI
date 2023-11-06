@@ -26,6 +26,8 @@ protected:
 public:
 	virtual ~IModule();
 
+	CCircuitAI* GetCircuit() const { return circuit; }
+
 	bool InitScript();
 
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder);

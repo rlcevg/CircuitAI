@@ -6,7 +6,7 @@
  */
 
 #include "task/common/ReclaimTask.h"
-#include "task/TaskManager.h"
+#include "module/UnitModule.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -17,7 +17,7 @@ namespace circuit {
 
 using namespace springai;
 
-IReclaimTask::IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
+IReclaimTask::IReclaimTask(IUnitModule* mgr, Priority priority, Type type,
 						   const AIFloat3& position,
 						   SResource cost, int timeout, float radius, bool isMetal)
 		: IBuilderTask(mgr, priority, nullptr, position, type, BuildType::RECLAIM, cost, 0.f, timeout)
@@ -26,7 +26,7 @@ IReclaimTask::IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
 {
 }
 
-IReclaimTask::IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
+IReclaimTask::IReclaimTask(IUnitModule* mgr, Priority priority, Type type,
 						   CCircuitUnit* target,
 						   int timeout)
 		: IBuilderTask(mgr, priority, nullptr, -RgtVector, type, BuildType::RECLAIM, {1000.f, 0.f}, 0.f, timeout)
@@ -36,7 +36,7 @@ IReclaimTask::IReclaimTask(ITaskManager* mgr, Priority priority, Type type,
 	SetTarget(target);
 }
 
-IReclaimTask::IReclaimTask(ITaskManager* mgr, Type type)
+IReclaimTask::IReclaimTask(IUnitModule* mgr, Type type)
 		: IBuilderTask(mgr, type, BuildType::RECLAIM)
 		, radius(0.f)
 		, isMetal(false)

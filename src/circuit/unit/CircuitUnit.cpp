@@ -6,10 +6,10 @@
  */
 
 #include "unit/CircuitUnit.h"
-#include "unit/UnitManager.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/TravelAction.h"
 #include "unit/enemy/EnemyUnit.h"
+#include "module/UnitModule.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"  // Only for CorrectPosition
 #include "CircuitAI.h"

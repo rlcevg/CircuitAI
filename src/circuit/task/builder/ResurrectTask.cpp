@@ -6,7 +6,6 @@
  */
 
 #include "task/builder/ResurrectTask.h"
-#include "task/TaskManager.h"
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
@@ -24,7 +23,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBResurrectTask::CBResurrectTask(ITaskManager* mgr, Priority priority,
+CBResurrectTask::CBResurrectTask(IUnitModule* mgr, Priority priority,
 								 const AIFloat3& position,
 								 SResource cost, int timeout, float radius)
 		: IBuilderTask(mgr, priority, nullptr, position, Type::BUILDER, BuildType::RESURRECT, cost, 0.f, timeout)
@@ -32,7 +31,7 @@ CBResurrectTask::CBResurrectTask(ITaskManager* mgr, Priority priority,
 {
 }
 
-CBResurrectTask::CBResurrectTask(ITaskManager* mgr)
+CBResurrectTask::CBResurrectTask(IUnitModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::RESURRECT)
 		, radius(0.f)
 {

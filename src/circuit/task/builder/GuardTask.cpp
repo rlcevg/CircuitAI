@@ -6,7 +6,6 @@
  */
 
 #include "task/builder/GuardTask.h"
-#include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "terrain/TerrainManager.h"  // Only for CorrectPosition
 #include "CircuitAI.h"
@@ -16,7 +15,7 @@
 
 namespace circuit {
 
-CBGuardTask::CBGuardTask(ITaskManager* mgr, Priority priority, CCircuitUnit* vip, bool isInterrupt, int timeout)
+CBGuardTask::CBGuardTask(IUnitModule* mgr, Priority priority, CCircuitUnit* vip, bool isInterrupt, int timeout)
 		: IBuilderTask(mgr, priority, nullptr, vip->GetPos(mgr->GetCircuit()->GetLastFrame()),
 					   Type::BUILDER, BuildType::GUARD, {0.f, 0.f}, 0.f, timeout)
 		, vipId(vip->GetId())

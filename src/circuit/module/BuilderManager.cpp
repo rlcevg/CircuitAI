@@ -814,6 +814,7 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 	task->Start(unit);
 }
 
+
 bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position) const
 {
 	if (!utils::is_valid(position)) {  // any-area task

@@ -6,7 +6,6 @@
  */
 
 #include "task/builder/ReclaimTask.h"
-#include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
@@ -28,14 +27,14 @@ namespace circuit {
 
 using namespace springai;
 
-CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
+CBReclaimTask::CBReclaimTask(IUnitModule* mgr, Priority priority,
 							 const AIFloat3& position,
 							 SResource cost, int timeout, float radius, bool isMetal)
 		: IReclaimTask(mgr, priority, Type::BUILDER, position, cost, timeout, radius, isMetal)
 {
 }
 
-CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
+CBReclaimTask::CBReclaimTask(IUnitModule* mgr, Priority priority,
 							 CCircuitUnit* target,
 							 int timeout)
 		: IReclaimTask(mgr, priority, Type::BUILDER, target, timeout)
@@ -43,7 +42,7 @@ CBReclaimTask::CBReclaimTask(ITaskManager* mgr, Priority priority,
 	static_cast<CBuilderManager*>(mgr)->MarkReclaimUnit(target, this);
 }
 
-CBReclaimTask::CBReclaimTask(ITaskManager* mgr)
+CBReclaimTask::CBReclaimTask(IUnitModule* mgr)
 		: IReclaimTask(mgr, Type::BUILDER)
 {
 }

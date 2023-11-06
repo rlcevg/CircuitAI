@@ -53,7 +53,7 @@ IBuilderTask::BuildName IBuilderTask::buildNames = {
 	{"mexup",   IBuilderTask::BuildType::MEXUP},
 };
 
-IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
+IBuilderTask::IBuilderTask(IUnitModule* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
 						   Type type, BuildType buildType, SResource cost, float shake, int timeout)
 		: IUnitTask(mgr, priority, type, timeout)
@@ -76,7 +76,7 @@ IBuilderTask::IBuilderTask(ITaskManager* mgr, Priority priority,
 	savedIncome.energy = economyMgr->GetAvgEnergyIncome();
 }
 
-IBuilderTask::IBuilderTask(ITaskManager* mgr, Type type, BuildType buildType)
+IBuilderTask::IBuilderTask(IUnitModule* mgr, Type type, BuildType buildType)
 		: IUnitTask(mgr, type)
 		, buildType(buildType)
 		, position(-RgtVector)

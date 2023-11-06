@@ -1551,7 +1551,7 @@ CEnemyInfo* CCircuitAI::GetEnemyInfo(ICoreUnit::Id unitId) const
 void CCircuitAI::DisableControl(CCircuitUnit* unit)
 {
 //	if (unit->GetTask()->GetType() != IUnitTask::Type::NIL) {
-		ITaskManager* mgr = unit->GetTask()->GetManager();
+		IUnitModule* mgr = unit->GetTask()->GetManager();
 		mgr->AssignTask(unit, new CPlayerTask(mgr));
 //	}
 }

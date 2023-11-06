@@ -9,7 +9,7 @@
 
 namespace circuit {
 
-CRearmTask::CRearmTask(ITaskManager* mgr)
+CRearmTask::CRearmTask(IUnitModule* mgr)
 		: IUnitTask(mgr, Priority::NORMAL, Type::RETREAT, -1)
 {
 	// TODO Auto-generated constructor stub

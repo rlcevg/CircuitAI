@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBBunkerTask: public IBuilderTask {
 public:
-	CBBunkerTask(ITaskManager* mgr, Priority priority,
+	CBBunkerTask(IUnitModule* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 SResource cost, float shake, int timeout);
-	CBBunkerTask(ITaskManager* mgr);  // Load
+	CBBunkerTask(IUnitModule* mgr);  // Load
 	virtual ~CBBunkerTask();
 };
 

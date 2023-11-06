@@ -6,15 +6,15 @@
  */
 
 #include "task/IdleTask.h"
-#include "task/TaskManager.h"
 #include "task/RetreatTask.h"
+#include "module/UnitModule.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
 
 namespace circuit {
 
-CIdleTask::CIdleTask(ITaskManager* mgr)
+CIdleTask::CIdleTask(IUnitModule* mgr)
 		: IUnitTask(mgr, Priority::NORMAL, Type::IDLE, -1)
 		, updateSlice(0)
 {

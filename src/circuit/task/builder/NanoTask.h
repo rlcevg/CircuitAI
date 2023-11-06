@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBNanoTask: public IBuilderTask {
 public:
-	CBNanoTask(ITaskManager* mgr, Priority priority,
+	CBNanoTask(IUnitModule* mgr, Priority priority,
 			   CCircuitDef* buildDef, const springai::AIFloat3& position,
 			   SResource cost, float shake, int timeout);
-	CBNanoTask(ITaskManager* mgr);  // Load
+	CBNanoTask(IUnitModule* mgr);  // Load
 	virtual ~CBNanoTask();
 
 protected:

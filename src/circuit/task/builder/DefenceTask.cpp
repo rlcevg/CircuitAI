@@ -6,7 +6,6 @@
  */
 
 #include "task/builder/DefenceTask.h"
-#include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
@@ -22,7 +21,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
+CBDefenceTask::CBDefenceTask(IUnitModule* mgr, Priority priority,
 							 CCircuitDef* buildDef, const AIFloat3& position,
 							 SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::DEFENCE, cost, shake, timeout)
@@ -32,7 +31,7 @@ CBDefenceTask::CBDefenceTask(ITaskManager* mgr, Priority priority,
 {
 }
 
-CBDefenceTask::CBDefenceTask(ITaskManager* mgr)
+CBDefenceTask::CBDefenceTask(IUnitModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::DEFENCE)
 		, isUrgent(false)
 		, normalCostM(.0f)

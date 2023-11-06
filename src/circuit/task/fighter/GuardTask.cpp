@@ -6,7 +6,6 @@
  */
 
 #include "task/fighter/GuardTask.h"
-#include "task/TaskManager.h"
 #include "module/MilitaryManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -17,7 +16,7 @@ namespace circuit {
 
 using namespace springai;
 
-CFGuardTask::CFGuardTask(ITaskManager* mgr, CCircuitUnit* vip, float maxPower)
+CFGuardTask::CFGuardTask(IUnitModule* mgr, CCircuitUnit* vip, float maxPower)
 		: IFighterTask(mgr, FightType::GUARD, 1.f)
 		, vipId(vip->GetId())
 		, maxPower(maxPower)

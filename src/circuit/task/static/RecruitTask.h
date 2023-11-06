@@ -19,7 +19,7 @@ public:
 	enum class RecruitType: char {BUILDPOWER = 0, FIREPOWER};
 
 public:
-	CRecruitTask(ITaskManager* mgr, Priority priority,
+	CRecruitTask(IUnitModule* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 RecruitType type, float radius);
 	virtual ~CRecruitTask();

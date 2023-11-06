@@ -6,7 +6,6 @@
  */
 
 #include "task/fighter/AttackTask.h"
-#include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
@@ -32,7 +31,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CAttackTask::CAttackTask(ITaskManager* mgr, float minPower, float powerMod)
+CAttackTask::CAttackTask(IUnitModule* mgr, float minPower, float powerMod)
 		: ISquadTask(mgr, FightType::ATTACK, powerMod)
 		, minPower(minPower)
 {

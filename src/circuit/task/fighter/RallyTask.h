@@ -14,7 +14,7 @@ namespace circuit {
 
 class CRallyTask: public IFighterTask {
 public:
-	CRallyTask(ITaskManager* mgr, float maxPower);
+	CRallyTask(IUnitModule* mgr, float maxPower);
 	virtual ~CRallyTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

@@ -6,7 +6,6 @@
  */
 
 #include "task/fighter/SquadTask.h"
-#include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
@@ -25,7 +24,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-ISquadTask::ISquadTask(ITaskManager* mgr, FightType type, float powerMod)
+ISquadTask::ISquadTask(IUnitModule* mgr, FightType type, float powerMod)
 		: IFighterTask(mgr, type, powerMod)
 		, lowestRange(std::numeric_limits<float>::max())
 		, highestRange(.0f)

@@ -108,8 +108,6 @@ private:
 	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 
 public:
-	virtual void FallbackTask(CCircuitUnit* unit) override;
-
 	void MarkRepairUnit(ICoreUnit::Id targetId, CSRepairTask* task) {
 		repairUnits[targetId] = task;
 	}

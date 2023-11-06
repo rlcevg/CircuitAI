@@ -16,10 +16,10 @@ class IGridLink;
 
 class CBPylonTask: public IBuilderTask {
 public:
-	CBPylonTask(ITaskManager* mgr, Priority priority,
+	CBPylonTask(IUnitModule* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
 				IGridLink* link, SResource cost, int timeout);
-	CBPylonTask(ITaskManager* mgr);  // Load
+	CBPylonTask(IUnitModule* mgr);  // Load
 	virtual ~CBPylonTask();
 
 	IGridLink* GetLink() { return link; }

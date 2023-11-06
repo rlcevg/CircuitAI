@@ -6,7 +6,6 @@
  */
 
 #include "task/fighter/DefendTask.h"
-#include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
@@ -33,7 +32,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CDefendTask::CDefendTask(ITaskManager* mgr, const AIFloat3& position,
+CDefendTask::CDefendTask(IUnitModule* mgr, const AIFloat3& position,
 						 FightType check, FightType promote, float maxPower, float powerMod)
 		: ISquadTask(mgr, FightType::DEFEND, powerMod)
 		, check(check)

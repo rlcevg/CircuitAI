@@ -12,7 +12,7 @@
 
 namespace circuit {
 
-CNilTask::CNilTask(ITaskManager* mgr)
+CNilTask::CNilTask(IUnitModule* mgr)
 		: IUnitTask(mgr, IUnitTask::Priority::LOW, Type::NIL, -1)
 {
 }

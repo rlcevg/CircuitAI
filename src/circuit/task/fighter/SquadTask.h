@@ -17,7 +17,7 @@ namespace circuit {
 
 class ISquadTask: public IFighterTask {
 protected:
-	ISquadTask(ITaskManager* mgr, FightType type, float powerMod);
+	ISquadTask(IUnitModule* mgr, FightType type, float powerMod);
 public:
 	virtual ~ISquadTask();
 

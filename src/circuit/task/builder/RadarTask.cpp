@@ -13,7 +13,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBRadarTask::CBRadarTask(ITaskManager* mgr, Priority priority,
+CBRadarTask::CBRadarTask(IUnitModule* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
 						 SResource cost, float shake, int timeout)
 		: ISensorTask(mgr, priority, [](CCircuitDef* cdef) { return cdef->IsRadar(); },
@@ -21,7 +21,7 @@ CBRadarTask::CBRadarTask(ITaskManager* mgr, Priority priority,
 {
 }
 
-CBRadarTask::CBRadarTask(ITaskManager* mgr)
+CBRadarTask::CBRadarTask(IUnitModule* mgr)
 		: ISensorTask(mgr, [](CCircuitDef* cdef) { return cdef->IsRadar(); }, BuildType::RADAR)
 {
 }

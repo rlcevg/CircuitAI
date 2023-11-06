@@ -6,7 +6,7 @@
  */
 
 #include "task/builder/ConvertTask.h"
-#include "task/TaskManager.h"
+#include "module/UnitModule.h"
 #include "module/EconomyManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -15,14 +15,14 @@ namespace circuit {
 
 using namespace springai;
 
-CBConvertTask::CBConvertTask(ITaskManager* mgr, Priority priority,
+CBConvertTask::CBConvertTask(IUnitModule* mgr, Priority priority,
 							 CCircuitDef* buildDef, const AIFloat3& position,
 							 SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::CONVERT, cost, shake, timeout)
 {
 }
 
-CBConvertTask::CBConvertTask(ITaskManager* mgr)
+CBConvertTask::CBConvertTask(IUnitModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::CONVERT)
 {
 }

@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBRadarTask: public ISensorTask {
 public:
-	CBRadarTask(ITaskManager* mgr, Priority priority,
+	CBRadarTask(IUnitModule* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
 				SResource cost, float shake, int timeout);
-	CBRadarTask(ITaskManager* mgr);  // Load
+	CBRadarTask(IUnitModule* mgr);  // Load
 	virtual ~CBRadarTask();
 };
 

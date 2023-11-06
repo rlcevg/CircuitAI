@@ -16,14 +16,14 @@ namespace circuit {
 
 using namespace springai;
 
-CBBigGunTask::CBBigGunTask(ITaskManager* mgr, Priority priority,
+CBBigGunTask::CBBigGunTask(IUnitModule* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
 						   SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::BIG_GUN, cost, shake, timeout)
 {
 }
 
-CBBigGunTask::CBBigGunTask(ITaskManager* mgr)
+CBBigGunTask::CBBigGunTask(IUnitModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::BIG_GUN)
 {
 }

@@ -6,7 +6,6 @@
  */
 
 #include "task/static/RepairTask.h"
-#include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
@@ -23,7 +22,7 @@ namespace circuit {
 
 using namespace springai;
 
-CSRepairTask::CSRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout)
+CSRepairTask::CSRepairTask(IUnitModule* mgr, Priority priority, CAllyUnit* target, int timeout)
 		: IRepairTask(mgr, priority, Type::FACTORY, target, timeout)
 {
 	static_cast<CFactoryManager*>(mgr)->MarkRepairUnit(target->GetId(), this);

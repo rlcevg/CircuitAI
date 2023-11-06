@@ -6,8 +6,8 @@
  */
 
 #include "task/builder/PylonTask.h"
-#include "task/TaskManager.h"
 #include "map/ThreatMap.h"
+#include "module/UnitModule.h"
 #include "module/EconomyManager.h"
 #include "resource/GridLink.h"
 #include "unit/CircuitUnit.h"
@@ -22,7 +22,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
+CBPylonTask::CBPylonTask(IUnitModule* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
 						 IGridLink* link, SResource cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::PYLON, cost, 0.f, timeout)
@@ -33,7 +33,7 @@ CBPylonTask::CBPylonTask(ITaskManager* mgr, Priority priority,
 	}
 }
 
-CBPylonTask::CBPylonTask(ITaskManager* mgr)
+CBPylonTask::CBPylonTask(IUnitModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::PYLON)
 		, link(nullptr)
 {

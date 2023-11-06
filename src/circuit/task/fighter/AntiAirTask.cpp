@@ -6,7 +6,6 @@
  */
 
 #include "task/fighter/AntiAirTask.h"
-#include "task/TaskManager.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
@@ -30,7 +29,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CAntiAirTask::CAntiAirTask(ITaskManager* mgr, float powerMod)
+CAntiAirTask::CAntiAirTask(IUnitModule* mgr, float powerMod)
 		: ISquadTask(mgr, FightType::AA, powerMod)
 {
 	CCircuitAI* circuit = manager->GetCircuit();

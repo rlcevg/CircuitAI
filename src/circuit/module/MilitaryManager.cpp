@@ -676,10 +676,6 @@ void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 	IUnitModule::DequeueTask(task, done);
 }
 
-void CMilitaryManager::FallbackTask(CCircuitUnit* unit)
-{
-}
-
 void CMilitaryManager::MakeDefence(const AIFloat3& pos)
 {
 	int index = circuit->GetMetalManager()->FindNearestCluster(pos);

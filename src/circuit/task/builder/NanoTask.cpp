@@ -6,7 +6,7 @@
  */
 
 #include "task/builder/NanoTask.h"
-#include "task/TaskManager.h"
+#include "module/UnitModule.h"
 #include "map/ThreatMap.h"
 #include "resource/MetalManager.h"
 #include "CircuitAI.h"
@@ -20,14 +20,14 @@ namespace circuit {
 
 using namespace springai;
 
-CBNanoTask::CBNanoTask(ITaskManager* mgr, Priority priority,
+CBNanoTask::CBNanoTask(IUnitModule* mgr, Priority priority,
 					   CCircuitDef* buildDef, const AIFloat3& position,
 					   SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::NANO, cost, shake, timeout)
 {
 }
 
-CBNanoTask::CBNanoTask(ITaskManager* mgr)
+CBNanoTask::CBNanoTask(IUnitModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::NANO)
 {
 }

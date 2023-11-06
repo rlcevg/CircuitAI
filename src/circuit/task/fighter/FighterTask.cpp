@@ -26,7 +26,7 @@ using namespace springai;
 F3Vec IFighterTask::urgentPositions;  // NOTE: micro-opt
 F3Vec IFighterTask::enemyPositions;  // NOTE: micro-opt
 
-IFighterTask::IFighterTask(ITaskManager* mgr, FightType type, float powerMod, int timeout)
+IFighterTask::IFighterTask(IUnitModule* mgr, FightType type, float powerMod, int timeout)
 		: IUnitTask(mgr, Priority::NORMAL, Type::FIGHTER, timeout)
 		, fightType(type)
 		, position(-RgtVector)

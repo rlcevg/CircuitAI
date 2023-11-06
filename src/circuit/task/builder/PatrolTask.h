@@ -14,7 +14,7 @@ namespace circuit {
 
 class CBPatrolTask: public IBuilderTask {
 public:
-	CBPatrolTask(ITaskManager* mgr, Priority priority,
+	CBPatrolTask(IUnitModule* mgr, Priority priority,
 				 const springai::AIFloat3& position,
 				 int timeout);
 	virtual ~CBPatrolTask();

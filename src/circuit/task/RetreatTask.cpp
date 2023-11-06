@@ -6,7 +6,6 @@
  */
 
 #include "task/RetreatTask.h"
-#include "task/TaskManager.h"
 #include "map/ThreatMap.h"
 #include "map/InfluenceMap.h"
 #include "module/BuilderManager.h"
@@ -30,7 +29,7 @@ namespace circuit {
 
 using namespace springai;
 
-CRetreatTask::CRetreatTask(ITaskManager* mgr, int timeout)
+CRetreatTask::CRetreatTask(IUnitModule* mgr, int timeout)
 		: IUnitTask(mgr, Priority::NORMAL, Type::RETREAT, timeout)
 		, repairer(nullptr)
 {

@@ -14,7 +14,7 @@ namespace circuit {
 
 class CSReclaimTask: public IReclaimTask {
 public:
-	CSReclaimTask(ITaskManager* mgr, Priority priority,
+	CSReclaimTask(IUnitModule* mgr, Priority priority,
 				  const springai::AIFloat3& position,
 				  SResource cost, int timeout, float radius = .0f);
 	virtual ~CSReclaimTask();

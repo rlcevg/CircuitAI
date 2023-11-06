@@ -14,7 +14,7 @@ namespace circuit {
 
 class CIdleTask: public IUnitTask {
 public:
-	CIdleTask(ITaskManager* mgr);
+	CIdleTask(IUnitModule* mgr);
 	virtual ~CIdleTask();
 
 	virtual void AssignTo(CCircuitUnit* unit) override;

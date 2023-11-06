@@ -6,7 +6,6 @@
  */
 
 #include "task/fighter/BombTask.h"
-#include "task/TaskManager.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
@@ -29,7 +28,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBombTask::CBombTask(ITaskManager* mgr, float powerMod)
+CBombTask::CBombTask(IUnitModule* mgr, float powerMod)
 		: ISquadTask(mgr, FightType::BOMB, powerMod)
 {
 }

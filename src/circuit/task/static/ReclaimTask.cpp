@@ -6,7 +6,6 @@
  */
 
 #include "task/static/ReclaimTask.h"
-#include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
@@ -20,7 +19,7 @@ namespace circuit {
 
 using namespace springai;
 
-CSReclaimTask::CSReclaimTask(ITaskManager* mgr, Priority priority,
+CSReclaimTask::CSReclaimTask(IUnitModule* mgr, Priority priority,
 							 const springai::AIFloat3& position,
 							 SResource cost, int timeout, float radius)
 		: IReclaimTask(mgr, priority, Type::FACTORY, position, cost, timeout, radius)

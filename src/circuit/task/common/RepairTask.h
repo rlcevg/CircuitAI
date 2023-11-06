@@ -15,8 +15,8 @@ namespace circuit {
 
 class IRepairTask: public IBuilderTask {
 public:
-	IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyUnit* target, int timeout = 0);
-	IRepairTask(ITaskManager* mgr, Type type);  // Load
+	IRepairTask(IUnitModule* mgr, Priority priority, Type type, CAllyUnit* target, int timeout = 0);
+	IRepairTask(IUnitModule* mgr, Type type);  // Load
 	virtual ~IRepairTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

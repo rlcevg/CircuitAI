@@ -6,7 +6,6 @@
  */
 
 #include "task/builder/FactoryTask.h"
-#include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/FactoryManager.h"
 #include "scheduler/Scheduler.h"
@@ -29,7 +28,7 @@ static int opposite[] = {
 	UNIT_FACING_EAST
 };
 
-CBFactoryTask::CBFactoryTask(ITaskManager* mgr, Priority priority,
+CBFactoryTask::CBFactoryTask(IUnitModule* mgr, Priority priority,
 							 CCircuitDef* buildDef, CCircuitDef* reprDef, const AIFloat3& position,
 							 SResource cost, float shake, bool isPlop, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::FACTORY, cost, shake, timeout)
@@ -39,7 +38,7 @@ CBFactoryTask::CBFactoryTask(ITaskManager* mgr, Priority priority,
 	manager->GetCircuit()->GetFactoryManager()->AddFactory(buildDef);
 }
 
-CBFactoryTask::CBFactoryTask(ITaskManager* mgr)
+CBFactoryTask::CBFactoryTask(IUnitModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::FACTORY)
 		, reprDef(nullptr)
 		, isPlop(false)

@@ -7,7 +7,6 @@
 
 #include "task/common/RepairTask.h"
 #include "task/RetreatTask.h"
-#include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
 #include "module/BuilderManager.h"
 #include "terrain/TerrainManager.h"
@@ -22,13 +21,13 @@ namespace circuit {
 
 using namespace springai;
 
-IRepairTask::IRepairTask(ITaskManager* mgr, Priority priority, Type type, CAllyUnit* target, int timeout)
+IRepairTask::IRepairTask(IUnitModule* mgr, Priority priority, Type type, CAllyUnit* target, int timeout)
 		: IBuilderTask(mgr, priority, nullptr, -RgtVector, type, BuildType::REPAIR, {1000.f, 0.f}, 0.f, timeout)
 {
 	SetRepTarget(target);
 }
 
-IRepairTask::IRepairTask(ITaskManager* mgr, Type type)
+IRepairTask::IRepairTask(IUnitModule* mgr, Type type)
 		: IBuilderTask(mgr, type, BuildType::REPAIR)
 		, targetId(-1)
 {

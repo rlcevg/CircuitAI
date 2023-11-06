@@ -14,13 +14,13 @@ namespace circuit {
 
 class CBReclaimTask: public IReclaimTask {
 public:
-	CBReclaimTask(ITaskManager* mgr, Priority priority,
+	CBReclaimTask(IUnitModule* mgr, Priority priority,
 				  const springai::AIFloat3& position,
 				  SResource cost, int timeout, float radius = .0f, bool isMetal = true);
-	CBReclaimTask(ITaskManager* mgr, Priority priority,
+	CBReclaimTask(IUnitModule* mgr, Priority priority,
 				  CCircuitUnit* target,
 				  int timeout);
-	CBReclaimTask(ITaskManager* mgr);  // Load
+	CBReclaimTask(IUnitModule* mgr);  // Load
 	virtual ~CBReclaimTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

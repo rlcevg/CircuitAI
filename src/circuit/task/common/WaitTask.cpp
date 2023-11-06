@@ -6,7 +6,7 @@
  */
 
 #include "task/common/WaitTask.h"
-#include "task/TaskManager.h"
+#include "module/UnitModule.h"
 #include "unit/CircuitUnit.h"
 #include "CircuitAI.h"
 
@@ -16,7 +16,7 @@
 
 namespace circuit {
 
-IWaitTask::IWaitTask(ITaskManager* mgr, bool stop, int timeout)
+IWaitTask::IWaitTask(IUnitModule* mgr, bool stop, int timeout)
 		: IUnitTask(mgr, Priority::NORMAL, Type::WAIT, timeout)
 		, isStop(stop)
 {

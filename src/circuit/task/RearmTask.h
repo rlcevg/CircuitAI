@@ -14,7 +14,7 @@ namespace circuit {
 
 class CRearmTask: public IUnitTask {
 public:
-	CRearmTask(ITaskManager* mgr);
+	CRearmTask(IUnitModule* mgr);
 	virtual ~CRearmTask();
 };
 

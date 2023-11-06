@@ -16,10 +16,10 @@ namespace circuit {
 
 class ISensorTask: public IBuilderTask {
 public:
-	ISensorTask(ITaskManager* mgr, Priority priority, std::function<bool (CCircuitDef*)> isSensor,
+	ISensorTask(IUnitModule* mgr, Priority priority, std::function<bool (CCircuitDef*)> isSensor,
 				CCircuitDef* buildDef, const springai::AIFloat3& position, BuildType buildType,
 				SResource cost, float shake, int timeout);
-	ISensorTask(ITaskManager* mgr, std::function<bool (CCircuitDef*)> isSensor, BuildType buildType);  // Load
+	ISensorTask(IUnitModule* mgr, std::function<bool (CCircuitDef*)> isSensor, BuildType buildType);  // Load
 	virtual ~ISensorTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

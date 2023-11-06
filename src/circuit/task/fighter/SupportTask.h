@@ -14,7 +14,7 @@ namespace circuit {
 
 class CSupportTask: public IFighterTask {
 public:
-	CSupportTask(ITaskManager* mgr);
+	CSupportTask(IUnitModule* mgr);
 	virtual ~CSupportTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;

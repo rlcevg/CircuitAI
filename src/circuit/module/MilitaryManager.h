@@ -108,8 +108,6 @@ private:
 	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 
 public:
-	virtual void FallbackTask(CCircuitUnit* unit) override;
-
 	void MarkGuardUnit(CCircuitUnit* vip, CFGuardTask* task) {
 		guardTasks[vip] = task;
 	}

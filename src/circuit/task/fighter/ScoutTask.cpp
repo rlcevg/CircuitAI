@@ -6,7 +6,6 @@
  */
 
 #include "task/fighter/ScoutTask.h"
-#include "task/TaskManager.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
 #include "terrain/TerrainManager.h"
@@ -29,7 +28,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CScoutTask::CScoutTask(ITaskManager* mgr, float powerMod)
+CScoutTask::CScoutTask(IUnitModule* mgr, float powerMod)
 		: IFighterTask(mgr, FightType::SCOUT, powerMod)
 {
 }

@@ -6,7 +6,6 @@
  */
 
 #include "task/builder/MexUpTask.h"
-#include "task/TaskManager.h"
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
@@ -24,7 +23,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBMexUpTask::CBMexUpTask(ITaskManager* mgr, Priority priority,
+CBMexUpTask::CBMexUpTask(IUnitModule* mgr, Priority priority,
 						 CCircuitDef* buildDef, int spotId, const AIFloat3& position,
 						 SResource cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::MEXUP, cost, 0.f, timeout)
@@ -34,7 +33,7 @@ CBMexUpTask::CBMexUpTask(ITaskManager* mgr, Priority priority,
 	manager->GetCircuit()->GetEconomyManager()->SetUpgradingMexSpot(spotId, true);
 }
 
-CBMexUpTask::CBMexUpTask(ITaskManager* mgr)
+CBMexUpTask::CBMexUpTask(IUnitModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::MEXUP)
 		, spotId(-1)
 		, reclaimMex(nullptr)

@@ -7,7 +7,6 @@
 
 #include "task/static/SuperTask.h"
 #include "task/fighter/SquadTask.h"
-#include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
 #include "module/MilitaryManager.h"
 #include "unit/enemy/EnemyUnit.h"
@@ -26,7 +25,7 @@ using namespace springai;
 
 #define TARGET_DELAY	(FRAMES_PER_SEC * 10)
 
-CSuperTask::CSuperTask(ITaskManager* mgr)
+CSuperTask::CSuperTask(IUnitModule* mgr)
 		: IFighterTask(mgr, IFighterTask::FightType::SUPER, 1.f)
 		, targetFrame(0)
 		, targetPos(-RgtVector)

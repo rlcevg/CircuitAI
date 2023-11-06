@@ -6,7 +6,6 @@
  */
 
 #include "task/fighter/RaidTask.h"
-#include "task/TaskManager.h"
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/MilitaryManager.h"
@@ -31,7 +30,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CRaidTask::CRaidTask(ITaskManager* mgr, float maxPower, float powerMod)
+CRaidTask::CRaidTask(IUnitModule* mgr, float maxPower, float powerMod)
 		: ISquadTask(mgr, FightType::RAID, powerMod)
 		, maxPower(maxPower)
 {

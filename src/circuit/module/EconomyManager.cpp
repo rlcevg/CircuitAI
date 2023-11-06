@@ -159,7 +159,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 					CBuilderManager* builderMgr = this->circuit->GetBuilderManager();
 					IBuilderTask* task = builderMgr->Enqueue(TaskB::Factory(IBuilderTask::Priority::NOW,
 							facDef, buildPos, nullptr, SQUARE_SIZE, true, true, 0));
-					static_cast<ITaskManager*>(builderMgr)->AssignTask(unit, task);
+					builderMgr->AssignTask(unit, task);
 				}
 			}
 

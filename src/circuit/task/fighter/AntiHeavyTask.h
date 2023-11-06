@@ -14,7 +14,7 @@ namespace circuit {
 
 class CAntiHeavyTask: public ISquadTask {
 public:
-	CAntiHeavyTask(ITaskManager* mgr, float powerMod);
+	CAntiHeavyTask(IUnitModule* mgr, float powerMod);
 	virtual ~CAntiHeavyTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

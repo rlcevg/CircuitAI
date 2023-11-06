@@ -6,7 +6,6 @@
  */
 
 #include "task/static/RecruitTask.h"
-#include "task/TaskManager.h"
 #include "module/EconomyManager.h"
 #include "module/FactoryManager.h"
 #include "terrain/TerrainManager.h"
@@ -23,7 +22,7 @@ namespace circuit {
 
 using namespace springai;
 
-CRecruitTask::CRecruitTask(ITaskManager* mgr, Priority priority,
+CRecruitTask::CRecruitTask(IUnitModule* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
 						   RecruitType type, float radius)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::FACTORY, BuildType::RECRUIT, {0.f, 0.f}, 0.f, -1)

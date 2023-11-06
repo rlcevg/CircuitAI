@@ -14,7 +14,7 @@ namespace circuit {
 
 class CBombTask: public ISquadTask {
 public:
-	CBombTask(ITaskManager* mgr, float powerMod);
+	CBombTask(IUnitModule* mgr, float powerMod);
 	virtual ~CBombTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

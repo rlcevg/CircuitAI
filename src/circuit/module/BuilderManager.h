@@ -275,14 +275,6 @@ public:
 	}
 
 private:
-	IBuilderTask* AddTask(IBuilderTask::Priority priority,
-						  CCircuitDef* buildDef,
-						  const springai::AIFloat3& position,
-						  IBuilderTask::BuildType type,
-						  SResource cost,
-						  float shake,
-						  bool isActive,
-						  int timeout);
 	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 
 public:

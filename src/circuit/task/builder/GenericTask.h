@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBGenericTask: public IBuilderTask {
 public:
-	CBGenericTask(ITaskManager* mgr, BuildType buildType, Priority priority,
+	CBGenericTask(IUnitModule* mgr, BuildType buildType, Priority priority,
 				  CCircuitDef* buildDef, const springai::AIFloat3& position,
 				  SResource cost, float shake, int timeout);
-	CBGenericTask(ITaskManager* mgr, BuildType buildType);  // Load
+	CBGenericTask(IUnitModule* mgr, BuildType buildType);  // Load
 	virtual ~CBGenericTask();
 
 	virtual bool IsGeneric() const override { return true; }

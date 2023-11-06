@@ -19,7 +19,7 @@ namespace circuit {
 
 using namespace springai;
 
-CRallyTask::CRallyTask(ITaskManager* mgr, float maxPower)
+CRallyTask::CRallyTask(IUnitModule* mgr, float maxPower)
 		: IFighterTask(mgr, FightType::RALLY, 1.f)
 		, maxPower(maxPower)
 {

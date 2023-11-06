@@ -14,7 +14,7 @@ namespace circuit {
 
 class CArtilleryTask: public IFighterTask {
 public:
-	CArtilleryTask(ITaskManager* mgr);
+	CArtilleryTask(IUnitModule* mgr);
 	virtual ~CArtilleryTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

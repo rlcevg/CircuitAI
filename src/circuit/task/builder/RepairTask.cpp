@@ -7,7 +7,6 @@
 
 #include "task/builder/RepairTask.h"
 #include "task/RetreatTask.h"
-#include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "module/EconomyManager.h"
 #include "unit/action/TravelAction.h"
@@ -18,13 +17,13 @@ namespace circuit {
 
 using namespace springai;
 
-CBRepairTask::CBRepairTask(ITaskManager* mgr, Priority priority, CAllyUnit* target, int timeout)
+CBRepairTask::CBRepairTask(IUnitModule* mgr, Priority priority, CAllyUnit* target, int timeout)
 		: IRepairTask(mgr, priority, Type::BUILDER, target, timeout)
 {
 	static_cast<CBuilderManager*>(mgr)->MarkRepairUnit(target->GetId(), this);
 }
 
-CBRepairTask::CBRepairTask(ITaskManager* mgr)
+CBRepairTask::CBRepairTask(IUnitModule* mgr)
 		: IRepairTask(mgr, Type::BUILDER)
 {
 }

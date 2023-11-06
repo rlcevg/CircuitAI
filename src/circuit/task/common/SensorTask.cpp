@@ -6,7 +6,6 @@
  */
 
 #include "task/common/SensorTask.h"
-#include "task/TaskManager.h"
 #include "module/FactoryManager.h"
 #include "CircuitAI.h"
 
@@ -16,7 +15,7 @@ namespace circuit {
 
 using namespace springai;
 
-ISensorTask::ISensorTask(ITaskManager* mgr, Priority priority, std::function<bool (CCircuitDef*)> isSensor,
+ISensorTask::ISensorTask(IUnitModule* mgr, Priority priority, std::function<bool (CCircuitDef*)> isSensor,
 						 CCircuitDef* buildDef, const AIFloat3& position, BuildType buildType,
 						 SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, buildType, cost, shake, timeout)
@@ -24,7 +23,7 @@ ISensorTask::ISensorTask(ITaskManager* mgr, Priority priority, std::function<boo
 {
 }
 
-ISensorTask::ISensorTask(ITaskManager* mgr, std::function<bool (CCircuitDef*)> isSensor, BuildType buildType)
+ISensorTask::ISensorTask(IUnitModule* mgr, std::function<bool (CCircuitDef*)> isSensor, BuildType buildType)
 		: IBuilderTask(mgr, Type::BUILDER, buildType)
 		, isSensorTest(isSensor)
 {

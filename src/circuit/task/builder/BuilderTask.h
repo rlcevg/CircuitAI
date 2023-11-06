@@ -62,10 +62,10 @@ private:
 	static BuildName buildNames;
 
 protected:
-	IBuilderTask(ITaskManager* mgr, Priority priority,
+	IBuilderTask(IUnitModule* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 Type type, BuildType buildType, SResource cost, float shake = SQUARE_SIZE * 32, int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask(ITaskManager* mgr, Type type, BuildType buildType);  // Load
+	IBuilderTask(IUnitModule* mgr, Type type, BuildType buildType);  // Load
 public:
 	virtual ~IBuilderTask();
 

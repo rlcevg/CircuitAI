@@ -7,7 +7,6 @@
 
 #include "task/builder/WaitTask.h"
 #include "task/RetreatTask.h"
-#include "task/TaskManager.h"
 #include "module/BuilderManager.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -16,7 +15,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBWaitTask::CBWaitTask(ITaskManager* mgr, int timeout)
+CBWaitTask::CBWaitTask(IUnitModule* mgr, int timeout)
 		: IWaitTask(mgr, false, timeout)
 {
 }

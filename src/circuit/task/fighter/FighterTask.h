@@ -23,7 +23,7 @@ public:
 	using FT = std::underlying_type<FightType>::type;
 
 protected:
-	IFighterTask(ITaskManager* mgr, FightType type, float powerMod, int timeout = 0);
+	IFighterTask(IUnitModule* mgr, FightType type, float powerMod, int timeout = 0);
 public:
 	virtual ~IFighterTask();
 

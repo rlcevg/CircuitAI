@@ -6,7 +6,7 @@
  */
 
 #include "task/builder/EnergyTask.h"
-#include "task/TaskManager.h"
+#include "module/UnitModule.h"
 #include "module/EconomyManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
@@ -17,7 +17,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBEnergyTask::CBEnergyTask(ITaskManager* mgr, Priority priority,
+CBEnergyTask::CBEnergyTask(IUnitModule* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
 						   SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::ENERGY, cost, shake, timeout)
@@ -25,7 +25,7 @@ CBEnergyTask::CBEnergyTask(ITaskManager* mgr, Priority priority,
 {
 }
 
-CBEnergyTask::CBEnergyTask(ITaskManager* mgr)
+CBEnergyTask::CBEnergyTask(IUnitModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::ENERGY)
 		, isStalling(false)
 {
