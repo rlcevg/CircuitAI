@@ -169,7 +169,8 @@ public:
 
 	// TODO: Create CMilitaryManager::CTargetManager and move all FindTarget variations there.
 	//       CMilitaryManager must be responsible for target selection.
-	bool IsCombatTargetExists(CCircuitUnit* unit, const springai::AIFloat3& pos, float powerMod);  // logic must be similar to CCombatTask::FindTarget
+	CEnemyInfo* FindBCombatTarget(CCircuitUnit* unit, const springai::AIFloat3& pos,
+								  float powerMod, bool isTest);
 
 private:
 	virtual IUnitTask* DefaultMakeTask(CCircuitUnit* unit) override;

@@ -10,7 +10,6 @@
 #include "map/InfluenceMap.h"
 #include "map/ThreatMap.h"
 #include "module/BuilderManager.h"
-#include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "unit/action/DGunAction.h"
@@ -74,12 +73,11 @@ void IFighterTask::RemoveAssignee(CCircuitUnit* unit)
 void IFighterTask::Update()
 {
 	CCircuitAI* circuit = manager->GetCircuit();
-	CMilitaryManager* militaryMgr = circuit->GetMilitaryManager();
 	const float minShield = circuit->GetSetupManager()->GetEmptyShield();
 	decltype(units) tmpUnits = shields;
 	for (CCircuitUnit* unit : tmpUnits) {
 		if (!unit->IsShieldCharged(minShield)) {
-			CRetreatTask* task = militaryMgr->EnqueueRetreat();
+			CRetreatTask* task = manager->EnqueueRetreat();
 			manager->AssignTask(unit, task);
 		}
 	}
@@ -90,7 +88,7 @@ void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 	auto it = cowards.find(unit);
 	if (it != cowards.end()) {
 		cowards.erase(it);
-		CRetreatTask* task = manager->GetCircuit()->GetMilitaryManager()->EnqueueRetreat();
+		CRetreatTask* task = manager->EnqueueRetreat();
 		manager->AssignTask(unit, task);
 	} else {
 		unit->SetTaskFrame(manager->GetCircuit()->GetLastFrame());
@@ -102,8 +100,14 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	const float healthPerc = unit->GetHealthPercent();
 	unit->ForceUpdate(frame + THREAT_UPDATE_RATE);
+
+	// FIXME: comm kamikaze
+	if (cdef->IsRoleComm() && (target != nullptr) && target->IsInLOS() && target->GetCircuitDef()->IsRoleComm()) {
+		return;
+	}
+
+	const float healthPerc = unit->GetHealthPercent();
 
 	if (unit->HasShield()) {
 		const float minShield = circuit->GetSetupManager()->GetEmptyShield();
@@ -119,7 +123,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 		}
 		return;
 	} else if (healthPerc < 0.2f) {  // stuck units workaround: they don't shoot and don't see distant threat
-		CRetreatTask* task = circuit->GetMilitaryManager()->EnqueueRetreat();
+		CRetreatTask* task = manager->EnqueueRetreat();
 		manager->AssignTask(unit, task);
 		return;
 	}
@@ -127,7 +131,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	const float range = cdef->GetMaxRange();
 	if ((target == nullptr) || !target->IsInLOS()) {
-		CRetreatTask* task = circuit->GetMilitaryManager()->EnqueueRetreat();
+		CRetreatTask* task = manager->EnqueueRetreat();
 		manager->AssignTask(unit, task);
 		return;
 	}
@@ -135,7 +139,7 @@ void IFighterTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	if ((target->GetPos().SqDistance2D(pos) > SQUARE(range)) ||
 		(threatMap->GetThreatAt(unit, pos) * 2 > threatMap->GetUnitPower(unit)))
 	{
-		CRetreatTask* task = circuit->GetMilitaryManager()->EnqueueRetreat();
+		CRetreatTask* task = manager->EnqueueRetreat();
 		manager->AssignTask(unit, task);
 		return;
 	}

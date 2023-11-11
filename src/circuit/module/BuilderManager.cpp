@@ -920,8 +920,11 @@ IUnitTask* CBuilderManager::DefaultMakeTask(CCircuitUnit* unit)
 	const AIFloat3& pos = unit->GetPos(frame);
 
 	const CCircuitDef* cdef = unit->GetCircuitDef();
-	if ((cdef->GetPower() > THREAT_MIN) && circuit->GetMilitaryManager()->IsCombatTargetExists(unit, pos, 1.5f)) {
-		return Enqueue(TaskB::Combat(1.5f));
+	constexpr float POWER_MOD = 1.5f;
+	if ((cdef->GetPower() > THREAT_MIN)
+		&& (circuit->GetMilitaryManager()->FindBCombatTarget(unit, pos, POWER_MOD, true) != nullptr))
+	{
+		return Enqueue(TaskB::Combat(POWER_MOD));
 	}
 
 	const auto it = costQueries.find(unit);

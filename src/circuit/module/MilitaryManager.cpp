@@ -1491,11 +1491,12 @@ CCircuitDef* CMilitaryManager::GetLowSonar(const CCircuitUnit* builder) const
 	});
 }
 
-bool CMilitaryManager::IsCombatTargetExists(CCircuitUnit* unit, const AIFloat3& pos, float powerMod)
+CEnemyInfo* CMilitaryManager::FindBCombatTarget(CCircuitUnit* unit, const AIFloat3& pos,
+		float powerMod, bool isTest)
 {
 	const AIFloat3& basePos = circuit->GetSetupManager()->GetBasePos();
 	if (pos.SqDistance2D(basePos) > SQUARE(GetBaseDefRange())) {
-		return false;
+		return nullptr;
 	}
 
 	CMap* map = circuit->GetMap();
@@ -1508,13 +1509,17 @@ bool CMilitaryManager::IsCombatTargetExists(CCircuitUnit* unit, const AIFloat3& 
 	const float maxPower = threatMap->GetUnitPower(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange() * 0.9f;
 	const int canTargetCat = cdef->GetTargetCategory();
+	const int noChaseCat = cdef->GetNoChaseCategory();
 	const float sqCommRadBegin = SQUARE(GetCommDefRadBegin());
 	float minSqDist = SQUARE(GetCommDefRad(pos.distance2D(basePos)));
 
+	CEnemyInfo* bestTarget = nullptr;
+	CEnemyInfo* worstTarget = nullptr;
 	threatMap->SetThreatType(unit);
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	for (auto& kv : enemies) {
 		CEnemyInfo* enemy = kv.second;
+		// TODO: check how close is another task, and its movement vector
 		if (enemy->IsHidden() || (enemy->GetTasks().size() > 1)) {
 			continue;
 		}
@@ -1537,19 +1542,21 @@ bool CMilitaryManager::IsCombatTargetExists(CCircuitUnit* unit, const AIFloat3& 
 		if (eVel.SqLength2D() >= maxSpeed) {  // speed
 			const AIFloat3 uVec = pos - ePos;
 			const float dotProduct = eVel.dot2D(uVec);
-			if (dotProduct < 0) {  // direction (angle > 90 deg)
-				continue;
-			}
+//			if (dotProduct < 0) {  // direction (angle > 90 deg)
+//				continue;
+//			}
 			if (dotProduct < SQRT_3_2 * sqrtf(eVel.SqLength2D() * uVec.SqLength2D())) {  // direction (angle > 30 deg)
 				continue;
 			}
 		}
 
+		int targetCat;
 		const float elevation = map->GetElevationAt(ePos.x, ePos.z);
 		const bool IsInWater = cdef->IsPredictInWater(elevation);
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (((edef->GetCategory() & canTargetCat) == 0)
+			targetCat = edef->GetCategory();
+			if (((targetCat & canTargetCat) == 0)
 				|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 			{
 				continue;
@@ -1571,14 +1578,26 @@ bool CMilitaryManager::IsCombatTargetExists(CCircuitUnit* unit, const AIFloat3& 
 			if (!(IsInWater ? cdef->HasSubToWater() : cdef->HasSurfToWater()) && (ePos.y < -SQUARE_SIZE * 5)) {  // notAW
 				continue;
 			}
+			targetCat = UNKNOWN_CATEGORY;
 		}
 
 		if (enemy->IsInRadarOrLOS()) {
-			return true;
+			if (isTest) {
+				return enemy;
+			}
+			if ((targetCat & noChaseCat) == 0) {
+				bestTarget = enemy;
+				minSqDist = sqDist;
+			} else if (bestTarget == nullptr) {
+				worstTarget = enemy;
+			}
 		}
 	}
+	if (bestTarget == nullptr) {
+		bestTarget = worstTarget;
+	}
 
-	return false;
+	return bestTarget;
 }
 
 IUnitTask* CMilitaryManager::DefaultMakeTask(CCircuitUnit* unit)

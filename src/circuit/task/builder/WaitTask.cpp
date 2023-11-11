@@ -34,7 +34,7 @@ void CBWaitTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 		return;
 	}
 
-	CRetreatTask* task = manager->GetCircuit()->GetBuilderManager()->EnqueueRetreat();
+	CRetreatTask* task = manager->EnqueueRetreat();
 	manager->AssignTask(unit, task);
 }
 
