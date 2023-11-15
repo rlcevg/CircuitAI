@@ -193,6 +193,11 @@ asIScriptFunction* CScriptManager::GetFunc(asIScriptModule* mod, const char* dec
 	return func;
 }
 
+asIScriptContext* CScriptManager::RequestContext()
+{
+	return engine->RequestContext();
+}
+
 asIScriptContext* CScriptManager::PrepareContext(asIScriptFunction* func)
 {
 	asIScriptContext* ctx = engine->RequestContext();
@@ -204,6 +209,11 @@ void CScriptManager::ReturnContext(asIScriptContext* ctx)
 {
 //	ctx->Unprepare();
 	engine->ReturnContext(ctx);
+}
+
+void CScriptManager::ReleaseContext(asIScriptContext* ctx)
+{
+	ctx->Release();
 }
 
 bool CScriptManager::Exec(asIScriptContext* ctx)
@@ -222,6 +232,7 @@ bool CScriptManager::Exec(asIScriptContext* ctx)
 		// The execution didn't complete as expected. Determine what happened.
 		if (r == asEXECUTION_EXCEPTION) {
 			// An exception occurred, let the script writer know what happened so it can be corrected.
+			std::lock_guard<spring::mutex> mlock(mtx);
 			circuit->LOG("Script"
 						 "\n  Exception: %s"
 						 "\n  Function: %s"

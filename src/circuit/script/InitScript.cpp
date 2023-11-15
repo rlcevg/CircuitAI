@@ -8,6 +8,7 @@
 #include "script/InitScript.h"
 #include "script/ScriptManager.h"
 #include "script/RefCounter.h"
+#include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "task/builder/BuilderTask.h"
@@ -19,6 +20,7 @@
 
 #include "angelscript/include/angelscript.h"
 #include "angelscript/add_on/scriptarray/scriptarray.h"
+#include "angelscript/add_on/scriptdictionary/scriptdictionary.h"
 
 #include "spring/SpringMap.h"
 
@@ -178,6 +180,10 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterGlobalFunction("int AiMax(int, int)", asMETHODPR(CInitScript, Max<int>, (int, int) const, int), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("float AiMax(float, float)", asMETHODPR(CInitScript, Max<float>, (float, float) const, float), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("int AiRandom(int, int)", asMETHOD(CInitScript, Random), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	r = engine->RegisterFuncdef("void AiOnFinish(dictionary@+)"); ASSERT(r >= 0);
+	r = engine->RegisterFuncdef("AiOnFinish@+ AiExec(dictionary@+)"); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("void AiRun(AiExec@+, dictionary@)", asMETHOD(CInitScript, Run), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("void AiSleep(uint64)", asFUNCTION(utils::sleep), asCALL_CDECL); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectType("IStream", sizeof(std::istream), asOBJ_REF | asOBJ_NOCOUNT); ASSERT(r >= 0);
 	r = engine->RegisterObjectType("OStream", sizeof(std::ostream), asOBJ_REF | asOBJ_NOCOUNT); ASSERT(r >= 0);
@@ -234,6 +240,9 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectMethod("IUnitTask", "CCircuitDef@ GetBuildDef() const", asMETHODPR(IBuilderTask, GetBuildDef, () const, CCircuitDef*), asCALL_THISCALL); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectProperty("CCircuitAI", "const int frame", asOFFSET(CCircuitAI, lastFrame)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitAI", "const int skirmishAIId", asOFFSET(CCircuitAI, skirmishAIId)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitAI", "const int teamId", asOFFSET(CCircuitAI, teamId)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitAI", "const int allyTeamId", asOFFSET(CCircuitAI, allyTeamId)); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitAI", "CCircuitDef@ GetCircuitDef(const string& in)", asFUNCTION(CCircuitAI_GetCircuitDef), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitAI", "CCircuitDef@ GetCircuitDef(Id)", asMETHODPR(CCircuitAI, GetCircuitDef, (CCircuitDef::Id), CCircuitDef*), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitAI", "int GetDefCount() const", asMETHOD(CCircuitAI, GetDefCount), asCALL_THISCALL); ASSERT(r >= 0);
@@ -290,6 +299,12 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 
 CInitScript::~CInitScript()
 {
+	for (auto& kv : takenContexts) {
+		if (kv.second) {
+			kv.second->Release();  // dictionary param
+		}
+		script->ReleaseContext(kv.first);
+	}
 }
 
 bool CInitScript::InitConfig(const std::string& profile,
@@ -362,10 +377,9 @@ bool CInitScript::InitConfig(const std::string& profile,
 				}
 			}
 		}
-		// NOTE: Init context shouldn't be used again, hence release
-//		ctx->Unprepare();
-//		script->ReturnContext(ctx);
-		ctx->Release();
+		// NOTE: Init context shouldn't be used again, hence release;
+		//       assuming it contains references to unused types.
+		script->ReleaseContext(ctx);
 	}
 
 	mod->Discard();
@@ -373,26 +387,6 @@ bool CInitScript::InitConfig(const std::string& profile,
 	//       then "array<T>" will be in defaultGroup - not viable option.
 	//       And re-creating CScriptManager is not worth the effort.
 //	r = script->GetEngine()->RemoveConfigGroup(CScriptManager::initName.c_str()); ASSERT(r >= 0);
-	return true;
-}
-
-bool CInitScript::Init()
-{
-	if (!script->Load(CScriptManager::mainName.c_str(), folderName, CScriptManager::mainName + ".as")) {
-		return false;
-	}
-
-	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
-	int r = mod->SetDefaultNamespace("Main"); ASSERT(r >= 0);
-	asIScriptFunction* main = script->GetFunc(mod, "void AiMain()");
-	if (main == nullptr) {
-		return false;
-	}
-
-	asIScriptContext* ctx = script->PrepareContext(main);
-	r = ctx->Prepare(main); ASSERT(r >= 0);
-	script->Exec(ctx);
-	script->ReturnContext(ctx);
 	return true;
 }
 
@@ -419,6 +413,36 @@ void CInitScript::RegisterMgr()
 	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyCost(Type) const", asMETHOD(CEnemyManager, GetEnemyCost), asCALL_THISCALL); ASSERT(r >= 0);
 }
 
+bool CInitScript::Init()
+{
+	if (!script->Load(CScriptManager::mainName.c_str(), folderName, CScriptManager::mainName + ".as")) {
+		return false;
+	}
+
+	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
+	int r = mod->SetDefaultNamespace("Main"); ASSERT(r >= 0);
+	mainInfo.update = script->GetFunc(mod, "void AiUpdate()");
+	asIScriptFunction* main = script->GetFunc(mod, "void AiMain()");
+	if (main == nullptr) {
+		return false;
+	}
+
+	asIScriptContext* ctx = script->PrepareContext(main);
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
+	return true;
+}
+
+void CInitScript::Update()
+{
+	if (mainInfo.update == nullptr) {
+		return;
+	}
+	asIScriptContext* ctx = script->PrepareContext(mainInfo.update);
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
+}
+
 CMaskHandler::TypeMask CInitScript::AddRole(const std::string& name, int actAsRole)
 {
 	CMaskHandler::TypeMask result = circuit->GetGameAttribute()->GetRoleMasker().GetTypeMask(name);
@@ -431,6 +455,7 @@ CMaskHandler::TypeMask CInitScript::AddRole(const std::string& name, int actAsRo
 
 void CInitScript::Log(const std::string& msg) const
 {
+	std::lock_guard<spring::mutex> mlock(mtx);
 	circuit->LOG("%s", msg.c_str());
 }
 
@@ -463,6 +488,39 @@ int CInitScript::Dice(const CScriptArray* array) const
 		}
 	}
 	return -1;
+}
+
+void CInitScript::Run(asIScriptFunction* exec, CScriptDictionary* arg)
+{
+	// NOTE: If engines created in threads:
+	// asPrepareMultithread, asUnprepareMultithread, asThreadCleanup, asGetThreadManager;
+	// asAtomicInc, asAtomicDec, asAcquireExclusiveLock, asReleaseExclusiveLock, asAcquireSharedLock, asReleaseSharedLock;
+	// ensure garbage collection behaviours are thread safe.
+	if (exec == nullptr) {
+		return;
+	}
+	asIScriptContext* ctx = script->RequestContext();  // in main thread to avoid mutexes
+	takenContexts[ctx] = arg;
+	circuit->GetScheduler()->RunParallelJob(CScheduler::WorkJob([this, ctx, exec, arg]() {
+		int r = ctx->Prepare(exec); ASSERT(r >= 0);
+		ctx->SetArgObject(0, arg);
+		script->Exec(ctx);
+		asIScriptFunction* finish = (asIScriptFunction*)ctx->GetReturnObject();
+		if (finish != nullptr) {
+			r = ctx->Prepare(finish); ASSERT(r >= 0);
+			ctx->SetArgObject(0, arg);
+		}
+		return CScheduler::GameJob([this, ctx, finish, arg]() {
+			takenContexts.erase(ctx);
+			if (finish != nullptr) {
+				script->Exec(ctx);
+			}
+			if (arg) {
+				arg->Release();
+			}
+			script->ReturnContext(ctx);
+		});
+	}));
 }
 
 } // namespace circuit

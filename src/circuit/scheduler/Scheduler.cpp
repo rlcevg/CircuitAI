@@ -9,6 +9,8 @@
 #include "util/Utils.h"
 #include "util/Profiler.h"
 
+#include "angelscript/include/angelscript.h"
+
 namespace circuit {
 
 #define MAX_JOB_THREADS		8
@@ -221,7 +223,7 @@ void CScheduler::WorkerThread(int num)
 			gProceedCV.wait(lock, [pauseId] { return pauseId != gWorkerPauseId; });
 		}
 
-		TracyPlot("Jobs", (int64_t)gWorkTasks.Size());
+		TracyPlot("AI Jobs", (int64_t)gWorkTasks.Size());
 		WorkTask container = gWorkTasks.Pop();
 
 		std::shared_ptr<CScheduler> scheduler = container.scheduler.lock();
@@ -238,6 +240,8 @@ void CScheduler::WorkerThread(int num)
 
 		}
 	}
+
+	asThreadCleanup();
 }
 
 } // namespace circuit

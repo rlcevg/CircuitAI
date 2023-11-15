@@ -8,6 +8,8 @@
 #ifndef SRC_CIRCUIT_SETUP_SCRIPTMANAGER_H_
 #define SRC_CIRCUIT_SETUP_SCRIPTMANAGER_H_
 
+#include "System/Threading/SpringThreading.h"
+
 #include <vector>
 #include <string>
 
@@ -40,8 +42,10 @@ public:
 	bool Load(const char* modname, const std::string& subdir, const std::string& filename);
 	asIScriptEngine* GetEngine() const { return engine; }
 	asIScriptFunction* GetFunc(asIScriptModule* mod, const char* decl);
+	asIScriptContext* RequestContext();  // thread
 	asIScriptContext* PrepareContext(asIScriptFunction* func);
 	void ReturnContext(asIScriptContext* ctx);
+	void ReleaseContext(asIScriptContext* ctx);
 	bool Exec(asIScriptContext* ctx);
 
 private:
@@ -52,6 +56,7 @@ private:
 	// heavy weight and should be shared between function calls.
 	std::vector<asIScriptContext*> contexts;
 	asCJITCompiler* jit;
+	spring::mutex mtx;
 
 	static asIScriptContext* ProvideContext(asIScriptEngine*, void*);
 	static void StoreContext(asIScriptEngine*, asIScriptContext*, void*);

@@ -20,12 +20,12 @@ IRefCounter::~IRefCounter()
 
 int IRefCounter::AddRef()
 {
-	return ++refCount;
+	return ++refCount;  // atomic
 }
 
 int IRefCounter::Release()
 {
-	if (--refCount == 0) {
+	if (--refCount == 0) {  // atomic
 		delete this;
 		return 0;
 	}

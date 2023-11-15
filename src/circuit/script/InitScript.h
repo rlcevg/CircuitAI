@@ -12,6 +12,8 @@
 #include "unit/CircuitDef.h"
 #include "util/MaskHandler.h"
 
+#include "System/Threading/SpringThreading.h"
+
 #include <string>
 #include <map>
 
@@ -19,8 +21,10 @@ namespace springai {
 	class AIFloat3;
 }
 
+class asIScriptContext;
 class asIScriptFunction;
 class CScriptArray;
+class CScriptDictionary;
 
 namespace circuit {
 
@@ -50,9 +54,10 @@ public:
 
 	bool InitConfig(const std::string& profile,
 			std::vector<std::string>& outCfgParts, CCircuitDef::SArmorInfo& outArmor);
-	bool Init() override;
 
 	void RegisterMgr();
+	bool Init() override;
+	void Update();
 
 private:
 	CMaskHandler::TypeMask AddRole(const std::string& name, int actAsRole);
@@ -66,8 +71,17 @@ private:
 	template<typename T> T Max(T l, T r) const { return std::max(l, r); }
 	int Random(int min, int max) const { return min + rand() % (max - min + 1); }
 
+	void Run(asIScriptFunction* exec, CScriptDictionary* arg);
+
 	CCircuitAI* circuit;
 	std::string folderName;
+
+	struct SScriptInfo {
+		asIScriptFunction* update = nullptr;
+	} mainInfo;
+
+	mutable spring::mutex mtx;
+	std::map<asIScriptContext*, CScriptDictionary*> takenContexts;
 };
 
 } // namespace circuit
