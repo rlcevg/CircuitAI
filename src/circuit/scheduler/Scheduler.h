@@ -67,7 +67,9 @@ public:
 	/*
 	 * Add task at specified interval
 	 */
-	void RunJobEvery(const std::shared_ptr<IMainJob>& task, int frameInterval = FRAMES_PER_SEC, int frameOffset = 0);
+	void RunJobEvery(const std::shared_ptr<IMainJob>& task, int frameInterval = FRAMES_PER_SEC, int frameOffset = 0) {
+		repeatTasks.push_back({task, frameInterval, lastFrame - frameInterval + frameOffset});
+	}
 
 	/*
 	 * Process queued tasks at specified frame

@@ -143,7 +143,7 @@ static inline float string_to_float(const std::string &str)
 	}
 }
 
-static inline void sleep(int64_t ms)
+static inline void sleep(uint64_t ms)
 {
 	spring::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }

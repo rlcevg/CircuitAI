@@ -51,7 +51,6 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		, indexRes(0)
 		, metalProduced(.0f)
 		, metalUsed(.0f)
-		, ecoFrame(-1)
 		, isMetalEmpty(false)
 		, isMetalFull(false)
 		, isEnergyStalling(false)
@@ -604,7 +603,8 @@ void CEconomyManager::Init()
 		scheduler->RunJobEvery(CScheduler::GameJob(&CEconomyManager::UpdateStorageTasks, this),
 								interval, circuit->GetSkirmishAIId() + 1 + interval / 2);
 
-		scheduler->RunJobEvery(CScheduler::GameJob(&CEconomyManager::UpdateResourceIncome, this), TEAM_SLOWUPDATE_RATE);
+		scheduler->RunJobEvery(CScheduler::GameJob(&CEconomyManager::UpdateEconomy, this),
+								TEAM_SLOWUPDATE_RATE, circuit->GetSkirmishAIId());
 	};
 
 	circuit->GetSetupManager()->ExecOnFindStart(subinit);
@@ -788,33 +788,6 @@ const CEconomyManager::SSideInfo& CEconomyManager::GetSideInfo() const
 	return sideInfos[circuit->GetSideId()];
 }
 
-void CEconomyManager::UpdateResourceIncome()
-{
-	ZoneScoped;
-
-	float oddEnergyIncome = circuit->GetTeam()->GetRulesParamFloat("OD_energyIncome", 0.f);
-	float oddEnergyChange = circuit->GetTeam()->GetRulesParamFloat("OD_energyChange", 0.f);
-
-	energyIncomes[indexRes] = economy->GetIncome(energyRes) + oddEnergyIncome - std::max(.0f, oddEnergyChange);
-	metalIncomes[indexRes] = economy->GetIncome(metalRes) + economy->GetReceived(metalRes);
-	++indexRes %= INCOME_SAMPLES;
-
-	metal.income = .0f;
-	for (int i = 0; i < INCOME_SAMPLES; i++) {
-		metal.income += metalIncomes[i];
-	}
-	metal.income /= INCOME_SAMPLES;
-
-	energy.income = .0f;
-	for (int i = 0; i < INCOME_SAMPLES; i++) {
-		energy.income += energyIncomes[i];
-	}
-	energy.income /= INCOME_SAMPLES;
-
-	metalProduced += metal.income * metalMod;
-	metalUsed += economy->GetUsage(metalRes);
-}
-
 float CEconomyManager::GetMetalCur()
 {
 	return metal.current = economy->GetCurrent(metalRes);
@@ -870,36 +843,6 @@ float CEconomyManager::GetEnergyPull()
 	return energy.pull;
 }
 
-bool CEconomyManager::IsMetalEmpty()
-{
-	UpdateEconomy();
-	return isMetalEmpty;
-}
-
-bool CEconomyManager::IsMetalFull()
-{
-	UpdateEconomy();
-	return isMetalFull;
-}
-
-bool CEconomyManager::IsEnergyStalling()
-{
-	UpdateEconomy();
-	return isEnergyStalling;
-}
-
-bool CEconomyManager::IsEnergyEmpty()
-{
-	UpdateEconomy();
-	return isEnergyEmpty;
-}
-
-bool CEconomyManager::IsEnergyFull()
-{
-	UpdateEconomy();
-	return isEnergyFull;
-}
-
 bool CEconomyManager::IsAllyOpenMexSpot(int spotId) const
 {
 	return IsOpenMexSpot(spotId) && circuit->GetMetalManager()->IsOpenSpot(spotId);
@@ -949,7 +892,7 @@ void CEconomyManager::CorrectResourcePull(float metal, float energy)
 	}
 }
 
-bool CEconomyManager::IsEnoughEnergy(IBuilderTask const* task, CCircuitDef const* conDef) const
+bool CEconomyManager::IsEnoughEnergy(IBuilderTask const* task, CCircuitDef const* conDef, float mod) const
 {
 	// NOTE: Doesn't count time to travel and high priority.
 	//       invAvailFraction is for equal distribution.
@@ -960,13 +903,13 @@ bool CEconomyManager::IsEnoughEnergy(IBuilderTask const* task, CCircuitDef const
 	const float buildTime = buildDef->GetBuildTime() / conDef->GetWorkerTime();
 	const float deficit = metal.current - ((GetMetalPullCor() - GetAvgMetalIncome()) * buildTime + buildDef->GetCostM());
 	if (deficit >= 0.f) {
-		return energy.current > (GetEnergyPullCor() - GetAvgEnergyIncome()) * buildTime + buildDef->GetCostE();
+		return energy.current > (GetEnergyPullCor() - GetAvgEnergyIncome()) * buildTime + buildDef->GetCostE() * mod;
 	}
 	const float miRequire = buildDef->GetCostM() / buildTime;
 	const float timeToDeficit = metal.current / (GetMetalPullCor() + miRequire - GetAvgMetalIncome());
 	const float deficitTime = buildTime - timeToDeficit;
 	const float invAvailFraction = (GetMetalPullCor() + miRequire) / GetAvgMetalIncome();
-	const float eiRequire = buildDef->GetCostE() / buildTime;
+	const float eiRequire = buildDef->GetCostE() / buildTime * mod;
 	return energy.current > (GetEnergyPullCor() + eiRequire - GetAvgEnergyIncome()) * timeToDeficit
 			+ (GetEnergyPullCor() + eiRequire - GetAvgEnergyIncome() * invAvailFraction) * deficitTime;
 }
@@ -1978,12 +1921,38 @@ float CEconomyManager::GetStorage(Resource* res)
 	return economy->GetStorage(res) - HIDDEN_STORAGE;
 }
 
+void CEconomyManager::UpdateResourceIncome()
+{
+	float oddEnergyIncome = circuit->GetTeam()->GetRulesParamFloat("OD_energyIncome", 0.f);
+	float oddEnergyChange = circuit->GetTeam()->GetRulesParamFloat("OD_energyChange", 0.f);
+
+	energyIncomes[indexRes] = economy->GetIncome(energyRes) + oddEnergyIncome - std::max(.0f, oddEnergyChange);
+	metalIncomes[indexRes] = economy->GetIncome(metalRes) + economy->GetReceived(metalRes);
+	++indexRes %= INCOME_SAMPLES;
+
+	metal.income = .0f;
+	for (int i = 0; i < INCOME_SAMPLES; i++) {
+		metal.income += metalIncomes[i];
+	}
+	metal.income /= INCOME_SAMPLES;
+
+	energy.income = .0f;
+	for (int i = 0; i < INCOME_SAMPLES; i++) {
+		energy.income += energyIncomes[i];
+	}
+	energy.income /= INCOME_SAMPLES;
+
+	metalProduced += metal.income * metalMod;
+	metalUsed += economy->GetUsage(metalRes);
+}
+
 void CEconomyManager::UpdateEconomy()
 {
-	if (ecoFrame + TEAM_SLOWUPDATE_RATE >= circuit->GetLastFrame()) {
-		return;
-	}
-	ecoFrame = circuit->GetLastFrame();
+	ZoneScoped;
+
+	UpdateResourceIncome();
+
+	int ecoFrame = circuit->GetLastFrame();
 
 	/*const float curMetal = */GetMetalCur();
 	/*const float storMetal = */GetMetalStore();

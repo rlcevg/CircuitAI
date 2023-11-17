@@ -27,7 +27,7 @@ spring::condition_variable_any CScheduler::gProceedCV;
 std::size_t CScheduler::gPauseCount = 0;
 
 CScheduler::CScheduler()
-		: lastFrame(-1)
+		: lastFrame(0)
 		, isProcessing(false)
 {
 	if (gInstanceCount == 0) {
@@ -122,17 +122,6 @@ void CScheduler::StartThreads()
 	assert(gWorkThreads.empty());
 	for (int i = 0; i < gMaxWorkThreads; ++i) {
 		gWorkThreads.emplace_back(&CScheduler::WorkerThread, i);
-	}
-}
-
-void CScheduler::RunJobEvery(const std::shared_ptr<IMainJob>& task, int frameInterval, int frameOffset)
-{
-	if (frameOffset > 0) {
-		RunJobAfter(GameJob([this, task, frameInterval]() {
-			repeatTasks.push_back({task, frameInterval, lastFrame});
-		}), frameOffset);
-	} else {
-		repeatTasks.push_back({task, frameInterval, lastFrame});
 	}
 }
 

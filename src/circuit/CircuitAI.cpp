@@ -795,10 +795,10 @@ int CCircuitAI::Update(int frame)
 	allyTeam->Update(this);
 
 	scheduler->ProcessJobs(frame);
-	if (frame % TEAM_SLOWUPDATE_RATE == skirmishAIId + 1) {
+	if (frame % TEAM_SLOWUPDATE_RATE == skirmishAIId) {
 		// NOTE: Probably should be last in ProcessJobs queue, after all income updates if it was in the same frame.
 		//       Hence it is not:
-		// scheduler->RunJobEvery(CScheduler::GameJob(&CInitScript::Update, script), TEAM_SLOWUPDATE_RATE, skirmishAIId + 1);
+		// scheduler->RunJobEvery(CScheduler::GameJob(&CInitScript::Update, script), TEAM_SLOWUPDATE_RATE, skirmishAIId);
 		script->Update();
 	}
 	UpdateActions();

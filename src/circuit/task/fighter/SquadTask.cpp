@@ -420,7 +420,13 @@ void ISquadTask::Attack(const int frame, const bool isGround)
 	int row = 0;
 	for (const auto& kv : rangeUnits) {
 		CCircuitDef* rowDef = (*kv.second.begin())->GetCircuitDef();
-		const float range = (((row++ == 0) && !GetTarget()->IsInLOS()) ? std::min(kv.first, rowDef->GetLosRadius()) : kv.first) * RANGE_MOD;
+		const float range = kv.first * RANGE_MOD;
+		// NOTE: 1st unit in 1st row will scout, ignoring GetTarget()->IsInRadarOrLOS()
+		//       as unit may wobble back and forth without firing if turret turn is slow.
+		float range0 = range;
+		if ((row++ == 0) && (isStatic || !GetTarget()->IsInRadarOrLOS())) {
+			range0 = std::min(kv.first, rowDef->GetLosRadius()) * RANGE_MOD;
+		}
 		const float maxDelta = (M_PI * 0.9f) / kv.second.size();
 		// NOTE: float delta = asinf(cdef->GetRadius() / range);
 		//       but sin of a small angle is similar to that angle, omit asinf() call
@@ -440,6 +446,7 @@ void ISquadTask::Attack(const int frame, const bool isGround)
 			beta = -beta;
 		}
 
+		int iterNum = 0;
 		for (CCircuitUnit* unit : kv.second) {
 			unit->GetTravelAct()->StateWait();
 			if (unit->Blocker() != nullptr) {
@@ -451,12 +458,14 @@ void ISquadTask::Attack(const int frame, const bool isGround)
 				|| (unit->GetTargetTile() != targetTile))
 			{
 				const float angle = alpha + beta;
-				AIFloat3 newPos(tPos.x + range * cosf(angle), tPos.y, tPos.z + range * sinf(angle));
+				const float r = (iterNum == 0) ? range0 : range;
+				AIFloat3 newPos(tPos.x + r * cosf(angle), tPos.y, tPos.z + r * sinf(angle));
 				CTerrainManager::CorrectPosition(newPos);
 				unit->Attack(newPos, GetTarget(), targetTile, isGround, isStatic, frame + FRAMES_PER_SEC * 60);
 			}
 
 			beta += delta;
+			++iterNum;
 		}
 	}
 }

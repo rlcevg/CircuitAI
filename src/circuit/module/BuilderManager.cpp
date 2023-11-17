@@ -194,7 +194,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	};
 
 	/*
-	 * staticmex handlers;
+	 * mex handlers;
 	 */
 	auto mexDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		const AIFloat3& pos = unit->GetPos(this->circuit->GetLastFrame());
@@ -205,20 +205,18 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		if ((index < 0) || (reclaimUnits.find(unit) != reclaimUnits.end())) {
 			return;
 		}
+
+		// check stacked mexes
+		const auto& unitIds = this->circuit->GetCallback()->GetFriendlyUnitIdsIn(pos, SQUARE_SIZE, false);
+		for (ICoreUnit::Id unitId : unitIds) {
+			CCircuitUnit* mex = this->circuit->GetTeamUnit(unitId);
+			// FIXME: How to check unit->IsDead?
+			if ((mex != nullptr) && mex->GetCircuitDef()->IsMex() && (mex->GetUnit()->GetHealth() > 0.f)) {
+				return;
+			}
+		}
 		this->circuit->GetMetalManager()->SetOpenSpot(index, true);
 		this->circuit->GetEconomyManager()->SetOpenMexSpot(index, true);
-		if (unit->GetUnit()->IsBeingBuilt()) {
-			return;
-		}
-		// Check mex position in 20 seconds
-		this->circuit->GetScheduler()->RunJobAfter(CScheduler::GameJob([this, mexDef, pos, index]() {
-			if (this->circuit->GetEconomyManager()->IsAllyOpenMexSpot(index) &&
-				this->circuit->GetBuilderManager()->IsBuilderInArea(mexDef, pos) &&
-				this->circuit->GetTerrainManager()->CanBeBuiltAtSafe(mexDef, pos))  // hostile environment
-			{
-				Enqueue(TaskB::Spot(IBuilderTask::BuildType::MEX, IBuilderTask::Priority::HIGH, mexDef, pos, index));
-			}
-		}), FRAMES_PER_SEC * 20);
 	};
 
 	/*
@@ -1053,7 +1051,8 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 
 			float distCost;
 			const float rawSqDist = pos.SqDistance2D(buildPos);
-			if (rawSqDist < buildSqDistance) {
+			const bool isClose = rawSqDist < buildSqDistance;
+			if (isClose) {
 				distCost = sqrtf(rawSqDist) / pathfinder->GetSquareSize() * COST_BASE * 0.5f;
 			} else {
 				distCost = query->GetCostAt(buildPos, buildDistance);
@@ -1066,17 +1065,19 @@ IBuilderTask* CBuilderManager::MakeEnergizerTask(CCircuitUnit* unit, const CQuer
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / SQUARE(weight);
-			bool valid = false;
+			bool valid = distCost * weight < metric;
 
-			CCircuitUnit* target = candidate->GetTarget();
-			if ((target != nullptr) && (distCost * weight < metric)) {
-				Unit* tu = target->GetUnit();
-				const float maxHealth = tu->GetMaxHealth();
-				const float health = tu->GetHealth() - maxHealth * 0.005f;
-				const float healthSpeed = maxHealth * candidate->GetBuildPowerM() / candidate->GetCostM();
-				valid = ((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost;
-			} else {
-				valid = (distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * maxSpeed);
+			if (valid && !isClose) {
+				CCircuitUnit* target = candidate->GetTarget();
+				if (target != nullptr) {
+					Unit* tu = target->GetUnit();
+					const float maxHealth = tu->GetMaxHealth();
+					const float health = tu->GetHealth() - maxHealth * 0.005f;
+					const float healthSpeed = maxHealth * candidate->GetBuildPowerM() / candidate->GetCostM();
+					valid = ((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost;
+				} else {
+					valid = distCost < MAX_TRAVEL_SEC * maxSpeed;
+				}
 			}
 
 			if (valid) {
@@ -1169,7 +1170,8 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 
 			float distCost;
 			const float rawSqDist = pos.SqDistance2D(buildPos);
-			if (rawSqDist < buildSqDistance) {
+			const bool isClose = rawSqDist < buildSqDistance;
+			if (isClose) {
 				distCost = sqrtf(rawSqDist) / pathfinder->GetSquareSize() * COST_BASE * 0.5f;
 			} else {
 				distCost = query->GetCostAt(buildPos, buildDistance);
@@ -1182,17 +1184,19 @@ IBuilderTask* CBuilderManager::MakeCommPeaceTask(CCircuitUnit* unit, const CQuer
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / SQUARE(weight);
-			bool valid = false;
+			bool valid = distCost * weight < metric;
 
-			CCircuitUnit* target = candidate->GetTarget();
-			if ((target != nullptr) && (distCost * weight < metric)) {
-				Unit* tu = target->GetUnit();
-				const float maxHealth = tu->GetMaxHealth();
-				const float health = tu->GetHealth() - maxHealth * 0.005f;
-				const float healthSpeed = maxHealth * candidate->GetBuildPowerM() / candidate->GetCostM();
-				valid = ((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost;
-			} else {
-				valid = (distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * maxSpeed);
+			if (valid && !isClose) {
+				CCircuitUnit* target = candidate->GetTarget();
+				if (target != nullptr) {
+					Unit* tu = target->GetUnit();
+					const float maxHealth = tu->GetMaxHealth();
+					const float health = tu->GetHealth() - maxHealth * 0.005f;
+					const float healthSpeed = maxHealth * candidate->GetBuildPowerM() / candidate->GetCostM();
+					valid = ((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost;
+				} else {
+					valid = distCost < MAX_TRAVEL_SEC * maxSpeed;
+				}
 			}
 
 			if (valid) {
@@ -1271,6 +1275,7 @@ IBuilderTask* CBuilderManager::MakeCommDangerTask(CCircuitUnit* unit, const CQue
 
 			float distCost;
 			const float rawSqDist = pos.SqDistance2D(buildPos);
+			const bool isClose = rawSqDist < buildSqDistance;
 			if (rawSqDist < buildSqDistance) {
 				distCost = sqrtf(rawSqDist) / pathfinder->GetSquareSize() * COST_BASE * 0.5f;
 			} else {
@@ -1284,17 +1289,19 @@ IBuilderTask* CBuilderManager::MakeCommDangerTask(CCircuitUnit* unit, const CQue
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / SQUARE(weight);
-			bool valid = false;
+			bool valid = distCost * weight < metric;
 
-			CCircuitUnit* target = candidate->GetTarget();
-			if ((target != nullptr) && (distCost * weight < metric)) {
-				Unit* tu = target->GetUnit();
-				const float maxHealth = tu->GetMaxHealth();
-				const float health = tu->GetHealth() - maxHealth * 0.005f;
-				const float healthSpeed = maxHealth * candidate->GetBuildPowerM() / candidate->GetCostM();
-				valid = ((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost;
-			} else {
-				valid = (distCost * weight < metric) && (distCost < MAX_TRAVEL_SEC * maxSpeed);
+			if (valid && !isClose) {
+				CCircuitUnit* target = candidate->GetTarget();
+				if (target != nullptr) {
+					Unit* tu = target->GetUnit();
+					const float maxHealth = tu->GetMaxHealth();
+					const float health = tu->GetHealth() - maxHealth * 0.005f;
+					const float healthSpeed = maxHealth * candidate->GetBuildPowerM() / candidate->GetCostM();
+					valid = ((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost;
+				} else {
+					valid = distCost < MAX_TRAVEL_SEC * maxSpeed;
+				}
 			}
 
 			if (valid) {
@@ -1397,7 +1404,8 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 			}
 
 			float distCost;
-			const float rawSqDist = pos.SqDistance2D(buildPos);
+			const float rawSqDist = pos.SqDistance2D(buildPos);  // TODO: add target's radius to rawSqDist
+			const bool isClose = rawSqDist < buildSqDistance;
 			if (rawSqDist < buildSqDistance) {
 				distCost = sqrtf(rawSqDist) / pathfinder->GetSquareSize() * COST_BASE * 0.5f;
 			} else {
@@ -1411,20 +1419,20 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 
 			float weight = (static_cast<float>(candidate->GetPriority()) + 1.0f);
 			weight = 1.0f / SQUARE(weight);
-			bool valid = false;
+			bool valid = distCost * weight < metric;
 
-			CCircuitUnit* target = candidate->GetTarget();
-			if (target != nullptr) {
-				if (distCost * weight < metric) {
+			if (valid && !isClose) {
+				CCircuitUnit* target = candidate->GetTarget();
+				if (target != nullptr) {
 					// BA: float time_to_build = targetDef->GetBuildTime() / workerDef->GetBuildSpeed();
 					Unit* tu = target->GetUnit();
 					const float maxHealth = tu->GetMaxHealth();
 					const float health = tu->GetHealth() - maxHealth * 0.005f;
 					const float healthSpeed = maxHealth * candidate->GetBuildPowerM() / candidate->GetCostM();
-					valid = (((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost);
+					valid = ((maxHealth - health) * 0.6f) * maxSpeed > healthSpeed * distCost;
+				} else {
+					// valid = distCost < MAX_TRAVEL_SEC * maxSpeed;  // NOTE: distCost was too high in sectors occupied by structure
 				}
-			} else {
-				valid = (distCost * weight < metric)/* && (distCost < MAX_TRAVEL_SEC * maxSpeed)*/;  // NOTE: distCost was too high in sectors occupied by structure
 			}
 
 			if (valid) {

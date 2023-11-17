@@ -85,7 +85,6 @@ public:
 	void AddFactoryDef(CCircuitDef* cdef) { factoryDefs.AddDef(cdef); }
 	bool IsFactoryDefAvail(CCircuitDef* buildDef) const { return factoryDefs.IsAvail(buildDef); }
 
-	void UpdateResourceIncome();
 	float GetAvgMetalIncome() const { return metal.income; }
 	float GetAvgEnergyIncome() const { return energy.income; }
 	float GetEcoFactor() const { return ecoFactor; }
@@ -97,11 +96,11 @@ public:
 	float GetEnergyCur();
 	float GetEnergyStore();
 	float GetEnergyPull();
-	bool IsMetalEmpty();
-	bool IsMetalFull();
-	bool IsEnergyStalling();
-	bool IsEnergyEmpty();
-	bool IsEnergyFull();
+	bool IsMetalEmpty() const { return isMetalEmpty; }
+	bool IsMetalFull() const { return isMetalFull; }
+	bool IsEnergyStalling() const { return isEnergyStalling; }
+	bool IsEnergyEmpty() const { return isEnergyEmpty; }
+	bool IsEnergyFull() const { return isEnergyFull; }
 //	bool IsEnergyRequired() const { return isEnergyRequired; }
 	void ClearEnergyRequired() { isEnergyRequired = false; }
 	bool IsExcessed() const { return metalProduced > metalUsed; }
@@ -121,7 +120,7 @@ public:
 	void CorrectResourcePull(float metal, float energy);
 	float GetMetalPullCor() const { return metal.pull - metalPullCor; }
 	float GetEnergyPullCor() const { return energy.pull - energyPullCor; }
-	bool IsEnoughEnergy(IBuilderTask const* task, CCircuitDef const* conDef) const;
+	bool IsEnoughEnergy(IBuilderTask const* task, CCircuitDef const* conDef, float mod = 1.f) const;
 
 	IBuilderTask* MakeEconomyTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
 	IBuilderTask* UpdateMetalTasks(const springai::AIFloat3& position, CCircuitUnit* unit);
@@ -147,6 +146,7 @@ private:
 	bool CheckAirpadRequired(const springai::AIFloat3& position, CCircuitUnit* unit, IBuilderTask*& outTask);
 	bool CheckAssistRequired(const springai::AIFloat3& position, CCircuitUnit* unit, IBuilderTask*& outTask);
 	float GetStorage(springai::Resource* res);
+	void UpdateResourceIncome();
 	void UpdateEconomy();
 
 	Handlers2 createdHandler;
@@ -252,7 +252,6 @@ private:
 	std::vector<SPullMtoS> mspInfos;
 	float pullMtoS;  // mobile to static metal pull ratio
 
-	int ecoFrame;
 	bool isMetalEmpty;
 	bool isMetalFull;
 	bool isEnergyStalling;

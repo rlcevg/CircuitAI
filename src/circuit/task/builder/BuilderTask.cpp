@@ -102,17 +102,18 @@ IBuilderTask::~IBuilderTask()
 
 bool IBuilderTask::CanAssignTo(CCircuitUnit* unit) const
 {
+	// can unit build at all
+	const CCircuitDef* cdef = unit->GetCircuitDef();
+	if (((target == nullptr) || !cdef->IsAbleToAssist() || unit->IsAttrSolo()) && !cdef->CanBuild(buildDef)) {
+		return false;
+	}
 	// is extra buildpower required?
 	CEconomyManager* economyMgr = manager->GetCircuit()->GetEconomyManager();
 	if (cost.metal < buildPower.metal * buildDef->GetGoalBuildTime(economyMgr->GetAvgMetalIncome())) {  // upper metal bound
 		return false;
 	}
-	const CCircuitDef* cdef = unit->GetCircuitDef();
-	if (!economyMgr->IsEnoughEnergy(this, cdef)) {  // lower energy bound
-		return false;
-	}
-	// can unit build at all
-	if (!cdef->CanBuild(buildDef) && ((target == nullptr) || !cdef->IsAbleToAssist() || unit->IsAttrSolo())) {
+	// energy income check
+	if ((target == nullptr) && !economyMgr->IsEnergyFull() && !economyMgr->IsEnoughEnergy(this, cdef, 0.8f)) {  // lower energy bound
 		return false;
 	}
 	// solo/initiator check
@@ -272,7 +273,8 @@ bool IBuilderTask::Execute(CCircuitUnit* unit)
 	// FIXME: Replace const 1000.f with build time?
 	if (circuit->IsAllyAware() && (cost.metal > 1000.f)) {
 		circuit->UpdateFriendlyUnits();
-		auto& friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(position, cost.metal);
+		const float dist = std::min(cost.metal, 1000.f);
+		auto& friendlies = circuit->GetCallback()->GetFriendlyUnitsIn(position, dist);
 		CAllyUnit* alu = FindSameAlly(unit, friendlies);
 		utils::free(friendlies);
 		if (alu != nullptr) {
