@@ -21,6 +21,8 @@
 #include "Log.h"
 
 #include <regex>
+//#undef NDEBUG
+#include <cassert>
 
 namespace circuit {
 
@@ -591,8 +593,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 	// TODO: Include projectile-speed/range, armor
 	//       health /= def->GetArmoredMultiple();
-	float dmg = std::max(std::max(waterDmg, surfDmg), airDmg);
-	float dps = std::max(std::max(waterDps, surfDps), airDps);
+	const float dmg = std::max(std::max(waterDmg, surfDmg), airDmg);
+	const float dps = std::max(std::max(waterDps, surfDps), airDps);
 	defDmg = pwrDmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
 	defThreat = power = defDmg * sqrtf(health + maxShield * SHIELD_MOD);
 	airThrDmg = sqrtf(airDps) * std::pow(airDmg, 0.25f) * THREAT_MOD;
@@ -692,6 +694,23 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 		circuit->LOG("ALARM: %s | isAbleToFly: %i | isFloater: %i | isSubmarine: %i | isAmphibious: %i | isLander: %i | isSurfer: %i", def->GetName(),
 				isAbleToFly, isFloater, isSubmarine, isAmphibious, isLander, isSurfer);
 	}
+
+#ifndef NDEBUG
+	assert(pwrDmg >= .0f);
+	assert(defDmg >= .0f);
+	assert(airThrDmg >= .0f);
+	assert(surfThrDmg >= .0f);
+	assert(waterThrDmg >= .0f);
+	assert(aoe >= .0f);
+	assert(power >= .0f);
+	assert(defThreat >= .0f);
+	assert(minRange >= .0f);
+	for (int i = 0; i < static_cast<int>(RangeType::_SIZE_); ++i) {
+		assert(maxRange[i] >= 0.f);
+	}
+	assert(shieldRadius >= .0f);
+	assert(maxShield >= .0f);
+#endif
 }
 
 void CCircuitDef::AddRole(RoleT type, RoleT bindType)

@@ -210,8 +210,10 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 		const auto& unitIds = this->circuit->GetCallback()->GetFriendlyUnitIdsIn(pos, SQUARE_SIZE, false);
 		for (ICoreUnit::Id unitId : unitIds) {
 			CCircuitUnit* mex = this->circuit->GetTeamUnit(unitId);
-			// FIXME: How to check unit->IsDead?
-			if ((mex != nullptr) && mex->GetCircuitDef()->IsMex() && (mex->GetUnit()->GetHealth() > 0.f)) {
+			// FIXME: How to check !unit->IsDead? health can be 0.999 for unit being built and dissipated when this event hits
+			if ((mex != nullptr) && mex->GetCircuitDef()->IsMex()
+				&& (mex->GetUnit()->GetHealth() > 0.f) && !mex->GetUnit()->IsBeingBuilt())
+			{
 				return;
 			}
 		}

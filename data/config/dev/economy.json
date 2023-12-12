@@ -8,36 +8,36 @@
 				"land": {
 					// "<energy_def>": [<lower limit>, <upper limit>, <m-income>, <e-income>, <efficiency>]
 					// limit = random(<lower limit>..<upper limit>)
-					"armwin": [20, 30],
-					"armsolar": [8, 12],
-					"armadvsol": [8, 12],
-					"armfus": [3, 4],
-					"armafus": [20, 30]
+					"armwin": [200, 300],
+					"armsolar": [80, 120],
+					"armadvsol": [80, 120],
+					"armfus": [30, 40],
+					"armafus": [200, 300]
 				},
 				"water": {
-					"armtide": [14, 25],
-					"armwin": [10, 20],
-					"armsolar": [1],
-					"armadvsol": [12, 16],
-					"armuwfus": [10, 20]
+					"armtide": [140, 250],
+					"armwin": [100, 200],
+					"armsolar": [10],
+					"armadvsol": [120, 160],
+					"armuwfus": [100, 200]
 				}
 			},
 			"cortex": {
 				"land": {
 					// "<energy_def>": [<lower limit>, <upper limit>]
 					// limit = random(<lower limit>..<upper limit>)
-					"corwin": [20, 30],
-					"corsolar": [8, 12],
-					"coradvsol": [8, 12],
-					"corfus": [3, 4],
-					"corafus": [20, 30]
+					"corwin": [200, 300],
+					"corsolar": [80, 120],
+					"coradvsol": [80, 120],
+					"corfus": [30, 40],
+					"corafus": [200, 300]
 				},
 				"water": {
-					"cortide": [14, 25],
-					"corwin": [10, 20],
-					"corsolar": [1],
-					"coradvsol": [12, 16],
-					"coruwfus": [10, 20]
+					"cortide": [140, 250],
+					"corwin": [100, 200],
+					"corsolar": [10],
+					"coradvsol": [120, 160],
+					"coruwfus": [100, 200]
 				}
 			}
 		},
