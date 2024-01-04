@@ -98,17 +98,22 @@ void CArtilleryTask::Update()
 
 void CArtilleryTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
+	if (unit->Blocker() != nullptr) {
+		return;  // Do not interrupt current action
+	}
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 	CEnemyInfo* bestTarget = FindTarget(unit, pos);
 
 	if (bestTarget != nullptr) {
+		unit->GetTravelAct()->StateWait();
+
 		TRY_UNIT(circuit, unit,
 			unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			unit->CmdSetTarget(bestTarget);
 		)
-		unit->GetTravelAct()->StateWait();
 		return;
 	}
 
@@ -160,7 +165,7 @@ CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 
 	enemyPositions.clear();
 	threatMap->SetThreatType(unit);
-	bool isPosSafe = (threatMap->GetThreatAt(pos) <= THREAT_MIN);
+	bool isPosSafe = (threatMap->GetThreatAt(pos) <= THREAT_MIN) || cdef->IsPlane();
 
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	if (isPosSafe) {

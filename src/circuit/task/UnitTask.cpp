@@ -105,6 +105,10 @@ void IUnitTask::OnTravelEnd(CCircuitUnit* unit)
 {
 }
 
+void IUnitTask::OnRearmStart(CCircuitUnit* unit)
+{
+}
+
 bool IUnitTask::IsQueryReady(CCircuitUnit* unit) const
 {
 	const auto it = pathQueries.find(unit);

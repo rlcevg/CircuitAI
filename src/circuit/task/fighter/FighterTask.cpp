@@ -12,8 +12,9 @@
 #include "module/BuilderManager.h"
 #include "module/MilitaryManager.h"
 #include "setup/SetupManager.h"
-#include "unit/action/DGunAction.h"
 #include "unit/action/TravelAction.h"
+#include "unit/action/DGunAction.h"
+#include "unit/action/RearmAction.h"
 #include "unit/enemy/EnemyUnit.h"
 #include "CircuitAI.h"
 #include "util/Utils.h"
@@ -56,6 +57,10 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 	if (unit->HasDGun()) {
 		const float range = std::max(unit->GetDGunRange() * 1.1f, cdef->GetLosRadius());
 		unit->PushDGunAct(new CDGunAction(unit, range));
+	}
+
+	if (cdef->IsAttrRearm()) {
+		unit->PushBack(new CRearmAction(unit));
 	}
 }
 
@@ -161,10 +166,10 @@ void IFighterTask::Attack(const int frame)
 	const bool isRepeatAttack = (frame >= attackFrame + FRAMES_PER_SEC * 3);
 	attackFrame = isRepeatAttack ? frame : attackFrame;
 	for (CCircuitUnit* unit : units) {
-		unit->GetTravelAct()->StateWait();
 		if (unit->Blocker() != nullptr) {
 			continue;  // Do not interrupt current action
 		}
+		unit->GetTravelAct()->StateWait();
 
 		if (isRepeatAttack
 			|| (unit->GetTarget() != target)

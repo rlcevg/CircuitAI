@@ -41,6 +41,8 @@ CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"jump",      CCircuitDef::AttrType::JUMP},
 	{"dg_cost",   CCircuitDef::AttrType::DG_COST},
 	{"dg_still",  CCircuitDef::AttrType::DG_STILL},
+	{"anti_stat", CCircuitDef::AttrType::ANTI_STAT},
+	{"rearm",     CCircuitDef::AttrType::REARM},
 };
 CCircuitDef::FireName CCircuitDef::fireNames = {
 	{"hold",   CCircuitDef::FireType::HOLD},
@@ -107,8 +109,6 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, threat(.0f)
 		, minRange(.0f)
 		, maxRangeType(RangeType::AIR)
-		, maxRange({.0f})
-		, threatRange({0})
 		, shieldRadius(.0f)
 		, maxShield(.0f)
 		, reloadTime(0)
@@ -134,6 +134,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, height(-1.f)
 		, topOffset(-1.f)
 {
+	maxRange.fill(.0f);
+	threatRange.fill(0);
+
 	id = def->GetUnitDefId();
 
 	buildDistance = def->GetBuildDistance();
@@ -314,6 +317,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			}
 		}
 
+		if (customParams.find("reammoseconds") != customParams.end()) {
+			AddAttribute(AttrType::REARM);
+		}
+
 		float reloadTime = wd->GetReload();  // seconds
 		if (minReloadTime > reloadTime) {
 			minReloadTime = reloadTime;
@@ -346,7 +353,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 		std::string wt(wd->GetType());  // @see https://springrts.com/wiki/Gamedev:WeaponDefs
 		const float projectileSpeed = wd->GetProjectileSpeed();
-		float range = wd->GetRange();
+		it = customParams.find("truerange");
+		float range = (it != customParams.end()) ? utils::string_to_float(it->second) : wd->GetRange();
 
 		isAlwaysHit |= ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
 				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (projectileSpeed * FRAMES_PER_SEC >= .8f * range);  // Cannons with fast projectiles

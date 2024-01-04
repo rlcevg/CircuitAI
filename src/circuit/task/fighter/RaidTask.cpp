@@ -166,19 +166,27 @@ void CRaidTask::Update()
 		if (leader->GetCircuitDef()->IsAbleToFly()) {
 			if (target->GetUnit()->IsCloaked()) {
 				for (CCircuitUnit* unit : units) {
+					if (unit->Blocker() != nullptr) {
+						continue;  // Do not interrupt current action
+					}
+					unit->GetTravelAct()->StateWait();
+
 					const AIFloat3& pos = target->GetPos();
 					TRY_UNIT(circuit, unit,
 						unit->CmdAttackGround(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 					)
-					unit->GetTravelAct()->StateWait();
 				}
 			} else {
 				for (CCircuitUnit* unit : units) {
+					if (unit->Blocker() != nullptr) {
+						continue;  // Do not interrupt current action
+					}
+					unit->GetTravelAct()->StateWait();
+
 					TRY_UNIT(circuit, unit,
 						unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 						unit->CmdSetTarget(target);
 					)
-					unit->GetTravelAct()->StateWait();
 				}
 			}
 		} else {
@@ -244,9 +252,10 @@ bool CRaidTask::FindTarget()
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
+	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
-	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
 	const float maxSpeed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
@@ -307,6 +316,9 @@ bool CRaidTask::FindTarget()
 		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
+			if (isAntiStatic && edef->IsMobile()) {
+				continue;
+			}
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0)
 				|| (edef->IsAbleToFly() && notAA))

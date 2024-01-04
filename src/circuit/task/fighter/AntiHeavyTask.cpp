@@ -198,6 +198,9 @@ void CAntiHeavyTask::Update()
 		float power = 0.f;
 		CEnemyInfo* target = this->target;
 		auto subattack = [&power, target](CCircuitUnit* unit) {
+			if (unit->Blocker() != nullptr) {
+				return false;
+			}
 			if (unit->GetDGunAct() != nullptr) {
 				unit->GetDGunAct()->StateActivate();
 			}
@@ -299,6 +302,7 @@ bool CAntiHeavyTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const bool notAA = !cdef->HasAntiAir();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const float maxPower = attackPower * powerMod;
@@ -325,6 +329,7 @@ bool CAntiHeavyTask::FindTarget()
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if ((edef == nullptr) || !edef->IsEnemyRoleAny(CCircuitDef::RoleMask::HEAVY | CCircuitDef::RoleMask::COMM)
+			|| (isAntiStatic && edef->IsMobile())
 			|| ((edef->GetCategory() & canTargetCat) == 0)
 			|| (edef->IsAbleToFly() && notAA)
 			|| (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))

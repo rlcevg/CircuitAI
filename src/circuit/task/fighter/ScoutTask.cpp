@@ -100,8 +100,17 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
+void CScoutTask::OnRearmStart(CCircuitUnit* unit)
+{
+	SetTarget(nullptr);
+}
+
 void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
+	if (unit->Blocker() != nullptr) {
+		return;  // Do not interrupt current action
+	}
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
@@ -110,6 +119,8 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 
 	if (target != nullptr) {
 		position = target->GetPos();
+		unit->GetTravelAct()->StateWait();
+
 		if (target->GetUnit()->IsCloaked()) {
 			TRY_UNIT(circuit, unit,
 				unit->CmdAttackGround(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -117,7 +128,6 @@ void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 		} else {
 			unit->Attack(target, frame + FRAMES_PER_SEC * 60);
 		}
-		unit->GetTravelAct()->StateWait();
 		return;
 	}
 
@@ -157,6 +167,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	STerrainMapArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
 	const float speed = SQUARE(cdef->GetSpeed() * 0.8f / FRAMES_PER_SEC);
@@ -195,6 +206,9 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		bool isBuilder;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
+			if (isAntiStatic && edef->IsMobile()) {
+				continue;
+			}
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0)
 				|| (edef->IsAbleToFly() && notAA))

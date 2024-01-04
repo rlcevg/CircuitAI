@@ -48,12 +48,13 @@
 		// "boost" - boost speed on retreat
 		// "no_jump" - disable jump on retreat
 		// "no_strafe" - disable gunship's strafe
-		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
+		// "stockpile" - load weapon before any task, auto-assigned
 		// "siege" - mostly use fight command instead of move
 		// "ret_hold" - hold fire on retreat
 		// "ret_fight" - fight on retreat
 		// "jump" - enable jump on regular move
 		// "dg_cost" - DGun by metal cost instead of by threat
+		// "anti_stat" - only static targets
 //		"attribute": ["boost", "no_strafe"],
 
 		// Fire state (open by default)
@@ -670,18 +671,28 @@
 		"attribute": ["siege", "bomber"],
 		"limit": 2,
 		"since": 1200,
-		"retreat": 0.95,
+		"retreat": 0.85,
 		"pwr_mod": 100.00,
 		"thr_mod": 0.01
 	},
 	"bomberheavy": {
-		"role": ["bomber", "air"],  // FIXME: should act as anti_heavy?
+		"role": ["bomber", "air"],
 		"fire_state": "return",
 		"limit": 4,
 		"since": 420,
-		"retreat": 0.95,
+		"retreat": 0.65,
 		"pwr_mod": 0.75,
 		"thr_mod": 0.1
+	},
+	"bomberassault": {
+		"role": ["bomber", "air"],
+		"attribute": ["anti_stat"],
+		"fire_state": "hold",
+		"limit": 1,
+		"since": 1800,
+		"retreat": 0.65,
+		"pwr_mod": 1.25,
+		"thr_mod": 0.01
 	},
 	"planescout": {
 		"role": ["scout", "air"],

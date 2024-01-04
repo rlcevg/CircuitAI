@@ -92,24 +92,20 @@ void CBombTask::Update()
 
 void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
-	CCircuitAI* circuit = manager->GetCircuit();
-	const int frame = circuit->GetLastFrame();
-	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
-		if (updCount % 32 == 0) {
-			TRY_UNIT(circuit, unit,
-				unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
-			)
-		}
-		SetTarget(nullptr);
-		return;
+	if (unit->Blocker() != nullptr) {
+		return;  // Do not interrupt current action
 	}
 
+	CCircuitAI* circuit = manager->GetCircuit();
+	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 	CEnemyInfo* lastTarget = target;
 	AIFloat3 endPos = FindTarget(unit, lastTarget, pos);
 
 	if (target != nullptr) {
 		position = target->GetPos();
+		unit->GetTravelAct()->StateWait();
+
 		TRY_UNIT(circuit, unit,
 			if (target->GetUnit()->IsCloaked()) {
 				unit->CmdAttackGround(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -117,7 +113,6 @@ void CBombTask::Execute(CCircuitUnit* unit, bool isUpdating)
 				unit->GetUnit()->Attack(target->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			}
 		)
-		unit->GetTravelAct()->StateWait();
 		return;
 	}
 
@@ -169,6 +164,11 @@ void CBombTask::OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker)
 	}
 }
 
+void CBombTask::OnRearmStart(CCircuitUnit* unit)
+{
+	SetTarget(nullptr);
+}
+
 AIFloat3 CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const AIFloat3& pos)
 {
 	// TODO: 1) Bombers should constantly harass undefended targets and not suicide.
@@ -177,6 +177,7 @@ AIFloat3 CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = unit->GetCircuitDef();
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const bool notAW = !cdef->HasAntiWater();
 	const float scale = (cdef->GetMinRange() > 300.0f) ? 4.0f : 1.0f;
 	const float maxPower = threatMap->GetUnitThreat(unit) * scale * powerMod;
@@ -223,7 +224,7 @@ AIFloat3 CBombTask::FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const
 //		float altitude;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (edef->GetSpeed() > speed) {
+			if ((edef->GetSpeed() > speed) || (isAntiStatic && edef->IsMobile())) {
 				continue;
 			}
 			targetCat = edef->GetCategory();

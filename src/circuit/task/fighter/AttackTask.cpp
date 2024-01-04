@@ -249,6 +249,7 @@ void CAttackTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	STerrainMapArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const bool notAW = !cdef->HasAntiWater();
 	const bool notAA = !cdef->HasAntiAir();
 	const float maxSpeed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
@@ -284,7 +285,8 @@ void CAttackTask::FindTarget()
 
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (((edef->GetCategory() & canTargetCat) == 0)
+			if ((isAntiStatic && edef->IsMobile())
+				|| ((edef->GetCategory() & canTargetCat) == 0)
 				|| ((edef->GetCategory() & noChaseCat) != 0)
 				|| (edef->IsAbleToFly() && notAA))
 			{

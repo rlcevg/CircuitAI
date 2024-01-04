@@ -57,22 +57,26 @@ public:
 	 * BOOST:     boost speed on retreat
 	 * NO_JUMP:   disable jump on retreat
 	 * NO_STRAFE: isable gunship's strafe
-	 * STOCK:     stockpile weapon before any task (Not implemented)
+	 * STOCK:     stockpile weapon before any task
 	 * SIEGE:     mobile units use Fight instead of Move; arty ignores siege buildings
 	 * RET_HOLD:  hold fire on retreat
 	 * RET_FIGHT: fight on retreat
 	 * JUMP:      enable jump on regular move
 	 * DG_COST:   DGun by metal cost instead of by threat
 	 * DG_STILL:  hold still after DGun activation
+	 * ANTI_STAT: only static targets
+	 * REARM:     use CMD_FIND_PAD when weapon is not ready
 	 */
 	enum class AttrType: RoleT {NONE = -1,
 		MELEE = 0, BOOST, NO_JUMP, NO_STRAFE,
 		STOCK, SIEGE, RET_HOLD, RET_FIGHT,
-		JUMP, DG_COST, DG_STILL, _SIZE_};
+		JUMP, DG_COST, DG_STILL, ANTI_STAT,
+		REARM, _SIZE_};
 	enum AttrMask: RoleM {
 		MELEE = 0x00000001, BOOST   = 0x00000002, NO_JUMP  = 0x00000004, NO_STRAFE = 0x00000008,
 		STOCK = 0x00000010, SIEGE   = 0x00000020, RET_HOLD = 0x00000040, RET_FIGHT = 0x00000080,
-		JUMP  = 0x00000100, DG_COST = 0x00000200, DG_STILL = 0x00000400};
+		JUMP  = 0x00000100, DG_COST = 0x00000200, DG_STILL = 0x00000400, ANTI_STAT = 0x00000800,
+		REARM = 0x00001000};
 	using AttrT = std::underlying_type<AttrType>::type;
 	using AttrM = std::underlying_type<AttrMask>::type;
 
@@ -145,6 +149,9 @@ public:
 	bool IsAttrRetFight() const { return attr & AttrMask::RET_FIGHT; }
 	bool IsAttrJump()     const { return attr & AttrMask::JUMP; }
 	bool IsAttrDGCost()   const { return attr & AttrMask::DG_COST; }
+	bool IsAttrDGStill()  const { return attr & AttrMask::DG_STILL; }
+	bool IsAttrAntiStat() const { return attr & AttrMask::ANTI_STAT; }
+	bool IsAttrRearm()    const { return attr & AttrMask::REARM; }
 
 	bool IsHoldFire()   const { return fireState == FireType::HOLD; }
 	bool IsReturnFire() const { return fireState == FireType::RETURN; }

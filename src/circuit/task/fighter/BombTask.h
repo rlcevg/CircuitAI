@@ -27,6 +27,8 @@ public:
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;
 
+	virtual void OnRearmStart(CCircuitUnit* unit) override;
+
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
 	springai::AIFloat3 FindTarget(CCircuitUnit* unit, CEnemyInfo* lastTarget, const springai::AIFloat3& pos);

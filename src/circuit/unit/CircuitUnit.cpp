@@ -146,8 +146,12 @@ void CCircuitUnit::ManualFire(CEnemyInfo* target, int timeout)
 				unit->DGun(target->GetUnit(), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, timeout);
 			}
 		} else {
-			CmdMoveTo(target->GetPos() + target->GetVel() * FRAMES_PER_SEC * 2, UNIT_COMMAND_OPTION_ALT_KEY, timeout);
-			CmdManualFire(UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+			if (circuitDef->IsPlane()) {
+				CmdAirManualFire(target->GetPos(), UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+			} else {
+				CmdMoveTo(target->GetPos() + target->GetVel() * FRAMES_PER_SEC * 2, UNIT_COMMAND_OPTION_ALT_KEY, timeout);
+				CmdManualFire(UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // Krow
+			}
 		}
 	)
 }
@@ -287,6 +291,11 @@ void CCircuitUnit::CmdFindPad(int timeout)
 void CCircuitUnit::CmdManualFire(short options, int timeout)
 {
 	unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, options, timeout);
+}
+
+void CCircuitUnit::CmdAirManualFire(const AIFloat3& pos, short options, int timeout)
+{
+	unit->ExecuteCustomCommand(CMD_AIR_MANUALFIRE, {pos.x, pos.y, pos.z}, options, timeout);
 }
 
 void CCircuitUnit::CmdPriority(float value)
