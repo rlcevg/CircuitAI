@@ -55,6 +55,7 @@
 		// "jump" - enable jump on regular move
 		// "dg_cost" - DGun by metal cost instead of by threat
 		// "anti_stat" - only static targets
+		// "no_dgun" - do not use DGun
 //		"attribute": ["boost", "no_strafe"],
 
 		// Fire state (open by default)
@@ -686,7 +687,7 @@
 	},
 	"bomberassault": {
 		"role": ["bomber", "air"],
-		"attribute": ["anti_stat"],
+		"attribute": ["anti_stat", "no_dgun"],
 		"fire_state": "hold",
 		"limit": 1,
 		"since": 1800,

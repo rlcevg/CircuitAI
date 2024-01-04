@@ -54,13 +54,13 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 		shields.insert(unit);
 	}
 
+	if (cdef->IsAttrRearm()) {
+		unit->PushBack(new CRearmAction(unit));
+	}
+
 	if (unit->HasDGun()) {
 		const float range = std::max(unit->GetDGunRange() * 1.1f, cdef->GetLosRadius());
 		unit->PushDGunAct(new CDGunAction(unit, range));
-	}
-
-	if (cdef->IsAttrRearm()) {
-		unit->PushBack(new CRearmAction(unit));
 	}
 }
 

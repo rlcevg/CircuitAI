@@ -45,38 +45,40 @@ CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitD
 		, isWeaponReady(true)
 		, isMorphing(false)
 		, isAllowedToJump(false)
+		, dgunDef(nullptr)
+		, dgun(nullptr)
 		, target(nullptr)
 		, targetTile(-1)
 {
 	WeaponMount* wpMnt;
-	if (cdef->IsRoleComm()) {
-		dgun = nullptr;
-		dgunDef = nullptr;
-		for (int num = 1; num < 3; ++num) {
-			std::string str = utils::int_to_string(num, "comm_weapon_manual_%i");
-			if (unit->GetRulesParamFloat(str.c_str(), -1) <= 0.f) {
-				continue;
+	if (!circuitDef->IsAttrNoDGun()) {
+		if (cdef->IsRoleComm()) {
+			for (int num = 1; num < 3; ++num) {
+				std::string str = utils::int_to_string(num, "comm_weapon_manual_%i");
+				if (unit->GetRulesParamFloat(str.c_str(), -1) <= 0.f) {
+					continue;
+				}
+				str = utils::int_to_string(num, "comm_weapon_num_%i");
+				int mntId = CWeaponDef::WeaponIdFromLua(int(unit->GetRulesParamFloat(str.c_str(), -1)));
+				if (mntId < 0) {
+					continue;
+				}
+				wpMnt = WrappWeaponMount::GetInstance(unit->GetSkirmishAIId(), cdef->GetId(), mntId);
+				if (wpMnt == nullptr) {
+					continue;
+				}
+				dgun = unit->GetWeapon(wpMnt);
+				WeaponDef* wd = dgun->GetDef();
+				dgunDef = circuit->GetWeaponDef(wd->GetWeaponDefId());
+				delete wd;
+				delete wpMnt;
+				break;
 			}
-			str = utils::int_to_string(num, "comm_weapon_num_%i");
-			int mntId = CWeaponDef::WeaponIdFromLua(int(unit->GetRulesParamFloat(str.c_str(), -1)));
-			if (mntId < 0) {
-				continue;
-			}
-			wpMnt = WrappWeaponMount::GetInstance(unit->GetSkirmishAIId(), cdef->GetId(), mntId);
-			if (wpMnt == nullptr) {
-				continue;
-			}
-			dgun = unit->GetWeapon(wpMnt);
-			WeaponDef* wd = dgun->GetDef();
-			dgunDef = circuit->GetWeaponDef(wd->GetWeaponDefId());
-			delete wd;
-			delete wpMnt;
-			break;
+		} else {
+			wpMnt = cdef->GetDGunMount();
+			dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
+			dgunDef = cdef->GetDGunDef();
 		}
-	} else {
-		wpMnt = cdef->GetDGunMount();
-		dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
-		dgunDef = cdef->GetDGunDef();
 	}
 	wpMnt = cdef->GetWeaponMount();
 	weapon = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
@@ -147,7 +149,7 @@ void CCircuitUnit::ManualFire(CEnemyInfo* target, int timeout)
 			}
 		} else {
 			if (circuitDef->IsPlane()) {
-				CmdAirManualFire(target->GetPos(), UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+				CmdAirManualFire(target->GetPos(), 0, timeout);
 			} else {
 				CmdMoveTo(target->GetPos() + target->GetVel() * FRAMES_PER_SEC * 2, UNIT_COMMAND_OPTION_ALT_KEY, timeout);
 				CmdManualFire(UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // Krow

@@ -43,6 +43,7 @@ CCircuitDef::AttrName CCircuitDef::attrNames = {
 	{"dg_still",  CCircuitDef::AttrType::DG_STILL},
 	{"anti_stat", CCircuitDef::AttrType::ANTI_STAT},
 	{"rearm",     CCircuitDef::AttrType::REARM},
+	{"no_dgun",   CCircuitDef::AttrType::NO_DGUN},
 };
 CCircuitDef::FireName CCircuitDef::fireNames = {
 	{"hold",   CCircuitDef::FireType::HOLD},
@@ -553,6 +554,15 @@ void CCircuitDef::AddRole(RoleT type, RoleT bindType)
 {
 	respRole |= GetMask(type);
 	role |= GetMask(bindType);
+}
+
+void CCircuitDef::RemDGun()
+{
+	dgunDef = nullptr;
+	delete dgunMount;
+	dgunMount = nullptr;
+	hasDGun = false;
+	hasDGunAA = false;
 }
 
 float CCircuitDef::GetRadius()

@@ -314,6 +314,9 @@ void CFactoryManager::ReadConfig()
 				roleDefs[it->second.type].insert(cdef->GetId());
 			}
 		}
+		if (cdef->IsAttrNoDGun()) {
+			cdef->RemDGun();
+		}
 
 		const Json::Value& fire = behaviour["fire_state"];
 		if (!fire.isNull()) {
