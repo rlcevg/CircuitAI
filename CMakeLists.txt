@@ -1,7 +1,7 @@
 ### Generic native Skirmish AI config
 #
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 set(mySourceDirRel         "src/") # Common values are "" or "src"
 set(additionalSources      ${CMAKE_SOURCE_DIR}/rts/System/StringUtil.cpp)

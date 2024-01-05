@@ -88,7 +88,11 @@ namespace lemon {
       Item it;
       for (nf->first(it); it != INVALID; nf->next(it)) {
         int id = nf->id(it);;
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+        std::allocator_traits<Allocator>::construct(allocator, &(values[id]), Value());
+#else
         allocator.construct(&(values[id]), Value());
+#endif
       }
     }
 
@@ -102,7 +106,11 @@ namespace lemon {
       Item it;
       for (nf->first(it); it != INVALID; nf->next(it)) {
         int id = nf->id(it);;
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+        std::allocator_traits<Allocator>::construct(allocator, &(values[id]), value);
+#else
         allocator.construct(&(values[id]), value);
+#endif
       }
     }
 
@@ -121,7 +129,11 @@ namespace lemon {
       Item it;
       for (nf->first(it); it != INVALID; nf->next(it)) {
         int id = nf->id(it);;
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+        std::allocator_traits<Allocator>::construct(allocator, &(values[id]), copy.values[id]);
+#else
         allocator.construct(&(values[id]), copy.values[id]);
+#endif
       }
     }
 
@@ -218,15 +230,24 @@ namespace lemon {
         for (nf->first(it); it != INVALID; nf->next(it)) {
           int jd = nf->id(it);;
           if (id != jd) {
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+            std::allocator_traits<Allocator>::construct(allocator, &(new_values[jd]), values[jd]);
+            std::allocator_traits<Allocator>::destroy(allocator, &(values[jd]));
+#else
             allocator.construct(&(new_values[jd]), values[jd]);
             allocator.destroy(&(values[jd]));
+#endif
           }
         }
         if (capacity != 0) allocator.deallocate(values, capacity);
         values = new_values;
         capacity = new_capacity;
       }
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+      std::allocator_traits<Allocator>::construct(allocator, &(values[id]), Value());
+#else
       allocator.construct(&(values[id]), Value());
+#endif
     }
 
     // \brief Adds more new keys to the map.
@@ -260,8 +281,13 @@ namespace lemon {
             }
           }
           if (found) continue;
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+          std::allocator_traits<Allocator>::construct(allocator, &(new_values[id]), values[id]);
+          std::allocator_traits<Allocator>::destroy(allocator, &(values[id]));
+#else
           allocator.construct(&(new_values[id]), values[id]);
           allocator.destroy(&(values[id]));
+#endif
         }
         if (capacity != 0) allocator.deallocate(values, capacity);
         values = new_values;
@@ -269,7 +295,11 @@ namespace lemon {
       }
       for (int i = 0; i < int(keys.size()); ++i) {
         int id = nf->id(keys[i]);
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+        std::allocator_traits<Allocator>::construct(allocator, &(values[id]), Value());
+#else
         allocator.construct(&(values[id]), Value());
+#endif
       }
     }
 
@@ -279,7 +309,11 @@ namespace lemon {
     // and it overrides the erase() member function of the observer base.
     virtual void erase(const Key& key) {
       int id = Parent::notifier()->id(key);
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+      std::allocator_traits<Allocator>::destroy(allocator, &(values[id]));
+#else
       allocator.destroy(&(values[id]));
+#endif
     }
 
     // \brief Erase more keys from the map.
@@ -289,7 +323,11 @@ namespace lemon {
     virtual void erase(const std::vector<Key>& keys) {
       for (int i = 0; i < int(keys.size()); ++i) {
         int id = Parent::notifier()->id(keys[i]);
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+        std::allocator_traits<Allocator>::destroy(allocator, &(values[id]));
+#else
         allocator.destroy(&(values[id]));
+#endif
       }
     }
 
@@ -303,7 +341,11 @@ namespace lemon {
       Item it;
       for (nf->first(it); it != INVALID; nf->next(it)) {
         int id = nf->id(it);;
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+        std::allocator_traits<Allocator>::construct(allocator, &(values[id]), Value());
+#else
         allocator.construct(&(values[id]), Value());
+#endif
       }
     }
 
@@ -317,7 +359,11 @@ namespace lemon {
         Item it;
         for (nf->first(it); it != INVALID; nf->next(it)) {
           int id = nf->id(it);
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+          std::allocator_traits<Allocator>::destroy(allocator, &(values[id]));
+#else
           allocator.destroy(&(values[id]));
+#endif
         }
         allocator.deallocate(values, capacity);
         capacity = 0;
