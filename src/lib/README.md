@@ -16,6 +16,7 @@ Fork with fixes https://github.com/soerendd/delaunator-cpp
 ### lemon
 * Graph library <br />
 Header-only fork (no threading) https://github.com/seqan/lemon
+with 0003-cpp20-compat-alloc.patch
 
 ### AngelScript
 * Statically-typed scripting language <br />

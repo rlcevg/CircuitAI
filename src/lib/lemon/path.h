@@ -634,7 +634,11 @@ namespace lemon {
     void clear() {
       while (first != 0) {
         last = first->next;
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+        std::allocator_traits<std::allocator<Node>>::destroy(alloc, first);
+#else
         alloc.destroy(first);
+#endif
         alloc.deallocate(first, 1);
         first = last;
       }
@@ -648,7 +652,11 @@ namespace lemon {
     /// \brief Add a new arc before the current path
     void addFront(const Arc& arc) {
       Node *node = alloc.allocate(1);
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+      std::allocator_traits<std::allocator<Node>>::construct(alloc, node, Node());
+#else
       alloc.construct(node, Node());
+#endif
       node->prev = 0;
       node->next = first;
       node->arc = arc;
@@ -669,7 +677,11 @@ namespace lemon {
       } else {
         last = 0;
       }
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+      std::allocator_traits<std::allocator<Node>>::destroy(alloc, node);
+#else
       alloc.destroy(node);
+#endif
       alloc.deallocate(node, 1);
     }
 
@@ -681,7 +693,11 @@ namespace lemon {
     /// \brief Add a new arc behind the current path.
     void addBack(const Arc& arc) {
       Node *node = alloc.allocate(1);
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+      std::allocator_traits<std::allocator<Node>>::construct(alloc, node, Node());
+#else
       alloc.construct(node, Node());
+#endif
       node->next = 0;
       node->prev = last;
       node->arc = arc;
@@ -702,7 +718,11 @@ namespace lemon {
       } else {
         first = 0;
       }
+#if ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+      std::allocator_traits<std::allocator<Node>>::destroy(alloc, node);
+#else
       alloc.destroy(node);
+#endif
       alloc.deallocate(node, 1);
     }
 

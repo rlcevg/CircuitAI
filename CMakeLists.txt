@@ -1,7 +1,7 @@
 ### Generic native Skirmish AI config
 #
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 set(mySourceDirRel         "src/") # Common values are "" or "src"
 set(additionalSources      ${CMAKE_SOURCE_DIR}/rts/System/StringUtil.cpp)
@@ -22,7 +22,7 @@ if    (CIRCUIT_DEBUG)
 	set(additionalCompileFlags "-DDEBUG_VIS -Wall")
 #	set(additionalCompileFlags "-DDEBUG_VIS -Wall -fsanitize=address -fno-omit-frame-pointer -fno-common -O1 -fno-strict-aliasing")
 else  (CIRCUIT_DEBUG)
-	set(additionalCompileFlags "-Wall")
+	set(additionalCompileFlags "-Wall -fno-omit-frame-pointer -O1")
 endif (CIRCUIT_DEBUG)
 
 #set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -lasan")
