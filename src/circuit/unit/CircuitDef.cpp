@@ -122,11 +122,11 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		, dgunMount(nullptr)
 		, shieldMount(nullptr)
 		, weaponMount(nullptr)
-		, pwrDmg(.0f)
-		, defDmg(.0f)
-		, airThrDmg(.0f)
-		, surfThrDmg(.0f)
-		, waterThrDmg(.0f)
+		, pwrDmg(.0f), pwrMod(1.f)
+		, defThrDmg(.0f), defThrMod(1.f)
+		, airThrDmg(.0f), airThrMod(1.f)
+		, surfThrDmg(.0f), surfThrMod(1.f)
+		, waterThrDmg(.0f), waterThrMod(1.f)
 		, aoe(.0f)
 		, power(.0f)
 		, defThreat(.0f)
@@ -595,8 +595,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	//       health /= def->GetArmoredMultiple();
 	const float dmg = std::max(std::max(waterDmg, surfDmg), airDmg);
 	const float dps = std::max(std::max(waterDps, surfDps), airDps);
-	defDmg = pwrDmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
-	defThreat = power = defDmg * sqrtf(health + maxShield * SHIELD_MOD);
+	defThrDmg = pwrDmg = sqrtf(dps) * std::pow(dmg, 0.25f) * THREAT_MOD;
+	defThreat = power = defThrDmg * sqrtf(health + maxShield * SHIELD_MOD);
 	airThrDmg = sqrtf(airDps) * std::pow(airDmg, 0.25f) * THREAT_MOD;
 	surfThrDmg = sqrtf(surfDps) * std::pow(surfDmg, 0.25f) * THREAT_MOD;
 	waterThrDmg = sqrtf(waterDps) * std::pow(waterDmg, 0.25f) * THREAT_MOD;
@@ -697,7 +697,7 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 
 #ifndef NDEBUG
 	assert(pwrDmg >= .0f);
-	assert(defDmg >= .0f);
+	assert(defThrDmg >= .0f);
 	assert(airThrDmg >= .0f);
 	assert(surfThrDmg >= .0f);
 	assert(waterThrDmg >= .0f);
@@ -717,6 +717,29 @@ void CCircuitDef::AddRole(RoleT type, RoleT bindType)
 {
 	respRole |= GetMask(type);
 	role |= GetMask(bindType);
+}
+
+void CCircuitDef::SetThreatKernel(float thrDmg)
+{
+	if (defThrDmg < DIV0_SLACK) {
+		airThrDmg = thrDmg * airThrMod;
+		surfThrDmg = thrDmg * surfThrMod;
+		waterThrDmg = thrDmg * waterThrMod;
+	} else {
+		const float orgDefThrDmg = defThrDmg / defThrMod;
+		airThrDmg = thrDmg * (airThrDmg / orgDefThrDmg);
+		surfThrDmg = thrDmg * (surfThrDmg / orgDefThrDmg);
+		waterThrDmg = thrDmg * (waterThrDmg / orgDefThrDmg);
+	}
+
+	const float healthMod = sqrtf(health + maxShield * SHIELD_MOD);
+	pwrDmg = thrDmg * pwrMod;
+	power = pwrDmg * healthMod;
+
+	defThrDmg = thrDmg * defThrMod;
+	defThreat = defThrDmg * healthMod;
+
+	// TODO: Asserts >= 0?
 }
 
 float CCircuitDef::GetRadius()

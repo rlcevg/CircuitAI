@@ -221,7 +221,7 @@ public:
 	springai::WeaponMount* GetShieldMount() const { return shieldMount; }
 	springai::WeaponMount* GetWeaponMount() const { return weaponMount; }
 	float GetPwrDamage() const { return pwrDmg; }  // ally
-	float GetDefDamage() const { return defDmg; }  // enemy, for influence
+	float GetDefDamage() const { return defThrDmg; }  // enemy, for influence
 	float GetAirDmg(RoleT type) const { return airThrDmg * thrDmgMod[type]; }  // enemy
 	float GetSurfDmg(RoleT type) const { return surfThrDmg * thrDmgMod[type]; }  // enemy
 	float GetWaterDmg(RoleT type) const { return waterThrDmg * thrDmgMod[type]; }  // enemy
@@ -241,12 +241,13 @@ public:
 	int GetTargetCategoryDGun() const { return targetCategoryDGun; }
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
-	void ModPower(float mod) { pwrDmg *= mod; power *= mod; }
-	void ModDefThreat(float mod) { defDmg *= mod; defThreat *= mod; }
+	void SetThreatKernel(float thrDmg);
+	void ModPower(float mod) { pwrMod = mod; pwrDmg *= mod; power *= mod; }
+	void ModDefThreat(float mod) { defThrMod = mod; defThrDmg *= mod; defThreat *= mod; }
 	void ModThreatMod(RoleT type, float mod) { thrDmgMod[type] *= mod; }
-	void ModAirThreat(float mod) { airThrDmg *= mod; }
-	void ModSurfThreat(float mod) { surfThrDmg *= mod; }
-	void ModWaterThreat(float mod) { waterThrDmg *= mod; }
+	void ModAirThreat(float mod) { airThrMod = mod; airThrDmg *= mod; }
+	void ModSurfThreat(float mod) { surfThrMod = mod; surfThrDmg *= mod; }
+	void ModWaterThreat(float mod) { waterThrMod = mod; waterThrDmg *= mod; }
 	void SetThreatRange(ThreatType type, int range) { threatRange[static_cast<ThreatT>(type)] = range; }
 	void SetFireState(FireType ft) { fireState = ft; }
 	void SetReloadTime(int time) { reloadTime = time; }
@@ -334,7 +335,7 @@ public:
 	float GetJumpRange()    const { return jumpRange; }
 
 	void SetRetreat(float value) { retreat = value; }
-	float GetRetreat()   const { return retreat; }
+	float GetRetreat() const { return retreat; }
 
 	float GetRadius();
 	float GetHeight();
@@ -383,11 +384,11 @@ private:
 	springai::WeaponMount* dgunMount;
 	springai::WeaponMount* shieldMount;
 	springai::WeaponMount* weaponMount;
-	float pwrDmg;  // ally damage
-	float defDmg;  // enemy damage, for influence
-	float airThrDmg;  // air enemy damage
-	float surfThrDmg;  // surface, even on water
-	float waterThrDmg;  // underwater enemy damage
+	float pwrDmg, pwrMod;  // ally damage
+	float defThrDmg, defThrMod;  // enemy damage, for influence
+	float airThrDmg, airThrMod;  // air enemy damage
+	float surfThrDmg, surfThrMod;  // surface, even on water
+	float waterThrDmg, waterThrMod;  // underwater enemy damage
 	ThrDmgArray thrDmgMod;  // mod by role
 	float aoe;  // radius
 	float power;  // ally max threat
