@@ -306,7 +306,8 @@ void CAntiAirTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if ((edef == nullptr)  // TODO: for edef == nullptr check elevation and speed
 			|| ((edef->GetCategory() & canTargetCat) == 0)
-			|| ((edef->GetCategory() & noChaseCat) != 0))
+			|| ((edef->GetCategory() & noChaseCat) != 0)
+			|| circuit->GetCircuitDef(edef->GetId())->IsIgnore())
 		{
 			continue;
 		}

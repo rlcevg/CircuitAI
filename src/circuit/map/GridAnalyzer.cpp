@@ -342,10 +342,8 @@ void IGrid::ToggleTAVis(int frame)
 	}
 	toggleFrame = frame;
 
-	std::string cmd("ai_thr_print:");
+	std::string cmd("ai_thr_draw:");
 	debugLua->CallRules(cmd.c_str(), cmd.size());
-//	std::string cmd("ai_thr_draw:");
-//	debugLua->CallRules(cmd.c_str(), cmd.size());
 	cmd = "ai_thr_size:16 0";
 	debugLua->CallRules(cmd.c_str(), cmd.size());
 
@@ -685,7 +683,6 @@ void CGridAnalyzer::ComputeAreas()
 {
 	std::vector<std::pair<TilePosition, CTile*>> tilesByDescendingAltitude = SortTiles();
 	std::vector<CTempAreaInfo> tempAreaList = ComputeTempAreas(tilesByDescendingAltitude);
-	ComputeCorridors(tempAreaList);
 	CreateAreas(tempAreaList);
 	grid->SetAreaIdInSectors(*this);
 }
@@ -793,66 +790,6 @@ std::vector<CTempAreaInfo> CGridAnalyzer::ComputeTempAreas(const std::vector<std
 		{ return f.areaId1 == f.areaId2; });
 
 	return tempAreaList;
-}
-
-void CGridAnalyzer::ComputeCorridors(std::vector<CTempAreaInfo>& tempAreas)
-{
-/*
-	for (CTempAreaInfo& tmpArea: tempAreas) {
-		tmpArea.Top() => adjacent area?
-	}
-	// vein test
-	bool isVein = (cur->GetAltitude() <= ALTITUDE_SCALE * 20);
-	if (isVein) {
-		for (TilePosition delta : {TilePosition(0, -1), TilePosition(-1, 0), TilePosition(+1, 0), TilePosition(0, +1)}) {
-			TilePosition neigh = pos + delta;
-			if (!IsValid(neigh)) {
-				continue;
-			}
-			CTile& tNeigh = GetTile(neigh);
-			if (tNeigh.IsSea()) {
-				continue;
-			}
-			if ((cur->GetAltitude() < tNeigh.GetAltitude()) && (tNeigh.GetAltitude() - cur->GetAltitude() > ALTITUDE_SCALE / 4)) {
-				isVein = false;
-				break;
-			}
-		}
-	}
-	if (isVein && !tempAreaList[neighboringAreas.first].IsCorridor()) {
-		std::array<TilePosition, 8> deltas = {
-			TilePosition(-2, -2), TilePosition( 0, -3), TilePosition(+2, -2),
-			TilePosition(-3,  0),                       TilePosition(+3,  0),
-			TilePosition(-2, +2), TilePosition( 0, +3), TilePosition(+2, +2)
-		};
-		CArea::Altitude maxAlt = -1;
-		for (int i = 0; i < 8; ++i) {
-			TilePosition test = pos + deltas[i];
-			if (!IsValid(test)) {
-				continue;
-			}
-			CTile& tTest = GetTile(test);
-			if (tTest.IsSea() || tTest.IsAreaIdMissing()) {
-				continue;
-			}
-			if (maxAlt < tTest.GetAltitude()) {
-				maxAlt = tTest.GetAltitude();
-			}
-		}
-		if (std::fabs(cur->GetAltitude() - maxAlt) < ALTITUDE_SCALE / 2) {  // isCorridor
-			CArea::Id areaId = tempAreaList.size();
-			tempAreaList.emplace_back(areaId, cur, pos, true);
-			rawFrontier.emplace_back(SFrontier{neighboringAreas.first, areaId, pos});
-
-std::string cmd("ai_mrk_add:");
-cmd += utils::int_to_string(pos.x * 16 + 8) + " " + utils::int_to_string(pos.y * 16 + 8) + " 16 0.2 0.2 0.9 9";
-gDebugLua->CallRules(cmd.c_str(), cmd.size());
-cmd = std::string("ai_mrk_add:") + utils::int_to_string(cur->GetSource().x * 16 + 8) + " " + utils::int_to_string(cur->GetSource().y * 16 + 8) + " 16 0.9 0.9 0.2 9";
-gDebugLua->CallRules(cmd.c_str(), cmd.size());
-			continue;
-		}
-	}
-*/
 }
 
 void CGridAnalyzer::ReplaceAreaIds(TilePosition p, CArea::Id newAreaId)

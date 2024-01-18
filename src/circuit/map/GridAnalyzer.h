@@ -383,7 +383,6 @@ private:
 	std::pair<CArea::Id, CArea::Id> FindNeighboringAreas(TilePosition p) const;
 	CArea::Id ChooseNeighboringArea(CArea::Id a, CArea::Id b);
 	std::vector<CTempAreaInfo> ComputeTempAreas(const std::vector<std::pair<TilePosition, CTile*>>& tilesByDescendingAltitude);
-	void ComputeCorridors(std::vector<CTempAreaInfo>& tempAreas);
 	void ReplaceAreaIds(TilePosition p, CArea::Id newAreaId);
 	void CreateAreas(const std::vector<CTempAreaInfo>& tempAreaList);
 

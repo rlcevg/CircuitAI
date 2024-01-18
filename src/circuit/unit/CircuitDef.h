@@ -242,12 +242,12 @@ public:
 	int GetNoChaseCategory() const { return noChaseCategory; }
 
 	void SetThreatKernel(float thrDmg);
-	void ModPower(float mod) { pwrMod = mod; pwrDmg *= mod; power *= mod; }
-	void ModDefThreat(float mod) { defThrMod = mod; defThrDmg *= mod; defThreat *= mod; }
+	void ModPower(float mod) { pwrMod *= mod; pwrDmg *= mod; power *= mod; }
+	void ModDefThreat(float mod) { defThrMod *= mod; defThrDmg *= mod; defThreat *= mod; }
 	void ModThreatMod(RoleT type, float mod) { thrDmgMod[type] *= mod; }
-	void ModAirThreat(float mod) { airThrMod = mod; airThrDmg *= mod; }
-	void ModSurfThreat(float mod) { surfThrMod = mod; surfThrDmg *= mod; }
-	void ModWaterThreat(float mod) { waterThrMod = mod; waterThrDmg *= mod; }
+	void ModAirThreat(float mod) { airThrMod *= mod; airThrDmg *= mod; }
+	void ModSurfThreat(float mod) { surfThrMod *= mod; surfThrDmg *= mod; }
+	void ModWaterThreat(float mod) { waterThrMod *= mod; waterThrDmg *= mod; }
 	void SetThreatRange(ThreatType type, int range) { threatRange[static_cast<ThreatT>(type)] = range; }
 	void SetFireState(FireType ft) { fireState = ft; }
 	void SetReloadTime(int time) { reloadTime = time; }

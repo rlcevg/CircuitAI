@@ -269,6 +269,7 @@ bool CDefendTask::FindTarget()
 		if (edef != nullptr) {
 			if (((edef->GetCategory() & canTargetCat) == 0)
 				|| ((edef->GetCategory() & noChaseCat) != 0)
+				|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()
 				|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 			{
 				continue;

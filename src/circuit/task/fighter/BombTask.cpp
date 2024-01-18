@@ -290,7 +290,9 @@ void CBombTask::FindTarget()
 //		float altitude;
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
-			if (edef->GetSpeed() > speed) {
+			if ((edef->GetSpeed() > speed)
+				|| circuit->GetCircuitDef(edef->GetId())->IsIgnore())
+			{
 				continue;
 			}
 			targetCat = edef->GetCategory();

@@ -210,11 +210,12 @@ void CMetalData::AnalyzeMap(CCircuitAI* circuit, CMap* map, Resource* res, bwem:
 	sectors.resize(sectorXSize * sectorZSize);
 	cfg.tileSize = int2(sectorXSize, sectorZSize);
 
-	bwem::CGridAnalyzer(this, cfg).Analyze(circuit);
+//	bwem::CGridAnalyzer(this, cfg).Analyze(circuit);
 
 	ShortVec().swap(metalMap);
 }
 
+// NOTE: unfinished region analyzer
 bool CMetalData::IsWalkable(int xSlope, int ySlope) const
 {
 	return metalMap[sectorXSize * ySlope + xSlope] > 0 && terrain->IsWalkable(xSlope, ySlope);

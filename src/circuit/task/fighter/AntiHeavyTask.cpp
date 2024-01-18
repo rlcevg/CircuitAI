@@ -314,6 +314,7 @@ bool CAntiHeavyTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if ((edef == nullptr) || !edef->IsEnemyRoleAny(CCircuitDef::RoleMask::HEAVY | CCircuitDef::RoleMask::COMM)
 			|| ((edef->GetCategory() & canTargetCat) == 0)
+			|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()
 			|| (edef->IsAbleToFly() && notAA)
 			|| (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
 		{

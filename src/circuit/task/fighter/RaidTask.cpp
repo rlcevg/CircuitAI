@@ -309,6 +309,7 @@ bool CRaidTask::FindTarget()
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0)
+				|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()
 				|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 			{
 				continue;
