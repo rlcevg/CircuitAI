@@ -96,12 +96,18 @@ void CArtilleryTask::Update()
 
 void CArtilleryTask::Execute(CCircuitUnit* unit)
 {
+	if (unit->Blocker() != nullptr) {
+		return;  // Do not interrupt current action
+	}
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
 	CEnemyInfo* bestTarget = FindTarget(unit, pos);
 
 	if (bestTarget != nullptr) {
+		unit->GetTravelAct()->StateWait();
+
 		TRY_UNIT(circuit, unit,
 			if (!circuit->IsCheating()) {
 				unit->GetUnit()->Attack(bestTarget->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
@@ -110,7 +116,6 @@ void CArtilleryTask::Execute(CCircuitUnit* unit)
 			}
 			unit->CmdSetTarget(bestTarget);
 		)
-		unit->GetTravelAct()->StateWait();
 		return;
 	}
 
@@ -159,7 +164,7 @@ CEnemyInfo* CArtilleryTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 
 	enemyPositions.clear();
 	threatMap->SetThreatType(unit);
-	bool isPosSafe = (threatMap->GetThreatAt(pos) <= THREAT_MIN);
+	bool isPosSafe = (threatMap->GetThreatAt(pos) <= THREAT_MIN) || cdef->IsPlane();
 
 	const CCircuitAI::EnemyInfos& enemies = circuit->GetEnemyInfos();
 	if (isPosSafe) {
@@ -332,10 +337,10 @@ void CArtilleryTask::Fallback(CCircuitUnit* unit, bool proceed)
 	float z = rand() % terrainMgr->GetTerrainHeight();
 	position = AIFloat3(x, circuit->GetMap()->GetElevationAt(x, z), z);
 	position = terrainMgr->GetMovePosition(unit->GetArea(), position);
+	unit->GetTravelAct()->StateWait();
 	TRY_UNIT(circuit, unit,
 		unit->CmdFightTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 	)
-	unit->GetTravelAct()->StateWait();
 }
 
 } // namespace circuit

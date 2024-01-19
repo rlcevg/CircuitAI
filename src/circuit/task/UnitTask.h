@@ -65,6 +65,7 @@ public:
 	void OnUnitMoveFailed(CCircuitUnit* unit);
 
 	virtual void OnTravelEnd(CCircuitUnit* unit);
+	virtual void OnRearmStart(CCircuitUnit* unit);
 
 	const std::set<CCircuitUnit*>& GetAssignees() const { return units; }
 	Priority GetPriority() const { return priority; }

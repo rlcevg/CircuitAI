@@ -69,6 +69,10 @@ void CSupportTask::Update()
 	}
 
 	CCircuitUnit* unit = *units.begin();
+	if (unit->Blocker() != nullptr) {
+		return;  // Do not interrupt current action
+	}
+
 	const std::set<IFighterTask*>& tasksA = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::ATTACK);
 	const std::set<IFighterTask*>& tasksD = static_cast<CMilitaryManager*>(manager)->GetTasks(IFighterTask::FightType::DEFEND);
 	const std::set<IFighterTask*>& tasks = tasksA.empty() ? tasksD : tasksA;
@@ -95,7 +99,7 @@ void CSupportTask::Update()
 		if (((unit->GetCircuitDef()->IsAmphibious() || unit->GetCircuitDef()->IsSurfer())
 				&& (leader->GetCircuitDef()->IsAbleToDive() || leader->GetCircuitDef()->IsSurfer()))
 			|| (leader->GetCircuitDef()->IsSubmarine() && unit->GetCircuitDef()->IsSubmarine())
-			|| (leader->GetCircuitDef()->IsAbleToFly() && unit->GetCircuitDef()->IsAbleToFly())
+			|| (/*leader->GetCircuitDef()->IsAbleToFly() && */unit->GetCircuitDef()->IsAbleToFly())
 			|| (leader->GetCircuitDef()->IsLander() && unit->GetCircuitDef()->IsLander())
 			|| (leader->GetCircuitDef()->IsFloater() && unit->GetCircuitDef()->IsFloater()))
 		{

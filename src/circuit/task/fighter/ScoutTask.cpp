@@ -105,8 +105,17 @@ void CScoutTask::OnUnitIdle(CCircuitUnit* unit)
 	}
 }
 
+void CScoutTask::OnRearmStart(CCircuitUnit* unit)
+{
+	SetTarget(nullptr);
+}
+
 void CScoutTask::Execute(CCircuitUnit* unit, bool isUpdating)
 {
+	if (unit->Blocker() != nullptr) {
+		return;  // Do not interrupt current action
+	}
+
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	const AIFloat3& pos = unit->GetPos(frame);
@@ -152,6 +161,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	SArea* area = unit->GetArea();
 	CCircuitDef* cdef = unit->GetCircuitDef();
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const float speed = SQUARE(cdef->GetSpeed() * 0.8f / FRAMES_PER_SEC);
 	const float maxPower = threatMap->GetUnitPower(unit) * powerMod;
 	const float weaponRange = cdef->GetMaxRange() * 0.9f;
@@ -192,6 +202,7 @@ bool CScoutTask::FindTarget(CCircuitUnit* unit, const AIFloat3& pos)
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0)
+				|| (isAntiStatic && edef->IsMobile())
 				|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()
 				|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 			{
@@ -322,10 +333,10 @@ void CScoutTask::ApplyScoutPath(const CQueryPathSingle* query)
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
+	unit->GetTravelAct()->StateWait();
 	TRY_UNIT(circuit, unit,
 		unit->CmdMoveTo(position, UNIT_CMD_OPTION, frame + FRAMES_PER_SEC * 60);
 	)
-	unit->GetTravelAct()->StateWait();
 }
 
 } // namespace circuit

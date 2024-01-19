@@ -92,6 +92,9 @@ void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker, CMas
 		{"vampire",   {ATTR_TYPE(VAMPIRE),   CCircuitDef::AttrMask::VAMPIRE}},
 		{"rare",      {ATTR_TYPE(RARE),      CCircuitDef::AttrMask::RARE}},
 		{"fence",     {ATTR_TYPE(FENCE),     CCircuitDef::AttrMask::FENCE}},
+		{"rearm",     {ATTR_TYPE(REARM),     CCircuitDef::AttrMask::REARM}},
+		{"no_dgun",   {ATTR_TYPE(NO_DGUN),   CCircuitDef::AttrMask::NO_DGUN}},
+		{"anti_stat", {ATTR_TYPE(ANTI_STAT), CCircuitDef::AttrMask::ANTI_STAT}},
 	};
 	for (auto& kv : attrs) {
 		CMaskHandler::TypeMask tm = attrMasker->GetTypeMask(kv.first);
@@ -249,7 +252,7 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 	}
 
 //	if (customParams.find("boost_speed_mult") != customParams.end()) {
-//		AddAttribute(AttrType::BOOST);
+//		AddAttribute(ATTR_TYPE(BOOST));
 //	}
 
 	bool isDynamic = false;
@@ -384,6 +387,10 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			}
 		}
 
+//		if (customParams.find("reammoseconds") != customParams.end()) {
+//			AddAttribute(ATTR_TYPE(REARM));
+//		}
+
 		float reloadTime = wd->GetReload();  // seconds
 		if (minReloadTime > reloadTime) {
 			minReloadTime = reloadTime;
@@ -400,7 +407,8 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 
 		std::string wt(wd->GetType());  // @see https://springrts.com/wiki/Gamedev:WeaponDefs
 		const float projectileSpeed = wd->GetProjectileSpeed();
-		const float range = wd->GetRange();
+//		it = customParams.find("truerange");
+		const float range = /*(it != customParams.end()) ? utils::string_to_float(it->second) : */wd->GetRange();
 
 		isAlwaysHit |= ((wt == "Cannon") || (wt == "DGun") || (wt == "EmgCannon") || (wt == "Flame") ||
 				(wt == "LaserCannon") || (wt == "AircraftBomb")) && (projectileSpeed * FRAMES_PER_SEC >= .8f * range);  // Cannons with fast projectiles
@@ -717,6 +725,21 @@ void CCircuitDef::AddRole(RoleT type, RoleT bindType)
 {
 	respRole |= GetMask(type);
 	role |= GetMask(bindType);
+}
+
+void CCircuitDef::RemDGun()
+{
+	dgunDef = nullptr;
+	delete dgunMount;
+	dgunMount = nullptr;
+	hasDGun = false;
+	hasSurfToAirDGun = false;
+	hasSurfToLandDGun = false;
+	hasSurfToWaterDGun = false;
+	hasSubToAirDGun = false;
+	hasSubToLandDGun = false;
+	hasSubToWaterDGun = false;
+	targetCategoryDGun = 0;
 }
 
 void CCircuitDef::SetThreatKernel(float thrDmg)

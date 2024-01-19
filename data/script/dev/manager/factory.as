@@ -68,9 +68,8 @@ void AiUnitAdded(CCircuitUnit@ unit, Unit::UseAs usage)
 		// while threatmap still counts "ignored" here units.
 // 		AiLog("ignore newly created armpw, corak, armflea, armfav, corfav");
 		array<string> spam = {"armpw", "corak", "armflea", "armfav", "corfav"};
-		for (uint i = 0; i < spam.length(); ++i) {
+		for (uint i = 0; i < spam.length(); ++i)
 			ai.GetCircuitDef(spam[i]).SetIgnore(true);
-		}
 	}
 
 	const array<Opener::SO>@ opener = Opener::GetOpener(facDef);

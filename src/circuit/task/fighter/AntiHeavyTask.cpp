@@ -150,10 +150,10 @@ void CAntiHeavyTask::Update()
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
+				unit->GetTravelAct()->StateWait();
 				TRY_UNIT(circuit, unit,
 					unit->CmdFightTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
-				unit->GetTravelAct()->StateWait();
 			}
 		}
 		return;
@@ -197,6 +197,9 @@ void CAntiHeavyTask::Update()
 		float power = 0.f;
 		CEnemyInfo* target = GetTarget();
 		auto subattack = [&power, target](CCircuitUnit* unit) {
+			if (unit->Blocker() != nullptr) {
+				return false;
+			}
 			if (unit->GetDGunAct() != nullptr) {
 				unit->GetDGunAct()->StateActivate();
 			}
@@ -287,6 +290,7 @@ bool CAntiHeavyTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	SArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const bool notAA = !cdef->HasSurfToAir();
 	const int canTargetCat = cdef->GetTargetCategory();
 	const float maxPower = attackPower * powerMod;
@@ -314,8 +318,9 @@ bool CAntiHeavyTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if ((edef == nullptr) || !edef->IsEnemyRoleAny(CCircuitDef::RoleMask::HEAVY | CCircuitDef::RoleMask::COMM)
 			|| ((edef->GetCategory() & canTargetCat) == 0)
-			|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()
 			|| (edef->IsAbleToFly() && notAA)
+			|| (isAntiStatic && edef->IsMobile())
+			|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()
 			|| (ePos.y - map->GetElevationAt(ePos.x, ePos.z) > weaponRange))
 		{
 			continue;
@@ -483,18 +488,18 @@ void CAntiHeavyTask::FallbackCommPos()
 		circuit->GetTerrainManager()->CanMoveToPos(leader->GetArea(), commander->GetPos(frame)))
 	{
 		for (CCircuitUnit* unit : units) {
-			unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 			unit->GetTravelAct()->StateWait();
+			unit->Guard(commander, frame + FRAMES_PER_SEC * 60);
 		}
 		return;
 	}
 
 	position = circuit->GetSetupManager()->GetBasePos();
 	for (CCircuitUnit* unit : units) {
+		unit->GetTravelAct()->StateWait();
 		TRY_UNIT(circuit, unit,
 			unit->CmdFightTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
-		unit->GetTravelAct()->StateWait();
 	}
 }
 

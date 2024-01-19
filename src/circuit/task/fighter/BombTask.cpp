@@ -88,16 +88,6 @@ void CBombTask::Start(CCircuitUnit* unit)
 
 void CBombTask::Update()
 {
-	// FIXME: Create CReloadTask
-//	if (!unit->IsWeaponReady(frame)) {  // reload empty unit
-//		if (updCount % 32 == 0) {
-//			TRY_UNIT(circuit, unit,
-//				unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
-//			)
-//		}
-//		SetTarget(nullptr);
-//		return;
-//	}
 	++updCount;
 
 	/*
@@ -143,10 +133,10 @@ void CBombTask::Update()
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
+				unit->GetTravelAct()->StateWait();
 				TRY_UNIT(circuit, unit,
 					unit->CmdFightTo(groupPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame);
 				)
-				unit->GetTravelAct()->StateWait();
 			}
 		}
 		return;
@@ -242,6 +232,7 @@ void CBombTask::FindTarget()
 	CCircuitAI* circuit = manager->GetCircuit();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CCircuitDef* cdef = leader->GetCircuitDef();
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const bool notAW = !cdef->HasSurfToWater();
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	const float scale = (cdef->GetMinRange() > 300.0f) ? 4.0f : 1.0f;
@@ -291,6 +282,7 @@ void CBombTask::FindTarget()
 		CCircuitDef* edef = enemy->GetCircuitDef();
 		if (edef != nullptr) {
 			if ((edef->GetSpeed() > speed)
+				|| (isAntiStatic && edef->IsMobile())
 				|| circuit->GetCircuitDef(edef->GetId())->IsIgnore())
 			{
 				continue;
@@ -396,11 +388,11 @@ void CBombTask::Fallback()
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	for (CCircuitUnit* unit : units) {
+		unit->GetTravelAct()->StateWait();
 		TRY_UNIT(circuit, unit,
 			unit->CmdFightTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			unit->CmdWantedSpeed(lowestSpeed);
 		)
-		unit->GetTravelAct()->StateWait();
 	}
 }
 

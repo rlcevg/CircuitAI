@@ -61,6 +61,11 @@ void CSuperTask::Update()
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	CCircuitUnit* unit = *units.begin();
+
+	if (unit->Blocker() != nullptr) {
+		return;  // Do not interrupt current action
+	}
+
 	CCircuitDef* cdef = unit->GetCircuitDef();
 	if (cdef->IsHoldFire()) {
 		if (targetFrame + (cdef->GetReloadTime() + TARGET_DELAY) > frame) {

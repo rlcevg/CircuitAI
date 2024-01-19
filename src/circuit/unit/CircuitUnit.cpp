@@ -50,6 +50,8 @@ CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitD
 		, isMorphing(false)
 		, isSelfD(false)
 		, isAllowedToJump(false)
+		, dgunDef(nullptr)
+		, dgun(nullptr)
 		, target(nullptr)
 		, targetTile(-1)
 		, attr(cdef->GetAttributes())
@@ -57,35 +59,35 @@ CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitD
 	command = springai::WrappCurrentCommand::GetInstance(unit->GetSkirmishAIId(), id, 0);
 
 	WeaponMount* wpMnt;
-//	if (cdef->IsRoleComm()) {
-//		dgun = nullptr;
-//		dgunDef = nullptr;
-//		for (int num = 1; num < 3; ++num) {
-//			std::string str = utils::int_to_string(num, "comm_weapon_manual_%i");
-//			if (unit->GetRulesParamFloat(str.c_str(), -1) <= 0.f) {
-//				continue;
+	if (!circuitDef->IsAttrNoDGun()) {
+//		if (cdef->IsRoleComm()) {
+//			for (int num = 1; num < 3; ++num) {
+//				std::string str = utils::int_to_string(num, "comm_weapon_manual_%i");
+//				if (unit->GetRulesParamFloat(str.c_str(), -1) <= 0.f) {
+//					continue;
+//				}
+//				str = utils::int_to_string(num, "comm_weapon_num_%i");
+//				int mntId = CWeaponDef::WeaponIdFromLua(int(unit->GetRulesParamFloat(str.c_str(), -1)));
+//				if (mntId < 0) {
+//					continue;
+//				}
+//				wpMnt = WrappWeaponMount::GetInstance(unit->GetSkirmishAIId(), cdef->GetId(), mntId);
+//				if (wpMnt == nullptr) {
+//					continue;
+//				}
+//				dgun = unit->GetWeapon(wpMnt);
+//				WeaponDef* wd = dgun->GetDef();
+//				dgunDef = circuit->GetWeaponDef(wd->GetWeaponDefId());
+//				delete wd;
+//				delete wpMnt;
+//				break;
 //			}
-//			str = utils::int_to_string(num, "comm_weapon_num_%i");
-//			int mntId = CWeaponDef::WeaponIdFromLua(int(unit->GetRulesParamFloat(str.c_str(), -1)));
-//			if (mntId < 0) {
-//				continue;
-//			}
-//			wpMnt = WrappWeaponMount::GetInstance(unit->GetSkirmishAIId(), cdef->GetId(), mntId);
-//			if (wpMnt == nullptr) {
-//				continue;
-//			}
-//			dgun = unit->GetWeapon(wpMnt);
-//			WeaponDef* wd = dgun->GetDef();
-//			dgunDef = circuit->GetWeaponDef(wd->GetWeaponDefId());
-//			delete wd;
-//			delete wpMnt;
-//			break;
+//		} else {
+			wpMnt = cdef->GetDGunMount();
+			dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
+			dgunDef = cdef->GetDGunDef();
 //		}
-//	} else {
-		wpMnt = cdef->GetDGunMount();
-		dgun = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
-		dgunDef = cdef->GetDGunDef();
-//	}
+	}
 	wpMnt = cdef->GetWeaponMount();
 	weapon = (wpMnt == nullptr) ? nullptr : unit->GetWeapon(wpMnt);
 	wpMnt = cdef->GetShieldMount();
@@ -164,10 +166,14 @@ void CCircuitUnit::ManualFire(CEnemyInfo* target, int timeout)
 				unit->DGun(target->GetUnit(), UNIT_COMMAND_OPTION_ALT_KEY | UNIT_COMMAND_OPTION_CONTROL_KEY, timeout);
 			}
 		} else {
-			AIFloat3 leadPos = target->GetPos() + target->GetVel() * FRAMES_PER_SEC * 2;
-			CTerrainManager::CorrectPosition(leadPos);
-			CmdMoveTo(leadPos, UNIT_COMMAND_OPTION_ALT_KEY, timeout);
-			CmdManualFire(UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);
+			if (circuitDef->IsPlane()) {
+				CmdAirManualFire(target->GetPos(), 0, timeout);
+			} else {
+				AIFloat3 leadPos = target->GetPos() + target->GetVel() * FRAMES_PER_SEC * 2;
+				CTerrainManager::CorrectPosition(leadPos);
+				CmdMoveTo(leadPos, UNIT_COMMAND_OPTION_ALT_KEY, timeout);
+				CmdManualFire(UNIT_COMMAND_OPTION_SHIFT_KEY, timeout);  // Krow
+			}
 		}
 	)
 }
@@ -346,6 +352,11 @@ void CCircuitUnit::CmdFindPad(int timeout)
 void CCircuitUnit::CmdManualFire(short options, int timeout)
 {
 //	unit->ExecuteCustomCommand(CMD_ONECLICK_WEAPON, {}, options, timeout);
+}
+
+void CCircuitUnit::CmdAirManualFire(const AIFloat3& pos, short options, int timeout)
+{
+//	unit->ExecuteCustomCommand(CMD_AIR_MANUALFIRE, {pos.x, pos.y, pos.z}, options, timeout);
 }
 
 void CCircuitUnit::CmdPriority(float value)

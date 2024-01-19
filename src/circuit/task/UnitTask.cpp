@@ -128,6 +128,10 @@ void IUnitTask::OnTravelEnd(CCircuitUnit* unit)
 {
 }
 
+void IUnitTask::OnRearmStart(CCircuitUnit* unit)
+{
+}
+
 void IUnitTask::Dead()
 {
 	isDead = true;

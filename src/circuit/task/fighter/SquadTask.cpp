@@ -399,10 +399,10 @@ void ISquadTask::Attack(const int frame, const bool isGround)
 	if (leader->GetCircuitDef()->IsPlane() || (std::fabs(dir.y) > leader->GetCircuitDef()->GetMaxRange() * 0.5f)) {
 		if (isRepeatAttack) {
 			for (CCircuitUnit* unit : units) {
-				unit->GetTravelAct()->StateWait();
 				if (unit->Blocker() != nullptr) {
 					continue;  // Do not interrupt current action
 				}
+				unit->GetTravelAct()->StateWait();
 
 				unit->Attack(GetTarget(), isGround, frame + FRAMES_PER_SEC * 60);
 			}
@@ -448,10 +448,10 @@ void ISquadTask::Attack(const int frame, const bool isGround)
 
 		int iterNum = 0;
 		for (CCircuitUnit* unit : kv.second) {
-			unit->GetTravelAct()->StateWait();
 			if (unit->Blocker() != nullptr) {
 				continue;  // Do not interrupt current action
 			}
+			unit->GetTravelAct()->StateWait();
 
 			if (isRepeatAttack
 				|| (unit->GetTarget() != GetTarget())

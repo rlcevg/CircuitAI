@@ -53,7 +53,7 @@
 		// "boost" - boost speed on retreat
 		// "no_jump" - disable jump on retreat
 		// "no_strafe" - disable gunship's strafe
-		// "stockpile" - load weapon before any task (NOT IMPLEMENTED), auto-assigned
+		// "stockpile" - load weapon before any task, auto-assigned
 		// "siege" - mostly use fight command instead of move
 		// "ret_hold" - hold fire on retreat
 		// "ret_fight" - fight on retreat
@@ -63,6 +63,9 @@
 		// "onoff" - auto-assigned when "on" tag is present
 		// "vampire" - reclaim enemy units without threat check
 		// "rare" - build unit from T1 factory even when T2+ factory is available
+		// "rearm" - use CMD_FIND_PAD when weapon is not ready
+		// "no_dgun" - do not use DGun
+		// "anti_stat" - only static targets
 //		"attribute": ["boost", "no_strafe"],
 
 		// Fire state (open by default)

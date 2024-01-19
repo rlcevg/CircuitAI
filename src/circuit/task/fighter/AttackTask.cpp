@@ -142,8 +142,8 @@ void CAttackTask::Update()
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
-				unit->Gather(groupPos, frame);
 				unit->GetTravelAct()->StateWait();
+				unit->Gather(groupPos, frame);
 			}
 		}
 		return;
@@ -247,6 +247,7 @@ void CAttackTask::FindTarget()
 	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	SArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const float maxSpeed = SQUARE(highestSpeed * 1.01f / FRAMES_PER_SEC);
 	const float maxPower = attackPower * powerMod;
 	const float weaponRange = cdef->GetMaxRange() * 0.9f;
@@ -291,6 +292,7 @@ void CAttackTask::FindTarget()
 			if (edef != nullptr) {
 				if (((edef->GetCategory() & canTargetCat) == 0)
 					|| ((edef->GetCategory() & noChaseCat) != 0)
+					|| (isAntiStatic && edef->IsMobile())
 					|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()
 					|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 				{
@@ -418,11 +420,11 @@ void CAttackTask::Fallback()
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	for (CCircuitUnit* unit : units) {
+		unit->GetTravelAct()->StateWait();
 		TRY_UNIT(circuit, unit,
 			unit->CmdFightTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 			unit->CmdWantedSpeed(lowestSpeed);
 		)
-		unit->GetTravelAct()->StateWait();
 	}
 }
 

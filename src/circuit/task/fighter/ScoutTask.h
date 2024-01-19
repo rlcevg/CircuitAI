@@ -27,6 +27,8 @@ public:
 
 	virtual void OnUnitIdle(CCircuitUnit* unit) override;
 
+	virtual void OnRearmStart(CCircuitUnit* unit) override;
+
 private:
 	void Execute(CCircuitUnit* unit, bool isUpdating);
 	bool FindTarget(CCircuitUnit* unit, const springai::AIFloat3& pos);

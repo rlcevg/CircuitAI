@@ -12,6 +12,7 @@
 #include "module/BuilderManager.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
+#include "unit/action/RearmAction.h"
 #include "unit/action/DGunAction.h"
 #include "unit/action/TravelAction.h"
 #include "unit/enemy/EnemyUnit.h"
@@ -51,6 +52,10 @@ void IFighterTask::AssignTo(CCircuitUnit* unit)
 	attackPower += cdef->GetPower();
 	if (unit->HasShield()) {
 		shields.insert(unit);
+	}
+
+	if (cdef->IsAttrRearm()) {
+		unit->PushBack(new CRearmAction(unit));
 	}
 
 	if (unit->HasDGun()) {
@@ -166,10 +171,10 @@ void IFighterTask::Attack(CCircuitUnit* unit, const int frame)
 {
 	assert((unit->GetTravelAct() != nullptr) && (GetTarget() != nullptr));
 
-	unit->GetTravelAct()->StateWait();
 	if (unit->Blocker() != nullptr) {
 		return;  // Do not interrupt current action
 	}
+	unit->GetTravelAct()->StateWait();
 
 	CCircuitAI* circuit = manager->GetCircuit();
 	const AIFloat3& tPos = GetTarget()->GetPos();

@@ -59,7 +59,8 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 		unit->GetUnit()->SetFireState(cdef->IsAttrRetHold() ? CCircuitDef::FireType::HOLD : CCircuitDef::FireType::OPEN);
 	)
 	if (cdef->IsAttrBoost()) {
-		int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
+		unit->SetTaskFrame(circuit->GetLastFrame());  // avoid UnitIdle on find_pad
+		const int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 		TRY_UNIT(circuit, unit,
 			if (cdef->IsPlane()) {
 				unit->CmdFindPad(frame);
@@ -214,6 +215,7 @@ void CRetreatTask::OnUnitIdle(CCircuitUnit* unit)
 			unit->GetTravelAct()->StateFinish();
 		}
 
+		unit->SetTaskFrame(frame);  // avoid UnitIdle on find_pad
 		TRY_UNIT(circuit, unit,
 			unit->CmdFindPad(frame + FRAMES_PER_SEC * 60);
 		)

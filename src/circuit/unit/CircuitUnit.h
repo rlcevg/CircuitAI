@@ -48,6 +48,7 @@ namespace circuit {
 #define CMD_WANT_CLOAK				37382
 #define CMD_DONT_FIRE_AT_RADAR		38372
 #define CMD_JUMP					38521
+#define CMD_AIR_MANUALFIRE			38571
 #define CMD_WANTED_SPEED			38825
 #define CMD_AIR_STRAFE				39381
 #define CMD_TERRAFORM_INTERNAL		39801
@@ -138,6 +139,7 @@ public:
 	void CmdFireAtRadar(bool state);
 	void CmdFindPad(int timeout = INT_MAX);
 	void CmdManualFire(short options = 0, int timeout = INT_MAX);
+	void CmdAirManualFire(const springai::AIFloat3& pos, short options = 0, int timeout = INT_MAX);
 	void CmdPriority(float value);
 	void CmdMiscPriority(float value);
 	void CmdAirStrafe(float value);

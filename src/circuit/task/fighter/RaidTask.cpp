@@ -126,8 +126,8 @@ void CRaidTask::Update()
 			CCircuitAI* circuit = manager->GetCircuit();
 			int frame = circuit->GetLastFrame() + FRAMES_PER_SEC * 60;
 			for (CCircuitUnit* unit : units) {
-				unit->Gather(groupPos, frame);
 				unit->GetTravelAct()->StateWait();
+				unit->Gather(groupPos, frame);
 			}
 		}
 		return;
@@ -162,19 +162,27 @@ void CRaidTask::Update()
 		if (leader->GetCircuitDef()->IsAbleToFly()) {
 			if (GetTarget()->GetUnit()->IsCloaked()) {
 				for (CCircuitUnit* unit : units) {
+					if (unit->Blocker() != nullptr) {
+						continue;  // Do not interrupt current action
+					}
+					unit->GetTravelAct()->StateWait();
+
 					const AIFloat3& pos = GetTarget()->GetPos();
 					TRY_UNIT(circuit, unit,
 						unit->CmdAttackGround(pos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 					)
-					unit->GetTravelAct()->StateWait();
 				}
 			} else {
 				for (CCircuitUnit* unit : units) {
+					if (unit->Blocker() != nullptr) {
+						continue;  // Do not interrupt current action
+					}
+					unit->GetTravelAct()->StateWait();
+
 					TRY_UNIT(circuit, unit,
 						unit->GetUnit()->Attack(GetTarget()->GetUnit(), UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 						unit->CmdSetTarget(GetTarget());
 					)
-					unit->GetTravelAct()->StateWait();
 				}
 			}
 		} else {
@@ -244,9 +252,10 @@ bool CRaidTask::FindTarget()
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CThreatMap* threatMap = circuit->GetThreatMap();
 	CInfluenceMap* inflMap = circuit->GetInflMap();
+	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
 	SArea* area = leader->GetArea();
 	CCircuitDef* cdef = leader->GetCircuitDef();
-	const AIFloat3& pos = leader->GetPos(circuit->GetLastFrame());
+	const bool isAntiStatic = cdef->IsAttrAntiStat();
 	const bool hadTarget = GetTarget() != nullptr;
 	const float maxSpeed = SQUARE(highestSpeed * 0.8f / FRAMES_PER_SEC);
 	const float maxPower = attackPower * powerMod * (hadTarget ? 1.f / 0.75f : 1.f);
@@ -309,6 +318,7 @@ bool CRaidTask::FindTarget()
 		if (edef != nullptr) {
 			targetCat = edef->GetCategory();
 			if (((targetCat & canTargetCat) == 0)
+				|| (isAntiStatic && edef->IsMobile())
 				|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()
 				|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 			{
@@ -436,10 +446,10 @@ void CRaidTask::ApplyRaidPath(const CQueryPathSingle* query)
 	CCircuitAI* circuit = manager->GetCircuit();
 	const int frame = circuit->GetLastFrame();
 	for (CCircuitUnit* unit : units) {
+		unit->GetTravelAct()->StateWait();
 		TRY_UNIT(circuit, unit,
 			unit->CmdFightTo(position, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, frame + FRAMES_PER_SEC * 60);
 		)
-		unit->GetTravelAct()->StateWait();
 	}
 }
 
