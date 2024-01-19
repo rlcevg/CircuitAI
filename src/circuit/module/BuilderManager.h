@@ -246,9 +246,8 @@ public:
 private:
 	void ReadConfig();
 	void Init();
-public:
-	void Release();
 
+public:
 	virtual int UnitCreated(CCircuitUnit* unit, CCircuitUnit* builder) override;
 	virtual int UnitFinished(CCircuitUnit* unit) override;
 	virtual int UnitIdle(CCircuitUnit* unit) override;
