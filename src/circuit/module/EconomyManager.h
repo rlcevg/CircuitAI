@@ -107,7 +107,7 @@ public:
 	int GetBuildDelay() const { return buildDelay; }
 
 	bool IsAllyOpenMexSpot(int spotId) const;
-	bool IsOpenMexSpot(int spotId) const { return mexSpots[spotId].isOpen && (mexCount < mexMax); }
+	bool IsOpenMexSpot(int spotId) const;
 	void SetOpenMexSpot(int spotId, bool value);
 	bool IsUpgradingMexSpot(int spotId) const { return mexSpots[spotId].isUp; }
 	void SetUpgradingMexSpot(int spotId, bool value) { mexSpots[spotId].isUp = value; }
@@ -240,6 +240,7 @@ private:
 	float metalUsed;
 	float metalMod;
 	int mexMax;
+	bool isAllyMexMax;
 	unsigned numMexUp;
 
 	struct SPullMtoS {

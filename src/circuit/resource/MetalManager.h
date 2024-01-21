@@ -70,6 +70,7 @@ public:
 	bool IsOpenSpot(const springai::AIFloat3& pos) const;
 	void MarkAllyMexes();
 	void MarkAllyMexes(const std::vector<CAllyUnit*>& mexes);
+	int GetMexCount() const { return markedMexes.size(); }
 	bool IsClusterFinished(int index) const {
 		return clusterInfos[index].finishedCount >= GetClusters()[index].idxSpots.size();
 	}
