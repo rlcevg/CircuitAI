@@ -79,7 +79,7 @@ public:
 	int GetBuildDelay() const { return buildDelay; }
 
 	bool IsAllyOpenSpot(int spotId) const;
-	bool IsOpenSpot(int spotId) const { return openSpots[spotId] && (mexCount < mexMax); }
+	bool IsOpenSpot(int spotId) const;
 	void SetOpenSpot(int spotId, bool value);
 	bool IsIgnorePull(const IBuilderTask* task) const;
 	bool IsIgnoreStallingPull(const IBuilderTask* task) const;
@@ -168,6 +168,7 @@ private:
 	float metalUsed;
 	float metalMod;
 	int mexMax;
+	bool isAllyMexMax;
 
 	struct SPullMtoS {
 		float pull;

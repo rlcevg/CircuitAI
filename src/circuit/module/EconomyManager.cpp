@@ -344,8 +344,10 @@ void CEconomyManager::Init()
 	openSpots.resize(spSize, true);
 
 	const Json::Value& econ = circuit->GetSetupManager()->GetConfig()["economy"];
-	const float mm = econ.get("mex_max", 2.f).asFloat();
+	const Json::Value& mexCap = econ["mex_max"];
+	const float mm = mexCap.get((unsigned)0, 2.f).asFloat();
 	mexMax = (mm < 1.f) ? decltype(mexMax)(mm * spSize) : std::numeric_limits<decltype(mexMax)>::max();
+	isAllyMexMax = mexCap.get((unsigned)1, true).asBool();
 
 	const Json::Value& pull = econ["ms_pull"];
 	mspInfos.reserve(pull.size());
@@ -610,6 +612,11 @@ bool CEconomyManager::IsAllyOpenSpot(int spotId) const
 	return IsOpenSpot(spotId) && circuit->GetMetalManager()->IsOpenSpot(spotId);
 }
 
+bool CEconomyManager::IsOpenSpot(int spotId) const
+{
+	return openSpots[spotId] && ((isAllyMexMax ? circuit->GetMetalManager()->GetMexCount() : mexCount) < mexMax);
+}
+
 void CEconomyManager::SetOpenSpot(int spotId, bool value)
 {
 	if (openSpots[spotId] == value) {
@@ -630,9 +637,9 @@ bool CEconomyManager::IsIgnorePull(const IBuilderTask* task) const
 
 bool CEconomyManager::IsIgnoreStallingPull(const IBuilderTask* task) const
 {
-	if (mexMax != std::numeric_limits<decltype(mexMax)>::max()) {
-		return false;
-	}
+//	if (mexMax != std::numeric_limits<decltype(mexMax)>::max()) {
+//		return false;  // NOTE: may completely block expansion
+//	}
 	if ((task->GetBuildType() == IBuilderTask::BuildType::MEX) ||
 		(task->GetBuildType() == IBuilderTask::BuildType::PYLON))
 	{

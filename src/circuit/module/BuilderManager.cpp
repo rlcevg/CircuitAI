@@ -1118,7 +1118,7 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 	}
 
 	if (task == nullptr) {
-		if (unit->GetTask() != idleTask) {
+		if ((unit->GetTask() != idleTask) || isNotReady) {
 			return nullptr;  // current task is in danger or unreachable
 		}
 		task = CreateBuilderTask(pos, unit);
