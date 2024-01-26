@@ -90,7 +90,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 		}
 	};
 	auto factoryDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
-		if (unit->GetTask()->GetType() == IUnitTask::Type::NIL) {
+		if (unit->GetUnit()->IsBeingBuilt()) {
 			return;
 		}
 		for (auto& info : clusterInfos) {
