@@ -8,6 +8,7 @@
 #include "resource/MetalManager.h"
 #include "map/ThreatMap.h"
 #include "module/EconomyManager.h"
+#include "setup/SetupManager.h"  // Only for json
 #include "scheduler/Scheduler.h"
 #include "terrain/TerrainManager.h"
 #include "CircuitAI.h"
@@ -15,6 +16,7 @@
 #include "util/math/RagMatrix.h"
 #include "util/math/Region.h"
 #include "util/Utils.h"
+#include "json/json.h"
 
 #include "spring/SpringMap.h"
 
@@ -135,8 +137,11 @@ void CMetalManager::ParseMetalSpots()
 	Game* game = circuit->GetGame();
 	std::vector<CMetalData::SMetal> spots;
 
+	const Json::Value& root = circuit->GetSetupManager()->GetConfig();
+	const bool calcMex = root["economy"].get("calc_mex", false).asBool();
+
 	int mexCount = game->GetRulesParamFloat("mex_count", -1);
-	if (mexCount <= 0) {
+	if (calcMex || (mexCount <= 0)) {
 		// FIXME: Replace metal-map workaround by own grid-spot generator
 		CMap* map = circuit->GetMap();
 		Resource* metalRes = circuit->GetEconomyManager()->GetMetalRes();
