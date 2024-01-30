@@ -84,6 +84,11 @@ namespace TaskB {
 		ti.f.shake = shake;
 		ti.isActive = isActive;
 		ti.timeout = timeout;
+
+		ti.cost = {0.f, 0.f};
+		ti.ref.reprDef = nullptr;
+		ti.i.pointId = -1;
+		ti.b.isPlop = false;
 		return ti;
 	}
 	static inline SBuildTask Spot(IBuilderTask::BuildType type, IBuilderTask::Priority priority,

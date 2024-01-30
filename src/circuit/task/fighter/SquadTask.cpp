@@ -297,6 +297,7 @@ bool ISquadTask::IsMustRegroup()
 	}
 
 	if (threatMap->GetThreatAt(groupPos) >= THREAT_MIN) {
+		validUnits.clear();
 		state = State::ROAM;
 		return false;
 	}

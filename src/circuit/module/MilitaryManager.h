@@ -36,6 +36,11 @@ namespace TaskF {
 	{
 		SFightTask ti;
 		ti.type = type;
+
+		ti.check = type;
+		ti.promote = type;
+		ti.power = 0.f;
+		ti.vip = nullptr;
 		return ti;
 	}
 	static inline SFightTask Guard(CCircuitUnit* vip)
