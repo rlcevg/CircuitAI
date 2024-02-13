@@ -54,7 +54,7 @@ void CEnergyManager::ParseGeoSpots()
 		}
 		// TODO: if( !TM->waterIsHarmful || cb->GetElevation(position.x,position.z) >= 0 ) ?
 		AIFloat3 pos = feature->GetPosition();
-		CTerrainManager::SnapPosition(pos);
+//		CTerrainManager::SnapPosition(pos);  // IBuilderTask::SetBuildPos uses CTerrainManager::Pos2BuildPos(cdef, position)
 		const unsigned x1 = int(pos.x) / SQUARE_SIZE - (xsize / 2), x2 = x1 + xsize;
 		const unsigned z1 = int(pos.z) / SQUARE_SIZE - (zsize / 2), z2 = z1 + zsize;
 		if ((x1 < x2) && (x2 < width) && (z1 < z2) && (z2 < height) &&

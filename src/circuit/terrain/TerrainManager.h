@@ -158,6 +158,8 @@ public:
 		return terrain::CTerrainData::CorrectPosition(pos, dir, len);
 	}
 	static void SnapPosition(springai::AIFloat3& position);
+	static springai::AIFloat3 Pos2BuildPos(CCircuitDef* cdef, const springai::AIFloat3& position, int facing);
+
 	std::pair<terrain::SArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const springai::AIFloat3& position);
 	std::pair<terrain::SArea*, bool> GetCurrentMapArea(CCircuitDef* cdef, const int indexSector);
 	int GetSectorIndex(const springai::AIFloat3& position) const { return terrainData->GetSectorIndex(position); }

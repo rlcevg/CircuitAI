@@ -56,21 +56,21 @@
 		"ratio":      [ 0.70,     0.00,        0.70],
 		"importance": [ 15.00,    0.00,        40.00],
 		"max_percent": 0.66,
-		"eps_step": -0.075
+		"eps_step": 0.00
 	},
 	"anti_air": {
 		"vs":         ["air"],
 		"ratio":      [ 0.75],
 		"importance": [ 950.0],
 		"max_percent": 0.5,
-		"eps_step": 0.8
+		"eps_step": 0.6
 	},
 	"anti_sub": {
 		"vs":         ["sub"],
 		"ratio":      [ 0.0],
 		"importance": [ 0.0],
 		"max_percent": 0.00,
-		"eps_step": 0.0
+		"eps_step": 0.00
 	},
 	"anti_heavy": {
 		"vs":         ["heavy", "artillery", "support", "anti_heavy", "commander", "super"],

@@ -301,8 +301,9 @@ void CTerrainManager::Init()
 	}
 	int notIgnoreMask = ~STRUCT_BIT(MEX);  // all except mex
 	for (auto& spot : mspots) {
-		const int x1 = int(spot.position.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
-		const int z1 = int(spot.position.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
+		const AIFloat3 pos = Pos2BuildPos(cdef, spot.position, UNIT_FACING_SOUTH);
+		const int x1 = int(pos.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
+		const int z1 = int(pos.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
 		int2 m1(x1, z1);
 		int2 m2(x2, z2);
 		blockingMap.Bound(m1, m2);
@@ -325,8 +326,9 @@ void CTerrainManager::Init()
 	}
 	notIgnoreMask = ~STRUCT_BIT(GEO);  // all except geo
 	for (auto& spot : espots) {
-		const int x1 = int(spot.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
-		const int z1 = int(spot.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
+		const AIFloat3 pos = Pos2BuildPos(cdef, spot, UNIT_FACING_SOUTH);
+		const int x1 = int(pos.x / (SQUARE_SIZE << 1)) - (xsize >> 1), x2 = x1 + xsize;
+		const int z1 = int(pos.z / (SQUARE_SIZE << 1)) - (zsize >> 1), z2 = z1 + zsize;
 		int2 m1(x1, z1);
 		int2 m2(x2, z2);
 		blockingMap.Bound(m1, m2);
@@ -1434,6 +1436,32 @@ void CTerrainManager::SnapPosition(AIFloat3& position)
 	// @see rts/Game/GameHelper.cpp:CGameHelper::Pos2BuildPos()
 	position.x = int(position.x / (SQUARE_SIZE * 2)) * SQUARE_SIZE * 2;
 	position.z = int(position.z / (SQUARE_SIZE * 2)) * SQUARE_SIZE * 2;
+}
+
+AIFloat3 CTerrainManager::Pos2BuildPos(CCircuitDef* cdef, const AIFloat3& position, int facing)
+{
+	AIFloat3 pos;
+	int xsize = cdef->GetDef()->GetXSize();
+	int zsize = cdef->GetDef()->GetZSize();
+	if ((facing & 1) == 1) {
+		std::swap(xsize, zsize);
+	}
+
+	// snap build-positions to 16-elmo grid
+	if (xsize & 2) {
+		pos.x = math::floor((position.x              ) / BUILD_SQUARE_SIZE) * BUILD_SQUARE_SIZE + SQUARE_SIZE;
+	} else {
+		pos.x = math::floor((position.x + SQUARE_SIZE) / BUILD_SQUARE_SIZE) * BUILD_SQUARE_SIZE;
+	}
+
+	if (zsize & 2) {
+		pos.z = math::floor((position.z              ) / BUILD_SQUARE_SIZE) * BUILD_SQUARE_SIZE + SQUARE_SIZE;
+	} else {
+		pos.z = math::floor((position.z + SQUARE_SIZE) / BUILD_SQUARE_SIZE) * BUILD_SQUARE_SIZE;
+	}
+
+	pos.y = position.y;
+	return pos;
 }
 
 std::pair<SArea*, bool> CTerrainManager::GetCurrentMapArea(CCircuitDef* cdef, const AIFloat3& position)

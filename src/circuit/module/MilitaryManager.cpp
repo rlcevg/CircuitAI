@@ -1244,11 +1244,10 @@ float CMilitaryManager::RoleProbability(const CCircuitDef* cdef) const
 	float maxProb = 0.f;
 	for (const SRoleInfo::SVsInfo& vs : info.vs) {
 		const float enemyMetal = enemyMgr->GetEnemyCost(vs.role);
-		const float nextMetal = info.cost + cdef->GetCostM();
 		const float prob = enemyMetal / (info.cost + 1.f) * vs.importance;
 		if ((prob > maxProb) &&
-			(enemyMetal * vs.ratio >= nextMetal * info.factor) &&
-			(nextMetal <= (armyCost + cdef->GetCostM()) * info.maxPerc))
+			(enemyMetal * vs.ratio >= info.cost * info.factor) &&
+			(info.cost + cdef->GetCostM() <= (armyCost + cdef->GetCostM()) * info.maxPerc))
 		{
 			maxProb = prob;
 		}

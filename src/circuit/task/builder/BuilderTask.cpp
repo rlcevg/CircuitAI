@@ -368,9 +368,11 @@ void IBuilderTask::SetBuildPos(const AIFloat3& pos)
 	if (utils::is_valid(buildPos)) {
 		terrainMgr->DelBlocker(buildDef, buildPos, facing);
 	}
-	buildPos = pos;
-	if (utils::is_valid(buildPos)) {
+	if (utils::is_valid(pos)) {
+		buildPos = CTerrainManager::Pos2BuildPos(buildDef, pos, facing);
 		terrainMgr->AddBlocker(buildDef, buildPos, facing);
+	} else {
+		buildPos = pos;
 	}
 }
 

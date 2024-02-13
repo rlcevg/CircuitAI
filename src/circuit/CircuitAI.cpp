@@ -86,7 +86,7 @@ using namespace terrain;
  * Разрушать города,
  * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.6.12"};
+constexpr char version[]{"1.6.13"};
 constexpr uint32_t VERSION_SAVE = 4;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -603,12 +603,12 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 	pathfinder = allyTeam->GetPathfinder();
 
 	// FIXME: CanChooseStartPos = false, finish start factory and position selection
-	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
-		const CSetupManager::StartPosType spt = metalManager->HasMetalSpots() ?
-												CSetupManager::StartPosType::METAL_SPOT :
-												CSetupManager::StartPosType::RANDOM;
-		setupManager->PickStartPos(spt);
-	}
+//	if (setupManager->HasStartBoxes() && setupManager->CanChooseStartPos()) {
+//		const CSetupManager::StartPosType spt = metalManager->HasMetalSpots() ?
+//												CSetupManager::StartPosType::METAL_SPOT :
+//												CSetupManager::StartPosType::RANDOM;
+//		setupManager->PickStartPos(spt);
+//	}
 
 	factoryManager = std::make_shared<CFactoryManager>(this);
 	builderManager = std::make_shared<CBuilderManager>(this);
