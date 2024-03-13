@@ -1456,6 +1456,11 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 
 IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCircuitUnit* unit)
 {
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	if (terrainMgr->IsZoneAlly(position)) {
+		return EnqueueB(TaskB::Patrol(IBuilderTask::Priority::LOW, position, FRAMES_PER_SEC * 10));
+	}
+
 	CEconomyManager* ecoMgr = circuit->GetEconomyManager();
 	IBuilderTask* task = ecoMgr->UpdateEnergyTasks(position, unit);
 	if (task != nullptr) {
@@ -1589,17 +1594,17 @@ void CBuilderManager::Watchdog()
 	// TODO: Include special units
 	for (auto& kv : circuit->GetTeamUnits()) {
 		CCircuitUnit* unit = kv.second;
-		if (!unit->GetCircuitDef()->IsMobile() &&
-			(unfinishedUnits.find(unit) == unfinishedUnits.end()) &&
-			(repairUnits.find(unit->GetId()) == repairUnits.end()) &&
-			(reclaimUnits.find(unit) == reclaimUnits.end()))
+		if (!unit->GetCircuitDef()->IsMobile()
+			&& (unfinishedUnits.find(unit) == unfinishedUnits.end())
+			&& (repairUnits.find(unit->GetId()) == repairUnits.end())
+			&& (reclaimUnits.find(unit) == reclaimUnits.end()))
 		{
 			Unit* u = unit->GetUnit();
-			if (u->IsBeingBuilt()) {
+			if (!unit->IsFinished()) {  // u->IsBeingBuilt()
 				float maxHealth = u->GetMaxHealth();
 				float buildPercent = (maxHealth - u->GetHealth()) / maxHealth;
 				CCircuitDef* cdef = unit->GetCircuitDef();
-				if ((cdef->GetBuildTime() * buildPercent < maxCost) || (*cdef == *terraDef)) {
+				if ((cdef->GetBuildTime() * buildPercent < maxCost) || cdef->IsMex() || (*cdef == *terraDef)) {
 					Enqueue(TaskB::Repair(IBuilderTask::Priority::NORMAL, unit));
 				} else {
 					Enqueue(TaskB::Reclaim(IBuilderTask::Priority::NORMAL, unit));

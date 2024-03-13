@@ -67,6 +67,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			this->circuit->AddActionUnit(unit);
 		}
 
+		CTerrainManager* terrainMgr = this->circuit->GetTerrainManager();
+		terrainMgr->AddZoneOwn(unit->GetPos(this->circuit->GetLastFrame()));
+
 		// Mark path from factory to lanePos as blocked
 		if (unit->GetCircuitDef()->GetMobileId() >= 0) {  // no air factory
 			CSetupManager* setupMgr = this->circuit->GetSetupManager();
@@ -74,7 +77,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			if (reprDef == nullptr) {
 				reprDef = setupMgr->GetCommChoice();
 			}
-			this->circuit->GetTerrainManager()->AddBusPath(unit, setupMgr->GetLanePos(), reprDef);
+			terrainMgr->AddBusPath(unit, setupMgr->GetLanePos(), reprDef);
 		}
 	};
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
@@ -90,11 +93,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			unit->GetUnit()->SetIdleMode(0);
 		)
 
-		const int frame = this->circuit->GetLastFrame();
 		this->circuit->GetEconomyManager()->AddFactoryInfo(unit);
 		UnitAdded(unit, UseAs::FACTORY);
 
-		lastSwitchFrame = frame;
+		lastSwitchFrame = this->circuit->GetLastFrame();
 		EnableFactory(unit);
 	};
 	auto factoryIdleHandler = [](CCircuitUnit* unit) {
@@ -110,8 +112,10 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		DisableFactory(unit);
 		this->circuit->GetEconomyManager()->DelFactoryInfo(unit);
 
+		CTerrainManager* terrainMgr = this->circuit->GetTerrainManager();
+		terrainMgr->DelZoneOwn(unit->GetPos(this->circuit->GetLastFrame()));
 		// Remove blocked path from factory to lanePos
-		this->circuit->GetTerrainManager()->DelBusPath(unit);
+		terrainMgr->DelBusPath(unit);
 
 		UnitRemoved(unit, UseAs::FACTORY);
 	};

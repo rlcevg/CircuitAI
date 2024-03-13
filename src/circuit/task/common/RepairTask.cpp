@@ -41,8 +41,12 @@ bool IRepairTask::CanAssignTo(CCircuitUnit* unit) const
 {
 	CCircuitAI* circuit = manager->GetCircuit();
 	CCircuitDef* cdef = unit->GetCircuitDef();
-	return cdef->IsAbleToRepair() && !unit->IsAttrSolo()
-			&& (target != nullptr) && (target != unit) && (cost.metal > buildPower.metal * static_cast<CBuilderManager*>(manager)->GetGoalExecTime())
+	// Places that create repair task for unfinished unit:
+	//   CBuilderManager.buildingDamagedHandler
+	//   CBuilderManager.Watchdog
+	return !unit->IsAttrSolo() && (target != nullptr) && (target != unit)
+			&& ((!target->IsFinished() && cdef->IsAbleToAssist()) || (target->IsFinished() && cdef->IsAbleToRepair()))
+			&& (cost.metal > buildPower.metal * static_cast<CBuilderManager*>(manager)->GetGoalExecTime())
 			&& (circuit->GetInflMap()->GetInfluenceAt(unit->GetPos(circuit->GetLastFrame())) > INFL_EPS);
 }
 

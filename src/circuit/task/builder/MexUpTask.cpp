@@ -129,7 +129,8 @@ bool CBMexUpTask::Execute(CCircuitUnit* unit)
 		if (curMex == nullptr) {
 			continue;
 		}
-		if (curMex->GetCircuitDef()->GetExtractsM() > 0.f) {
+		const float curExtract = curMex->GetCircuitDef()->GetExtractsM();
+		if ((0.f < curExtract) && (curExtract < buildDef->GetExtractsM())) {
 			oldMex = curMex;
 			break;
 		}

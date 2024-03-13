@@ -659,6 +659,11 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 	assert(chain != nullptr);
 	CCircuitAI* circuit = manager->GetCircuit();
 
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	if (terrainMgr->IsZoneAlly(buildPos)) {  // ally mex upgrade or energy base collides with ally
+		return;
+	}
+
 	if (chain->energy > 0.f) {
 		float energyMake;
 		CCircuitDef* energyDef = circuit->GetEconomyManager()->GetLowEnergy(buildPos, energyMake);
@@ -746,7 +751,6 @@ void IBuilderTask::ExecuteChain(SBuildChain* chain)
 		//        and CTerrainManager::CanBuildAt returns false in many cases
 		CCircuitDef* bdef = units.empty() ? circuit->GetSetupManager()->GetCommChoice() : (*this->units.begin())->GetCircuitDef();
 		CBuilderManager* builderMgr = circuit->GetBuilderManager();
-		CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 		CEnemyManager* enemyMgr = circuit->GetEnemyManager();
 
 		for (auto& queue : chain->hub) {

@@ -34,7 +34,7 @@ class IMainJob;
 class CInfluenceMap {
 public:
 	CInfluenceMap(CMapManager* manager);
-	virtual ~CInfluenceMap();
+	~CInfluenceMap();
 
 private:
 	void ReadConfig();

@@ -92,6 +92,9 @@ public:
 	void PushTravelAct(ITravelAction* action);
 	ITravelAction* GetTravelAct() const { return travelAct; }
 
+	void SetIsFinished() { isFinished = true; }
+	bool IsFinished() const { return isFinished; }
+
 	void SetAllowedToJump(bool value) { isAllowedToJump = value; }
 	bool IsAllowedToJump() const { return isAllowedToJump; }
 
@@ -209,6 +212,7 @@ private:
 	// ---- Bit fields ---- BEGIN
 	bool isDead : 1;
 	bool isStuck : 1;
+	bool isFinished : 1;
 	bool isDisarmed : 1;
 	bool isWeaponReady : 1;
 	bool isMorphing : 1;

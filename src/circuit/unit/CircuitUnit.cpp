@@ -45,6 +45,7 @@ CCircuitUnit::CCircuitUnit(CCircuitAI* circuit, Id unitId, Unit* unit, CCircuitD
 		, priority(-1.f)
 		, isDead(false)
 		, isStuck(false)
+		, isFinished(false)
 		, isDisarmed(false)
 		, isWeaponReady(true)
 		, isMorphing(false)

@@ -31,6 +31,14 @@ local options = {
 		section = 'performance',
 		def     = true,
 	},
+	{ -- bool
+		key     = 'ally_base',
+		name    = 'Avoid building in allied bases',
+		desc    = 'Do not build units near allied factories',
+		type    = 'bool',
+		section = 'performance',
+		def     = true,
+	},
 -- 	{ -- number (int->uint)
 -- 		key     = 'random_seed',
 -- 		name    = 'Random seed',

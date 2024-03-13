@@ -14,6 +14,7 @@
 #include <map>
 #include <string>
 
+#define GRID_RATIO_ALLY		8
 #define GRID_RATIO_LOW		8
 #define STRUCT_BIT(bits)	static_cast<SBlockingMap::SM>(SBlockingMap::StructMask::bits)
 
@@ -46,10 +47,17 @@ struct SBlockingMap {
 	inline void AddStruct(int x, int z, StructType structType, SM notIgnoreMask);
 	inline void DelStruct(int x, int z, StructType structType, SM notIgnoreMask);
 
+	inline bool IsZoneAlly(int xAlly, int zAlly) const;
+	inline void AddZoneAlly(int xAlly, int zAlly);
+	inline void DelZoneAlly(int xAlly, int zAlly);
+	inline void AddZoneOwn(int xAlly, int zAlly);
+	inline void DelZoneOwn(int xAlly, int zAlly);
+
 	inline bool IsInBounds(const int2& r1, const int2& r2) const;
 	inline bool IsInBounds(int x, int z) const;
 	inline bool IsInBoundsLow(int x, int z) const;
 	inline void Bound(int2& r1, int2& r2);
+	inline void BoundAlly(int2& r1, int2& r2);
 
 	static inline StructMask GetStructMask(StructType structType);
 
@@ -74,6 +82,14 @@ struct SBlockingMap {
 	std::vector<SBlockCellLow> gridLow;  // granularity Map::GetWidth / 16, Map::GetHeight / 16
 	int columnsLow;
 	int rowsLow;
+
+	struct SBlockCellAlly {
+		unsigned short allyCount;
+		unsigned short ownCount;
+	};
+	std::vector<SBlockCellAlly> gridAlly;  // granularity Map::GetWidth / 16, Map::GetHeight / 16
+	int columnsAlly;
+	int rowsAlly;
 };
 
 } // namespace circuit

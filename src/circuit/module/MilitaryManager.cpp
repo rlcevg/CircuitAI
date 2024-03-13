@@ -703,6 +703,10 @@ void CMilitaryManager::DefaultMakeDefence(int cluster, const AIFloat3& pos)
 	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CBuilderManager* builderMgr = circuit->GetBuilderManager();
 
+	if (terrainMgr->IsZoneAlly(pos)) {
+		return;
+	}
+
 	// FIXME: New choke defences
 //	const CArea* area = terrainMgr->GetTAArea(pos);
 //	if (area == nullptr) {

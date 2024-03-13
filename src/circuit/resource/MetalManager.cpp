@@ -190,7 +190,6 @@ void CMetalManager::ParseMetalSpots()
 
 		mexCount = std::min(mexCount, 1000);  // safety measure
 		spots.resize(mexCount);
-		const float extr = game->GetRulesParamFloat("base_extraction", 0.001f);
 		for (int i = 0; i < mexCount; ++i) {
 			std::string param;
 			param = utils::int_to_string(i + 1, "mex_x%i");
@@ -200,7 +199,7 @@ void CMetalManager::ParseMetalSpots()
 			param = utils::int_to_string(i + 1, "mex_z%i");
 			spots[i].position.z = game->GetRulesParamFloat(param.c_str(), 0.f);
 			param = utils::int_to_string(i + 1, "mex_metal%i");
-			spots[i].income = game->GetRulesParamFloat(param.c_str(), 0.f) / extr;
+			spots[i].income = game->GetRulesParamFloat(param.c_str(), 0.f);
 //			CTerrainManager::SnapPosition(spots[i].position);  // IBuilderTask::SetBuildPos uses CTerrainManager::Pos2BuildPos(cdef, position)
 		}
 	}

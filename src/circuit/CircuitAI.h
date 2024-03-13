@@ -192,13 +192,15 @@ private:
 // >>> AIOptions.lua ---- BEGIN
 public:
 	bool IsCheating() const { return isCheating; }
-	bool IsAllyAware() const { return isAllyAware; }
+	bool IsAllyAware() const { return isAllyAware; }  // mark ally buildings, check taken mexes
 	bool IsCommMerge() const { return isCommMerge; }
+	bool IsAllyBaseAvoid() const { return isAllyBaseAvoid; }  // avoid building in allied bases
 private:
 	std::string InitOptions();
 	bool isCheating;
 	bool isAllyAware;
 	bool isCommMerge;
+	bool isAllyBaseAvoid;
 // <<< AIOptions.lua ---- END
 
 // >>> UnitDefs ---- BEGIN

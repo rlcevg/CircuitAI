@@ -86,7 +86,7 @@ using namespace terrain;
  * Разрушать города,
  * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.6.13"};
+constexpr char version[]{"1.6.14"};
 constexpr uint32_t VERSION_SAVE = 4;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -102,6 +102,7 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, isCheating(false)
 		, isAllyAware(true)
 		, isCommMerge(true)
+		, isAllyBaseAvoid(true)
 		, isInitialized(false)
 		, isSavegame(false)
 		, isLoadSave(false)
@@ -1014,6 +1015,7 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 	if (unit->GetUnit()->IsBeingBuilt()) {
 		return 0;  // created by gadget
 	}
+	unit->SetIsFinished();  // TODO: Investigate rezz, plop and capture
 
 	// NOTE: "response" structure and limits are per AI
 	if (isSlave
@@ -1630,6 +1632,11 @@ std::string CCircuitAI::InitOptions()
 	value = options->GetValueByKey("comm_merge");
 	if (value != nullptr) {
 		isCommMerge = StringToBool(value);
+	}
+
+	value = options->GetValueByKey("ally_base");
+	if (value != nullptr) {
+		isAllyBaseAvoid = StringToBool(value);
 	}
 
 	if (!gameAttribute->IsInitialized()) {

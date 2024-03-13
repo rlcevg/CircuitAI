@@ -984,14 +984,14 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			CCircuitDef* mexDef = nullptr;
 			CMetalData::PointPredicate predicate = [this, &spots, &mexDefs, maxRange, terrainMgr, unit, &mexDef](int index) {
 				const AIFloat3& pos = spots[index].position;
-				if (!IsOpenMexSpot(index)
+				if (true/*!IsOpenMexSpot(index)*/
 					&& !IsUpgradingMexSpot(index)
 					&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
 				{
 					const auto& unitIds = circuit->GetCallback()->GetFriendlyUnitIdsIn(pos, maxRange, false);
 					float curExtract = -1.f;
 					for (ICoreUnit::Id unitId : unitIds) {
-						CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
+						CAllyUnit* curMex = circuit->GetFriendlyUnit(unitId);  // CCircuitUnit* curMex = circuit->GetTeamUnit(unitId);
 						if (curMex == nullptr) {
 							continue;
 						}
@@ -1044,7 +1044,7 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			// NOTE: threatmap type is set outside
 			CMetalData::PointPredicate predicate = [this, &spots, map, &mexDefs, terrainMgr, unit, &mexDef](int index) {
 				const AIFloat3& pos = spots[index].position;
-				if (IsAllyOpenMexSpot(index)
+				if (IsAllyOpenMexSpot(index) && !terrainMgr->IsZoneAlly(pos)
 					&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance()))  // hostile environment
 				{
 					for (CCircuitDef* mDef : mexDefs) {
@@ -1280,8 +1280,9 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	CSetupManager* setupMgr = circuit->GetSetupManager();
 	AIFloat3 buildPos = -RgtVector;
 	if (bestDef->GetCostM() < 200.0f) {
-		if ((circuit->GetFactoryManager()->GetFactoryCount() > 0) && (position.SqDistance2D(setupMgr->GetSmallEnergyPos()) < SQUARE(600.f))
-			&& ((unit == nullptr) || !unit->GetCircuitDef()->IsRoleComm()))  // TODO: instead of isComm check isFast
+		if (terrainMgr->IsZoneAlly(position)
+			|| ((circuit->GetFactoryManager()->GetFactoryCount() > 0) && (position.SqDistance2D(setupMgr->GetSmallEnergyPos()) < SQUARE(600.f))
+				&& ((unit == nullptr) || !unit->GetCircuitDef()->IsRoleComm())))  // TODO: instead of isComm check isFast
 		{
 			buildPos = setupMgr->GetSmallEnergyPos();
 		} else {
@@ -1328,7 +1329,7 @@ IBuilderTask* CEconomyManager::UpdateGeoTasks(const AIFloat3& position, CCircuit
 	for (unsigned i = 0; i < geoSpots.size(); ++i) {
 		const float distSq = geos[i].SqDistance2D(position);
 		if (IsOpenGeoSpot(i) && (minDistSq > distSq)
-			&& terrainMgr->CanBeBuiltAtSafe(geoDef, geos[i])
+			&& !terrainMgr->IsZoneAlly(geos[i]) && terrainMgr->CanBeBuiltAtSafe(geoDef, geos[i])
 			&& map->IsPossibleToBuildAt(geoDef->GetDef(), geos[i], UNIT_NO_FACING))  // lazy check for allies
 		{
 			minDistSq = distSq;
@@ -1475,7 +1476,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			}
 
 			CMetalData::PointPredicate predicate = [this, facDef, terrainMgr, &clusters](const int index) {
-				return (clusterInfos[index].factory == nullptr) && terrainMgr->CanBeBuiltAtSafe(facDef, clusters[index].position);
+				return (clusterInfos[index].factory == nullptr) && !terrainMgr->IsZoneAlly(clusters[index].position)
+						&& terrainMgr->CanBeBuiltAtSafe(facDef, clusters[index].position);
 			};
 			int index = metalMgr->FindNearestCluster(pos, predicate);
 			if (index < 0) {

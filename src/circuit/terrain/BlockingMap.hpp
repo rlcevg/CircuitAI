@@ -110,6 +110,36 @@ inline void SBlockingMap::DelStruct(int x, int z, StructType structType, SM notI
 	cell.structMask = StructMask::NONE;
 }
 
+inline bool SBlockingMap::IsZoneAlly(int xAlly, int zAlly) const
+{
+	const SBlockCellAlly& cell = gridAlly[zAlly * columnsAlly + xAlly];
+	return (cell.allyCount > 0) && (cell.ownCount == 0);
+}
+
+inline void SBlockingMap::AddZoneAlly(int xAlly, int zAlly)
+{
+	SBlockCellAlly& cell = gridAlly[zAlly * columnsAlly + xAlly];
+	++cell.allyCount;
+}
+
+inline void SBlockingMap::DelZoneAlly(int xAlly, int zAlly)
+{
+	SBlockCellAlly& cell = gridAlly[zAlly * columnsAlly + xAlly];
+	--cell.allyCount;
+}
+
+inline void SBlockingMap::AddZoneOwn(int xAlly, int zAlly)
+{
+	SBlockCellAlly& cell = gridAlly[zAlly * columnsAlly + xAlly];
+	++cell.ownCount;
+}
+
+inline void SBlockingMap::DelZoneOwn(int xAlly, int zAlly)
+{
+	SBlockCellAlly& cell = gridAlly[zAlly * columnsAlly + xAlly];
+	--cell.ownCount;
+}
+
 inline bool SBlockingMap::IsInBounds(const int2& r1, const int2& r2) const
 {
 	return (r1.x >= 0) && (r1.y >= 0) && (r2.x < columns) && (r2.y < rows);
@@ -129,6 +159,12 @@ inline void SBlockingMap::Bound(int2& r1, int2& r2)
 {
 	r1.x = std::max(r1.x, 0);  r2.x = std::min(r2.x, columns/* - 1*/);
 	r1.y = std::max(r1.y, 0);  r2.y = std::min(r2.y, rows/* - 1*/);
+}
+
+inline void SBlockingMap::BoundAlly(int2& r1, int2& r2)
+{
+	r1.x = std::max(r1.x, 0);  r2.x = std::min(r2.x, columnsAlly/* - 1*/);
+	r1.y = std::max(r1.y, 0);  r2.y = std::min(r2.y, rowsAlly/* - 1*/);
 }
 
 inline SBlockingMap::StructMask SBlockingMap::GetStructMask(StructType structType)
