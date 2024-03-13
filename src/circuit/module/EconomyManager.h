@@ -165,6 +165,7 @@ private:
 	std::vector<SClusterInfo> clusterInfos;
 	float clusterRange;
 	float pylonRange;
+	float pylonLinkInc;
 	CCircuitDef* pylonDef;  // TODO: Move into CEnergyGrid?
 
 	std::vector<SSideInfo> sideInfos;

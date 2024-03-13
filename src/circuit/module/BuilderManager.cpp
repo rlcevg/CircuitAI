@@ -1498,7 +1498,7 @@ IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCirc
 
 	CCircuitUnit* vip = unit->GetCircuitDef()->IsAbleToAssist()
 			? circuit->GetFactoryManager()->GetClosestFactory(position)
-			: militaryMgr->GetClosestLeader(IFighterTask::FightType::ATTACK, position);
+			: militaryMgr->GetClosestLeader({IFighterTask::FightType::ATTACK, IFighterTask::FightType::DEFEND}, position);
 	if (vip != nullptr) {
 		return EnqueueB(TaskB::Guard(IBuilderTask::Priority::NORMAL, vip, true, FRAMES_PER_SEC * 60));
 	}

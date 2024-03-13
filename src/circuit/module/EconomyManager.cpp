@@ -370,6 +370,7 @@ void CEconomyManager::ReadConfig(float& outMinEInc)
 	costRatio = energy.get("cost_ratio", 0.05f).asFloat();
 	ecoEMRatio = energy.get("em_ratio", 0.08f).asFloat();
 	clusterRange = econ.get("cluster_range", 950.f).asFloat();
+	pylonLinkInc = energy.get("link_inc", 16.0f).asFloat();
 
 	CMaskHandler& sideMasker = circuit->GetGameAttribute()->GetSideMasker();
 	sideInfos.resize(sideMasker.GetMasks().size());
@@ -1586,7 +1587,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	const float energyIncome = GetAvgEnergyIncome();
 	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if (metalIncome < 16) {
+	if (metalIncome < pylonLinkInc) {
 		return nullptr;
 	}
 

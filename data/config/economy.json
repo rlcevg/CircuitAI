@@ -51,6 +51,7 @@
 
 		"em_ratio": 0.08,  // energy to metal ratio, used with UnitDef.build_speed
 
+		"link_inc": 16.0,  // minimum metal-income for energy linking
 		"pylon": []
 	},
 

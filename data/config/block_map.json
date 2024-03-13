@@ -57,7 +57,7 @@
 			"yard": [10, 12]
 		},
 		"fac_strider": {
-			"type": ["rectangle", "special"],
+			"type": ["rectangle", "factory"],
 			"offset": [0, 4],
 			"yard": [4, 4]
 		},

@@ -760,7 +760,7 @@ bool CTerrainManager::IsZoneAlly(const AIFloat3& pos) const
 
 float CTerrainManager::SetAllyZoneRange(float range)
 {
-	allyZoneCells = int(range * 2) / (GRID_RATIO_ALLY * BUILD_SQUARE_SIZE);
+	allyZoneCells = circuit->IsAllyBaseAvoid() ? int(range * 2) / (GRID_RATIO_ALLY * BUILD_SQUARE_SIZE) : 0;
 	return allyZoneCells * GRID_RATIO_ALLY * BUILD_SQUARE_SIZE / 2;
 }
 
@@ -795,7 +795,6 @@ void CTerrainManager::MarkAllyBuildings()
 	const CAllyTeam::AllyUnits& friendlies = circuit->GetFriendlyUnits();
 	const int teamId = circuit->GetTeamId();
 	const int frame = circuit->GetLastFrame();
-	const bool isAllyBaseAvoid = circuit->IsAllyBaseAvoid();
 
 	decltype(markedAllies) prevUnits = std::move(markedAllies);
 	markedAllies.clear();
@@ -804,7 +803,7 @@ void CTerrainManager::MarkAllyBuildings()
 	auto first2  = prevUnits.begin();
 	auto last2   = prevUnits.end();
 	auto d_first = std::back_inserter(markedAllies);
-	auto addStructure = [this, &d_first, frame, isAllyBaseAvoid](CAllyUnit* unit) {
+	auto addStructure = [this, &d_first, frame](CAllyUnit* unit) {
 		SStructure building;
 		building.unitId = unit->GetId();
 		building.cdef = unit->GetCircuitDef();
@@ -814,15 +813,15 @@ void CTerrainManager::MarkAllyBuildings()
 //		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, true);
 //		}
-		if (isAllyBaseAvoid && building.cdef->IsBuilder()) {
+		if (building.cdef->IsBuilder()) {
 			MarkZoneAlly(building.pos, true);
 		}
 	};
-	auto delStructure = [this, isAllyBaseAvoid](const SStructure& building) {
+	auto delStructure = [this](const SStructure& building) {
 //		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, false);
 //		}
-		if (isAllyBaseAvoid && building.cdef->IsBuilder()) {
+		if (building.cdef->IsBuilder()) {
 			MarkZoneAlly(building.pos, false);
 		}
 	};
