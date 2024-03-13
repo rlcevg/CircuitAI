@@ -29,6 +29,7 @@
 		// [[<start_factor>, <start_time>], [<end_factor>, <end_time>]]
 		"factor": [[0.15, 1], [7.0, 3600]],
 
+		"link_inc": 16.0,  // minimum metal-income for energy linking
 		"pylon": ["energypylon", "energysolar", "energywind"]
 	},
 

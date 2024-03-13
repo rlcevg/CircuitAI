@@ -53,6 +53,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			nilTask->AssignTo(unit);
 			this->circuit->AddActionUnit(unit);
 		}
+
+		CTerrainManager* terrainMgr = this->circuit->GetTerrainManager();
+		terrainMgr->AddZoneOwn(unit->GetPos(this->circuit->GetLastFrame()));
 	};
 	auto factoryFinishedHandler = [this](CCircuitUnit* unit) {
 		if (unit->GetTask() == nullptr) {
@@ -84,6 +87,9 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		// NOTE: Do not del if factory rotation wanted
 //		DelFactory(unit->GetCircuitDef());
 		DisableFactory(unit);
+
+		CTerrainManager* terrainMgr = this->circuit->GetTerrainManager();
+		terrainMgr->DelZoneOwn(unit->GetPos(this->circuit->GetLastFrame()));
 	};
 
 	/*
@@ -186,7 +192,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 			setRoles(ROLE_TYPE(AIR));
 		} else if (!cdef.IsMobile() && cdef.IsAttacker() && cdef.HasAntiLand()) {
 			setRoles(ROLE_TYPE(STATIC));
-		} else if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty() && !cdef.IsRoleComm()) {
+		} else if (cdef.GetDef()->IsBuilder() && cdef.IsBuilder() && !cdef.IsRoleComm()) {
 			setRoles(ROLE_TYPE(BUILDER));
 		}
 		if (cdef.IsRoleComm()) {
@@ -204,7 +210,7 @@ CFactoryManager::CFactoryManager(CCircuitAI* circuit)
 		}
 
 		CCircuitDef::Id unitDefId = cdef.GetId();
-		if (!cdef.GetBuildOptions().empty() && (factoryDefs.find(unitDefId) != factoryDefs.end())) {
+		if (cdef.IsBuilder() && (factoryDefs.find(unitDefId) != factoryDefs.end())) {
 			createdHandler[unitDefId] = factoryCreatedHandler;
 			finishedHandler[unitDefId] = factoryFinishedHandler;
 			idleHandler[unitDefId] = factoryIdleHandler;

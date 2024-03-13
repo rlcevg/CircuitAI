@@ -53,14 +53,21 @@ CTerrainManager::CTerrainManager(CCircuitAI* circuit, CTerrainData* terrainData)
 	CMap* map = circuit->GetMap();
 	int mapWidth = map->GetWidth();
 	int mapHeight = map->GetHeight();
-	blockingMap.columns = mapWidth / 2;  // build-step = 2 little green squares
+	blockingMap.columns = mapWidth / 2;  // build-step = 2 * SQUARE_SIZE
 	blockingMap.rows = mapHeight / 2;
 	SBlockingMap::SBlockCell cell = {0};
 	blockingMap.grid.resize(blockingMap.columns * blockingMap.rows, cell);
+
 	blockingMap.columnsLow = mapWidth / (GRID_RATIO_LOW * 2);
 	blockingMap.rowsLow = mapHeight / (GRID_RATIO_LOW * 2);
 	SBlockingMap::SBlockCellLow cellLow = {0};
 	blockingMap.gridLow.resize(blockingMap.columnsLow * blockingMap.rowsLow, cellLow);
+
+	blockingMap.columnsAlly = mapWidth / (GRID_RATIO_ALLY * 2);
+	blockingMap.rowsAlly = mapHeight / (GRID_RATIO_ALLY * 2);
+	SBlockingMap::SBlockCellAlly cellAlly = {0};
+	blockingMap.gridAlly.resize(blockingMap.columnsAlly * blockingMap.rowsAlly, cellAlly);
+	SetAllyZoneRange(circuit->GetAllyZoneRange());
 
 	ReadConfig();
 }
@@ -425,6 +432,19 @@ const SBlockingMap& CTerrainManager::GetBlockingMap()
 	return blockingMap;
 }
 
+bool CTerrainManager::IsZoneAlly(const AIFloat3& pos) const
+{
+	const int x = int(pos.x) / (GRID_RATIO_ALLY * BUILD_SQUARE_SIZE);
+	const int z = int(pos.z) / (GRID_RATIO_ALLY * BUILD_SQUARE_SIZE);
+	return blockingMap.IsZoneAlly(x, z);
+}
+
+float CTerrainManager::SetAllyZoneRange(float range)
+{
+	allyZoneCells = int(range * 2) / (GRID_RATIO_ALLY * BUILD_SQUARE_SIZE);
+	return allyZoneCells * GRID_RATIO_ALLY * BUILD_SQUARE_SIZE / 2;
+}
+
 bool CTerrainManager::ResignAllyBuilding(CCircuitUnit* unit)
 {
 	auto it = markedAllies.cbegin();
@@ -466,10 +486,16 @@ void CTerrainManager::MarkAllyBuildings()
 		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, true);
 		}
+		if (building.cdef->IsBuilder()) {
+			MarkZoneAlly(building.pos, true);
+		}
 	};
 	auto delStructure = [this](const SStructure& building) {
 		if (!building.cdef->IsMex()) {  // mex positions are marked on start and must not change
 			MarkBlocker(building, false);
+		}
+		if (building.cdef->IsBuilder()) {
+			MarkZoneAlly(building.pos, false);
 		}
 	};
 
@@ -1009,6 +1035,8 @@ void CTerrainManager::MarkBlockerByMask(const SStructure& building, bool block, 
 			break;
 		}
 	}
+#undef DO_MARK
+#undef DECLARE_MARKER
 }
 
 void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
@@ -1052,6 +1080,60 @@ void CTerrainManager::MarkBlocker(const SStructure& building, bool block)
 		for (int x = m1.x; x < m2.x; ++x) {
 			for (int z = m1.y; z < m2.y; ++z) {
 				blockingMap.DelStruct(x, z, structType, notIgnore);
+			}
+		}
+	}
+}
+
+void CTerrainManager::MarkZoneAlly(const AIFloat3& pos, bool block)
+{
+	const int xsize = allyZoneCells;
+	const int zsize = allyZoneCells;
+
+	const int x1 = int(pos.x + 0.5f) / (GRID_RATIO_ALLY * BUILD_SQUARE_SIZE) - (xsize / 2), x2 = x1 + xsize;
+	const int z1 = int(pos.z + 0.5f) / (GRID_RATIO_ALLY * BUILD_SQUARE_SIZE) - (zsize / 2), z2 = z1 + zsize;
+
+	int2 m1(x1, z1);
+	int2 m2(x2, z2);
+	blockingMap.BoundAlly(m1, m2);
+
+	if (block) {
+		for (int x = m1.x; x < m2.x; ++x) {
+			for (int z = m1.y; z < m2.y; ++z) {
+				blockingMap.AddZoneAlly(x, z);
+			}
+		}
+	} else {
+		for (int x = m1.x; x < m2.x; ++x) {
+			for (int z = m1.y; z < m2.y; ++z) {
+				blockingMap.DelZoneAlly(x, z);
+			}
+		}
+	}
+}
+
+void CTerrainManager::MarkZoneOwn(const AIFloat3& pos, bool block)
+{
+	const int xsize = allyZoneCells;
+	const int zsize = allyZoneCells;
+
+	const int x1 = int(pos.x + 0.5f) / (GRID_RATIO_ALLY * BUILD_SQUARE_SIZE) - (xsize / 2), x2 = x1 + xsize;
+	const int z1 = int(pos.z + 0.5f) / (GRID_RATIO_ALLY * BUILD_SQUARE_SIZE) - (zsize / 2), z2 = z1 + zsize;
+
+	int2 m1(x1, z1);
+	int2 m2(x2, z2);
+	blockingMap.BoundAlly(m1, m2);
+
+	if (block) {
+		for (int x = m1.x; x < m2.x; ++x) {
+			for (int z = m1.y; z < m2.y; ++z) {
+				blockingMap.AddZoneOwn(x, z);
+			}
+		}
+	} else {
+		for (int x = m1.x; x < m2.x; ++x) {
+			for (int z = m1.y; z < m2.y; ++z) {
+				blockingMap.DelZoneOwn(x, z);
 			}
 		}
 	}

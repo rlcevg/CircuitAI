@@ -243,6 +243,7 @@ public:
 	bool IsAbleToReclaim() const { return isAbleToReclaim; }
 	bool IsAbleToAssist()  const { return isAbleToAssist; }
 	bool IsAssistable()    const { return buildTime < 1e6f; }
+	bool IsBuilder()       const { return !buildOptions.empty(); }
 
 	void SetIsMex(bool value) { isMex = value; }
 	bool IsMex() const { return isMex; }

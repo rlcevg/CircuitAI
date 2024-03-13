@@ -69,6 +69,10 @@ public:
 									 TerrainPredicate& predicate);
 
 	const SBlockingMap& GetBlockingMap();
+	bool IsZoneAlly(const springai::AIFloat3& pos) const;
+	void AddZoneOwn(const springai::AIFloat3& pos) { MarkZoneOwn(pos, true); }
+	void DelZoneOwn(const springai::AIFloat3& pos) { MarkZoneOwn(pos, false); }
+	float SetAllyZoneRange(float range);  // range/radius in elmos
 
 	bool ResignAllyBuilding(CCircuitUnit* unit);
 
@@ -115,10 +119,13 @@ private:
 											  IBlockMask* mask,
 											  TerrainPredicate& predicate);
 
+	int allyZoneCells;  // side of a square
 	SBlockingMap blockingMap;
 	std::unordered_map<CCircuitDef::Id, IBlockMask*> blockInfos;  // owner
 	void MarkBlockerByMask(const SStructure& building, bool block, IBlockMask* mask);
 	void MarkBlocker(const SStructure& building, bool block);
+	void MarkZoneAlly(const springai::AIFloat3& pos, bool block);
+	void MarkZoneOwn(const springai::AIFloat3& pos, bool block);
 
 public:
 	int GetConvertStoP() const { return terrainData->convertStoP; }

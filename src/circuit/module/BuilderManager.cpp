@@ -151,7 +151,7 @@ CBuilderManager::CBuilderManager(CCircuitAI* circuit)
 	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
 		CCircuitDef::Id unitDefId = cdef.GetId();
 		if (cdef.IsMobile()) {
-			if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty()) {
+			if (cdef.GetDef()->IsBuilder() && cdef.IsBuilder()) {
 				createdHandler[unitDefId]   = workerCreatedHandler;
 				finishedHandler[unitDefId]  = workerFinishedHandler;
 				idleHandler[unitDefId]      = workerIdleHandler;
@@ -1129,6 +1129,11 @@ IBuilderTask* CBuilderManager::MakeBuilderTask(CCircuitUnit* unit, const CQueryC
 
 IBuilderTask* CBuilderManager::CreateBuilderTask(const AIFloat3& position, CCircuitUnit* unit)
 {
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	if (terrainMgr->IsZoneAlly(position)) {
+		return EnqueuePatrol(IBuilderTask::Priority::LOW, position, .0f, FRAMES_PER_SEC * 20);
+	}
+
 	CEconomyManager* ecoMgr = circuit->GetEconomyManager();
 	IBuilderTask* task = ecoMgr->UpdateEnergyTasks(position, unit);
 	if (task != nullptr) {

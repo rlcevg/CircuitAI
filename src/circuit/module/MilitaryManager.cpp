@@ -659,6 +659,11 @@ void CMilitaryManager::MakeDefence(int cluster)
 
 void CMilitaryManager::MakeDefence(int cluster, const AIFloat3& pos)
 {
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
+	if (terrainMgr->IsZoneAlly(pos)) {
+		return;
+	}
+
 	CMetalManager* mm = circuit->GetMetalManager();
 	CEconomyManager* em = circuit->GetEconomyManager();
 	const float metalIncome = std::min(em->GetAvgMetalIncome(), em->GetAvgEnergyIncome()) * em->GetEcoFactor();

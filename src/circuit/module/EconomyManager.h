@@ -118,6 +118,7 @@ private:
 	};
 	std::vector<SClusterInfo> clusterInfos;
 	float pylonRange;
+	float pylonLinkInc;
 	CCircuitDef* pylonDef;  // TODO: Move into CEnergyGrid?
 
 	CCircuitDef* mexDef;

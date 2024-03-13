@@ -39,6 +39,14 @@ local options = {
 		section = 'performance',
 		def     = true,
 	},
+	{ -- number
+		key     = 'ally_base',
+		name    = 'Avoid building in allied bases',
+		desc    = 'Range of an avoidance zone near allied factories',
+		type    = 'number',
+		section = 'performance',
+		def     = 0,  -- ceil(multiples of 128) in elmos
+	},
 -- 	{ -- number (int->uint)
 -- 		key     = 'random_seed',
 -- 		name    = 'Random seed',

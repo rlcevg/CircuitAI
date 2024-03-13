@@ -191,11 +191,13 @@ public:
 	bool IsCheating() const { return isCheating; }
 	bool IsAllyAware() const { return isAllyAware; }
 	bool IsCommMerge() const { return isCommMerge; }
+	int GetAllyZoneRange() const { return allyZoneRange; }
 private:
 	std::string InitOptions();
 	bool isCheating;
 	bool isAllyAware;
 	bool isCommMerge;
+	int allyZoneRange;
 // ---- AIOptions.lua ---- END
 
 // ---- UnitDefs ---- BEGIN

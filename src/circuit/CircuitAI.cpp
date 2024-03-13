@@ -77,7 +77,7 @@ using namespace springai;
  * Только под ногами их крутятся:
  * По оси земля, по полу полу-люди!
  */
-constexpr char version[]{"1.2.13"};
+constexpr char version[]{"1.2.14"};
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
 unsigned int CCircuitAI::gaCounter = 0;
@@ -92,6 +92,7 @@ CCircuitAI::CCircuitAI(OOAICallback* clb)
 		, isCheating(false)
 		, isAllyAware(true)
 		, isCommMerge(true)
+		, allyZoneRange(0)
 		, isInitialized(false)
 		, isLoadSave(false)
 		, isResigned(false)
@@ -1472,6 +1473,11 @@ std::string CCircuitAI::InitOptions()
 	value = options->GetValueByKey("comm_merge");
 	if (value != nullptr) {
 		isCommMerge = StringToBool(value);
+	}
+
+	value = options->GetValueByKey("ally_base");
+	if (value != nullptr) {
+		allyZoneRange = StringToInt(value);
 	}
 
 	if (!gameAttribute->IsInitialized()) {

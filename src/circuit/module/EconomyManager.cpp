@@ -226,7 +226,7 @@ CEconomyManager::CEconomyManager(CCircuitAI* circuit)
 			}
 
 			// factory
-			if (cdef.GetDef()->IsBuilder() && !cdef.GetBuildOptions().empty()) {
+			if (cdef.GetDef()->IsBuilder() && cdef.IsBuilder()) {
 				finishedHandler[cdef.GetId()] = factoryFinishedHandler;
 				destroyedHandler[cdef.GetId()] = factoryDestroyedHandler;
 			}
@@ -306,6 +306,8 @@ void CEconomyManager::ReadConfig()
 				: 0.f;
 		energyFactor = efInfo.startFactor;
 	}
+
+	pylonLinkInc = energy.get("link_inc", 16.0f).asFloat();
 
 	std::vector<std::pair<std::string, int>> engies;
 	std::string type = circuit->GetTerrainManager()->IsWaterMap() ? "water" : "land";
@@ -693,18 +695,20 @@ IBuilderTask* CEconomyManager::UpdateMetalTasks(const AIFloat3& position, CCircu
 			if (unit != nullptr) {
 				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainMgr, unit](int index) {
-					return (IsAllyOpenSpot(index)
-							&& terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position)  // hostile environment
-							&& terrainMgr->CanReachAtSafe(unit, spots[index].position, unit->GetCircuitDef()->GetBuildDistance())
-							&& map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+					const AIFloat3& pos = spots[index].position;
+					return (IsAllyOpenSpot(index) && !terrainMgr->IsZoneAlly(pos)
+							&& terrainMgr->CanBeBuiltAtSafe(mexDef, pos)  // hostile environment
+							&& terrainMgr->CanReachAtSafe(unit, pos, unit->GetCircuitDef()->GetBuildDistance())
+							&& map->IsPossibleToBuildAt(mexDef->GetDef(), pos, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			} else {
 				CCircuitDef* mexDef = this->mexDef;
 				predicate = [this, &spots, map, mexDef, terrainMgr, builderMgr](int index) {
-					return (IsAllyOpenSpot(index)
-							&& terrainMgr->CanBeBuiltAtSafe(mexDef, spots[index].position)  // hostile environment
-							&& builderMgr->IsBuilderInArea(mexDef, spots[index].position)
-							&& map->IsPossibleToBuildAt(mexDef->GetDef(), spots[index].position, UNIT_COMMAND_BUILD_NO_FACING));
+					const AIFloat3& pos = spots[index].position;
+					return (IsAllyOpenSpot(index) && !terrainMgr->IsZoneAlly(pos)
+							&& terrainMgr->CanBeBuiltAtSafe(mexDef, pos)  // hostile environment
+							&& builderMgr->IsBuilderInArea(mexDef, pos)
+							&& map->IsPossibleToBuildAt(mexDef->GetDef(), pos, UNIT_COMMAND_BUILD_NO_FACING));
 				};
 			}
 			int index = metalMgr->GetMexToBuild(position, predicate);
@@ -858,7 +862,11 @@ IBuilderTask* CEconomyManager::UpdateEnergyTasks(const AIFloat3& position, CCirc
 	AIFloat3 buildPos = -RgtVector;
 	CMetalManager* metalMgr = circuit->GetMetalManager();
 	if (bestDef->GetCostM() < 1000.0f) {
-		int index = metalMgr->FindNearestSpot(position);
+		const CMetalData::Metals& spots = metalMgr->GetSpots();
+		CMetalData::PointPredicate predicate = [&spots, terrainMgr](int index) {
+			return !terrainMgr->IsZoneAlly(spots[index].position);
+		};
+		int index = metalMgr->FindNearestSpot(position, predicate);
 		if (index != -1) {
 			const CMetalData::Metals& spots = metalMgr->GetSpots();
 			buildPos = spots[index].position;
@@ -987,6 +995,7 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 		return nullptr;
 	}
 
+	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	const AIFloat3& enemyPos = circuit->GetEnemyManager()->GetEnemyPos();
 	const bool isStart = (factoryMgr->GetFactoryCount() == 0);
 	AIFloat3 buildPos;
@@ -1009,8 +1018,8 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 			}
 		}
 
-		CMetalData::PointPredicate predicate = [this](const int index) {
-			return clusterInfos[index].factory == nullptr;
+		CMetalData::PointPredicate predicate = [this, terrainMgr, &clusters](const int index) {
+			return (clusterInfos[index].factory == nullptr) && !terrainMgr->IsZoneAlly(clusters[index].position);
 		};
 		int index = metalMgr->FindNearestCluster(pos, predicate);
 		if (index < 0) {
@@ -1034,7 +1043,6 @@ IBuilderTask* CEconomyManager::UpdateFactoryTasks(const AIFloat3& position, CCir
 	buildPos.z += (buildPos.z > enemyPos.z) ? -size : size;
 
 	// identify area to build by factory representatives
-	CTerrainManager* terrainMgr = circuit->GetTerrainManager();
 	CCircuitDef* bdef;
 	CCircuitDef* landDef = factoryMgr->GetLandDef(facDef);
 	if (landDef != nullptr) {
@@ -1118,7 +1126,7 @@ IBuilderTask* CEconomyManager::UpdatePylonTasks()
 
 	const float energyIncome = GetAvgEnergyIncome();
 	const float metalIncome = std::min(GetAvgMetalIncome(), energyIncome);
-	if (metalIncome < 16) {
+	if (metalIncome < pylonLinkInc) {
 		return nullptr;
 	}
 
