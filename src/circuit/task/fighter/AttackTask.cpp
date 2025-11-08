@@ -207,7 +207,7 @@ void CAttackTask::Update()
 
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathSingleQuery(
 			leader, circuit->GetThreatMap(),
-			startPos, endPos, pathRange, GetHitTest(), attackPower);
+			startPos, endPos, pathRange, GetHitTest(), attackPower / manager->GetCircuit()->GetMilitaryManager()->GetRangeUnitCountCompensatorScale());
 	pathQueries[leader] = query;
 
 	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {

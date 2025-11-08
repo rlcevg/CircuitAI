@@ -22,6 +22,7 @@
 //#include "Cheats.h"
 #include "Feature.h"
 #include "FeatureDef.h"
+#include "module/MilitaryManager.h"
 
 namespace circuit {
 
@@ -371,7 +372,7 @@ void CInfluenceMap::AddEnemy(const SEnemyData& e)
 			: e.cdef->IsMobile()
 					? e.GetRange(CCircuitDef::ThreatType::SURF)
 					: e.GetRange(CCircuitDef::ThreatType::SURF) / 2;
-	const int rangeSq = SQUARE(range);
+	const int rangeSq = SQUARE(range) * manager->GetCircuit()->GetMilitaryManager()->GetRangeUnitCountCompensatorScale();
 
 	const int beginX = std::max(int(posx - range + 1),       0);
 	const int endX   = std::min(int(posx + range    ),  width);

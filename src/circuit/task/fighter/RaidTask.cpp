@@ -209,7 +209,7 @@ void CRaidTask::Update()
 	CPathFinder* pathfinder = circuit->GetPathfinder();
 	std::shared_ptr<IPathQuery> query = pathfinder->CreatePathMultiQuery(
 			leader, threatMap,
-			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, GetHitTest(), true, attackPower);
+			startPos, pathRange, !urgentPositions.empty() ? urgentPositions : enemyPositions, GetHitTest(), true, attackPower / manager->GetCircuit()->GetMilitaryManager()->GetRangeUnitCountCompensatorScale());
 	pathQueries[leader] = query;
 
 	pathfinder->RunQuery(circuit->GetScheduler().get(), query, [this](const IPathQuery* query) {

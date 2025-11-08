@@ -445,12 +445,14 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 			auto adjustDamage = [&damages, wd, reloadTime, scale](const std::vector<int>& armorTypes, float& outDmg, float& outDps) {
 				float localDmg = .0f;
 				for (int type : armorTypes) {
-					localDmg += damages[type];
+                    //if the weapon is paralyzer, limit the damage contribution to 100, eg: armthor missle doesnt actually do 80000 damage
+					localDmg += wd->IsParalyzer() ? std::min(100.0f, damages[type]) : damages[type];
 				}
 				localDmg /= armorTypes.size();
 				localDmg *= std::pow(2.0f, (wd->IsDynDamageInverted() ? 1 : -1) * wd->GetDynDamageExp());
 				outDmg += localDmg;
-				outDps += localDmg * wd->GetSalvoSize() / reloadTime * scale;
+                //factor in stockpile weapons that take a long time to build, use their build time and assume thats their 'reload' time
+				outDps += localDmg * wd->GetSalvoSize() / (std::max(reloadTime, wd->IsStockpileable() ? wd->GetStockpileTime() : 0)) * scale;
 			};
 			if ((weaponCat & circuit->GetAirCategory()) && isAirWeapon) {
 				adjustDamage(armor.airTypes, airDmg, airDps);
