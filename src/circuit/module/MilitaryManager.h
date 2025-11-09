@@ -114,9 +114,9 @@ private:
 	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 
     struct ThreatRangeScaling {
-        int minEnemyCountBeforeScaling;
-        int enemyCountForMaxScale;
-        float minScaleClamp;
+        int enemyCountPerEnemyTeamToStartScaling;
+        int enemyCountPerEnemyTeamToEndScaling;
+        float endScaleValue;
 
     } threatRangeScaling;
 
