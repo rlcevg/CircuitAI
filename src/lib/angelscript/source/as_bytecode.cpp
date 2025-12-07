@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2022 Andreas Jonsson
+   Copyright (c) 2003-2025 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -1388,7 +1388,9 @@ bool asCByteCode::IsTempRegUsed(asCByteInstruction *curr)
 			curr->op == asBC_JS       ||
 			curr->op == asBC_JNS      ||
 			curr->op == asBC_JP       ||
-			curr->op == asBC_JNP      )
+			curr->op == asBC_JNP      ||
+			curr->op == asBC_JMPP     || // TODO: JMP and JMPP cannot be said to read the temporary register. Need to follow the branch to determine what happens next
+			curr->op == asBC_JMP ) 
 			return true;
 
 		// Which instructions overwrite the register or discard the value?
@@ -1409,16 +1411,6 @@ bool asCByteCode::IsTempRegUsed(asCByteInstruction *curr)
 			curr->op == asBC_TNS       ||
 			curr->op == asBC_TP        ||
 			curr->op == asBC_TNP       ||
-			curr->op == asBC_JS        ||
-			curr->op == asBC_JNS       ||
-			curr->op == asBC_JP        ||
-			curr->op == asBC_JNP       ||
-			curr->op == asBC_JMPP      ||
-			curr->op == asBC_JMP       ||
-			curr->op == asBC_JZ        ||
-			curr->op == asBC_JNZ       ||
-			curr->op == asBC_JLowZ     ||
-			curr->op == asBC_JLowNZ    ||
 			curr->op == asBC_CMPi      ||
 			curr->op == asBC_CMPu      ||
 			curr->op == asBC_CMPf      ||
@@ -1426,7 +1418,6 @@ bool asCByteCode::IsTempRegUsed(asCByteInstruction *curr)
 			curr->op == asBC_CMPIi     ||
 			curr->op == asBC_CMPIu     ||
 			curr->op == asBC_CMPIf     ||
-			curr->op == asBC_LABEL     ||
 			curr->op == asBC_LoadThisR ||
 			curr->op == asBC_LoadRObjR ||
 			curr->op == asBC_LoadVObjR )
@@ -1490,7 +1481,18 @@ void asCByteCode::ExtractLineNumbers()
 			lineNumbers.PushLast(*(int*)ARG_DW(curr->arg));
 			sectionIdxs.PushLast(*((int*)ARG_DW(curr->arg)+1));
 
-			if( !engine->ep.buildWithoutLineCues )
+			// Check if this is the first instruction in the function
+			asCByteInstruction* c = curr->prev;
+			while (c && (c->op == asBC_VarDecl || c->op == asBC_ObjInfo))
+				c = c->prev;
+
+			if (c == 0)
+			{
+				// Delete the first asBC_SUSPEND instruction in the function since it is not needed, given that
+				// the asCContext::PrepareScriptFunction will anyway call the line callback to allow suspending.
+				DeleteInstruction(curr);
+			}
+			else if( !engine->ep.buildWithoutLineCues )
 			{
 				// Transform BC_LINE into BC_SUSPEND
 				curr->op = asBC_SUSPEND;
@@ -1585,6 +1587,7 @@ void asCByteCode::ExtractTryCatchInfo(asCScriptFunction *outFunc)
 			asSTryCatchInfo info;
 			info.tryPos    = pos;
 			info.catchPos  = *ARG_DW(instr->arg);
+			info.stackSize = asUINT(instr->stackSize);
 			outFunc->scriptData->tryCatchInfo.PushLast(info);
 		}
 
@@ -2400,7 +2403,7 @@ void asCByteCode::DebugOutput(const char *name, asCScriptFunction *func)
 			if( instr->op == asBC_ALLOC )
 			{
 				asCObjectType *ot = *(asCObjectType**)ARG_DW(instr->arg);
-				asCScriptFunction *f = engine->scriptFunctions[instr->wArg[0]];
+				asCScriptFunction *f = engine->scriptFunctions[(asWORD)instr->wArg[0]];
 				fprintf(file, "   %-8s 0x%x, %d             (type:%s, %s)\n", asBCInfo[instr->op].name, *(int*)ARG_DW(instr->arg), *(int*)(ARG_DW(instr->arg)+1), ot->GetName(), f ? f->GetDeclaration() : "{no func}");
 			}
 			else
@@ -2415,7 +2418,7 @@ void asCByteCode::DebugOutput(const char *name, asCScriptFunction *func)
 			if( instr->op == asBC_ALLOC )
 			{
 				asCObjectType *ot = *(asCObjectType**)ARG_QW(instr->arg);
-				asCScriptFunction *f = engine->scriptFunctions[instr->wArg[0]];
+				asCScriptFunction *f = engine->scriptFunctions[(asWORD)instr->wArg[0]];
 #if defined(__GNUC__) && !defined(_MSC_VER)
 #ifdef AS_64BIT_PTR
 				fprintf(file, "   %-8s 0x%lx, %d             (type:%s, %s)\n", asBCInfo[instr->op].name, *(asINT64*)ARG_QW(instr->arg), *(int*)(ARG_DW(instr->arg)+2), ot->GetName(), f ? f->GetDeclaration() : "{no func}");
@@ -2878,6 +2881,11 @@ int asCByteCode::InstrDOUBLE(asEBCInstr bc, double param)
 	last->stackInc = asBCInfo[bc].stackInc;
 
 	return last->stackInc;
+}
+
+asCByteInstruction* asCByteCode::GetFirstInstr()
+{
+	return first;
 }
 
 int asCByteCode::GetLastInstr()

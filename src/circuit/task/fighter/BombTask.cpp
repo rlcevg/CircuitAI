@@ -28,7 +28,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBombTask::CBombTask(IUnitModule* mgr, float powerMod)
+CBombTask::CBombTask(ITaskModule* mgr, float powerMod)
 		: ISquadTask(mgr, FightType::BOMB, powerMod)
 {
 }

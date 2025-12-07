@@ -157,6 +157,7 @@ public:
 	CAllyUnit* GetFriendlyUnit(springai::Unit* u) const;
 	CAllyUnit* GetFriendlyUnit(ICoreUnit::Id unitId) const { return allyTeam->GetFriendlyUnit(unitId); }
 	const CAllyTeam::AllyUnits& GetFriendlyUnits() const { return allyTeam->GetFriendlyUnits(); }
+	std::pair<CAllyUnit*, bool> GetTeamOrAllyUnit(springai::Unit* u) const;
 
 	using EnemyInfos = std::map<ICoreUnit::Id, CEnemyInfo*>;
 private:
@@ -171,9 +172,8 @@ public:
 
 	CAllyTeam* GetAllyTeam() const { return allyTeam; }
 
-	void DisableControl(CCircuitUnit* unit);
-	void DisableControl(const std::string data);
-	void EnableControl(const std::string data);
+	bool UnitControl(CCircuitUnit* unit, bool isEnable);
+	bool UnitControl(ICoreUnit::Id unitId, bool isEnable) { return UnitControl(GetTeamUnit(unitId), isEnable); }
 
 	void AddActionUnit(CCircuitUnit* unit) { actionUnits.push_back(unit); }
 

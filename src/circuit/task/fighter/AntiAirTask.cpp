@@ -29,7 +29,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CAntiAirTask::CAntiAirTask(IUnitModule* mgr, float powerMod)
+CAntiAirTask::CAntiAirTask(ITaskModule* mgr, float powerMod)
 		: ISquadTask(mgr, FightType::AA, powerMod)
 {
 	CCircuitAI* circuit = manager->GetCircuit();

@@ -24,7 +24,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-ISquadTask::ISquadTask(IUnitModule* mgr, FightType type, float powerMod)
+ISquadTask::ISquadTask(ITaskModule* mgr, FightType type, float powerMod)
 		: IFighterTask(mgr, type, powerMod)
 		, lowestRange(std::numeric_limits<float>::max())
 		, highestRange(.0f)

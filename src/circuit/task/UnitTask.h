@@ -28,7 +28,7 @@ namespace circuit {
 
 class CCircuitUnit;
 class CEnemyInfo;
-class IUnitModule;
+class ITaskModule;
 class IPathQuery;
 class CQueryPathSingle;
 class CQueryPathMulti;
@@ -40,8 +40,8 @@ public:
 	enum class State: char {ROAM, ENGAGE, DISENGAGE, REGROUP};
 
 protected:
-	IUnitTask(IUnitModule* mgr, Priority priority, Type type, int timeout);
-	IUnitTask(IUnitModule* mgr, Type type);  // Load
+	IUnitTask(ITaskModule* mgr, Priority priority, Type type, int timeout);
+	IUnitTask(ITaskModule* mgr, Type type);  // Load
 	virtual ~IUnitTask();
 public:
 	virtual void ClearRelease();
@@ -70,7 +70,7 @@ public:
 	const std::set<CCircuitUnit*>& GetAssignees() const { return units; }
 	Priority GetPriority() const { return priority; }
 	Type GetType() const { return type; }
-	IUnitModule* GetManager() const { return manager; }
+	ITaskModule* GetManager() const { return manager; }
 
 	int GetLastTouched() const { return lastTouched; }
 	int GetTimeout() const { return timeout; }
@@ -88,7 +88,7 @@ protected:
 	virtual bool Load(std::istream& is);
 	virtual void Save(std::ostream& os) const;
 
-	IUnitModule* manager;
+	ITaskModule* manager;
 	std::set<CCircuitUnit*> units;
 	Type type;
 	Priority priority;

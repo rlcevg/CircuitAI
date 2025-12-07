@@ -90,6 +90,7 @@ void CCircuitDef::InitStatic(CCircuitAI* circuit, CMaskHandler* roleMasker, CMas
 		{"rearm",     {ATTR_TYPE(REARM),     CCircuitDef::AttrMask::REARM}},
 		{"no_dgun",   {ATTR_TYPE(NO_DGUN),   CCircuitDef::AttrMask::NO_DGUN}},
 		{"anti_stat", {ATTR_TYPE(ANTI_STAT), CCircuitDef::AttrMask::ANTI_STAT}},
+		{"no_repair", {ATTR_TYPE(NO_REPAIR), CCircuitDef::AttrMask::NO_REPAIR}},
 	};
 	for (auto& kv : attrs) {
 		CMaskHandler::TypeMask tm = attrMasker->GetTypeMask(kv.first);
@@ -355,7 +356,9 @@ CCircuitDef::CCircuitDef(CCircuitAI* circuit, UnitDef* def, std::unordered_set<I
 		float dps = .0f;
 		float dmg = .0f;
 
-		float scale = wd->IsParalyzer() ? 0.5f : 1.0f;
+		// FIXME: Paralyzer with extra_damage should have more scale than without.
+		// Though extra_damage is Zero-K's feature.
+		float scale = wd->IsParalyzer() ? 0.1f : 1.0f;
 		auto it = customParams.find("disarmdamageonly");
 		if ((it != customParams.end()) && (utils::string_to_int(it->second) == 1)) {
 			scale = 0.5f;
@@ -719,8 +722,8 @@ void CCircuitDef::Init(CCircuitAI* circuit)
 	assert(power >= .0f);
 	assert(defThreat >= .0f);
 	assert(minRange >= .0f);
-	for (int i = 0; i < static_cast<int>(RangeType::_SIZE_); ++i) {
-		assert(maxRange[i] >= 0.f);
+	for (RangeT rt = 0; rt < static_cast<RangeT>(RangeType::_SIZE_); ++rt) {
+		assert(maxRange[rt] >= 0.f);
 	}
 	assert(shieldRadius >= .0f);
 	assert(maxShield >= .0f);
@@ -748,8 +751,29 @@ void CCircuitDef::RemDGun()
 	targetCategoryDGun = 0;
 }
 
+void CCircuitDef::SetRange(float range)
+{
+	// TODO: Asserts >= 0?
+	minRange = range;
+	maxRangeType = RangeType::AIR;
+	for (RangeT rt = 0; rt < static_cast<RangeT>(RangeType::_SIZE_); ++rt) {
+		maxRange[rt] = range;
+	}
+}
+
+void CCircuitDef::SetRange(RangeType type, float range)
+{
+	// TODO: Asserts >= 0?
+	minRange = std::min(minRange, range);
+	maxRange[static_cast<RangeT>(type)] = range;
+	if (range > maxRange[static_cast<RangeT>(maxRangeType)]) {
+		maxRangeType = type;
+	}
+}
+
 void CCircuitDef::SetThreatKernel(float thrDmg)
 {
+	// TODO: Asserts >= 0?
 	if (defThrDmg < DIV0_SLACK) {
 		airThrDmg = thrDmg * airThrMod;
 		surfThrDmg = thrDmg * surfThrMod;
@@ -767,8 +791,6 @@ void CCircuitDef::SetThreatKernel(float thrDmg)
 
 	defThrDmg = thrDmg * defThrMod;
 	defThreat = defThrDmg * healthMod;
-
-	// TODO: Asserts >= 0?
 }
 
 float CCircuitDef::GetRadius()

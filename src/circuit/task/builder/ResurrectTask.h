@@ -14,9 +14,9 @@ namespace circuit {
 
 class CBResurrectTask: public IBuilderTask {
 public:
-	CBResurrectTask(IUnitModule* mgr, Priority priority, const springai::AIFloat3& position,
+	CBResurrectTask(ITaskModule* mgr, Priority priority, const springai::AIFloat3& position,
 					SResource cost, int timeout, float radius = .0f);
-	CBResurrectTask(IUnitModule* mgr);  // Load
+	CBResurrectTask(ITaskModule* mgr);  // Load
 	virtual ~CBResurrectTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

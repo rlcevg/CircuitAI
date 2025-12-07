@@ -14,7 +14,7 @@ namespace circuit {
 
 class CSRepairTask: public IRepairTask {
 public:
-	CSRepairTask(IUnitModule* mgr, Priority priority, CAllyUnit* target, int timeout = 0);
+	CSRepairTask(ITaskModule* mgr, Priority priority, CAllyUnit* target, int timeout = 0);
 	virtual ~CSRepairTask();
 
 	virtual void AssignTo(CCircuitUnit* unit) override;

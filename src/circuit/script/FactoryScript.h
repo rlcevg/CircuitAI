@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_SCRIPT_FACTORYSCRIPT_H_
 #define SRC_CIRCUIT_SCRIPT_FACTORYSCRIPT_H_
 
-#include "script/UnitModuleScript.h"
+#include "script/TaskModuleScript.h"
 
 namespace springai {
 	class AIFloat3;
@@ -19,7 +19,7 @@ namespace circuit {
 class CFactoryManager;
 class CCircuitDef;
 
-class CFactoryScript: public IUnitModuleScript {
+class CFactoryScript: public ITaskModuleScript {
 public:
 	CFactoryScript(CScriptManager* scr, CFactoryManager* mgr);
 	virtual ~CFactoryScript();

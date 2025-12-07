@@ -6,6 +6,14 @@ namespace Economy {
 // To not reset army requirement on factory switch, @see Factory::AiIsSwitchAllowed
 bool isSwitchAssist = false;
 
+void AiUnitAdded(CCircuitUnit@ unit, Unit::UseAs usage)
+{
+}
+
+void AiUnitRemoved(CCircuitUnit@ unit, Unit::UseAs usage)
+{
+}
+
 void AiLoad(IStream& istream)
 {
 }

@@ -357,7 +357,6 @@ void CSerializedValue::Store(void *ref, int typeId)
 
 void CSerializedValue::Restore(void *ref, int typeId)
 {
-	assert(this);  // replacement of "if (!this) return;"
 	if( !m_isInit || !ref )
 		return;
 

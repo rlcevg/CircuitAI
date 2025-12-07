@@ -26,9 +26,13 @@ class IMainJob;
 
 class CThreatMap {
 public:
+	friend class CInitScript;
+
 	CThreatMap(CMapManager* manager, float decloakRadius);
 	virtual ~CThreatMap();
 
+	void ReadConfig();
+	void InitRanges();
 	void Init(const int roleSize, std::set<CCircuitDef::RoleT>&& modRoles);
 	void CopyDefs(CCircuitAI* ally);
 
@@ -58,6 +62,8 @@ public:
     float GetRangeUnitCountCompensatorScale();
 
 private:
+	void ApplyRange(CCircuitDef* cdef);
+
 	/*
 	 * http://stackoverflow.com/questions/872544/precision-of-floating-point
 	 * Single precision: for accuracy of +/-0.5 (or 2^-1) the maximum size that the number can be is 2^23.

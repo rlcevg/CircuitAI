@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2023 Andreas Jonsson
+   Copyright (c) 2003-2025 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -52,7 +52,7 @@
 
 BEGIN_AS_NAMESPACE
 
-#ifdef AS_MAX_PORTABILITY
+#if defined(AS_MAX_PORTABILITY) || defined(AS_NO_CLASS_METHODS)
 
 static void ScriptFunction_AddRef_Generic(asIScriptGeneric *gen)
 {
@@ -98,12 +98,14 @@ static void ScriptFunction_ReleaseAllHandles_Generic(asIScriptGeneric *gen)
 	self->ReleaseAllHandles(engine);
 }
 
+#ifdef AS_MAX_PORTABILITY
 static void ScriptFunction_CreateDelegate_Generic(asIScriptGeneric *gen)
 {
 	asCScriptFunction *func = (asCScriptFunction*)gen->GetArgAddress(0);
 	void *obj = gen->GetArgAddress(1);
 	gen->SetReturnAddress(CreateDelegate(func, obj));
 }
+#endif
 
 // TODO: operator==
 /*static void ScriptFunction_opEquals_Generic(asIScriptGeneric *gen)
@@ -125,7 +127,7 @@ void RegisterScriptFunction(asCScriptEngine *engine)
 	engine->functionBehaviours.engine = engine;
 	engine->functionBehaviours.flags = asOBJ_REF | asOBJ_GC;
 	engine->functionBehaviours.name = "$func";
-#ifndef AS_MAX_PORTABILITY
+#if !defined(AS_MAX_PORTABILITY) && !defined(AS_NO_CLASS_METHODS)
 	r = engine->RegisterBehaviourToObjectType(&engine->functionBehaviours, asBEHAVE_ADDREF, "void f()", asMETHOD(asCScriptFunction,AddRef), asCALL_THISCALL, 0); asASSERT( r >= 0 );
 	r = engine->RegisterBehaviourToObjectType(&engine->functionBehaviours, asBEHAVE_RELEASE, "void f()", asMETHOD(asCScriptFunction,Release), asCALL_THISCALL, 0); asASSERT( r >= 0 );
 	r = engine->RegisterBehaviourToObjectType(&engine->functionBehaviours, asBEHAVE_GETREFCOUNT, "int f()", asMETHOD(asCScriptFunction,GetRefCount), asCALL_THISCALL, 0); asASSERT( r >= 0 );
@@ -366,7 +368,6 @@ asCScriptFunction::asCScriptFunction(asCScriptEngine *engine, asCModule *mod, as
 	dontCleanUpOnException = false;
 	vfTableIdx             = -1;
 	gcFlag                 = false;
-	userData               = 0;
 	id                     = 0;
 	accessMask             = 0xFFFFFFFF;
 	nameSpace              = engine->nameSpaces[0];
@@ -492,6 +493,11 @@ void asCScriptFunction::DestroyInternal()
 		asDELETE(listPattern, asSListPatternNode);
 		listPattern = n;
 	}
+
+	// Release template sub types
+	for (asUINT n = 0; n < templateSubTypes.GetLength(); n++)
+		if(templateSubTypes[n].GetTypeInfo())
+			templateSubTypes[n].GetTypeInfo()->ReleaseInternal();
 }
 
 // interface
@@ -719,7 +725,18 @@ asCString asCScriptFunction::GetDeclarationStr(bool includeObjectName, bool incl
 			str += name + "(";
 	}
 	else
-		str += name + "(";
+	{
+		if (funcType == asFUNC_TEMPLATE)
+		{
+			str += name + "<";
+			for (asUINT t = 0; t < templateSubTypes.GetLength()-1; t++)
+				str += templateSubTypes[t].GetTypeInfo()->name + ",";
+			str += templateSubTypes[templateSubTypes.GetLength() - 1].GetTypeInfo()->name;
+			str += ">(";
+		}
+		else
+			str += name + "(";
+	}
 
 	if( parameterTypes.GetLength() > 0 )
 	{
@@ -771,6 +788,11 @@ asCString asCScriptFunction::GetDeclarationStr(bool includeObjectName, bool incl
 			tmp.Format(" = %s", defaultArgs[n]->AddressOf());
 			str += tmp;
 		}
+	}
+
+	if (IsVariadic())
+	{
+		str += "...";
 	}
 
 	str += ")";
@@ -864,6 +886,73 @@ int asCScriptFunction::FindNextLineWithCode(int line) const
 	}
 
 	return -1;
+}
+
+// interface
+int asCScriptFunction::GetLineEntryCount() const
+{
+	if (scriptData == 0) return asNOT_SUPPORTED;
+
+	return scriptData->lineNumbers.GetLength() / 2;
+}
+
+// interface
+int asCScriptFunction::GetLineEntry(asUINT index, int* row, int *col, const char** sectionName, const asDWORD** byteCode) const
+{
+	if (scriptData == 0) return asNOT_SUPPORTED;
+	if (index >= scriptData->lineNumbers.GetLength() / 2)
+		return asINVALID_ARG;
+
+	int position = scriptData->lineNumbers[index * 2];
+	int rowcol = scriptData->lineNumbers[(index * 2) + 1];
+
+	if (row) *row = rowcol & 0xFFFFF;
+	if (col) *col = rowcol >> 20;
+
+	if (sectionName)
+	{
+		if (scriptData->sectionIdxs.GetLength() > 0)
+		{
+			int sectionIdx = 0;
+
+			// Find the correct section index if the function is compiled from multiple sections
+			// This array will be empty most of the time so we don't need a sofisticated algorithm to search it
+			for (asUINT n = 0; n < scriptData->sectionIdxs.GetLength(); n += 2)
+			{
+				if (scriptData->sectionIdxs[n] <= position)
+					sectionIdx = scriptData->sectionIdxs[n + 1];
+			}
+
+			*sectionName = engine->scriptSectionNames[sectionIdx]->AddressOf();
+		}
+		else
+			*sectionName = engine->scriptSectionNames[scriptData->scriptSectionIdx]->AddressOf();
+	}
+
+	if( byteCode )
+	{
+		if (scriptData->byteCode.GetLength() == 0)
+			return asERROR;
+		*byteCode = scriptData->byteCode.AddressOf() + position;
+	}
+
+	return 0;
+}
+
+// interface
+int asCScriptFunction::GetDeclaredAt(const char** scriptSection, int* row, int* col) const
+{
+	if (!scriptData)
+	{
+		if (scriptSection) *scriptSection = 0;
+		if (row) *row = 0;
+		if (col) *col = 0;
+		return asNOT_SUPPORTED;
+	}
+	if (scriptSection) *scriptSection = scriptData->scriptSectionIdx >= 0 ? engine->scriptSectionNames[scriptData->scriptSectionIdx]->AddressOf() : 0;
+	if (row) *row = scriptData->declaredAt & 0xFFFFF;
+	if (col) *col = scriptData->declaredAt >> 20;
+	return 0;
 }
 
 // internal
@@ -961,7 +1050,7 @@ const char *asCScriptFunction::GetVarDecl(asUINT index, bool includeNamespace) c
 }
 
 // internal
-void asCScriptFunction::AddVariable(const asCString &in_name, asCDataType &in_type, int in_stackOffset, bool in_onHeap)
+void asCScriptFunction::AddVariable(const asCString &in_name, const asCDataType &in_type, int in_stackOffset, bool in_onHeap)
 {
 	asASSERT( scriptData );
 	asSScriptVariable *var = asNEW(asSScriptVariable);
@@ -1025,36 +1114,38 @@ bool asCScriptFunction::IsSignatureEqual(const asCScriptFunction *func) const
 // internal
 bool asCScriptFunction::IsSignatureExceptNameEqual(const asCScriptFunction *func) const
 {
-	return IsSignatureExceptNameEqual(func->returnType, func->parameterTypes, func->inOutFlags, func->objectType, func->IsReadOnly());
+	return IsSignatureExceptNameEqual(func->returnType, func->parameterTypes, func->inOutFlags, func->objectType, func->IsReadOnly(), func->IsVariadic());
 }
 
 // internal
-bool asCScriptFunction::IsSignatureExceptNameEqual(const asCDataType &retType, const asCArray<asCDataType> &paramTypes, const asCArray<asETypeModifiers> &paramInOut, const asCObjectType *objType, bool readOnly) const
+bool asCScriptFunction::IsSignatureExceptNameEqual(const asCDataType &retType, const asCArray<asCDataType> &paramTypes, const asCArray<asETypeModifiers> &paramInOut, const asCObjectType *objType, bool readOnly, bool isVariadic) const
 {
 	if( this->returnType != retType ) return false;
 
-	return IsSignatureExceptNameAndReturnTypeEqual(paramTypes, paramInOut, objType, readOnly);
+	return IsSignatureExceptNameAndReturnTypeEqual(paramTypes, paramInOut, objType, readOnly, isVariadic);
 }
 
 // internal
 bool asCScriptFunction::IsSignatureExceptNameAndObjectTypeEqual(const asCScriptFunction *func) const
 {
-	return IsSignatureExceptNameEqual(func->returnType, func->parameterTypes, func->inOutFlags, objectType, IsReadOnly());
+	// Neither object type nor constness is compared (so that a class method can be matched to a global function for creating delegates)
+	return IsSignatureExceptNameEqual(func->returnType, func->parameterTypes, func->inOutFlags, objectType, IsReadOnly(), func->IsVariadic());
 }
 
 // internal
 bool asCScriptFunction::IsSignatureExceptNameAndReturnTypeEqual(const asCScriptFunction *func) const
 {
-	return IsSignatureExceptNameAndReturnTypeEqual(func->parameterTypes, func->inOutFlags, func->objectType, func->IsReadOnly());
+	return IsSignatureExceptNameAndReturnTypeEqual(func->parameterTypes, func->inOutFlags, func->objectType, func->IsReadOnly(), func->IsVariadic());
 }
 
 // internal
-bool asCScriptFunction::IsSignatureExceptNameAndReturnTypeEqual(const asCArray<asCDataType> &paramTypes, const asCArray<asETypeModifiers> &paramInOut, const asCObjectType *objType, bool readOnly) const
+bool asCScriptFunction::IsSignatureExceptNameAndReturnTypeEqual(const asCArray<asCDataType> &paramTypes, const asCArray<asETypeModifiers> &paramInOut, const asCObjectType *objType, bool readOnly, bool isVariadic) const
 {
 	if( this->IsReadOnly()      != readOnly       ) return false;
 	if( (this->objectType != 0) != (objType != 0) ) return false;
 	if( this->inOutFlags        != paramInOut     ) return false;
 	if( this->parameterTypes    != paramTypes     ) return false;
+	if (this->IsVariadic()      != isVariadic     ) return false;
 
 	return true;
 }
@@ -1392,8 +1483,15 @@ void asCScriptFunction::ReleaseReferences()
 		}
 
 		// Release the jit compiled function
-		if( scriptData->jitFunction )
-			engine->jitCompiler->ReleaseJITFunction(scriptData->jitFunction);
+		if (scriptData->jitFunction)
+		{
+			if (engine->ep.jitInterfaceVersion == 1)
+				static_cast<asIJITCompiler*>(engine->jitCompiler)->ReleaseJITFunction(scriptData->jitFunction);
+		}
+		// For JIT v2, the CleanFunction is called even if the jitFunction has not been set. This is because the
+		// JIT compiler may have cached data associated with the function that needs to be cleaned up.
+		if (funcType == asFUNC_SCRIPT && scriptData && engine->ep.jitInterfaceVersion == 2)
+			static_cast<asIJITCompilerV2*>(engine->jitCompiler)->CleanFunction(this, scriptData->jitFunction);
 		scriptData->jitFunction = 0;
 	}
 
@@ -1479,6 +1577,8 @@ const char *asCScriptFunction::GetDeclaration(bool includeObjectName, bool inclu
 	return tempString->AddressOf();
 }
 
+#ifdef AS_DEPRECATED
+// deprecated since 2025-04-25, 2.38.0
 // interface
 const char *asCScriptFunction::GetScriptSectionName() const
 {
@@ -1487,6 +1587,7 @@ const char *asCScriptFunction::GetScriptSectionName() const
 
 	return 0;
 }
+#endif
 
 // interface
 const char *asCScriptFunction::GetConfigGroup() const
@@ -1509,6 +1610,36 @@ asDWORD asCScriptFunction::GetAccessMask() const
 	return accessMask;
 }
 
+// interface
+int asCScriptFunction::SetJITFunction(asJITFunction jitFunc)
+{
+	if (engine->ep.jitInterfaceVersion == 1)
+		return asNOT_SUPPORTED;
+
+	if (funcType != asFUNC_SCRIPT)
+		return asERROR;
+
+	if (scriptData->jitFunction && scriptData->jitFunction != jitFunc )
+	{
+		if (engine->ep.jitInterfaceVersion == 2)
+			static_cast<asIJITCompilerV2*>(engine->jitCompiler)->CleanFunction(this, scriptData->jitFunction);
+		scriptData->jitFunction = 0;
+	}
+
+	scriptData->jitFunction = jitFunc;
+
+	return asSUCCESS;
+}
+
+// interface
+asJITFunction asCScriptFunction::GetJITFunction() const
+{
+	if (scriptData)
+		return scriptData->jitFunction;
+
+	return 0;
+}
+
 // internal
 void asCScriptFunction::JITCompile()
 {
@@ -1517,13 +1648,12 @@ void asCScriptFunction::JITCompile()
 
 	asASSERT( scriptData );
 
-	asIJITCompiler *jit = engine->GetJITCompiler();
-	if( !jit )
+	if( !engine->jitCompiler )
 		return;
 
 	// Make sure the function has been compiled with JitEntry instructions
 	// For functions that has JitEntry this will be a quick test
-	asUINT length;
+	asUINT length = 0;
 	asDWORD *byteCode = GetByteCode(&length);
 	asDWORD *end = byteCode + length;
 	bool foundJitEntry = false;
@@ -1551,14 +1681,27 @@ void asCScriptFunction::JITCompile()
 	// Release the previous function, if any
 	if( scriptData->jitFunction )
 	{
-		engine->jitCompiler->ReleaseJITFunction(scriptData->jitFunction);
+		if (engine->ep.jitInterfaceVersion == 1)
+			static_cast<asIJITCompiler*>(engine->jitCompiler)->ReleaseJITFunction(scriptData->jitFunction);
+		else if (engine->ep.jitInterfaceVersion == 2)
+			static_cast<asIJITCompilerV2*>(engine->jitCompiler)->CleanFunction(this, scriptData->jitFunction);
 		scriptData->jitFunction = 0;
 	}
 
-	// Compile for native system
-	int r = jit->CompileFunction(this, &scriptData->jitFunction);
-	if( r < 0 )
-		asASSERT( scriptData->jitFunction == 0 );
+	if (engine->ep.jitInterfaceVersion == 1)
+	{
+		// Compile for native system. If the JIT compiler decides to compile the function it 
+		// must do so now, as it is not allowed to do it later.
+		int r = static_cast<asIJITCompiler*>(engine->jitCompiler)->CompileFunction(this, &scriptData->jitFunction);
+		if (r < 0)
+			asASSERT(scriptData->jitFunction == 0);
+	}
+	else if (engine->ep.jitInterfaceVersion == 2)
+	{
+		// Notify the JIT compiler about the new function, it may do JIT compilation now, or later, or not at all.
+		// If it does the compilation now, it will use SetJITFunction to inform the compiled JIT function.
+		static_cast<asIJITCompilerV2*>(engine->jitCompiler)->NewFunction(this);
+	}
 }
 
 // interface
@@ -1724,6 +1867,12 @@ bool asCScriptFunction::IsProperty() const
 	return traits.GetTrait(asTRAIT_PROPERTY);
 }
 
+// interface
+bool asCScriptFunction::IsVariadic() const
+{
+	return traits.GetTrait(asTRAIT_VARIADIC);
+}
+
 // internal
 bool asCScriptFunction::IsFactory() const
 {
@@ -1751,7 +1900,7 @@ asCScriptFunction* asCScriptFunction::FindNextFunctionCalled(asUINT startSearchF
 	// Find out which function that will be called
 	asCScriptFunction* calledFunc = 0;
 	int stackDelta = 0;
-	for (asUINT n = startSearchFromProgramPos; scriptData->byteCode.GetLength(); )
+	for (asUINT n = startSearchFromProgramPos; n < scriptData->byteCode.GetLength(); )
 	{
 		asBYTE bc = *(asBYTE*)&scriptData->byteCode[n];
 		if (bc == asBC_CALL ||
@@ -1842,6 +1991,34 @@ asCScriptFunction* asCScriptFunction::GetCalledFunction(asDWORD programPos)
 	}
 
 	return 0;
+}
+
+// interface
+asUINT asCScriptFunction::GetSubTypeCount() const
+{
+	return asUINT(templateSubTypes.GetLength());
+}
+
+// interface
+int asCScriptFunction::GetSubTypeId(asUINT subtypeIndex) const
+{
+	// This method is only supported for templates and template specializations
+	if (templateSubTypes.GetLength() == 0)
+		return asERROR;
+
+	if (subtypeIndex >= templateSubTypes.GetLength())
+		return asINVALID_ARG;
+
+	return engine->GetTypeIdFromDataType(templateSubTypes[subtypeIndex]);
+}
+
+// interface
+asITypeInfo* asCScriptFunction::GetSubType(asUINT subtypeIndex) const
+{
+	if (subtypeIndex >= templateSubTypes.GetLength())
+		return 0;
+
+	return templateSubTypes[subtypeIndex].GetTypeInfo();
 }
 
 END_AS_NAMESPACE

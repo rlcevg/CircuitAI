@@ -28,7 +28,7 @@ static int opposite[] = {
 	UNIT_FACING_EAST
 };
 
-CBFactoryTask::CBFactoryTask(IUnitModule* mgr, Priority priority,
+CBFactoryTask::CBFactoryTask(ITaskModule* mgr, Priority priority,
 							 CCircuitDef* buildDef, CCircuitDef* reprDef, const AIFloat3& position,
 							 SResource cost, float shake, bool isPlop, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::FACTORY, cost, shake, timeout)
@@ -38,7 +38,7 @@ CBFactoryTask::CBFactoryTask(IUnitModule* mgr, Priority priority,
 	manager->GetCircuit()->GetFactoryManager()->AddFactory(buildDef);
 }
 
-CBFactoryTask::CBFactoryTask(IUnitModule* mgr)
+CBFactoryTask::CBFactoryTask(ITaskModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::FACTORY)
 		, reprDef(nullptr)
 		, isPlop(false)

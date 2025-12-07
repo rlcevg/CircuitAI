@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBGeoTask: public IBuilderTask {
 public:
-	CBGeoTask(IUnitModule* mgr, Priority priority,
+	CBGeoTask(ITaskModule* mgr, Priority priority,
 			  CCircuitDef* buildDef, int spotId, const springai::AIFloat3& position,
 			  SResource cost, int timeout);
-	CBGeoTask(IUnitModule* mgr);  // Load
+	CBGeoTask(ITaskModule* mgr);  // Load
 	virtual ~CBGeoTask();
 
 protected:

@@ -12,14 +12,14 @@ namespace circuit {
 
 using namespace springai;
 
-CBGenericTask::CBGenericTask(IUnitModule* mgr, BuildType buildType, Priority priority,
+CBGenericTask::CBGenericTask(ITaskModule* mgr, BuildType buildType, Priority priority,
 							 CCircuitDef* buildDef, const AIFloat3& position,
 							 SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, buildType, cost, shake, timeout)
 {
 }
 
-CBGenericTask::CBGenericTask(IUnitModule* mgr, BuildType buildType)
+CBGenericTask::CBGenericTask(ITaskModule* mgr, BuildType buildType)
 		: IBuilderTask(mgr, Type::BUILDER, buildType)
 {
 }

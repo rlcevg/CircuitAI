@@ -47,42 +47,6 @@ CThreatMap::CThreatMap(CMapManager* manager, float decloakRadius)
 
 	rangeDefault = (DEFAULT_SLACK * 4) / squareSize;
 	distCloak = (decloakRadius + DEFAULT_SLACK) / squareSize;
-
-	const Json::Value& slack = circuit->GetSetupManager()->GetConfig()["quota"]["slack_mod"];
-	slackMod.allMod = slack.get("all", 1.f).asFloat();
-	slackMod.staticMod = slack.get("static", 1.f).asFloat();
-	const Json::Value& speedSlack = slack["speed"];
-	slackMod.speedMod = speedSlack.get((unsigned)0, 1.f).asFloat() * DEFAULT_SLACK / squareSize;
-	slackMod.speedModMax = speedSlack.get((unsigned)1, 2).asInt() * DEFAULT_SLACK / squareSize;
-	constexpr float allowedRange = 2000.f;
-	constexpr float allowedSpeed = 200.f;
-	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
-		float speed = cdef.GetSpeed();
-		float slack = squareSize - 1 + cdef.GetAoe() / 2 + DEFAULT_SLACK * slackMod.allMod;
-		if (cdef.IsMobile()) {
-			// TODO: slack should also depend on own unit's path update rate
-			slack += THREAT_UPDATE_RATE * speed / FRAMES_PER_SEC;
-		} else {
-			slack += DEFAULT_SLACK * slackMod.staticMod;
-		}
-		float realRange;
-		int range;
-
-		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::AIR);
-		range = cdef.HasSurfToAir() ? int(realRange + slack) / squareSize + 1 : 0;
-		cdef.SetThreatRange(CCircuitDef::ThreatType::AIR, range);
-
-		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::LAND);
-		range = (cdef.HasSurfToLand() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
-		cdef.SetThreatRange(CCircuitDef::ThreatType::SURF, range);
-
-		realRange = cdef.GetMaxRange(CCircuitDef::RangeType::WATER);
-		range = (cdef.HasSurfToWater() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
-		cdef.SetThreatRange(CCircuitDef::ThreatType::WATER, range);
-
-		cdef.SetThreatRange(CCircuitDef::ThreatType::CLOAK, GetCloakRange(&cdef));
-		cdef.SetThreatRange(CCircuitDef::ThreatType::SHIELD, GetShieldRange(&cdef));
-	}
 }
 
 CThreatMap::~CThreatMap()
@@ -94,6 +58,28 @@ CThreatMap::~CThreatMap()
 		delete[] win.second;
 	}
 #endif
+}
+
+void CThreatMap::ReadConfig()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	const Json::Value& slack = circuit->GetSetupManager()->GetConfig()["quota"]["slack_mod"];
+	slackMod.allMod = slack.get("all", 1.f).asFloat();
+	slackMod.staticMod = slack.get("static", 1.f).asFloat();
+	const Json::Value& speedSlack = slack["speed"];
+	slackMod.speedMod = speedSlack.get((unsigned)0, 1.f).asFloat() * DEFAULT_SLACK / squareSize;
+	slackMod.speedModMax = speedSlack.get((unsigned)1, 2).asInt() * DEFAULT_SLACK / squareSize;
+}
+
+void CThreatMap::InitRanges()
+{
+	CCircuitAI* circuit = manager->GetCircuit();
+	for (CCircuitDef& cdef : circuit->GetCircuitDefs()) {
+		ApplyRange(&cdef);
+
+		cdef.SetThreatRange(CCircuitDef::ThreatType::CLOAK, GetCloakRange(&cdef));
+		cdef.SetThreatRange(CCircuitDef::ThreatType::SHIELD, GetShieldRange(&cdef));
+	}
 }
 
 void CThreatMap::Init(const int roleSize, std::set<CCircuitDef::RoleT>&& modRoles)
@@ -302,6 +288,35 @@ float CThreatMap::GetUnitPower(CCircuitUnit* unit) const
 {
 	float health = unit->GetUnit()->GetHealth() + unit->GetShieldPower() * SHIELD_MOD;
 	return unit->GetDamage() * sqrtf(std::max(health, 0.f));  // / unit->GetUnit()->GetMaxHealth();
+}
+
+void CThreatMap::ApplyRange(CCircuitDef* cdef)
+{
+	constexpr float allowedRange = 2000.f;
+	constexpr float allowedSpeed = 200.f;
+
+	const float speed = cdef->GetSpeed();
+	float slack = squareSize - 1 + cdef->GetAoe() / 2 + DEFAULT_SLACK * slackMod.allMod;
+	if (cdef->IsMobile()) {
+		// TODO: slack should also depend on own unit's path update rate
+		slack += THREAT_UPDATE_RATE * speed / FRAMES_PER_SEC;
+	} else {
+		slack += DEFAULT_SLACK * slackMod.staticMod;
+	}
+	float realRange;
+	int range;
+
+	realRange = cdef->GetMaxRange(CCircuitDef::RangeType::AIR);
+	range = cdef->HasSurfToAir() ? int(realRange + slack) / squareSize + 1 : 0;
+	cdef->SetThreatRange(CCircuitDef::ThreatType::AIR, range);
+
+	realRange = cdef->GetMaxRange(CCircuitDef::RangeType::LAND);
+	range = (cdef->HasSurfToLand() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
+	cdef->SetThreatRange(CCircuitDef::ThreatType::SURF, range);
+
+	realRange = cdef->GetMaxRange(CCircuitDef::RangeType::WATER);
+	range = (cdef->HasSurfToWater() && (realRange <= allowedRange) && (speed <= allowedSpeed)) ? int(realRange + slack) / squareSize + 1 : 0;
+	cdef->SetThreatRange(CCircuitDef::ThreatType::WATER, range);
 }
 
 inline void CThreatMap::PosToXZ(const AIFloat3& pos, int& x, int& z) const

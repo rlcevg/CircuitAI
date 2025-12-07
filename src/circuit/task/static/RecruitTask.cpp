@@ -22,7 +22,7 @@ namespace circuit {
 
 using namespace springai;
 
-CRecruitTask::CRecruitTask(IUnitModule* mgr, Priority priority,
+CRecruitTask::CRecruitTask(ITaskModule* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
 						   RecruitType type, float radius)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::FACTORY, BuildType::RECRUIT, {0.f, 0.f}, 0.f, -1)

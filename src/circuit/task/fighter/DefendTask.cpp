@@ -32,7 +32,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CDefendTask::CDefendTask(IUnitModule* mgr, const AIFloat3& position,
+CDefendTask::CDefendTask(ITaskModule* mgr, const AIFloat3& position,
 						 FightType check, FightType promote, float maxPower, float powerMod)
 		: ISquadTask(mgr, FightType::DEFEND, powerMod)
 		, check(check)

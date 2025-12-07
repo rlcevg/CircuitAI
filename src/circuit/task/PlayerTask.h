@@ -14,7 +14,7 @@ namespace circuit {
 
 class CPlayerTask: public IUnitTask {
 public:
-	CPlayerTask(IUnitModule* mgr);
+	CPlayerTask(ITaskModule* mgr);
 	virtual ~CPlayerTask();
 
 	virtual void Start(CCircuitUnit* unit) override;

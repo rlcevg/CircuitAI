@@ -14,7 +14,7 @@ namespace circuit {
 
 class CBWaitTask: public IWaitTask {
 public:
-	CBWaitTask(IUnitModule* mgr, int timeout);
+	CBWaitTask(ITaskModule* mgr, int timeout);
 	virtual ~CBWaitTask();
 
 	virtual void OnUnitDamaged(CCircuitUnit* unit, CEnemyInfo* attacker) override;

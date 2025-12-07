@@ -16,8 +16,8 @@ class CEconomyManager;
 
 class CBRepairTask: public IRepairTask {
 public:
-	CBRepairTask(IUnitModule* mgr, Priority priority, CAllyUnit* target, int timeout = 0);
-	CBRepairTask(IUnitModule* mgr);  // Load
+	CBRepairTask(ITaskModule* mgr, Priority priority, CAllyUnit* target, int timeout = 0);
+	CBRepairTask(ITaskModule* mgr);  // Load
 	virtual ~CBRepairTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

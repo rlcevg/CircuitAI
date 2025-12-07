@@ -6,7 +6,7 @@
  */
 
 #include "task/builder/PatrolTask.h"
-#include "module/UnitModule.h"
+#include "module/TaskModule.h"
 #include "terrain/TerrainManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/action/DGunAction.h"
@@ -19,7 +19,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBPatrolTask::CBPatrolTask(IUnitModule* mgr, Priority priority,
+CBPatrolTask::CBPatrolTask(ITaskModule* mgr, Priority priority,
 						   const AIFloat3& position,
 						   int timeout)
 		: IBuilderTask(mgr, priority, nullptr, position, Type::BUILDER, BuildType::PATROL, {0.f, 0.f}, 0.f, timeout)

@@ -29,6 +29,8 @@ struct SResource {
 
 class IBuilderTask: public IUnitTask {
 public:
+	friend class CInitScript;
+
 	enum class BuildType: char {
 		FACTORY = 0,
 		NANO,
@@ -62,10 +64,10 @@ private:
 	static BuildName buildNames;
 
 protected:
-	IBuilderTask(IUnitModule* mgr, Priority priority,
+	IBuilderTask(ITaskModule* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 Type type, BuildType buildType, SResource cost, float shake = SQUARE_SIZE * 32, int timeout = ASSIGN_TIMEOUT);
-	IBuilderTask(IUnitModule* mgr, Type type, BuildType buildType);  // Load
+	IBuilderTask(ITaskModule* mgr, Type type, BuildType buildType);  // Load
 public:
 	virtual ~IBuilderTask();
 

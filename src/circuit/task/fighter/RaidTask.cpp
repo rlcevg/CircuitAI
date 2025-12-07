@@ -30,7 +30,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CRaidTask::CRaidTask(IUnitModule* mgr, float maxPower, float powerMod)
+CRaidTask::CRaidTask(ITaskModule* mgr, float maxPower, float powerMod)
 		: ISquadTask(mgr, FightType::RAID, powerMod)
 		, maxPower(maxPower)
 {

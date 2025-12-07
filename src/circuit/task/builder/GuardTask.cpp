@@ -15,7 +15,7 @@
 
 namespace circuit {
 
-CBGuardTask::CBGuardTask(IUnitModule* mgr, Priority priority, CCircuitUnit* vip, bool isInterrupt, int timeout)
+CBGuardTask::CBGuardTask(ITaskModule* mgr, Priority priority, CCircuitUnit* vip, bool isInterrupt, int timeout)
 		: IBuilderTask(mgr, priority, nullptr, vip->GetPos(mgr->GetCircuit()->GetLastFrame()),
 					   Type::BUILDER, BuildType::GUARD, {0.f, 0.f}, 0.f, timeout)
 		, vipId(vip->GetId())

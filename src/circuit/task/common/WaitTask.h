@@ -14,7 +14,7 @@ namespace circuit {
 
 class IWaitTask: public IUnitTask {
 public:
-	IWaitTask(IUnitModule* mgr, bool stop, int timeout);
+	IWaitTask(ITaskModule* mgr, bool stop, int timeout);
 	virtual ~IWaitTask();
 
 	virtual void AssignTo(CCircuitUnit* unit) override;

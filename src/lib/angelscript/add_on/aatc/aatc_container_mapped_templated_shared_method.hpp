@@ -393,8 +393,8 @@ namespace aatc {
 						}
 
 						template<typename T_container> static void operator_index(common::RegistrationState& rs) {
-							rs.error = rs.engine->RegisterObjectMethod(rs.n_container_T, "const T_value& get_opIndex(const T_key &in) const", asFUNCTIONPR(method::find_value<T_container>, (T_container*, void*), void*), asCALL_CDECL_OBJFIRST); assert(rs.error >= 0);
-							rs.error = rs.engine->RegisterObjectMethod(rs.n_container_T, "void set_opIndex(const T_key&in,const T_value&in)", asFUNCTION(method::insert<T_container>), asCALL_CDECL_OBJFIRST); assert(rs.error >= 0);
+							rs.error = rs.engine->RegisterObjectMethod(rs.n_container_T, "const T_value& get_opIndex(const T_key &in) const property", asFUNCTIONPR(method::find_value<T_container>, (T_container*, void*), void*), asCALL_CDECL_OBJFIRST); assert(rs.error >= 0);
+							rs.error = rs.engine->RegisterObjectMethod(rs.n_container_T, "void set_opIndex(const T_key&in,const T_value&in) property", asFUNCTION(method::insert<T_container>), asCALL_CDECL_OBJFIRST); assert(rs.error >= 0);
 						}
 
 

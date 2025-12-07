@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBConvertTask: public IBuilderTask {
 public:
-	CBConvertTask(IUnitModule* mgr, Priority priority,
+	CBConvertTask(ITaskModule* mgr, Priority priority,
 				  CCircuitDef* buildDef, const springai::AIFloat3& position,
 				  SResource cost, float shake, int timeout);
-	CBConvertTask(IUnitModule* mgr);  // Load
+	CBConvertTask(ITaskModule* mgr);  // Load
 	virtual ~CBConvertTask();
 
 	virtual void Update() override;

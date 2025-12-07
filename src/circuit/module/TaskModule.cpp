@@ -1,12 +1,12 @@
 /*
- * UnitModule.cpp
+ * TaskModule.cpp
  *
  *  Created on: Jan 20, 2015
  *      Author: rlcevg
  */
 
-#include "module/UnitModule.h"
-#include "script/UnitModuleScript.h"
+#include "module/TaskModule.h"
+#include "script/TaskModuleScript.h"
 #include "task/NilTask.h"
 #include "task/IdleTask.h"
 #include "task/PlayerTask.h"
@@ -17,7 +17,7 @@
 
 namespace circuit {
 
-IUnitModule::IUnitModule(CCircuitAI* circuit, IScript* script)
+ITaskModule::ITaskModule(CCircuitAI* circuit, IScript* script)
 		: IModule(circuit, script)
 		, nilTask(nullptr)
 		, idleTask(nullptr)
@@ -28,7 +28,7 @@ IUnitModule::IUnitModule(CCircuitAI* circuit, IScript* script)
 	Init();
 }
 
-IUnitModule::~IUnitModule()
+ITaskModule::~ITaskModule()
 {
 	delete nilTask;
 	delete idleTask;
@@ -39,14 +39,14 @@ IUnitModule::~IUnitModule()
 	}
 }
 
-void IUnitModule::Init()
+void ITaskModule::Init()
 {
 	nilTask = new CNilTask(this);
 	idleTask = new CIdleTask(this);
 	playerTask = new CPlayerTask(this);
 }
 
-void IUnitModule::Release()
+void ITaskModule::Release()
 {
 	// NOTE: Release expected to be called on CCircuit::Release.
 	//       It doesn't stop scheduled GameTasks for that reason.
@@ -60,14 +60,14 @@ void IUnitModule::Release()
 	updateTasks.clear();
 }
 
-void IUnitModule::AssignTask(CCircuitUnit* unit, IUnitTask* task)
+void ITaskModule::AssignTask(CCircuitUnit* unit, IUnitTask* task)
 {
 	unit->GetTask()->RemoveAssignee(unit);
 	task->AssignTo(unit);
 	task->Start(unit);
 }
 
-void IUnitModule::AssignTask(CCircuitUnit* unit)
+void ITaskModule::AssignTask(CCircuitUnit* unit)
 {
 	IUnitTask* task = MakeTask(unit);
 	if (task != nullptr) {
@@ -75,47 +75,34 @@ void IUnitModule::AssignTask(CCircuitUnit* unit)
 	}
 }
 
-void IUnitModule::DequeueTask(IUnitTask* task, bool done)
+void ITaskModule::DequeueTask(IUnitTask* task, bool done)
 {
 	task->Dead();
 	TaskRemoved(task, done);
 	task->Stop(done);
 }
 
-IUnitTask* IUnitModule::MakeTask(CCircuitUnit* unit)
+IUnitTask* ITaskModule::MakeTask(CCircuitUnit* unit)
 {
-	return static_cast<IUnitModuleScript*>(script)->MakeTask(unit);  // DefaultMakeTask
+	return static_cast<ITaskModuleScript*>(script)->MakeTask(unit);  // DefaultMakeTask
 }
 
-void IUnitModule::TaskAdded(IUnitTask* task)
+void ITaskModule::TaskAdded(IUnitTask* task)
 {
-	static_cast<IUnitModuleScript*>(script)->TaskAdded(task);
+	static_cast<ITaskModuleScript*>(script)->TaskAdded(task);
 }
 
-void IUnitModule::TaskRemoved(IUnitTask* task, bool done)
+void ITaskModule::TaskRemoved(IUnitTask* task, bool done)
 {
-	static_cast<IUnitModuleScript*>(script)->TaskRemoved(task, done);
+	static_cast<ITaskModuleScript*>(script)->TaskRemoved(task, done);
 }
 
-void IUnitModule::UnitAdded(CCircuitUnit* unit, UseAs usage)
-{
-	if (circuit->IsLoadSave()) {
-		return;
-	}
-	static_cast<IUnitModuleScript*>(script)->UnitAdded(unit, usage);
-}
-
-void IUnitModule::UnitRemoved(CCircuitUnit* unit, UseAs usage)
-{
-	static_cast<IUnitModuleScript*>(script)->UnitRemoved(unit, usage);
-}
-
-void IUnitModule::AssignPlayerTask(CCircuitUnit* unit)
+void ITaskModule::AssignPlayerTask(CCircuitUnit* unit)
 {
 	AssignTask(unit, playerTask);
 }
 
-void IUnitModule::Resurrected(CCircuitUnit* unit)
+void ITaskModule::Resurrected(CCircuitUnit* unit)
 {
 	CRetreatTask* task = EnqueueRetreat();
 	if (task != nullptr) {
@@ -123,14 +110,14 @@ void IUnitModule::Resurrected(CCircuitUnit* unit)
 	}
 }
 
-void IUnitModule::UpdateIdle()
+void ITaskModule::UpdateIdle()
 {
 	ZoneScoped;
 
 	idleTask->Update();
 }
 
-void IUnitModule::Update()
+void ITaskModule::Update()
 {
 	ZoneScoped;
 

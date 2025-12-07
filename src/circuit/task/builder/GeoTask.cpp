@@ -6,7 +6,7 @@
  */
 
 #include "task/builder/GeoTask.h"
-#include "module/UnitModule.h"
+#include "module/TaskModule.h"
 #include "module/EconomyManager.h"
 #include "resource/EnergyManager.h"
 #include "terrain/TerrainManager.h"
@@ -23,7 +23,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBGeoTask::CBGeoTask(IUnitModule* mgr, Priority priority,
+CBGeoTask::CBGeoTask(ITaskModule* mgr, Priority priority,
 					 CCircuitDef* buildDef, int spotId, const AIFloat3& position,
 					 SResource cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::GEO, cost, 0.f, timeout)
@@ -33,7 +33,7 @@ CBGeoTask::CBGeoTask(IUnitModule* mgr, Priority priority,
 	manager->GetCircuit()->GetEconomyManager()->SetOpenGeoSpot(spotId, false);
 }
 
-CBGeoTask::CBGeoTask(IUnitModule* mgr)
+CBGeoTask::CBGeoTask(ITaskModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::GEO)
 		, spotId(-1)
 {

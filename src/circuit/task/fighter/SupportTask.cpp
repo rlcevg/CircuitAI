@@ -22,7 +22,7 @@ namespace circuit {
 
 using namespace springai;
 
-CSupportTask::CSupportTask(IUnitModule* mgr)
+CSupportTask::CSupportTask(ITaskModule* mgr)
 		: IFighterTask(mgr, FightType::SUPPORT, 1.f)
 {
 	const AIFloat3& pos = manager->GetCircuit()->GetSetupManager()->GetBasePos();

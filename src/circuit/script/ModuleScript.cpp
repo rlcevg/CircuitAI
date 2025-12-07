@@ -24,8 +24,34 @@ IModuleScript::~IModuleScript()
 
 void IModuleScript::InitModule(asIScriptModule* mod)
 {
+	mInfo.unitAdded = script->GetFunc(mod, "void AiUnitAdded(CCircuitUnit@, Unit::UseAs)");
+	mInfo.unitRemoved = script->GetFunc(mod, "void AiUnitRemoved(CCircuitUnit@, Unit::UseAs)");
 	mInfo.load = script->GetFunc(mod, "void AiLoad(IStream&)");
 	mInfo.save = script->GetFunc(mod, "void AiSave(OStream&)");
+}
+
+void IModuleScript::UnitAdded(CCircuitUnit* unit, IModule::UseAs usage)
+{
+	if (mInfo.unitAdded == nullptr) {
+		return;
+	}
+	asIScriptContext* ctx = script->PrepareContext(mInfo.unitAdded);
+	ctx->SetArgObject(0, unit);
+	ctx->SetArgDWord(1, static_cast<std::underlying_type<decltype(usage)>::type>(usage));
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
+}
+
+void IModuleScript::UnitRemoved(CCircuitUnit* unit, IModule::UseAs usage)
+{
+	if (mInfo.unitRemoved == nullptr) {
+		return;
+	}
+	asIScriptContext* ctx = script->PrepareContext(mInfo.unitRemoved);
+	ctx->SetArgObject(0, unit);
+	ctx->SetArgDWord(1, static_cast<std::underlying_type<decltype(usage)>::type>(usage));
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
 }
 
 void IModuleScript::Load(std::istream& is)

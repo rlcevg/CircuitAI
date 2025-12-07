@@ -29,7 +29,7 @@ namespace circuit {
 
 using namespace springai;
 
-CRetreatTask::CRetreatTask(IUnitModule* mgr, int timeout)
+CRetreatTask::CRetreatTask(ITaskModule* mgr, int timeout)
 		: IUnitTask(mgr, Priority::NORMAL, Type::RETREAT, timeout)
 		, repairer(nullptr)
 {
@@ -88,7 +88,7 @@ void CRetreatTask::AssignTo(CCircuitUnit* unit)
 	}
 
 	// Mobile repair
-	if (!cdef->IsAbleToFly()) {
+	if (!cdef->IsAbleToFly() && !unit->IsAttrNoRepair()) {
 		circuit->GetBuilderManager()->Enqueue(TaskB::Repair(IBuilderTask::Priority::HIGH, unit));
 	}
 }

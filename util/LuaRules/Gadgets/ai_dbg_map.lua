@@ -45,6 +45,9 @@ else  -- Unsynced
 --------------------------------------------------------------------------------
 
 -------- GL4 THINGS ----------
+local LuaShader = gl.LuaShader
+local InstanceVBOTable = gl.InstanceVBOTable
+
 local isGL4Way = false
 local circleInstanceVBOthr = nil
 local circleShaderThr = nil
@@ -197,16 +200,16 @@ local function MakeCircleGL4(LuaShader, goodbye)
 	)
 	shaderCompiled = circleShader:Initialize()
 	if not shaderCompiled then goodbye("Failed to compile AI DBG circle shader") end
-	local circleVBO,numVertices = makeCircleVBO(circleSegments + 1)
+	local circleVBO,numVertices = InstanceVBOTable.makeCircleVBO(circleSegments + 1)
 	local circleInstanceVBOLayout = {
 		{id = 1, name = 'centerposxyz_radius', size = 4}, -- the start pos + radius
 		{id = 2, name = 'color', size = 4}, --- color
 	}
-	circleInstanceVBO = makeInstanceVBOTable(circleInstanceVBOLayout, 128, "AI DBG thr VBO")
+	circleInstanceVBO = InstanceVBOTable.makeInstanceVBOTable(circleInstanceVBOLayout, 128, "AI DBG thr VBO")
 	circleInstanceVBO.numVertices = numVertices
 	circleInstanceVBO.vertexVBO = circleVBO
 	circleInstanceVBO.primitiveType = GL.TRIANGLE_FAN -- ugh forgot this one
-	circleInstanceVBO.VAO = makeVAOandAttach(
+	circleInstanceVBO.VAO = InstanceVBOTable.makeVAOandAttach(
 		circleInstanceVBO.vertexVBO,
 		circleInstanceVBO.instanceVBO
 	)
@@ -317,11 +320,11 @@ local function MakeConeGL4(LuaShader, goodbye)
 		{id = 1, name = 'centerposxyz_radius', size = 4}, -- the start pos + radius
 		{id = 2, name = 'color', size = 4}, --- color
 	}
-	circleInstanceVBO = makeInstanceVBOTable(circleInstanceVBOLayout, 128, "AI DBG mrk VBO")
+	circleInstanceVBO = InstanceVBOTable.makeInstanceVBOTable(circleInstanceVBOLayout, 128, "AI DBG mrk VBO")
 	circleInstanceVBO.numVertices = numVertices
 	circleInstanceVBO.vertexVBO = circleVBO
 	circleInstanceVBO.primitiveType = GL.TRIANGLES
-	circleInstanceVBO.VAO = makeVAOandAttach(
+	circleInstanceVBO.VAO = InstanceVBOTable.makeVAOandAttach(
 		circleInstanceVBO.vertexVBO,
 		circleInstanceVBO.instanceVBO
 	)
@@ -336,12 +339,8 @@ local function InitGL4()
 		gadgetHandler:RemoveGadget()
 	end
 
-	local luaShaderDir = "LuaUI/Include/"
-	local LuaShader = VFS.Include(luaShaderDir.."LuaShader.lua")
-	VFS.Include(luaShaderDir.."instancevbotable.lua")
-
-	circleInstanceVBOthr, circleShaderThr = MakeCircleGL4(LuaShader, goodbye)
-	circleInstanceVBOmrk, circleShaderMrk = MakeConeGL4(LuaShader, goodbye)
+	circleInstanceVBOthr, circleShaderThr = MakeCircleGL4(gl.LuaShader, goodbye)
+	circleInstanceVBOmrk, circleShaderMrk = MakeConeGL4(gl.LuaShader, goodbye)
 	isGL4Way = true
 end
 ----  END GL4 THINGS --------------
@@ -529,7 +528,7 @@ local function drawThrGL4Way()
 			lastupdateframe = Spring.GetGameFrame()
 -- 			Spring.Echo("mapChanged updated", lastupdateframe, aiData.mapChanged)
 
-			clearInstanceTable(circleInstanceVBOthr) -- remove all our previous geometry from buffer
+			InstanceVBOTable.clearInstanceTable(circleInstanceVBOthr) -- remove all our previous geometry from buffer
 			for x = 1, width do
 				px = (x - 1) * size
 				for z = 0, height - 1 do
@@ -547,7 +546,7 @@ local function drawThrGL4Way()
 						mycolor[3] = value
 					end
 					if draw then
-						pushElementInstance( -- pushElementInstance(iT,thisInstance, instanceID, updateExisting, noUpload, unitID)
+						InstanceVBOTable.pushElementInstance( -- pushElementInstance(iT,thisInstance, instanceID, updateExisting, noUpload, unitID)
 							circleInstanceVBOthr, -- the buffer to push into
 							{ -- the data per instance
 								px + size/2, 0, (z * size) + size/2, size/2, -- in vec4 centerposxyz_radius;
@@ -559,7 +558,7 @@ local function drawThrGL4Way()
 					end
 				end
 			end
-			uploadAllElements(circleInstanceVBOthr) -- upload everything if noUpload was used
+			InstanceVBOTable.uploadAllElements(circleInstanceVBOthr) -- upload everything if noUpload was used
 		end
 
 		-- This part is the drawing part, the whole pushElementInstance only needs to be called every time the
@@ -567,7 +566,7 @@ local function drawThrGL4Way()
 		gl.Texture(0, "$heightmap")
 		circleShaderThr:Activate()
 -- 		Spring.Echo("Drawing AI DBG circleInstanceVBOthr", circleInstanceVBOthr.usedElements)
-		drawInstanceVBO(circleInstanceVBOthr)
+		InstanceVBOTable.drawInstanceVBO(circleInstanceVBOthr)
 		circleShaderThr:Deactivate()
 		gl.Texture(0, false)
 		gl.DepthTest(true)
@@ -608,13 +607,13 @@ end
 local function drawMrkGL4Way()
 	if aiData.marksChanged ~= #aiData.marks then
 		if #aiData.marks == 0 then
-			clearInstanceTable(circleInstanceVBOmrk) -- remove all our previous geometry from buffer
+			InstanceVBOTable.clearInstanceTable(circleInstanceVBOmrk) -- remove all our previous geometry from buffer
 		else
 			local num = #aiData.marks - aiData.marksChanged
 			-- "ai_mrk_add:<pos.x> <pos.z> <radius> <color.r> <color.g> <color.b> <color.a> <text>"
 			for i = 1, num do
 				local v = aiData.marks[aiData.marksChanged + i]
-				pushElementInstance( -- pushElementInstance(iT,thisInstance, instanceID, updateExisting, noUpload, unitID)
+				InstanceVBOTable.pushElementInstance( -- pushElementInstance(iT,thisInstance, instanceID, updateExisting, noUpload, unitID)
 					circleInstanceVBOmrk, -- the buffer to push into
 					{ -- the data per instance
 						v[1], 0, v[2], v[3], -- in vec4 centerposxyz_radius;
@@ -625,7 +624,7 @@ local function drawMrkGL4Way()
 					true) -- noUpload = true, we will upload whole buffer to gpu after we are done filling it
 			end
 		end
-		uploadAllElements(circleInstanceVBOmrk) -- upload everything if noUpload was used
+		InstanceVBOTable.uploadAllElements(circleInstanceVBOmrk) -- upload everything if noUpload was used
 		aiData.marksChanged = #aiData.marks
 	end
 
@@ -638,9 +637,9 @@ local function drawMrkGL4Way()
 -- 		Spring.Echo("Drawing AI DBG circleInstanceVBOmrk", circleInstanceVBOmrk.usedElements)
 -- 		gl.Blending("alpha")
 -- 		gl.Culling(GL.FRONT)
--- 		drawInstanceVBO(circleInstanceVBOmrk)
+-- 		InstanceVBOTable.drawInstanceVBO(circleInstanceVBOmrk)
 		gl.Culling(GL.BACK)
-		drawInstanceVBO(circleInstanceVBOmrk)
+		InstanceVBOTable.drawInstanceVBO(circleInstanceVBOmrk)
 -- 		gl.Blending(false)
 		circleShaderMrk:Deactivate()
 		gl.Texture(0, false)

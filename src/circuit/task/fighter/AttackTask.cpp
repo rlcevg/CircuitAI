@@ -31,7 +31,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CAttackTask::CAttackTask(IUnitModule* mgr, float minPower, float powerMod)
+CAttackTask::CAttackTask(ITaskModule* mgr, float minPower, float powerMod)
 		: ISquadTask(mgr, FightType::ATTACK, powerMod)
 		, minPower(minPower)
 {
@@ -293,7 +293,7 @@ void CAttackTask::FindTarget()
 				if (((edef->GetCategory() & canTargetCat) == 0)
 					|| ((edef->GetCategory() & noChaseCat) != 0)
 					|| (isAntiStatic && edef->IsMobile())
-					|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()
+					|| circuit->GetCircuitDef(edef->GetId())->IsIgnore()  // NOTE: groups are created by leader, ignore flags could be different
 					|| (edef->IsAbleToFly() && !(IsInWater ? cdef->HasSubToAir() : cdef->HasSurfToAir())))  // notAA
 				{
 					continue;

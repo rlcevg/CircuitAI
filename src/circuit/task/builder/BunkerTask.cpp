@@ -12,14 +12,14 @@ namespace circuit {
 
 using namespace springai;
 
-CBBunkerTask::CBBunkerTask(IUnitModule* mgr, Priority priority,
+CBBunkerTask::CBBunkerTask(ITaskModule* mgr, Priority priority,
 						   CCircuitDef* buildDef, const AIFloat3& position,
 						   SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::BUNKER, cost, shake, timeout)
 {
 }
 
-CBBunkerTask::CBBunkerTask(IUnitModule* mgr)
+CBBunkerTask::CBBunkerTask(ITaskModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::BUNKER)
 {
 }

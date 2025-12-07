@@ -19,7 +19,8 @@ class SUserData {
 	int attr = 0;
 }
 
-// Example of userData per UnitDef
+// Example of userData per UnitDef.
+// UnitDef ID starts from 1; 0 is not valid.
 array<SUserData> userData(ai.GetDefCount() + 1);
 
 string armlab  ("armlab");

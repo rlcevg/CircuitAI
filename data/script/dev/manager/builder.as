@@ -9,6 +9,14 @@ CCircuitUnit@ energizer2 = null;
 // AIFloat3 lastPos;
 // int gPauseCnt = 0;
 
+void AiTaskAssigned(CCircuitUnit@ unit)
+{
+// 	if (unit.task.GetType() == Task::Type::BUILDER)
+// 		AiLog("build-task for "unit.circuitDef.GetName() + ", buildType=" + unit.task.GetBuildType());
+// 	else
+// 		AiLog("Not a build-task for " + unit.circuitDef.GetName() + ", type=" + unit.task.GetType());
+}
+
 IUnitTask@ AiMakeTask(CCircuitUnit@ unit)
 {
 // 	AiDelPoint(lastPos);

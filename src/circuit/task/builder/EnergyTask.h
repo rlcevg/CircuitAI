@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBEnergyTask: public IBuilderTask {
 public:
-	CBEnergyTask(IUnitModule* mgr, Priority priority,
+	CBEnergyTask(ITaskModule* mgr, Priority priority,
 				 CCircuitDef* buildDef, const springai::AIFloat3& position,
 				 SResource cost, float shake, int timeout);
-	CBEnergyTask(IUnitModule* mgr);  // Load
+	CBEnergyTask(ITaskModule* mgr);  // Load
 	virtual ~CBEnergyTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

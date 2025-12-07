@@ -15,7 +15,7 @@ namespace circuit {
 
 class CFGuardTask: public IFighterTask {
 public:
-	CFGuardTask(IUnitModule* mgr, CCircuitUnit* vip, float maxPower);
+	CFGuardTask(ITaskModule* mgr, CCircuitUnit* vip, float maxPower);
 	virtual ~CFGuardTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

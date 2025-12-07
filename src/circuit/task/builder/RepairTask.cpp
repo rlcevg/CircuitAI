@@ -17,13 +17,13 @@ namespace circuit {
 
 using namespace springai;
 
-CBRepairTask::CBRepairTask(IUnitModule* mgr, Priority priority, CAllyUnit* target, int timeout)
+CBRepairTask::CBRepairTask(ITaskModule* mgr, Priority priority, CAllyUnit* target, int timeout)
 		: IRepairTask(mgr, priority, Type::BUILDER, target, timeout)
 {
 	static_cast<CBuilderManager*>(mgr)->MarkRepairUnit(target->GetId(), this);
 }
 
-CBRepairTask::CBRepairTask(IUnitModule* mgr)
+CBRepairTask::CBRepairTask(ITaskModule* mgr)
 		: IRepairTask(mgr, Type::BUILDER)
 {
 }

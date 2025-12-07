@@ -57,17 +57,23 @@ TypeMask FENCE     = aiAttrMasker.GetTypeMask("fence");
 TypeMask REARM     = aiAttrMasker.GetTypeMask("rearm");
 TypeMask NO_DGUN   = aiAttrMasker.GetTypeMask("no_dgun");
 TypeMask ANTI_STAT = aiAttrMasker.GetTypeMask("anti_stat");
+TypeMask NO_REPAIR = aiAttrMasker.GetTypeMask("no_repair");
 }  // namespace Attr
 
 enum UseAs {
 	COMBAT = 0, FENCE, SUPER, STOCK,  // military
 	BUILDER, REZZER,  // builder
-	FACTORY, ASSIST  // factory
+	FACTORY, ASSIST,  // factory
+	ENERGY, GEO, MEX, CONVERT, STORE, AIRPAD  // economy
+}
+
+enum RangeType {
+	AIR = 0, SURF, WATER
 }
 
 }  // namespace Unit
 
-namespace RT {
+namespace RT {  // Role Type
 Type BUILDER = Unit::Role::BUILDER.type;
 Type SCOUT   = Unit::Role::SCOUT.type;
 Type RAIDER  = Unit::Role::RAIDER.type;

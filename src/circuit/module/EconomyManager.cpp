@@ -106,6 +106,11 @@ void CEconomyManager::InitHandlers()
 		}
 		energy.income += income;
 		ReclaimOldEnergy(energyExt);
+
+		UnitAdded(unit, UseAs::ENERGY);
+	};
+	auto energyDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+		UnitRemoved(unit, UseAs::ENERGY);
 	};
 	auto geoFinishedHandler = [this](CCircuitUnit* unit) {
 		const SGeoExt* geoExt = geoDefs.GetAvailInfo(unit->GetCircuitDef());
@@ -116,6 +121,11 @@ void CEconomyManager::InitHandlers()
 			}
 			energy.income += income;
 		}
+
+		UnitAdded(unit, UseAs::GEO);
+	};
+	auto geoDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+		UnitRemoved(unit, UseAs::GEO);
 	};
 	auto mexFinishedHandler = [this](CCircuitUnit* unit) {
 //		const float income = unit->GetUnit()->GetRulesParamFloat("mexIncome", 0.f);
@@ -129,6 +139,11 @@ void CEconomyManager::InitHandlers()
 			metalIncomes[i] += income;
 		}
 		metal.income += income;
+
+		UnitAdded(unit, UseAs::MEX);
+	};
+	auto mexDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+		UnitRemoved(unit, UseAs::MEX);
 	};
 	auto convertFinishedHandler = [this](CCircuitUnit* unit) {
 		const SConvertExt* convertExt = convertDefs.GetAvailInfo(unit->GetCircuitDef());
@@ -136,6 +151,17 @@ void CEconomyManager::InitHandlers()
 			return;
 		}
 		ReclaimOldConvert(convertExt);
+
+		UnitAdded(unit, UseAs::CONVERT);
+	};
+	auto convertDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+		UnitRemoved(unit, UseAs::CONVERT);
+	};
+	auto storeFinishedHandler = [this](CCircuitUnit* unit) {
+		UnitAdded(unit, UseAs::STORE);
+	};
+	auto storeDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
+		UnitRemoved(unit, UseAs::STORE);
 	};
 
 	/*
@@ -211,8 +237,13 @@ void CEconomyManager::InitHandlers()
 	auto airpadCreatedHandler = [this](CCircuitUnit* unit, CCircuitUnit* builder) {
 		++airpadCount;
 	};
+	auto airpadFinishedHandler = [this](CCircuitUnit* unit) {
+		UnitAdded(unit, UseAs::AIRPAD);
+	};
 	auto airpadDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		--airpadCount;
+
+		UnitRemoved(unit, UseAs::AIRPAD);
 	};
 
 	float minEInc;
@@ -251,6 +282,7 @@ void CEconomyManager::InitHandlers()
 			// FIXME: BA
 			if (cdef.GetExtractsM() > 0.f) {
 				finishedHandler[cdef.GetId()] = mexFinishedHandler;
+				destroyedHandler[cdef.GetId()] = mexDestroyedHandler;
 				metalDefs.AddDef(&cdef);
 				cdef.SetIsMex(true);
 				IncPurpose(cdef.GetId());  // avoid reclaiming of multi-purpose old converter/energy
@@ -260,6 +292,7 @@ void CEconomyManager::InitHandlers()
 				&& ((it = customParams.find("energyconv_efficiency")) != customParams.end()) && (utils::string_to_float(it->second) > 0.f))
 			{
 				finishedHandler[cdef.GetId()] = convertFinishedHandler;
+				destroyedHandler[cdef.GetId()] = convertDestroyedHandler;
 				convertDefs.AddDef(&cdef);
 				IncPurpose(cdef.GetId());  // avoid reclaiming of multi-purpose old converter/energy
 			}
@@ -275,9 +308,11 @@ void CEconomyManager::InitHandlers()
 			{
 				if (cdef.GetDef()->IsNeedGeo()) {
 					finishedHandler[cdef.GetId()] = geoFinishedHandler;
+					destroyedHandler[cdef.GetId()] = geoDestroyedHandler;
 					geoDefs.AddDef(&cdef);
 				} else {
 					finishedHandler[cdef.GetId()] = energyFinishedHandler;
+					destroyedHandler[cdef.GetId()] = energyDestroyedHandler;
 					energyDefs.AddDef(&cdef);
 				}
 				IncPurpose(cdef.GetId());  // avoid reclaiming of multi-purpose old converter/energy
@@ -286,16 +321,21 @@ void CEconomyManager::InitHandlers()
 			// storage
 			// NOTE: have to manually filter spot units, as mex placement rules are re-defined in game and break in-engine validation
 			if ((cdef.GetDef()->GetStorage(metalRes) >= 1000.f)/* && !cdef.IsMex()*/) {
+				finishedHandler[cdef.GetId()] = storeFinishedHandler;
+				destroyedHandler[cdef.GetId()] = storeDestroyedHandler;
 				storeMDefs.AddDef(&cdef);
 				IncPurpose(cdef.GetId());  // avoid reclaiming of multi-purpose old converter/energy
 			}
 			if ((cdef.GetDef()->GetStorage(energyRes) > 1000.f) && !cdef.GetDef()->IsNeedGeo()) {
+				finishedHandler[cdef.GetId()] = storeFinishedHandler;
+				destroyedHandler[cdef.GetId()] = storeDestroyedHandler;
 				storeEDefs.AddDef(&cdef);
 				IncPurpose(cdef.GetId());  // avoid reclaiming of multi-purpose old converter/energy
 			}
 
 			if (customParams.find("isairbase") != customParams.end()) {
 				createdHandler[cdef.GetId()] = airpadCreatedHandler;
+				finishedHandler[cdef.GetId()] = airpadFinishedHandler;
 				destroyedHandler[cdef.GetId()] = airpadDestroyedHandler;
 				airpadDefs.AddDef(&cdef);
 				IncPurpose(cdef.GetId());  // avoid reclaiming of multi-purpose old converter/energy

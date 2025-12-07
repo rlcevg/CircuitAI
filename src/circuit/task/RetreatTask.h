@@ -17,7 +17,7 @@ class CQueryCostMap;
 
 class CRetreatTask: public IUnitTask {
 public:
-	CRetreatTask(IUnitModule* mgr, int timeout = ASSIGN_TIMEOUT);
+	CRetreatTask(ITaskModule* mgr, int timeout = ASSIGN_TIMEOUT);
 	virtual ~CRetreatTask();
 
 	virtual void ClearRelease() override;

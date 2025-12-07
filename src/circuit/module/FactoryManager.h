@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_MODULE_FACTORYMANAGER_H_
 #define SRC_CIRCUIT_MODULE_FACTORYMANAGER_H_
 
-#include "module/UnitModule.h"
+#include "module/TaskModule.h"
 #include "task/static/RecruitTask.h"
 #include "unit/CircuitUnit.h"
 
@@ -81,7 +81,7 @@ namespace TaskS {
 	}
 } // namespace TaskS
 
-class CFactoryManager: public IUnitModule {
+class CFactoryManager: public ITaskModule {
 public:
 	friend class CFactoryScript;
 

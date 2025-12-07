@@ -9,7 +9,7 @@
 #include "unit/action/DGunAction.h"
 #include "unit/action/TravelAction.h"
 #include "unit/enemy/EnemyUnit.h"
-#include "module/UnitModule.h"
+#include "module/TaskModule.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"  // Only for CorrectPosition
 #include "CircuitAI.h"
@@ -306,7 +306,6 @@ void CCircuitUnit::CmdPatrolTo(const AIFloat3& pos, short options, int timeout)
 {
 	assert(utils::is_in_map(pos));
 	unit->PatrolTo(pos, options, timeout);
-
 }
 
 void CCircuitUnit::CmdAttackGround(const AIFloat3& pos, short options, int timeout)

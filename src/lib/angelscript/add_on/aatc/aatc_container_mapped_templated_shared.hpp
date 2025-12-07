@@ -197,7 +197,7 @@ namespace aatc {
 							{
 								need_errorcheck_missing_functions = 0;
 								objectmode_key = 0;
-								typeinfo_key = engine->GetTypeInfoById(engine->GetStringFactoryReturnTypeId());
+								typeinfo_key = engine->GetTypeInfoById(engine->GetStringFactory());
 								break;
 							}
 							default:
@@ -227,7 +227,7 @@ namespace aatc {
 							case common::DATAHANDLINGTYPE::STRING:
 							{
 								objectmode_value = 0;
-								typeinfo_value = engine->GetTypeInfoById(engine->GetStringFactoryReturnTypeId());
+								typeinfo_value = engine->GetTypeInfoById(engine->GetStringFactory());
 								break;
 							}
 							default:

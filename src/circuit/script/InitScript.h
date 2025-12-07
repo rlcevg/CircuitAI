@@ -29,6 +29,7 @@ class CScriptDictionary;
 namespace circuit {
 
 class CCircuitAI;
+class CCircuitUnit;
 
 class CInitScript: public IScript {
 public:
@@ -57,8 +58,11 @@ public:
 
 	void RegisterMgr();
 	bool Init() override;
+	// script hooks
 	void Update();
 	void LuaMessage(const char* inData);
+	void UnitFinished(CCircuitUnit* unit);
+	void UnitDestroyed(CCircuitUnit* unit);
 
 private:
 	CMaskHandler::TypeMask AddRole(const std::string& name, int actAsRole);
@@ -72,14 +76,20 @@ private:
 	template<typename T> T Max(T l, T r) const { return std::max(l, r); }
 	int Random(int min, int max) const { return min + rand() % (max - min + 1); }
 
+	void SendMessage(const std::string& msg, int toTeamId = -1);
+	void ReceiveMessage(const std::string& msg, int fromTeamId);
+
 	void Run(asIScriptFunction* exec, CScriptDictionary* arg);
 
 	CCircuitAI* circuit;
 	std::string folderName;
 
 	struct SScriptInfo {
+		asIScriptFunction* unitFinished = nullptr;
+		asIScriptFunction* unitDestroyed = nullptr;
 		asIScriptFunction* update = nullptr;
 		asIScriptFunction* luaMessage = nullptr;
+		asIScriptFunction* receiveMessage = nullptr;
 	} mainInfo;
 
 	mutable spring::mutex mtx;

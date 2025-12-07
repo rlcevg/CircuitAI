@@ -14,7 +14,7 @@ namespace circuit {
 
 class CScoutTask: public IFighterTask {
 public:
-	CScoutTask(IUnitModule* mgr, float powerMod);
+	CScoutTask(ITaskModule* mgr, float powerMod);
 	virtual ~CScoutTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

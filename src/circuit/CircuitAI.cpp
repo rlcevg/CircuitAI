@@ -53,7 +53,6 @@
 #include "Cheats.h"
 //#include "WrappCurrentCommand.h"
 
-#include <regex>
 #include <fstream>
 
 namespace circuit {
@@ -86,7 +85,7 @@ using namespace terrain;
  * Разрушать города,
  * Видеть в братьях мишени...
  */
-constexpr char version[]{"1.6.21"};
+constexpr char version[]{"1.6.21a"};
 constexpr uint32_t VERSION_SAVE = 4;
 
 std::unique_ptr<CGameAttribute> CCircuitAI::gameAttribute(nullptr);
@@ -657,6 +656,11 @@ int CCircuitAI::Init(int skirmishAIId, const struct SSkirmishAICallback* sAICall
 		Release(RELEASE_SCRIPT);
 		return ERROR_INIT;
 	}
+
+	// Delay threat ranges initialization from allyTeam->Init()
+	// so cdef.SetRange() in AiMain() could make an effect.
+	allyTeam->InitThreatRanges(this);
+
 	for (auto& module : modules) {
 		if (!module->InitScript()) {
 			Release(RELEASE_SCRIPT);
@@ -1099,6 +1103,11 @@ int CCircuitAI::UnitFinished(CCircuitUnit* unit)
 		unit->GetTask()->GetManager()->Resurrected(unit);
 	}
 
+	// FIXME: Experimental. Remove?
+	if (!IsLoadSave()) {
+		script->UnitFinished(unit);
+	}
+
 	return 0;  // signaling: OK
 }
 
@@ -1161,6 +1170,9 @@ int CCircuitAI::UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker)
 	for (auto& module : modules) {
 		module->UnitDestroyed(unit, attacker);
 	}
+
+	// FIXME: Experimental. Remove?
+	script->UnitDestroyed(unit);
 
 	return 0;  // signaling: OK
 }
@@ -1339,7 +1351,7 @@ int CCircuitAI::Load(std::istream& is)
 	for (auto& kv : teamUnits) {
 		CCircuitUnit* unit = kv.second;
 		if (unit->GetUnit()->GetRulesParamFloat("disableAiControl", 0) > 0.f) {
-			DisableControl(unit);
+			UnitControl(unit, false);
 		}
 	}
 
@@ -1394,12 +1406,6 @@ int CCircuitAI::Save(std::ostream& os)
 
 int CCircuitAI::LuaMessage(const char* inData)
 {
-	if (strncmp(inData, "DISABLE_CONTROL:", 16) == 0) {
-		DisableControl(inData + 16);
-	} else
-	if (strncmp(inData, "ENABLE_CONTROL:", 15) == 0) {
-		EnableControl(inData + 15);
-	}
 	script->LuaMessage(inData);
 	return 0;  // signaling: OK
 }
@@ -1523,6 +1529,17 @@ CAllyUnit* CCircuitAI::GetFriendlyUnit(Unit* u) const
 	return nullptr;
 }
 
+std::pair<CAllyUnit*, bool> CCircuitAI::GetTeamOrAllyUnit(springai::Unit* u) const
+{
+	if (u->GetTeam() == teamId) {
+		return std::make_pair(GetTeamUnit(u->GetUnitId()), true);
+	} else if (u->GetAllyTeam() == allyTeamId) {
+		return std::make_pair(allyTeam->GetFriendlyUnit(u->GetUnitId()), false);
+	}
+
+	return std::make_pair(nullptr, false);
+}
+
 std::pair<CEnemyInfo*, bool> CCircuitAI::RegisterEnemyInfo(ICoreUnit::Id unitId, bool isInLOS)
 {
 	CEnemyInfo* unit = GetEnemyInfo(unitId);
@@ -1610,42 +1627,21 @@ CEnemyInfo* CCircuitAI::GetEnemyInfo(ICoreUnit::Id unitId) const
 	return (it != enemyInfos.end()) ? it->second : nullptr;
 }
 
-void CCircuitAI::DisableControl(CCircuitUnit* unit)
+bool CCircuitAI::UnitControl(CCircuitUnit* unit, bool isEnable)
 {
-//	if (unit->GetTask()->GetType() != IUnitTask::Type::NIL) {
-		IUnitModule* mgr = unit->GetTask()->GetManager();
+	if ((unit == nullptr)/* || (unit->GetTask()->GetType() == IUnitTask::Type::NIL)*/) {
+		return false;
+	}
+	if (isEnable) {
+		if (unit->GetTask()->GetType() != IUnitTask::Type::PLAYER) {
+			return false;
+		}
+		unit->GetTask()->RemoveAssignee(unit);
+	} else {
+		ITaskModule* mgr = unit->GetTask()->GetManager();
 		mgr->AssignTask(unit, new CPlayerTask(mgr));
-//	}
-}
-
-void CCircuitAI::DisableControl(const std::string data)
-{
-	std::smatch section;
-	std::string::const_iterator start = data.begin();
-	std::string::const_iterator end = data.end();
-	std::regex patternUnit("\\w+");
-	while (std::regex_search(start, end, section, patternUnit)) {
-		CCircuitUnit* unit = GetTeamUnit(utils::string_to_int(section[0]));
-		if (unit != nullptr) {
-			DisableControl(unit);
-		}
-		start = section[0].second;
 	}
-}
-
-void CCircuitAI::EnableControl(const std::string data)
-{
-	std::smatch section;
-	std::string::const_iterator start = data.begin();
-	std::string::const_iterator end = data.end();
-	std::regex patternUnit("\\w+");
-	while (std::regex_search(start, end, section, patternUnit)) {
-		CCircuitUnit* unit = GetTeamUnit(utils::string_to_int(section[0]));
-		if ((unit != nullptr)/* && (unit->GetTask()->GetType() != IUnitTask::Type::NIL)*/) {
-			unit->GetTask()->RemoveAssignee(unit);
-		}
-		start = section[0].second;
-	}
+	return true;
 }
 
 void CCircuitAI::UpdateActions()

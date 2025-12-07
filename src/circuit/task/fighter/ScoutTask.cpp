@@ -28,7 +28,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CScoutTask::CScoutTask(IUnitModule* mgr, float powerMod)
+CScoutTask::CScoutTask(ITaskModule* mgr, float powerMod)
 		: IFighterTask(mgr, FightType::SCOUT, powerMod)
 {
 }

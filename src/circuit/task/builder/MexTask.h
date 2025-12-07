@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBMexTask: public IBuilderTask {
 public:
-	CBMexTask(IUnitModule* mgr, Priority priority,
+	CBMexTask(ITaskModule* mgr, Priority priority,
 			  CCircuitDef* buildDef, int spotId, const springai::AIFloat3& position,
 			  SResource cost, int timeout);
-	CBMexTask(IUnitModule* mgr);  // Load
+	CBMexTask(ITaskModule* mgr);  // Load
 	virtual ~CBMexTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

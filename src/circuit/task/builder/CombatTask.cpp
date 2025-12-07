@@ -19,7 +19,7 @@ namespace circuit {
 using namespace springai;
 using namespace terrain;
 
-CCombatTask::CCombatTask(IUnitModule* mgr, float powerMod)
+CCombatTask::CCombatTask(ITaskModule* mgr, float powerMod)
 		: IFighterTask(mgr, FightType::DEFEND, powerMod)
 {
 }

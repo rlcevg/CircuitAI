@@ -27,14 +27,14 @@ namespace circuit {
 
 using namespace springai;
 
-CBReclaimTask::CBReclaimTask(IUnitModule* mgr, Priority priority,
+CBReclaimTask::CBReclaimTask(ITaskModule* mgr, Priority priority,
 							 const AIFloat3& position,
 							 SResource cost, int timeout, float radius, bool isMetal)
 		: IReclaimTask(mgr, priority, Type::BUILDER, position, cost, timeout, radius, isMetal)
 {
 }
 
-CBReclaimTask::CBReclaimTask(IUnitModule* mgr, Priority priority,
+CBReclaimTask::CBReclaimTask(ITaskModule* mgr, Priority priority,
 							 CCircuitUnit* target,
 							 int timeout)
 		: IReclaimTask(mgr, priority, Type::BUILDER, target, timeout)
@@ -42,7 +42,7 @@ CBReclaimTask::CBReclaimTask(IUnitModule* mgr, Priority priority,
 	static_cast<CBuilderManager*>(mgr)->MarkReclaimUnit(target, this);
 }
 
-CBReclaimTask::CBReclaimTask(IUnitModule* mgr)
+CBReclaimTask::CBReclaimTask(ITaskModule* mgr)
 		: IReclaimTask(mgr, Type::BUILDER)
 {
 }

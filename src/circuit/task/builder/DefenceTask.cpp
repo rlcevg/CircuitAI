@@ -21,7 +21,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBDefenceTask::CBDefenceTask(IUnitModule* mgr, Priority priority,
+CBDefenceTask::CBDefenceTask(ITaskModule* mgr, Priority priority,
 							 CCircuitDef* buildDef, const AIFloat3& position,
 							 SResource cost, float shake, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::DEFENCE, cost, shake, timeout)
@@ -31,7 +31,7 @@ CBDefenceTask::CBDefenceTask(IUnitModule* mgr, Priority priority,
 {
 }
 
-CBDefenceTask::CBDefenceTask(IUnitModule* mgr)
+CBDefenceTask::CBDefenceTask(ITaskModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::DEFENCE)
 		, isUrgent(false)
 		, normalCostM(.0f)

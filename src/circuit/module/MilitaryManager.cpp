@@ -54,7 +54,7 @@ using namespace springai;
 using namespace terrain;
 
 CMilitaryManager::CMilitaryManager(CCircuitAI* circuit)
-		: IUnitModule(circuit, new CMilitaryScript(circuit->GetScriptManager(), this))
+		: ITaskModule(circuit, new CMilitaryScript(circuit->GetScriptManager(), this))
 		, defenceIdx(0)
 		, isEnemyFound(false)
 		, armyCost(0.f)
@@ -681,7 +681,7 @@ void CMilitaryManager::DequeueTask(IUnitTask* task, bool done)
 		} break;
 		default: break;
 	}
-	IUnitModule::DequeueTask(task, done);
+	ITaskModule::DequeueTask(task, done);
 }
 
 void CMilitaryManager::MakeDefence(const AIFloat3& pos)

@@ -27,7 +27,7 @@ namespace circuit {
 
 using namespace springai;
 
-CArtilleryTask::CArtilleryTask(IUnitModule* mgr)
+CArtilleryTask::CArtilleryTask(ITaskModule* mgr)
 		: IFighterTask(mgr, FightType::ARTY, 1.f)
 {
 	position = manager->GetCircuit()->GetSetupManager()->GetBasePos();

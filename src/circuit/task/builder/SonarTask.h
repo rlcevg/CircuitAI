@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBSonarTask: public ISensorTask {
 public:
-	CBSonarTask(IUnitModule* mgr, Priority priority,
+	CBSonarTask(ITaskModule* mgr, Priority priority,
 				CCircuitDef* buildDef, const springai::AIFloat3& position,
 				SResource cost, float shake, int timeout);
-	CBSonarTask(IUnitModule* mgr);  // Load
+	CBSonarTask(ITaskModule* mgr);  // Load
 	virtual ~CBSonarTask();
 };
 

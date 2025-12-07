@@ -6,7 +6,7 @@
  */
 
 #include "task/NilTask.h"
-#include "module/UnitModule.h"
+#include "module/TaskModule.h"
 #include "setup/SetupManager.h"
 #include "unit/CircuitUnit.h"
 #include "unit/action/AntiCapAction.h"
@@ -15,7 +15,7 @@
 
 namespace circuit {
 
-CNilTask::CNilTask(IUnitModule* mgr)
+CNilTask::CNilTask(ITaskModule* mgr)
 		: IUnitTask(mgr, IUnitTask::Priority::LOW, Type::NIL, -1)
 {
 }

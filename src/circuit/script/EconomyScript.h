@@ -34,6 +34,8 @@ public:
 private:
 	struct SScriptInfo {
 		asIScriptFunction* updateEconomy = nullptr;
+		asIScriptFunction* unitAdded = nullptr;
+		asIScriptFunction* unitRemoved = nullptr;
 	} economyInfo;
 };
 

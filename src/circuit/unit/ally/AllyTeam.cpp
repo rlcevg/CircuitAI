@@ -76,6 +76,7 @@ void CAllyTeam::Init(CCircuitAI* circuit, float decloakRadius)
 	}
 
 	mapManager = std::make_shared<CMapManager>(circuit, decloakRadius);
+	mapManager->InitMaps();
 	enemyManager = std::make_shared<CEnemyManager>(circuit);
 	enemyManager->ReadConfig();
 
@@ -106,6 +107,15 @@ void CAllyTeam::NonDefaultThreats(std::set<CCircuitDef::RoleT>&& modRoles, CCirc
 	}
 
 	mapManager->GetThreatMap()->Init(circuit->GetGameAttribute()->GetRoleMasker().GetMasks().size(), std::move(modRoles));
+}
+
+void CAllyTeam::InitThreatRanges(CCircuitAI* ai)
+{
+	if (circuit != ai) {
+		return;
+	}
+
+	mapManager->GetThreatMap()->InitRanges();
 }
 
 void CAllyTeam::Release()

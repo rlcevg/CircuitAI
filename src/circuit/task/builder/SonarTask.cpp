@@ -13,7 +13,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBSonarTask::CBSonarTask(IUnitModule* mgr, Priority priority,
+CBSonarTask::CBSonarTask(ITaskModule* mgr, Priority priority,
 						 CCircuitDef* buildDef, const AIFloat3& position,
 						 SResource cost, float shake, int timeout)
 		: ISensorTask(mgr, priority, [](CCircuitDef* cdef) { return cdef->IsSonar(); },
@@ -21,7 +21,7 @@ CBSonarTask::CBSonarTask(IUnitModule* mgr, Priority priority,
 {
 }
 
-CBSonarTask::CBSonarTask(IUnitModule* mgr)
+CBSonarTask::CBSonarTask(ITaskModule* mgr)
 		: ISensorTask(mgr, [](CCircuitDef* cdef) { return cdef->IsSonar(); }, BuildType::SONAR)
 {
 }

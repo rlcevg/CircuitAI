@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_MODULE_MILITARYMANAGER_H_
 #define SRC_CIRCUIT_MODULE_MILITARYMANAGER_H_
 
-#include "module/UnitModule.h"
+#include "module/TaskModule.h"
 #include "setup/DefenceData.h"
 #include "task/fighter/FighterTask.h"
 #include "unit/CircuitDef.h"
@@ -70,7 +70,7 @@ namespace TaskF {
 	}
 } // namespace TaskF
 
-class CMilitaryManager: public IUnitModule {
+class CMilitaryManager: public ITaskModule {
 public:
 	friend class CMilitaryScript;
 

@@ -8,18 +8,26 @@
 #ifndef SRC_CIRCUIT_SCRIPT_BUILDERSCRIPT_H_
 #define SRC_CIRCUIT_SCRIPT_BUILDERSCRIPT_H_
 
-#include "script/UnitModuleScript.h"
+#include "script/TaskModuleScript.h"
 
 namespace circuit {
 
 class CBuilderManager;
 
-class CBuilderScript: public IUnitModuleScript {
+class CBuilderScript: public ITaskModuleScript {
 public:
 	CBuilderScript(CScriptManager* scr, CBuilderManager* mgr);
 	virtual ~CBuilderScript();
 
 	virtual bool Init() override;
+
+public:
+	void TaskAssigned(CCircuitUnit* unit);
+
+private:
+	struct SScriptInfo {
+		asIScriptFunction* taskAssigned = nullptr;
+	} builderInfo;
 };
 
 } // namespace circuit

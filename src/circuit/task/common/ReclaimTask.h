@@ -15,13 +15,13 @@ namespace circuit {
 
 class IReclaimTask: public IBuilderTask {
 public:
-	IReclaimTask(IUnitModule* mgr, Priority priority, Type type,
+	IReclaimTask(ITaskModule* mgr, Priority priority, Type type,
 				 const springai::AIFloat3& position,
 				 SResource cost, int timeout, float radius = .0f, bool isMetal = true);
-	IReclaimTask(IUnitModule* mgr, Priority priority, Type type,
+	IReclaimTask(ITaskModule* mgr, Priority priority, Type type,
 				 CCircuitUnit* target,
 				 int timeout);
-	IReclaimTask(IUnitModule* mgr, Type type);  // Load
+	IReclaimTask(ITaskModule* mgr, Type type);  // Load
 	virtual ~IReclaimTask();
 
 	virtual bool CanAssignTo(CCircuitUnit* unit) const override;

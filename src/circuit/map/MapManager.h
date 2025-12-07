@@ -21,6 +21,8 @@ public:
 	CMapManager(CCircuitAI* circuit, float decloakRadius);
 	virtual ~CMapManager();
 
+	void InitMaps();
+
 	void SetAuthority(CCircuitAI* authority) { circuit = authority; }
 	CCircuitAI* GetCircuit() const { return circuit; }
 

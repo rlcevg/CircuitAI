@@ -11,7 +11,7 @@
 
 namespace circuit {
 
-CSWaitTask::CSWaitTask(IUnitModule* mgr, bool stop, int timeout)
+CSWaitTask::CSWaitTask(ITaskModule* mgr, bool stop, int timeout)
 		: IWaitTask(mgr, stop, timeout)
 {
 }

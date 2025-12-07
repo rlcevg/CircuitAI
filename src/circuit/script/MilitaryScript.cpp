@@ -16,7 +16,7 @@ namespace circuit {
 using namespace springai;
 
 CMilitaryScript::CMilitaryScript(CScriptManager* scr, CMilitaryManager* mgr)
-		: IUnitModuleScript(scr, mgr)
+		: ITaskModuleScript(scr, mgr)
 {
 	asIScriptEngine* engine = script->GetEngine();
 
@@ -65,7 +65,6 @@ bool CMilitaryScript::Init()
 	int r = mod->SetDefaultNamespace("Military"); ASSERT(r >= 0);
 	InitModule(mod);
 	militaryInfo.makeDefence = script->GetFunc(mod, "void AiMakeDefence(int, const AIFloat3& in)");
-	militaryInfo.isAirValid = script->GetFunc(mod, "bool AiIsAirValid()");
 	return true;
 }
 
@@ -80,17 +79,6 @@ void CMilitaryScript::MakeDefence(int cluster, const AIFloat3& pos)
 	ctx->SetArgAddress(1, &const_cast<AIFloat3&>(pos));
 	script->Exec(ctx);
 	script->ReturnContext(ctx);
-}
-
-bool CMilitaryScript::IsAirValid()
-{
-	if (militaryInfo.isAirValid == nullptr) {
-		return true;
-	}
-	asIScriptContext* ctx = script->PrepareContext(militaryInfo.isAirValid);
-	const bool result = script->Exec(ctx) ? ctx->GetReturnByte() : true;
-	script->ReturnContext(ctx);
-	return result;
 }
 
 } // namespace circuit

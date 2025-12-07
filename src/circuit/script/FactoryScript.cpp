@@ -16,7 +16,7 @@ namespace circuit {
 using namespace springai;
 
 CFactoryScript::CFactoryScript(CScriptManager* scr, CFactoryManager* mgr)
-		: IUnitModuleScript(scr, mgr)
+		: ITaskModuleScript(scr, mgr)
 {
 	asIScriptEngine* engine = script->GetEngine();
 

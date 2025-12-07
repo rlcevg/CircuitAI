@@ -16,7 +16,7 @@ namespace circuit {
 
 using namespace springai;
 
-CFGuardTask::CFGuardTask(IUnitModule* mgr, CCircuitUnit* vip, float maxPower)
+CFGuardTask::CFGuardTask(ITaskModule* mgr, CCircuitUnit* vip, float maxPower)
 		: IFighterTask(mgr, FightType::GUARD, 1.f)
 		, vipId(vip->GetId())
 		, maxPower(maxPower)

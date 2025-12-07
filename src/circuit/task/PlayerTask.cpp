@@ -11,7 +11,7 @@
 
 namespace circuit {
 
-CPlayerTask::CPlayerTask(IUnitModule* mgr)
+CPlayerTask::CPlayerTask(ITaskModule* mgr)
 		: IUnitTask(mgr, Priority::HIGH, Type::PLAYER, -1)
 {
 }

@@ -21,6 +21,14 @@ class CEnemyInfo;
 class IScript;
 
 class IModule {
+public:
+	enum class UseAs: char {
+		COMBAT = 0, FENCE, SUPER, STOCK,  // military
+		BUILDER, REZZER,  // builder
+		FACTORY, ASSIST,  // factory
+		ENERGY, GEO, MEX, CONVERT, STORE, AIRPAD  // economy
+	};
+
 protected:
 	IModule(CCircuitAI* circuit, IScript* script);
 public:
@@ -37,6 +45,10 @@ public:
 	virtual int UnitDestroyed(CCircuitUnit* unit, CEnemyInfo* attacker);
 	virtual int UnitGiven(CCircuitUnit* unit, int oldTeamId, int newTeamId);
 	virtual int UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId);
+
+	// script hooks
+	void UnitAdded(CCircuitUnit* unit, UseAs usage);
+	void UnitRemoved(CCircuitUnit* unit, UseAs usage);
 
 	friend std::istream& operator>>(std::istream& is, IModule& data);
 	friend std::ostream& operator<<(std::ostream& os, const IModule& data);

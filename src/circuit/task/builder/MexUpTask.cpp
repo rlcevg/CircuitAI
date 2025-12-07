@@ -23,7 +23,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBMexUpTask::CBMexUpTask(IUnitModule* mgr, Priority priority,
+CBMexUpTask::CBMexUpTask(ITaskModule* mgr, Priority priority,
 						 CCircuitDef* buildDef, int spotId, const AIFloat3& position,
 						 SResource cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::MEXUP, cost, 0.f, timeout)
@@ -33,7 +33,7 @@ CBMexUpTask::CBMexUpTask(IUnitModule* mgr, Priority priority,
 	manager->GetCircuit()->GetEconomyManager()->SetUpgradingMexSpot(spotId, true);
 }
 
-CBMexUpTask::CBMexUpTask(IUnitModule* mgr)
+CBMexUpTask::CBMexUpTask(ITaskModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::MEXUP)
 		, spotId(-1)
 		, reclaimMex(nullptr)

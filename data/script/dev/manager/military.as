@@ -43,14 +43,4 @@ void AiMakeDefence(int cluster, const AIFloat3& in pos)
 	}
 }
 
-/*
- * anti-air threat threshold;
- * air factories will stop production when AA threat exceeds
- */
-// FIXME: Remove/replace, deprecated.
-bool AiIsAirValid()
-{
-	return aiEnemyMgr.GetEnemyThreat(Unit::Role::AA.type) <= 80.f;
-}
-
 }  // namespace Military

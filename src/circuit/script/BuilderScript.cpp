@@ -21,7 +21,7 @@ static void ConstructSResourceVal(SResource* mem, float m, float e)
 }
 
 CBuilderScript::CBuilderScript(CScriptManager* scr, CBuilderManager* mgr)
-		: IUnitModuleScript(scr, mgr)
+		: ITaskModuleScript(scr, mgr)
 {
 	asIScriptEngine* engine = script->GetEngine();
 
@@ -79,7 +79,19 @@ bool CBuilderScript::Init()
 	asIScriptModule* mod = script->GetEngine()->GetModule(CScriptManager::mainName.c_str());
 	int r = mod->SetDefaultNamespace("Builder"); ASSERT(r >= 0);
 	InitModule(mod);
+	builderInfo.taskAssigned = script->GetFunc(mod, "void AiTaskAssigned(CCircuitUnit@)");
 	return true;
+}
+
+void CBuilderScript::TaskAssigned(CCircuitUnit* unit)
+{
+	if (builderInfo.taskAssigned == nullptr) {
+		return;
+	}
+	asIScriptContext* ctx = script->PrepareContext(builderInfo.taskAssigned);
+	ctx->SetArgObject(0, unit);
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
 }
 
 } // namespace circuit

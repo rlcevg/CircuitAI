@@ -65,6 +65,7 @@ public:
 
 	void Init(CCircuitAI* circuit, float decloakRadius);
 	void NonDefaultThreats(std::set<CCircuitDef::RoleT>&& modRoles, CCircuitAI* ai);
+	void InitThreatRanges(CCircuitAI* ai);
 	void Release();
 
 	void ForceUpdateFriendlyUnits();

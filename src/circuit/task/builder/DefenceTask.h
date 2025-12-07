@@ -14,10 +14,10 @@ namespace circuit {
 
 class CBDefenceTask: public IBuilderTask {
 public:
-	CBDefenceTask(IUnitModule* mgr, Priority priority,
+	CBDefenceTask(ITaskModule* mgr, Priority priority,
 				  CCircuitDef* buildDef, const springai::AIFloat3& position,
 				  SResource cost, float shake, int timeout);
-	CBDefenceTask(IUnitModule* mgr);  // Load
+	CBDefenceTask(ITaskModule* mgr);  // Load
 	virtual ~CBDefenceTask();
 
 	void SetDefPointId(int pointId) { defPointId = pointId; }

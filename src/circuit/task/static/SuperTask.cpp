@@ -25,7 +25,7 @@ using namespace springai;
 
 #define TARGET_DELAY	(FRAMES_PER_SEC * 10)
 
-CSuperTask::CSuperTask(IUnitModule* mgr)
+CSuperTask::CSuperTask(ITaskModule* mgr)
 		: IFighterTask(mgr, IFighterTask::FightType::SUPER, 1.f)
 		, targetFrame(0)
 		, targetPos(-RgtVector)
@@ -92,17 +92,33 @@ void CSuperTask::Update()
 		&militaryMgr->GetTasks(IFighterTask::FightType::AH),
 		&militaryMgr->GetTasks(IFighterTask::FightType::AA),
 	};
-	auto isAllySafe = [&avoidTasks, frame, sqAoe, inflMap](const AIFloat3& pos) {
+	auto isTargetValid = [&avoidTasks, frame, sqAoe, inflMap, circuit](const CEnemyManager::SEnemyGroup& group) {
+		// Ally influence and own tasks avoidance
+		if (inflMap->GetInfluenceAt(group.pos) > -INFL_EPS) {
+			return false;
+		}
 		for (const std::set<IFighterTask*>* tasks : avoidTasks) {
 			for (const IFighterTask* task : *tasks) {
 				const AIFloat3& leaderPos = static_cast<const ISquadTask*>(task)->GetLeaderPos(frame);
-				if (leaderPos.SqDistance2D(pos) < sqAoe) {
+				if (leaderPos.SqDistance2D(group.pos) < sqAoe) {
 					return false;
 				}
 			}
 		}
-		return inflMap->GetInfluenceAt(pos) < -INFL_EPS;
+		for (const ICoreUnit::Id eId : group.units) {
+			CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
+			if (enemy == nullptr) {
+				continue;
+			}
+			CCircuitDef* edef = enemy->GetCircuitDef();
+			// NOTE: groups are created by leader, ignore flags could be different
+			if ((edef == nullptr) || !circuit->GetCircuitDef(edef->GetId())->IsIgnore()) {
+				return true;
+			}
+		}
+		return false;
 	};
+
 	const std::vector<CEnemyManager::SEnemyGroup>& groups = circuit->GetEnemyManager()->GetEnemyGroups();
 	if (cdef->IsHoldFire() || (State::ROAM == state)) {
 		for (unsigned i = 0; i < groups.size(); ++i) {
@@ -110,7 +126,7 @@ void CSuperTask::Update()
 			if ((cost >= group.cost) || (position.SqDistance2D(group.pos) >= maxSqRange)) {
 				continue;
 			}
-			if (isAllySafe(group.pos)) {
+			if (isTargetValid(group.pos)) {
 				cost = group.cost;
 				groupIdx = i;
 			}
@@ -128,7 +144,7 @@ void CSuperTask::Update()
 			if (cost >= group.cost * angleMod) {
 				continue;
 			}
-			if (isAllySafe(group.pos)) {
+			if (isTargetValid(group.pos)) {
 				cost = group.cost;
 				groupIdx = i;
 			}
@@ -153,6 +169,11 @@ void CSuperTask::Update()
 			if (enemy == nullptr) {
 				continue;
 			}
+			CCircuitDef* edef = enemy->GetCircuitDef();
+			// NOTE: groups are created by leader, ignore flags could be different
+			if ((edef != nullptr) && circuit->GetCircuitDef(edef->GetId())->IsIgnore()) {
+				continue;
+			}
 			const float sqDist = grPos.SqDistance2D(enemy->GetPos());
 			if ((minSqDist > sqDist) && (position.SqDistance2D(enemy->GetPos()) < maxSqRange)) {
 				minSqDist = sqDist;
@@ -164,6 +185,11 @@ void CSuperTask::Update()
 		for (const ICoreUnit::Id eId : groups[groupIdx].units) {
 			CEnemyInfo* enemy = circuit->GetEnemyInfo(eId);
 			if (enemy == nullptr) {
+				continue;
+			}
+			CCircuitDef* edef = enemy->GetCircuitDef();
+			// NOTE: groups are created by leader, ignore flags could be different
+			if ((edef != nullptr) && circuit->GetCircuitDef(edef->GetId())->IsIgnore()) {
 				continue;
 			}
 			if ((maxCost < enemy->GetCost()) && (position.SqDistance2D(enemy->GetPos()) < maxSqRange)) {

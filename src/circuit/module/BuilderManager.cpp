@@ -59,7 +59,7 @@ namespace circuit {
 using namespace springai;
 
 CBuilderManager::CBuilderManager(CCircuitAI* circuit)
-		: IUnitModule(circuit, new CBuilderScript(circuit->GetScriptManager(), this))
+		: ITaskModule(circuit, new CBuilderScript(circuit->GetScriptManager(), this))
 		, assistCount(0)
 		, guardCount(0)
 		, buildTasksCount(0)
@@ -207,7 +207,9 @@ void CBuilderManager::InitHandlers()
 	 * building handlers
 	 */
 	auto buildingDamagedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
-		Enqueue(TaskB::Repair(IBuilderTask::Priority::HIGH, unit));
+		if (!unit->IsAttrNoRepair()) {
+			Enqueue(TaskB::Repair(IBuilderTask::Priority::HIGH, unit));
+		}
 	};
 	auto buildingDestroyedHandler = [this](CCircuitUnit* unit, CEnemyInfo* attacker) {
 		int frame = this->circuit->GetLastFrame();
@@ -773,6 +775,18 @@ CRetreatTask* CBuilderManager::EnqueueRetreat()
 	return task;
 }
 
+void CBuilderManager::AssignTask(CCircuitUnit* unit, IUnitTask* task)
+{
+	ITaskModule::AssignTask(unit, task);
+	static_cast<CBuilderScript*>(script)->TaskAssigned(unit);
+}
+
+void CBuilderManager::AssignTask(CCircuitUnit* unit)
+{
+	ITaskModule::AssignTask(unit);
+	static_cast<CBuilderScript*>(script)->TaskAssigned(unit);
+}
+
 void CBuilderManager::DequeueTask(IUnitTask* task, bool done)
 {
 	switch (task->GetType()) {
@@ -804,7 +818,7 @@ void CBuilderManager::DequeueTask(IUnitTask* task, bool done)
 		} break;
 		default: break;
 	}
-	IUnitModule::DequeueTask(task, done);
+	ITaskModule::DequeueTask(task, done);
 }
 
 void CBuilderManager::FallbackTask(CCircuitUnit* unit)
@@ -816,8 +830,8 @@ void CBuilderManager::FallbackTask(CCircuitUnit* unit)
 	IUnitTask* task = Enqueue(TaskB::Patrol(IBuilderTask::Priority::LOW, pos, FRAMES_PER_SEC * 5));
 	task->AssignTo(unit);
 	task->Start(unit);
+	static_cast<CBuilderScript*>(script)->TaskAssigned(unit);
 }
-
 
 bool CBuilderManager::IsBuilderInArea(CCircuitDef* buildDef, const AIFloat3& position) const
 {

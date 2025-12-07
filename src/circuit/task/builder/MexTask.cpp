@@ -23,7 +23,7 @@ namespace circuit {
 
 using namespace springai;
 
-CBMexTask::CBMexTask(IUnitModule* mgr, Priority priority,
+CBMexTask::CBMexTask(ITaskModule* mgr, Priority priority,
 					 CCircuitDef* buildDef, int spotId, const AIFloat3& position,
 					 SResource cost, int timeout)
 		: IBuilderTask(mgr, priority, buildDef, position, Type::BUILDER, BuildType::MEX, cost, 0.f, timeout)
@@ -34,7 +34,7 @@ CBMexTask::CBMexTask(IUnitModule* mgr, Priority priority,
 	manager->GetCircuit()->GetEconomyManager()->SetOpenMexSpot(spotId, false);
 }
 
-CBMexTask::CBMexTask(IUnitModule* mgr)
+CBMexTask::CBMexTask(ITaskModule* mgr)
 		: IBuilderTask(mgr, Type::BUILDER, BuildType::MEX)
 		, spotId(-1)
 		, blockCount(0)

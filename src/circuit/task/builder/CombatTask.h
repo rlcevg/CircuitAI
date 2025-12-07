@@ -14,7 +14,7 @@ namespace circuit {
 
 class CCombatTask: public IFighterTask {
 public:
-	CCombatTask(IUnitModule* mgr, float powerMod);
+	CCombatTask(ITaskModule* mgr, float powerMod);
 	virtual ~CCombatTask();
 
 	virtual void RemoveAssignee(CCircuitUnit* unit) override;

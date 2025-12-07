@@ -9,6 +9,7 @@
 #include "script/SetupScript.h"
 #include "script/ScriptManager.h"
 #include "script/RefCounter.h"
+#include "map/ThreatMap.h"
 #include "scheduler/Scheduler.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
@@ -22,6 +23,8 @@
 #include "angelscript/include/angelscript.h"
 #include "angelscript/add_on/scriptarray/scriptarray.h"
 #include "angelscript/add_on/scriptdictionary/scriptdictionary.h"
+#include "asbind20/asbind.hpp"
+#include "asbind20/operators.hpp"  // _this, const_this, param<T>, ->return<T>()
 
 #include "spring/SpringMap.h"
 
@@ -34,6 +37,9 @@
 namespace circuit {
 
 using namespace springai;
+
+asITypeInfo* gUnitArrayType;  // cache
+asITypeInfo* gIdArrayType;  // cache
 
 CInitScript::SInitInfo::SInitInfo(const SInitInfo& o)
 {
@@ -70,19 +76,9 @@ static void AddWaterArmor(CCircuitDef::SArmorInfo* mem, int type)
 	mem->waterTypes.push_back(type);
 }
 
-static void ConstructAIFloat3(AIFloat3* mem)
+static void ConstructVec3Val(float3* mem, float x, float y, float z)
 {
-	new(mem) AIFloat3();
-}
-
-static void ConstructCopyAIFloat3(AIFloat3* mem, const AIFloat3& o)
-{
-	new(mem) AIFloat3(o);
-}
-
-static void ConstructAIFloat3Val(AIFloat3* mem, float x, float y, float z)
-{
-	new(mem) AIFloat3(x, y, z);
+	new(mem) float3(x, y, z);
 }
 
 static void ConstructSArmorInfo(CCircuitDef::SArmorInfo* mem)
@@ -157,6 +153,17 @@ static int CCircuitAI_GetLeadTeamId(CCircuitAI* circuit)
 	return circuit->GetAllyTeam()->GetLeaderId();
 }
 
+static CScriptArray* CCircuitAI_GetTeamIds(CCircuitAI* circuit)
+{
+	CAllyTeam* allyTeam = circuit->GetAllyTeam();
+	CScriptArray* arr = CScriptArray::Create(gIdArrayType, allyTeam->GetSize());
+	asUINT i = 0;
+	for (CAllyTeam::Id teamId : allyTeam->GetTeamIds()) {
+		*(CAllyTeam::Id*)arr->At(i++) = teamId;
+	}
+	return arr;
+}
+
 static void CCircuitAI_GiveUnits(CCircuitAI* circuit, const CScriptArray* array, int newTeamId)
 {
 	std::vector<CCircuitUnit*> units;
@@ -212,6 +219,19 @@ static std::string CCircuitUnit_GetRulesParamString(CCircuitUnit* unit, const st
 	return unit->GetUnit()->GetRulesParamString(key.c_str(), defVal.c_str());
 }
 
+static CScriptArray* IUnitTask_GetUnits(IUnitTask* task)
+{
+	// Without caching arrayType can be extracted by:
+//	asIScriptEngine* engine = asGetActiveContext()->GetEngine(); // Get engine from active context
+//	asITypeInfo* arrayType = engine->GetTypeInfoByDecl("array<CCircuitUnit@>");
+	CScriptArray* arr = CScriptArray::Create(gUnitArrayType, task->GetAssignees().size());
+	asUINT i = 0;
+	for (CCircuitUnit* unit : task->GetAssignees()) {
+		arr->SetValue(i++, &unit);
+	}
+	return arr;
+}
+
 CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 		: IScript(scr)
 		, circuit(ai)
@@ -219,16 +239,84 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	asIScriptEngine* engine = script->GetEngine();
 
 	// RegisterSpringai
-	int r = engine->RegisterObjectType("AIFloat3", sizeof(AIFloat3), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<AIFloat3>()); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("AIFloat3", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructAIFloat3), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("AIFloat3", asBEHAVE_CONSTRUCT, "void f(const AIFloat3& in)", asFUNCTION(ConstructCopyAIFloat3), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
-	r = engine->RegisterObjectBehaviour("AIFloat3", asBEHAVE_CONSTRUCT, "void f(float, float, float)", asFUNCTION(ConstructAIFloat3Val), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("AIFloat3", "float x", asOFFSET(AIFloat3, x)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("AIFloat3", "float y", asOFFSET(AIFloat3, y)); ASSERT(r >= 0);
-	r = engine->RegisterObjectProperty("AIFloat3", "float z", asOFFSET(AIFloat3, z)); ASSERT(r >= 0);
+	static_assert(std::is_base_of<float3, AIFloat3>::value, "AIFloat3 must be a subclass of float3!");
+	static_assert(sizeof(AIFloat3) == sizeof(float3), "Memory layout of AIFloat3 must be same as float3");
+	asbind20::value_class<float3>(
+		engine,
+		"AIFloat3",
+		// value_class is asOBJ_VALUE. Other flags will be automatically set using asGetTypeTraits<T>()
+		asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asOBJ_APP_CLASS_MORE_CONSTRUCTORS
+	)
+		.behaviours_by_traits()
+		.constructor<float>("float", asbind20::use_explicit)
+		.constructor_function("float, float, float", &ConstructVec3Val)
+		.property("float x", &float3::x)
+		.property("float y", &float3::y)
+		.property("float z", &float3::z)
+		.opAdd()                                             // float3 operator+ (const float3& f) const
+		.use(asbind20::const_this + asbind20::param<float>)  // float3 operator+ (const float f) const
+		.opAddAssign()                                       // float3& operator+= (const float3& f)
+		.opSub()                                             // float3 operator- (const float3& f) const
+		.use(asbind20::const_this - asbind20::param<float>)  // float3 operator- (const float f) const
+		.method("void opSubAssign(const AIFloat3& in)", &float3::operator-=)  // bad opSubAssign in float3
+		.opNeg()                                             // constexpr float3 operator- () const
+		.opMul()                                             // float3 operator* (const float3& f) const
+		.use(asbind20::const_this * asbind20::param<float>)  // float3 operator* (const float f) const
+//		.use(asbind20::param<float> * asbind20::const_this)  // inline float3 operator*(float f, const float3& v)
+		.method("void opMulAssign(const AIFloat3& in)", asbind20::overload_cast<float>(&float3::operator*=))  // bad opMulAssign in float3
+		.use(asbind20::_this *= asbind20::param<float>)      // float3& operator*= (float f)
+		.opDiv()                                             // float3 operator/ (const float3& f) const
+		.use(asbind20::const_this / asbind20::param<float>)  // float3 operator/ (const float f) const
+		.method("void opDivAssign(const AIFloat3& in)", asbind20::overload_cast<const float3&>(&float3::operator/=))  // bad opDivAssign in float3
+		.method("void opDivAssign(const float)", asbind20::overload_cast<float>(&float3::operator/=))  // void operator/= (const float f)
+		.opEquals()                                          // bool operator== (const float3& f) const
+		.use(asbind20::_this[asbind20::param<int>])          // float& operator[] (const int t)
+		.use(asbind20::const_this[asbind20::param<int>])     // const float& operator[] (const int t) const
+		.method("bool equals(const AIFloat3& in, const AIFloat3& in) const", &float3::equals)
+		.method("bool same(const AIFloat3& in) const", &float3::same)
+		.method("bool binarySame(const AIFloat3& in) const", &float3::binarySame)
+		.method("float dot(const AIFloat3& in) const", &float3::dot)
+		.method("float dot2D(const AIFloat3& in) const", &float3::dot2D)
+		.method("AIFloat3 cross(const AIFloat3& in) const", &float3::cross)
+		.method("AIFloat3 rotate(float, const AIFloat3& in) const", &float3::rotate<false>)
+		.method("AIFloat3 rotateByUpVector(const AIFloat3& in, const AIFloat3& in) const", &float3::rotateByUpVector)
+		.method("AIFloat3 rotate2D(const AIFloat3& in) const", &float3::rotate2D)
+		.method("AIFloat3 snapToAxis() const", &float3::snapToAxis)
+		.method("float distance(const AIFloat3& in) const", &float3::distance)
+		.method("float distance2D(const AIFloat3& in) const", asbind20::overload_cast<const float3&>(&float3::distance2D, asbind20::const_))
+		.method("float SqDistance(const AIFloat3& in) const", &float3::SqDistance)
+		.method("float SqDistance2D(const AIFloat3& in) const", &float3::SqDistance2D)
+		.method("float Length() const", &float3::Length)
+		.method("float Length2D() const", &float3::Length2D)
+		.method("float SqLength() const", &float3::SqLength)
+		.method("float SqLength2D() const", &float3::SqLength2D)
+		.method("float LengthNormalize()", &float3::LengthNormalize)
+		.method("float LengthNormalize2D()", &float3::LengthNormalize2D)
+		.method("AIFloat3& Normalize()", &float3::Normalize)
+		.method("AIFloat3& Normalize2D()", &float3::Normalize2D)
+		.method("AIFloat3& SafeNormalize()", &float3::SafeNormalize)
+		.method("AIFloat3& SafeNormalize2D()", &float3::SafeNormalize2D)
+		.method("AIFloat3 PickNonParallel() const", &float3::PickNonParallel)
+		.method("bool Normalized() const", &float3::Normalized)
+		.method("bool CheckNaNs() const", &float3::CheckNaNs)
+		.method("bool IsInMap() const", &float3::IsInMap)
+		.method("void ClampInMap() const", &float3::ClampInMap)
+		.method("string str() const", &float3::str)
+		.method("string ToString() const", &AIFloat3::ToString)  // HAX
+		.method("string opImplConv() const", [](const float3& f) {
+			return f.str();  // static_cast<const AIFloat3&>(f).ToString();
+		});
+	// NOTE: ".use(asbind20::param<float> * asbind20::const_this)" makes IDE go "Syntax error" (but compiles)
+	int r = engine->RegisterObjectMethod("AIFloat3", "AIFloat3 opMul_r(float) const", asFUNCTIONPR(operator*, (float, const float3&), float3), asCALL_CDECL_OBJLAST); ASSERT(r >= 0);
+	asbind20::global(engine)
+		.function("AIFloat3 AiMin(const AIFloat3, const AIFloat3)", &float3::min)
+		.function("AIFloat3 AiMax(const AIFloat3, const AIFloat3)", &float3::max)
+		.function("AIFloat3 AiFabs(const AIFloat3)", &float3::fabs)
+		.function("AIFloat3 AiSign(const AIFloat3)", &float3::sign);
 
 	// RegisterUtils
-	r = engine->RegisterGlobalFunction("void AiLog(const string& in)", asMETHOD(CInitScript, Log), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	asbind20::global(engine)
+		.function("void AiLog(const string& in)", &CInitScript::Log, asbind20::auxiliary(this));
 	r = engine->RegisterGlobalFunction("void AiAddPoint(const AIFloat3& in, const string& in)", asMETHOD(CInitScript, AddPoint), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("void AiDelPoint(const AIFloat3& in)", asMETHOD(CInitScript, DelPoint), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("void AiPause(bool, const string& in)", asMETHOD(CInitScript, Pause), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
@@ -238,6 +326,7 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterGlobalFunction("int AiMax(int, int)", asMETHODPR(CInitScript, Max<int>, (int, int) const, int), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("float AiMax(float, float)", asMETHODPR(CInitScript, Max<float>, (float, float) const, float), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("int AiRandom(int, int)", asMETHOD(CInitScript, Random), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
+	r = engine->RegisterGlobalFunction("void AiSendMessage(const string& in, int = -1)", asMETHOD(CInitScript, SendMessage), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
 	r = engine->RegisterFuncdef("void AiOnFinish(dictionary@+)"); ASSERT(r >= 0);
 	r = engine->RegisterFuncdef("AiOnFinish@+ AiExec(dictionary@+)"); ASSERT(r >= 0);
 	r = engine->RegisterGlobalFunction("void AiRun(AiExec@+, dictionary@)", asMETHOD(CInitScript, Run), asCALL_THISCALL_ASGLOBAL, this); ASSERT(r >= 0);
@@ -298,7 +387,10 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectMethod("IUnitTask", "Type GetType() const", asMETHODPR(IUnitTask, GetType, () const, IUnitTask::Type), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("IUnitTask", "Type GetBuildType() const", asMETHODPR(IBuilderTask, GetBuildType, () const, IBuilderTask::BuildType), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("IUnitTask", "const AIFloat3& GetBuildPos() const", asMETHODPR(IBuilderTask, GetPosition, () const, const AIFloat3&), asCALL_THISCALL); ASSERT(r >= 0);
-	r = engine->RegisterObjectMethod("IUnitTask", "CCircuitDef@ GetBuildDef() const", asMETHODPR(IBuilderTask, GetBuildDef, () const, CCircuitDef*), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("IUnitTask", "CCircuitDef@ const buildDef", asOFFSET(IBuilderTask, buildDef)); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("IUnitTask", "CCircuitUnit@ const target", asOFFSET(IBuilderTask, target)); ASSERT(r >= 0);
+	gUnitArrayType = engine->GetTypeInfoByDecl("array<CCircuitUnit@>");
+	r = engine->RegisterObjectMethod("IUnitTask", "array<CCircuitUnit@>@ GetUnits() const", asFUNCTION(IUnitTask_GetUnits), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 
 	r = engine->RegisterObjectProperty("CCircuitAI", "const int frame", asOFFSET(CCircuitAI, lastFrame)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CCircuitAI", "const int skirmishAIId", asOFFSET(CCircuitAI, skirmishAIId)); ASSERT(r >= 0);
@@ -315,7 +407,11 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectMethod("CCircuitAI", "int GetLeadTeamId() const", asFUNCTION(CCircuitAI_GetLeadTeamId), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitAI", "Type GetSideId() const", asMETHOD(CCircuitAI, GetSideId), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitAI", "const string& GetSideName() const", asMETHOD(CCircuitAI, GetSideName), asCALL_THISCALL); ASSERT(r >= 0);
+	gIdArrayType = engine->GetTypeInfoByDecl("array<Id>");
+	r = engine->RegisterObjectMethod("CCircuitAI", "array<Id>@ GetTeamIds() const", asFUNCTION(CCircuitAI_GetTeamIds), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitAI", "void GiveUnits(const array<CCircuitUnit@>@+, int)", asFUNCTION(CCircuitAI_GiveUnits), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CCircuitAI", "bool UnitControl(CCircuitUnit@, bool)", asMETHODPR(CCircuitAI, UnitControl, (CCircuitUnit*, bool), bool), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CCircuitAI", "bool UnitControl(Id, bool)", asMETHODPR(CCircuitAI, UnitControl, (ICoreUnit::Id, bool), bool), asCALL_THISCALL); ASSERT(r >= 0);
 	// Lua<-->AI communications [in Spring 0.83+]
 	r = engine->RegisterObjectMethod("CCircuitAI", "string CallRules(const string& in)", asFUNCTION(CCircuitAI_CallRules), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitAI", "string CallUI(const string& in)", asFUNCTION(CCircuitAI_CallUI), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
@@ -362,6 +458,10 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectProperty("CCircuitDef", "const float surfThrDmg", asOFFSET(CCircuitDef, surfThrDmg)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CCircuitDef", "const float waterThrDmg", asOFFSET(CCircuitDef, waterThrDmg)); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CCircuitDef", "const float minRange", asOFFSET(CCircuitDef, minRange)); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CCircuitDef", "float GetMaxRange(Type) const", asMETHODPR(CCircuitDef, GetMaxRange, (CCircuitDef::RangeType) const, float), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CCircuitDef", "float GetMaxRange() const", asMETHODPR(CCircuitDef, GetMaxRange, () const, float), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CCircuitDef", "void SetRange(Type, float)", asMETHODPR(CCircuitDef, SetRange, (CCircuitDef::RangeType, float), void), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CCircuitDef", "void SetRange(float)", asMETHODPR(CCircuitDef, SetRange, (float), void), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitDef", "float GetAirThreat() const", asMETHOD(CCircuitDef, GetAirThreat), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitDef", "float GetSurfThreat() const", asMETHOD(CCircuitDef, GetSurfThreat), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitDef", "float GetWaterThreat() const", asMETHOD(CCircuitDef, GetWaterThreat), asCALL_THISCALL); ASSERT(r >= 0);
@@ -385,6 +485,7 @@ CInitScript::CInitScript(CScriptManager* scr, CCircuitAI* ai)
 	r = engine->RegisterObjectMethod("CCircuitUnit", "bool IsAttrAny(Mask) const", asMETHOD(CCircuitUnit, IsAttrAny), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitUnit", "void SetFireState(int)", asMETHOD(CCircuitUnit, TrySetFireState), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitUnit", "void SelfDestruct(bool)", asMETHOD(CCircuitUnit, CmdSelfD), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CCircuitUnit", "IUnitTask@ const task", asOFFSET(CCircuitUnit, task)); ASSERT(r >= 0);
 	// RulesParams accessor on Unit
 	r = engine->RegisterObjectMethod("CCircuitUnit", "float GetRulesParam(const string& in, float) const", asFUNCTION(CCircuitUnit_GetRulesParamFloat), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CCircuitUnit", "string GetRulesParam(const string& in, const string& in) const", asFUNCTION(CCircuitUnit_GetRulesParamString), asCALL_CDECL_OBJFIRST); ASSERT(r >= 0);
@@ -510,6 +611,12 @@ void CInitScript::RegisterMgr()
 	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyThreat(Type) const", asMETHODPR(CEnemyManager, GetEnemyThreat, (CCircuitDef::RoleT) const, float), asCALL_THISCALL); ASSERT(r >= 0);
 	r = engine->RegisterObjectProperty("CEnemyManager", "const float mobileThreat", asOFFSET(CEnemyManager, mobileThreat)); ASSERT(r >= 0);
 	r = engine->RegisterObjectMethod("CEnemyManager", "float GetEnemyCost(Type) const", asMETHOD(CEnemyManager, GetEnemyCost), asCALL_THISCALL); ASSERT(r >= 0);
+	r = engine->RegisterObjectProperty("CEnemyManager", "float maxAAThreat", asOFFSET(CEnemyManager, maxAAThreat)); ASSERT(r >= 0);
+
+	CThreatMap* thrMap = circuit->GetThreatMap();
+	r = engine->RegisterObjectType("CThreatMap", 0, asOBJ_REF | asOBJ_NOHANDLE); ASSERT(r >= 0);
+	r = engine->RegisterGlobalProperty("CThreatMap aiThreat", thrMap); ASSERT(r >= 0);
+	r = engine->RegisterObjectMethod("CThreatMap", "void ApplyRange(CCircuitDef@)", asMETHOD(CThreatMap, ApplyRange), asCALL_THISCALL); ASSERT(r >= 0);
 }
 
 bool CInitScript::Init()
@@ -522,6 +629,9 @@ bool CInitScript::Init()
 	int r = mod->SetDefaultNamespace("Main"); ASSERT(r >= 0);
 	mainInfo.update = script->GetFunc(mod, "void AiUpdate()");
 	mainInfo.luaMessage = script->GetFunc(mod, "void AiLuaMessage(const string& in)");
+	mainInfo.receiveMessage = script->GetFunc(mod, "void AiMessage(const string& in, int)");
+	mainInfo.unitFinished = script->GetFunc(mod, "void AiUnitFinished(CCircuitUnit@)");
+	mainInfo.unitDestroyed = script->GetFunc(mod, "void AiUnitDestroyed(CCircuitUnit@)");
 	asIScriptFunction* main = script->GetFunc(mod, "void AiMain()");
 	if (main == nullptr) {
 		return false;
@@ -551,6 +661,28 @@ void CInitScript::LuaMessage(const char* inData)
 	asIScriptContext* ctx = script->PrepareContext(mainInfo.luaMessage);
 	std::string data(inData);
 	ctx->SetArgAddress(0, &data);
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
+}
+
+void CInitScript::UnitFinished(CCircuitUnit* unit)
+{
+	if (mainInfo.unitFinished == nullptr) {
+		return;
+	}
+	asIScriptContext* ctx = script->PrepareContext(mainInfo.unitFinished);
+	ctx->SetArgObject(0, unit);
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
+}
+
+void CInitScript::UnitDestroyed(CCircuitUnit* unit)
+{
+	if (mainInfo.unitDestroyed == nullptr) {
+		return;
+	}
+	asIScriptContext* ctx = script->PrepareContext(mainInfo.unitDestroyed);
+	ctx->SetArgObject(0, unit);
 	script->Exec(ctx);
 	script->ReturnContext(ctx);
 }
@@ -600,6 +732,52 @@ int CInitScript::Dice(const CScriptArray* array) const
 		}
 	}
 	return -1;
+}
+
+void CInitScript::SendMessage(const std::string& msg, int toTeamId)
+{
+	// NOTE: Can access ai->script because of "friend class CInitScript;"
+	if (toTeamId < 0) {
+		for (CCircuitAI* ai : circuit->GetGameAttribute()->GetCircuits()) {
+			if (ai->IsInitialized()
+				&& (ai->GetTeamId() != circuit->GetTeamId())
+				&& (ai->GetAllyTeamId() == circuit->GetAllyTeamId())
+				&& ai->script->mainInfo.receiveMessage != nullptr)
+			{
+				int fromTeamId = circuit->GetTeamId();
+				ai->GetScheduler()->RunJobAfter(CScheduler::GameJob([ai, msg, fromTeamId]() {
+					ai->script->ReceiveMessage(msg, fromTeamId);
+				}));
+			}
+		}
+	} else {
+		for (CCircuitAI* ai : circuit->GetGameAttribute()->GetCircuits()) {
+			if (ai->IsInitialized()
+				&& (ai->GetTeamId() == toTeamId)
+				&& (ai->GetAllyTeamId() == circuit->GetAllyTeamId())
+				&& ai->script->mainInfo.receiveMessage != nullptr)
+			{
+				int fromTeamId = circuit->GetTeamId();
+				ai->GetScheduler()->RunJobAfter(CScheduler::GameJob([ai, msg, fromTeamId]() {
+					ai->script->ReceiveMessage(msg, fromTeamId);
+				}));
+				return;
+			}
+		}
+	}
+}
+
+void CInitScript::ReceiveMessage(const std::string& msg, int fromTeamId)
+{
+	// NOTE: Check done in CInitScript::SendMessage
+//	if (mainInfo.receiveMessage == nullptr) {
+//		return;
+//	}
+	asIScriptContext* ctx = script->PrepareContext(mainInfo.receiveMessage);
+	ctx->SetArgAddress(0, &const_cast<std::string&>(msg));
+	ctx->SetArgDWord(1, fromTeamId);
+	script->Exec(ctx);
+	script->ReturnContext(ctx);
 }
 
 void CInitScript::Run(asIScriptFunction* exec, CScriptDictionary* arg)

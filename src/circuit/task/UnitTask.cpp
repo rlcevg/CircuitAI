@@ -7,7 +7,7 @@
 
 #include "task/UnitTask.h"
 #include "task/IdleTask.h"
-#include "module/UnitModule.h"
+#include "module/TaskModule.h"
 #include "setup/SetupManager.h"
 #include "terrain/TerrainManager.h"
 #include "terrain/path/PathQuery.h"
@@ -20,7 +20,7 @@ namespace circuit {
 
 using namespace springai;
 
-IUnitTask::IUnitTask(IUnitModule* mgr, Priority priority, Type type, int timeout)
+IUnitTask::IUnitTask(ITaskModule* mgr, Priority priority, Type type, int timeout)
 		: manager(mgr)
 		, type(type)
 		, priority(priority)
@@ -32,7 +32,7 @@ IUnitTask::IUnitTask(IUnitModule* mgr, Priority priority, Type type, int timeout
 	lastTouched = manager->GetCircuit()->GetLastFrame();
 }
 
-IUnitTask::IUnitTask(IUnitModule* mgr, Type type)
+IUnitTask::IUnitTask(ITaskModule* mgr, Type type)
 		: manager(mgr)
 		, type(type)
 		, priority(Priority::LOW)

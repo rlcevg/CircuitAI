@@ -52,6 +52,8 @@ bool CEconomyScript::Init()
 	int r = mod->SetDefaultNamespace("Economy"); ASSERT(r >= 0);
 	InitModule(mod);
 	economyInfo.updateEconomy = script->GetFunc(mod, "void AiUpdateEconomy()");
+	economyInfo.unitAdded = script->GetFunc(mod, "void AiUnitAdded(CCircuitUnit@, Unit::UseAs)");
+	economyInfo.unitRemoved = script->GetFunc(mod, "void AiUnitRemoved(CCircuitUnit@, Unit::UseAs)");
 	return true;
 }
 

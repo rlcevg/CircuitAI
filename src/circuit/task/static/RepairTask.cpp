@@ -22,7 +22,7 @@ namespace circuit {
 
 using namespace springai;
 
-CSRepairTask::CSRepairTask(IUnitModule* mgr, Priority priority, CAllyUnit* target, int timeout)
+CSRepairTask::CSRepairTask(ITaskModule* mgr, Priority priority, CAllyUnit* target, int timeout)
 		: IRepairTask(mgr, priority, Type::FACTORY, target, timeout)
 {
 	static_cast<CFactoryManager*>(mgr)->MarkRepairUnit(target->GetId(), this);
@@ -91,15 +91,15 @@ void CSRepairTask::Update()
 				circuit->UpdateFriendlyUnits();
 				auto& us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 				for (Unit* u : us) {
-					CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-					if ((candUnit == nullptr)
-						|| builderMgr->IsReclaimUnit(candUnit)
-						|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
+					auto [cand, isTeam] = circuit->GetTeamOrAllyUnit(u);
+					if ((cand == nullptr)  // no self-check
+						|| builderMgr->IsReclaimUnit(cand)
+						|| (isTeam ? static_cast<CCircuitUnit*>(cand)->IsAttrNoRepair() : cand->GetCircuitDef()->IsAttrNoRepair()))
 					{
 						continue;
 					}
 					if (!u->IsBeingBuilt() && (u->GetHealth() < u->GetMaxHealth())) {
-						task = factoryMgr->Enqueue(TaskS::Repair(IBuilderTask::Priority::NORMAL, candUnit));
+						task = factoryMgr->Enqueue(TaskS::Repair(IBuilderTask::Priority::NORMAL, cand));
 						break;
 					}
 				}
@@ -119,17 +119,17 @@ void CSRepairTask::Update()
 			circuit->UpdateFriendlyUnits();
 			auto& us = circuit->GetCallback()->GetFriendlyUnitsIn(position, radius * 0.9f);
 			for (Unit* u : us) {
-				CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-				if ((candUnit == nullptr)
-					|| builderMgr->IsReclaimUnit(candUnit)
-					|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
+				auto [cand, isTeam] = circuit->GetTeamOrAllyUnit(u);
+				if ((cand == nullptr)  // no self-check
+					|| builderMgr->IsReclaimUnit(cand)
+					|| (isTeam ? static_cast<CCircuitUnit*>(cand)->IsAttrNoRepair() : cand->GetCircuitDef()->IsAttrNoRepair()))
 				{
 					continue;
 				}
-				bool isHighPrio = factoryMgr->IsHighPriority(candUnit);
-				if (u->IsBeingBuilt() && ((candUnit->GetCircuitDef()->GetBuildTime() < maxCost) || isHighPrio)) {
+				bool isHighPrio = factoryMgr->IsHighPriority(cand);
+				if (u->IsBeingBuilt() && ((cand->GetCircuitDef()->GetBuildTime() < maxCost) || isHighPrio)) {
 					IBuilderTask::Priority priority = isHighPrio ? IBuilderTask::Priority::HIGH : IBuilderTask::Priority::NORMAL;
-					task = factoryMgr->Enqueue(TaskS::Repair(priority, candUnit));
+					task = factoryMgr->Enqueue(TaskS::Repair(priority, cand));
 					break;
 				}
 			}

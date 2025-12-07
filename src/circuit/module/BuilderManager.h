@@ -8,7 +8,7 @@
 #ifndef SRC_CIRCUIT_MODULE_BUILDERMANAGER_H_
 #define SRC_CIRCUIT_MODULE_BUILDERMANAGER_H_
 
-#include "module/UnitModule.h"
+#include "module/TaskModule.h"
 #include "task/builder/BuilderTask.h"
 #include "terrain/TerrainData.h"
 #include "unit/CircuitUnit.h"
@@ -241,7 +241,7 @@ namespace TaskB {
 	}
 } // namespace TaskB
 
-class CBuilderManager: public IUnitModule {
+class CBuilderManager: public ITaskModule {
 public:
 	friend class CBuilderScript;
 
@@ -279,6 +279,8 @@ public:
 		return static_cast<IBuilderTask*>(Enqueue(ti));
 	}
 
+	virtual void AssignTask(CCircuitUnit* unit, IUnitTask* task) override;
+	virtual void AssignTask(CCircuitUnit* unit) override;
 private:
 	virtual void DequeueTask(IUnitTask* task, bool done = false) override;
 

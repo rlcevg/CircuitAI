@@ -322,7 +322,7 @@ namespace aatc {
 
 
 		DATAHANDLINGTYPE Determine_Datahandlingtype(asIScriptEngine* engine,config::t::uint32 astypeid){
-			if(astypeid == (decltype(astypeid))engine->GetStringFactoryReturnTypeId()){
+			if(astypeid == (decltype(astypeid))engine->GetStringFactory()){
 				return DATAHANDLINGTYPE::STRING;
 			}
 			if(astypeid & asTYPEID_MASK_OBJECT){

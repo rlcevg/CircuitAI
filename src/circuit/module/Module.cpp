@@ -9,6 +9,7 @@
 #include "script/Script.h"
 #include "script/ModuleScript.h"
 #include "unit/CircuitUnit.h"
+#include "CircuitAI.h"
 
 namespace circuit {
 
@@ -67,6 +68,19 @@ int IModule::UnitCaptured(CCircuitUnit* unit, int oldTeamId, int newTeamId)
 {
 	UnitDestroyed(unit, nullptr);
 	return 0; //signaling: OK
+}
+
+void IModule::UnitAdded(CCircuitUnit* unit, UseAs usage)
+{
+	if (circuit->IsLoadSave()) {
+		return;
+	}
+	static_cast<IModuleScript*>(script)->UnitAdded(unit, usage);
+}
+
+void IModule::UnitRemoved(CCircuitUnit* unit, UseAs usage)
+{
+	static_cast<IModuleScript*>(script)->UnitRemoved(unit, usage);
 }
 
 void IModule::LoadScript(std::istream& is)

@@ -45,7 +45,7 @@ static std::string unitTypeDbg;
 #endif
 
 CFactoryManager::CFactoryManager(CCircuitAI* circuit)
-		: IUnitModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
+		: ITaskModule(circuit, new CFactoryScript(circuit->GetScriptManager(), this))
 		, metalRequire(0.f)
 		, energyRequire(0.f)
 		, isAssistRequired(false)
@@ -481,6 +481,21 @@ void CFactoryManager::ReadConfig()
 			}
 		}
 
+		const Json::Value& range = behaviour["range"];
+		if (!range.isNull()) {
+			if (range.isNumeric()) {
+				cdef->SetRange(range.asFloat());
+			} else if (range.isArray()) {
+				cdef->SetRange(CCircuitDef::RangeType::AIR, range.get((unsigned)0, cdef->GetMaxRange(CCircuitDef::RangeType::AIR)).asFloat());
+				cdef->SetRange(CCircuitDef::RangeType::LAND, range.get((unsigned)1, cdef->GetMaxRange(CCircuitDef::RangeType::LAND)).asFloat());
+				cdef->SetRange(CCircuitDef::RangeType::WATER, range.get((unsigned)2, cdef->GetMaxRange(CCircuitDef::RangeType::WATER)).asFloat());
+			} else if (range.isObject()) {
+				cdef->SetRange(CCircuitDef::RangeType::AIR, range.get("air", cdef->GetMaxRange(CCircuitDef::RangeType::AIR)).asFloat());
+				cdef->SetRange(CCircuitDef::RangeType::LAND, range.get("surf", cdef->GetMaxRange(CCircuitDef::RangeType::LAND)).asFloat());
+				cdef->SetRange(CCircuitDef::RangeType::WATER, range.get("water", cdef->GetMaxRange(CCircuitDef::RangeType::WATER)).asFloat());
+			}
+		}
+
 		cdef->SetIgnore(behaviour.get("ignore", cdef->IsIgnore()).asBool());
 
 		const Json::Value& mpOffset = behaviour["midposoffset"];
@@ -810,7 +825,7 @@ void CFactoryManager::DequeueTask(IUnitTask* task, bool done)
 		} break;
 		default: break;
 	}  // WAIT
-	IUnitModule::DequeueTask(task, done);
+	ITaskModule::DequeueTask(task, done);
 }
 
 void CFactoryManager::ApplySwitchFrame()
@@ -1403,30 +1418,30 @@ IUnitTask* CFactoryManager::CreateAssistTask(CCircuitUnit* unit)
 	// NOTE: OOAICallback::GetFriendlyUnitsIn depends on unit's radius
 	auto& units = circuit->GetCallback()->GetFriendlyUnitsIn(pos, radius * 0.9f);
 	for (Unit* u : units) {
-		CAllyUnit* candUnit = circuit->GetFriendlyUnit(u);
-		if ((candUnit == nullptr) || (candUnit == unit)
-			|| builderMgr->IsReclaimUnit(candUnit)
-			|| candUnit->GetCircuitDef()->IsMex())  // FIXME: BA, should be IsT1Mex()
+		auto [cand, isTeam] = circuit->GetTeamOrAllyUnit(u);
+		if ((cand == nullptr) || (cand == unit)
+			|| builderMgr->IsReclaimUnit(cand)
+			|| (isTeam ? static_cast<CCircuitUnit*>(cand)->IsAttrNoRepair() : cand->GetCircuitDef()->IsAttrNoRepair()))
 		{
 			continue;
 		}
 		if (u->IsBeingBuilt()) {
-			CCircuitDef* cdef = candUnit->GetCircuitDef();
+			CCircuitDef* cdef = cand->GetCircuitDef();
 			const float maxHealth = u->GetMaxHealth();
 			const float buildTime = cdef->GetBuildTime() * (maxHealth - u->GetHealth()) / maxHealth;
 			if (buildTime >= curCost) {
 				continue;
 			}
-			if (IsHighPriority(candUnit) ||
+			if (IsHighPriority(cand) ||
 				(!isMetalEmpty && cdef->IsAssistable()) ||
 				(*cdef == *terraDef) ||
 				(buildTime < maxCost))
 			{
 				curCost = buildTime;
-				buildTarget = candUnit;
+				buildTarget = cand;
 			}
 		} else if ((repairTarget == nullptr) && (u->GetHealth() < u->GetMaxHealth())) {
-			repairTarget = candUnit;
+			repairTarget = cand;
 			if (isMetalEmpty) {
 				break;
 			}
