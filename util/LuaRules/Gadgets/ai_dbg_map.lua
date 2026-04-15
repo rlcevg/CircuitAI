@@ -18,7 +18,7 @@ local isDraw = false
 local isPrint = false
 
 function gadget:RecvSkirmishAIMessage(teamID, dataStr)
--- 	Spring.Echo("teamID: " .. tostring(teamID) .. " | dataStr: " .. dataStr)
+-- 	SpringShared.Echo("teamID: " .. tostring(teamID) .. " | dataStr: " .. dataStr)
 	local prefix = "ai_"
 	if dataStr:sub(1, #prefix) ~= prefix then
 		return
@@ -332,10 +332,10 @@ local function MakeConeGL4(LuaShader, goodbye)
 end
 
 local function InitGL4()
-	Spring.Echo("Initializing GL4")
+	SpringShared.Echo("Initializing GL4")
 
 	local goodbye = function(reason)
-		Spring.Echo("AI DBG widget exiting with reason: "..reason)
+		SpringShared.Echo("AI DBG widget exiting with reason: "..reason)
 		gadgetHandler:RemoveGadget()
 	end
 
@@ -364,7 +364,7 @@ local mapWidth  = Game.mapSizeX
 local mapHeight = Game.mapSizeZ
 
 local function HandleAiDbgEvent(cmd, teamID, dataStr)
--- 	Spring.Echo("cmd: " .. cmd .. " | teamID: " .. tostring(teamID) .. " | dataStr: '" .. dataStr .. "'")
+-- 	SpringShared.Echo("cmd: " .. cmd .. " | teamID: " .. tostring(teamID) .. " | dataStr: '" .. dataStr .. "'")
 	local cmdThrData  = "ai_thr_data:"
 	local cmdBlkData  = "ai_blk_data:"
 	local cmdThrSize  = "ai_thr_size:"
@@ -378,14 +378,14 @@ local function HandleAiDbgEvent(cmd, teamID, dataStr)
 		-- "ai_thr_data:<float1><float2><float3>..."
 		local mapStr = dataStr:sub(#cmdThrData + 1)
 		aiData.map = VFS.UnpackF32(mapStr, 1, aiData.width * aiData.height)
-		aiData.mapChanged = Spring.GetGameFrame()
-		--Spring.Echo("aiData.mapChanged", Spring.GetGameFrame())
+		aiData.mapChanged = SpringShared.GetGameFrame()
+		--SpringShared.Echo("aiData.mapChanged", SpringShared.GetGameFrame())
 	elseif dataStr:sub(1, #cmdBlkData) == cmdBlkData then
 		-- "ai_blk_data:<byte1><byte2><byte3>..."
 		local mapStr = dataStr:sub(#cmdBlkData + 1)
 		aiData.map = VFS.UnpackU8(mapStr, 1, aiData.width * aiData.height)
-		aiData.mapChanged = Spring.GetGameFrame()
-		--Spring.Echo("aiData.mapChanged", Spring.GetGameFrame())
+		aiData.mapChanged = SpringShared.GetGameFrame()
+		--SpringShared.Echo("aiData.mapChanged", SpringShared.GetGameFrame())
 	elseif dataStr:sub(1, #cmdThrSize) == cmdThrSize then
 		-- "ai_thr_size:<square_size> <threat_base>"
 		local sb = dataStr:sub(cmdThrSize:len() + 1)
@@ -421,7 +421,7 @@ local function HandleAiDbgEvent(cmd, teamID, dataStr)
 	end
 end
 
-local spGetGroundHeight  = Spring.GetGroundHeight
+local spGetGroundHeight  = SpringShared.GetGroundHeight
 
 local lastupdateframe = 0
 
@@ -461,7 +461,7 @@ local function drawThrOldWay()
 
 	if aiData.isPrint then
 		local halfSize = size / 2;
---		local cx, cy, cz = Spring.GetCameraDirection()
+--		local cx, cy, cz = SpringUnsynced.GetCameraDirection()
 --		local dir = ((math.atan2(cx, cz) / math.pi) + 1) * 180
 
 		for x = 1, width do
@@ -472,7 +472,7 @@ local function drawThrOldWay()
 					pz = z * size + halfSize
 
 					local py = spGetGroundHeight(px, pz)
-					if Spring.IsSphereInView(px, py, pz, size) then
+					if SpringUnsynced.IsSphereInView(px, py, pz, size) then
 						if py < 0 then py = 0 end
 
 						gl.PushMatrix()
@@ -500,7 +500,7 @@ local function drawMrkOldWay()
 			gl.DrawGroundQuad(v[1] - halfSize, v[2] - halfSize, v[1] + halfSize, v[2] + halfSize)
 			if v[8] then
 				local py = spGetGroundHeight(v[1], v[2])
-				if Spring.IsSphereInView(v[1], py, v[2], halfSize) then
+				if SpringUnsynced.IsSphereInView(v[1], py, v[2], halfSize) then
 					if py < 0 then py = 0 end
 					gl.PushMatrix()
 					gl.Translate(v[1], py, v[2])
@@ -525,8 +525,8 @@ local function drawThrGL4Way()
 
 	if aiData.isDraw then
 		if aiData.mapChanged > lastupdateframe then
-			lastupdateframe = Spring.GetGameFrame()
--- 			Spring.Echo("mapChanged updated", lastupdateframe, aiData.mapChanged)
+			lastupdateframe = SpringShared.GetGameFrame()
+-- 			SpringShared.Echo("mapChanged updated", lastupdateframe, aiData.mapChanged)
 
 			InstanceVBOTable.clearInstanceTable(circleInstanceVBOthr) -- remove all our previous geometry from buffer
 			for x = 1, width do
@@ -565,7 +565,7 @@ local function drawThrGL4Way()
 		gl.DepthTest(false) -- so that it doesnt get hidden under terrain
 		gl.Texture(0, "$heightmap")
 		circleShaderThr:Activate()
--- 		Spring.Echo("Drawing AI DBG circleInstanceVBOthr", circleInstanceVBOthr.usedElements)
+-- 		SpringShared.Echo("Drawing AI DBG circleInstanceVBOthr", circleInstanceVBOthr.usedElements)
 		InstanceVBOTable.drawInstanceVBO(circleInstanceVBOthr)
 		circleShaderThr:Deactivate()
 		gl.Texture(0, false)
@@ -574,7 +574,7 @@ local function drawThrGL4Way()
 
 	if aiData.isPrint then
 		local halfSize = size / 2;
---		local cx, cy, cz = Spring.GetCameraDirection()
+--		local cx, cy, cz = SpringUnsynced.GetCameraDirection()
 --		local dir = ((math.atan2(cx, cz) / math.pi) + 1) * 180
 
 		for x = 1, width do
@@ -585,7 +585,7 @@ local function drawThrGL4Way()
 					pz = z * size + halfSize
 
 					local py = spGetGroundHeight(px, pz)
-					if Spring.IsSphereInView(px, py, pz, size) then
+					if SpringUnsynced.IsSphereInView(px, py, pz, size) then
 						if py < 0 then py = 0 end
 
 						gl.PushMatrix()
@@ -634,7 +634,7 @@ local function drawMrkGL4Way()
 		gl.DepthTest(true)
 		gl.Texture(0, "$heightmap")
 		circleShaderMrk:Activate()
--- 		Spring.Echo("Drawing AI DBG circleInstanceVBOmrk", circleInstanceVBOmrk.usedElements)
+-- 		SpringShared.Echo("Drawing AI DBG circleInstanceVBOmrk", circleInstanceVBOmrk.usedElements)
 -- 		gl.Blending("alpha")
 -- 		gl.Culling(GL.FRONT)
 -- 		InstanceVBOTable.drawInstanceVBO(circleInstanceVBOmrk)
@@ -650,7 +650,7 @@ local function drawMrkGL4Way()
 		for k, v in pairs(aiData.marks) do
 			if v[8] then
 				local py = spGetGroundHeight(v[1], v[2])
-				if Spring.IsSphereInView(v[1], py, v[2], v[3]) then
+				if SpringUnsynced.IsSphereInView(v[1], py, v[2], v[3]) then
 					if py < 0 then py = 0 end
 					gl.PushMatrix()
 					gl.Translate(v[1], py, v[2])
@@ -664,8 +664,8 @@ local function drawMrkGL4Way()
 end
 
 function gadget:DrawWorldPreUnit()
---	Spring.Echo(aiData.map[0 * width + 1])
---	Spring.Echo(aiData.map[(height - 1) * width + width])
+--	SpringShared.Echo(aiData.map[0 * width + 1])
+--	SpringShared.Echo(aiData.map[(height - 1) * width + width])
 
 	if isGL4Way then
 		drawThrGL4Way()
@@ -683,13 +683,13 @@ function gadget:DrawWorld()
 end
 
 function gadget:Initialize()
-	Spring.Echo("Initialize AI DBG")
+	SpringShared.Echo("Initialize AI DBG")
 	gadgetHandler:AddSyncAction("AiDbgEvent", HandleAiDbgEvent)
 	InitGL4()
 end
 
 function gadget:Shutdown()
-	Spring.Echo("Shutdown AI DBG")
+	SpringShared.Echo("Shutdown AI DBG")
 	gadgetHandler:RemoveSyncAction("AiDbgEvent")
 end
 

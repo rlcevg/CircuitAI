@@ -46,11 +46,11 @@ local function calcWalkable(p1, p2, maxSlope, minWaterDepth, maxWaterDepth)
 		for j = 0, walkGran - 1 do
 			local x = p1 * granularity + i * 16
 			local z = p2 * granularity + j * 16
-			local _, _, _, slope = Spring.GetGroundNormal(x, z)
+			local _, _, _, slope = SpringShared.GetGroundNormal(x, z)
 			if slope > maxSlope then
 				return false
 			end
-			local y = Spring.GetGroundHeight(x, z)
+			local y = SpringShared.GetGroundHeight(x, z)
 			if y > -minWaterDepth or y < -maxWaterDepth then
 				return false
 			end
@@ -101,7 +101,7 @@ end
 local function TileToPos(p)
 	local x = p[1] * granularity + granularity / 2
 	local z = p[2] * granularity + granularity / 2
-	return {x, Spring.GetGroundHeight(x, z) + 10, z}
+	return {x, SpringShared.GetGroundHeight(x, z) + 10, z}
 end
 
 local function GetMiniTile(p)
@@ -583,13 +583,13 @@ end
 local isAnalyzed = false
 
 function gadget:Initialize()
-	Spring.Echo("The generator's gone.")
+	SpringShared.Echo("The generator's gone.")
 	AnalyzeMap("armcom")
-	Spring.Echo("Any way we can fix it?")
+	SpringShared.Echo("Any way we can fix it?")
 end
 
 function gadget:Shutdown()
-	Spring.Echo("It's GONE, MacReady.")
+	SpringShared.Echo("It's GONE, MacReady.")
 end
 
 -- WARNING: usage example
@@ -603,10 +603,10 @@ function gadget:GameFrame(n)
 			local chokes = GetChokePoints(a, b)
 			for i, cp in ipairs(chokes) do
 				local m = TileToPos(cp.nodes[NODE_MIDDLE])
-				Spring.MarkerAddPoint(m[1], m[2], m[3], "choke" .. a .. ":" .. b)
+				SpringUnsynced.MarkerAddPoint(m[1], m[2], m[3], "choke" .. a .. ":" .. b)
 				local e1 = TileToPos(cp.nodes[NODE_END1])
 				local e2 = TileToPos(cp.nodes[NODE_END2])
-				Spring.MarkerAddLine(e1[1], e1[2], e1[3], e2[1], e2[2], e2[3])
+				SpringUnsynced.MarkerAddLine(e1[1], e1[2], e1[3], e2[1], e2[2], e2[3])
 			end
 		end
 	end
