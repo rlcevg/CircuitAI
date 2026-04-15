@@ -20,17 +20,17 @@ local threatData = {
 }
 _G.threatData = threatData
 
-local spGetGroundHeight  = Spring.GetGroundHeight
+local spGetGroundHeight  = SpringShared.GetGroundHeight
 
 local mapWidth  = Game.mapSizeX
 local mapHeight = Game.mapSizeZ
 
 function gadget:Initialize()
-	Spring.Echo("Initialize AI DBG")
+	SpringShared.Echo("Initialize AI DBG")
 end
 
 function gadget:RecvSkirmishAIMessage(teamID, dataStr)
---	Spring.Echo("teamID: " .. tostring(teamID) .. " | dataStr: " .. dataStr)
+--	SpringShared.Echo("teamID: " .. tostring(teamID) .. " | dataStr: " .. dataStr)
 	local commandData  = "ai_thr_data:"
 	local commandSize  = "ai_thr_size:"
 	local commandDiv   = "ai_thr_div:"
@@ -79,8 +79,8 @@ function gadget:DrawWorldPreUnit()
 		local size = SYNCED.threatData.size
 		local div = SYNCED.threatData.div
 		local base = SYNCED.threatData.base
---		Spring.Echo(threatMap[0 * width + 1])
---		Spring.Echo(threatMap[(height - 1) * width + width])
+--		SpringShared.Echo(threatMap[0 * width + 1])
+--		SpringShared.Echo(threatMap[(height - 1) * width + width])
 
 		if SYNCED.threatData.isDraw then
 			for x = 1, width do
@@ -104,7 +104,7 @@ function gadget:DrawWorldPreUnit()
 
 		if SYNCED.threatData.isPrint then
 			local halfSize = size / 2;
---			local cx, cy, cz = Spring.GetCameraDirection()
+--			local cx, cy, cz = SpringUnsynced.GetCameraDirection()
 --			local dir = ((math.atan2(cx, cz) / math.pi) + 1) * 180
 
 			for x = 1, width do
