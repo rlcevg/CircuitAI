@@ -70,7 +70,7 @@ CEnergyNode::CEnergyNode(int index, const CMetalData::SCluster& cluster, const C
 	BuildNode vis(spotGraph, spotNodes, initNodeMap);
 	SpotGraph::NodeIt node(initGraph);
 	auto spanningGraph = lemon::filterEdges(initGraph, spanningTree);
-	lemon::Bfs<__typeof__(spanningGraph)> bfs(spanningGraph);
+	lemon::Bfs<decltype(spanningGraph)> bfs(spanningGraph);
 	bfs.init();
 	bfs.addSource(node);
 	vis[node];

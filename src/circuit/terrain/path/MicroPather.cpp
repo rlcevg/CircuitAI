@@ -811,7 +811,7 @@ int CMicroPather::FindBestPathToPointOnRadius(void* startNode, void* endNode,
 	size_t indexEnd = (size_t)endNode;
 	int y = indexEnd / mapSizeX;
 	int x = indexEnd - y * mapSizeX;
-	int xend[2 * radius + 1];
+	std::vector<int> xend(2 * radius + 1);
 
 	for (int a = 0; a < (2 * radius + 1); a++) {
 		float z = a - radius;
