@@ -13,6 +13,7 @@
 #include <set>
 #include <vector>
 #include <algorithm>
+#include <iterator>
 
 namespace circuit {
 
