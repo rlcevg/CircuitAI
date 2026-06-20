@@ -22,6 +22,16 @@ if(MSVC AND NOT IS_ARM64_BUILD)
 		message(FATAL ERROR "MSVC x86_64 target requires a working assembler")
 	endif()
 endif()
+
+# angelscript native calling convention for arm64 needs a hand-written assembly
+# stub (CallARM64 et al.). The C/C++ source glob never picks up the .S file, so
+# add it explicitly. macOS/Mach-O needs the xcode variant (underscore-mangled
+# symbols) regardless of compiler; the generic glob handles the .cpp half.
+if (APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+	enable_language(ASM)
+	set(additionalSources  ${additionalSources} ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/angelscript/source/as_callfunc_arm64_xcode.S)
+endif ()
+
 set(additionalLibraries    ${Cpp_AIWRAPPER_TARGET} CUtils)  # can't use Tracy::TracyClient in dll, requires -fPIC
 
 if (MSVC)
