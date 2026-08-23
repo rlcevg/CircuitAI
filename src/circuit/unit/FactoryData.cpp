@@ -47,10 +47,20 @@ CCircuitDef* CFactoryData::GetFactoryToBuild(CCircuitAI* circuit, AIFloat3 posit
 //	CTerrainManager::CorrectPosition(position);
 	if (isPosValid) {
 		CBuilderManager* builderMgr = circuit->GetBuilderManager();
-		predicate = [position, builderMgr, terrainMgr](CCircuitDef* cdef) {
-			return builderMgr->IsBuilderInArea(cdef, position) && terrainMgr->CanBeBuiltAtSafe(cdef, position);
+		predicate = [position, builderMgr, terrainMgr, factoryMgr](CCircuitDef* cdef) {
+			if (!builderMgr->IsBuilderInArea(cdef, position) || !terrainMgr->CanBeBuiltAtSafe(cdef, position)) {
+				return false;
+			}
+			CCircuitDef* reprDef = factoryMgr->GetRepresenter(cdef);
+			if (reprDef == nullptr) {
+				return true;
+			}
+			return terrainMgr->CanBeBuiltAt(reprDef, position);
 		};
 	} else {
+		// FIXME: Make position being valid - a requirement.
+		//        As CBFactoryTask::FindBuildSite may fail
+		//        with terrainMgr->CanBeBuiltAt(reprDef, p) condition.
 		CEconomyManager* economyMgr = circuit->GetEconomyManager();
 		predicate = [economyMgr](CCircuitDef* cdef) {
 			return economyMgr->IsFactoryDefAvail(cdef);

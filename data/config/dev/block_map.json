@@ -11,7 +11,7 @@
 	"area_min_tiles": 32,  // 64,
 
 	"areas_merge_size": 64,  // 80,
-	"areas_merge_altitude": 64  // 80  // 10 * altitude_scale
+	"areas_merge_altitude": 80  // 80  // 10 * altitude_scale
 },
 
 "building": {

@@ -99,7 +99,7 @@ void CBFactoryTask::FindBuildSite(CCircuitUnit* builder, const AIFloat3& pos, fl
 		};
 	} else {
 		CCircuitDef* reprDef = this->reprDef;
-		predicate = [terrainMgr, builder, reprDef, this](const AIFloat3& p) {
+		predicate = [terrainMgr, builder, reprDef](const AIFloat3& p) {
 			return terrainMgr->CanReachAtSafe(builder, p, builder->GetCircuitDef()->GetBuildDistance())
 					&& terrainMgr->CanBeBuiltAt(reprDef, p);
 		};

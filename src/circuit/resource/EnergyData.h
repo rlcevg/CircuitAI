@@ -30,7 +30,6 @@ public:
 private:
 	bool isInitialized;
 	Geos spots;
-
 };
 
 } // namespace circuit
