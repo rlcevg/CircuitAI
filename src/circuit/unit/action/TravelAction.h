@@ -29,6 +29,9 @@ public:
 	void SetPath(const std::shared_ptr<CPathInfo>& pPath, float speed = NO_SPEED_LIMIT);
 	const std::shared_ptr<CPathInfo>& GetPath() const { return pPath; }
 
+	// Force move-orders
+	void InvalidateLastSector() { lastSector = -1; }
+
 protected:
 	int CalcSpeedStep(CCircuitAI* circuit, float& stepSpeed);
 

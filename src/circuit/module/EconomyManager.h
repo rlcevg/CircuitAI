@@ -263,7 +263,7 @@ private:
 		int mex;
 		float fraction;
 		inline bool operator< (const SPullMtoS& rhs) const { return mex < rhs.mex; }
-		inline bool operator() (const SPullMtoS& lhs, const int rhs) const{ return lhs.mex < rhs; }
+		inline bool operator() (const SPullMtoS& lhs, const int rhs) const { return lhs.mex < rhs; }
 	};
 	std::vector<SPullMtoS> mspInfos;
 	float pullMtoS = 0.f;  // mobile to static metal pull ratio

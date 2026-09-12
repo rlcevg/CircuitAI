@@ -95,8 +95,12 @@ void IFighterTask::OnUnitIdle(CCircuitUnit* unit)
 		cowards.erase(it);
 		CRetreatTask* task = manager->EnqueueRetreat();
 		manager->AssignTask(unit, task);
-	} else {
-		unit->SetTaskFrame(manager->GetCircuit()->GetLastFrame());
+		return;
+	}
+	unit->SetTaskFrame(manager->GetCircuit()->GetLastFrame());
+
+	if (!unit->GetTravelAct()->IsFinished()) {
+		unit->GetTravelAct()->InvalidateLastSector();
 	}
 }
 

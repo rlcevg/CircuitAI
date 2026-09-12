@@ -35,7 +35,7 @@ void CNilTask::AssignTo(CCircuitUnit* unit)
 
 void CNilTask::RemoveAssignee(CCircuitUnit* unit)
 {
-	unit->Clear();
+	unit->ClearAct();
 }
 
 void CNilTask::Start(CCircuitUnit* unit)

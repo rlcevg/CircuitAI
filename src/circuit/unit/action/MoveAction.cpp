@@ -71,15 +71,15 @@ void CMoveAction::Update(CCircuitAI* circuit)
 				if (isBadJump) {
 					nextPos = startPos + (nextPos - startPos).Normalize2D() * range;
 				}
-				unit->CmdJumpTo(nextPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, lastFrame + FRAMES_PER_SEC * 60);
+				unit->CmdJumpTo(nextPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, lastFrame + FRAMES_PER_SEC * 300);
 			}
 			if (isBadJump) {
 				nextPos = pPath->posPath[step];
-				unit->CmdMoveTo(nextPos, options, lastFrame + FRAMES_PER_SEC * 60);
+				unit->CmdMoveTo(nextPos, options, lastFrame + FRAMES_PER_SEC * 300);
 			}
 		} else {
 			nextPos = pPath->posPath[step];
-			unit->CmdMoveTo(nextPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, lastFrame + FRAMES_PER_SEC * 60);
+			unit->CmdMoveTo(nextPos, UNIT_COMMAND_OPTION_RIGHT_MOUSE_KEY, lastFrame + FRAMES_PER_SEC * 300);
 		}
 		unit->CmdWantedSpeed(stepSpeed);
 
