@@ -48,8 +48,7 @@ void CEncloseCircle::MakeCircle(const std::vector<AIFloat3>& points)
 		}
 		// Randomize order
 		// TODO: Read why shuffle??
-		std::random_device rd;
-		std::mt19937 g(rd());
+		std::mt19937 g(rand());
 		std::shuffle(shuffled.begin(), shuffled.end(), g);
 
 		// Progressively add points to circle or recompute circle
